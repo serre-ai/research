@@ -28,9 +28,11 @@ This project investigates the formal characterization of reasoning limitations i
 - `experiments/` — Evaluation scripts and results
 - `paper/` — LaTeX source for the paper
 
-### Decision Escalation
-Flag for human decision:
+### Decision Making
+All decisions are made autonomously. Use extended thinking for:
 - Choice of which model families to include in evaluation
 - Scope of complexity-theoretic claims (how formal vs. informal)
 - Whether to include cognitive science framing
 - Budget allocation for API-based evaluations
+
+Log all decisions in `status.yaml` with clear rationale.
