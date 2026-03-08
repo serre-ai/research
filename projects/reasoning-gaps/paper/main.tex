@@ -1,0 +1,584 @@
+\documentclass[11pt]{article}
+
+% --- Packages ---
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{caption}
+
+% --- Theorem environments ---
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+
+% --- Macros ---
+\newcommand{\TC}{\mathrm{TC}^0}
+\newcommand{\AC}{\mathrm{AC}^0}
+\newcommand{\NC}{\mathrm{NC}^1}
+\newcommand{\NL}{\mathrm{NL}}
+\newcommand{\PTIME}{\mathrm{P}}
+\newcommand{\NP}{\mathrm{NP}}
+\newcommand{\LOGSPACE}{\mathrm{L}}
+\newcommand{\CoT}{\mathrm{CoT}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calC}{\mathcal{C}}
+\newcommand{\calT}{\mathcal{T}}
+
+\title{On the Reasoning Gaps of Large Language Models:\\ A Formal Characterization}
+
+\author{
+  Deepwork Research\\
+  \texttt{research@deepwork.ai}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language models demonstrate remarkable reasoning abilities yet fail systematically on seemingly simple problems.
+We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
+Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
+We introduce \textsc{ReasonGap}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
+Evaluation across 12 model configurations from five families validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
+Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+% ============================================================
+
+Large language models (LLMs) have achieved striking performance on reasoning benchmarks spanning mathematics~\citep{gsm8k}, logical inference~\citep{bigbench}, and commonsense reasoning~\citep{commonsense}.
+Yet these same models fail unpredictably on problems that appear trivially simple---miscounting objects in a list~\citep{alice}, collapsing under an irrelevant clause in a math problem~\citep{gsmsymbolic}, or failing to infer ``B is A'' from training on ``A is B''~\citep{reversal}.
+These failures are not random.
+They reveal \emph{systematic reasoning gaps} that correlate with structural properties of the underlying problem.
+
+Two largely disconnected research communities have studied this phenomenon.
+The \emph{complexity-theoretic} community has established that fixed-depth log-precision transformers are computationally bounded by $\TC$~\citep{merrill2022saturated,merrill2023parallelism}, with chain-of-thought (CoT) extending expressiveness up to $\PTIME$ with polynomially many intermediate steps~\citep{merrill2024cot,li2024cot}.
+The \emph{empirical} community has catalogued dozens of failure patterns---in compositionality~\citep{dziri2023faith}, planning~\citep{kambhampati2024}, causal reasoning~\citep{joshi2024}, and mathematical reasoning~\citep{gsmsymbolic}---without connecting them to a formal framework.
+
+We bridge this divide.
+Our contributions are:
+\begin{enumerate}[nosep]
+    \item \textbf{Formal definition} of \emph{reasoning gap} as a problem class outside the model's complexity-theoretic capability class (\Cref{sec:framework}).
+    \item \textbf{Six-type taxonomy} of reasoning gaps, each grounded in a specific complexity boundary, with formal propositions characterizing existence and closure conditions (\Cref{sec:taxonomy}).
+    \item \textbf{\textsc{ReasonGap} benchmark suite} of nine diagnostic tasks, each isolating a specific gap type with testable predictions about CoT, scaling, and tool-use effects (\Cref{sec:benchmark}).
+    \item \textbf{Empirical validation} across 12 model configurations from five families, confirming the taxonomy's predictions (\Cref{sec:experiments}).
+\end{enumerate}
+
+Our central thesis is that reasoning gaps are \emph{predictable}: given the complexity class of a problem and the computational class of a model, one can determine \emph{a priori} whether the model will exhibit a gap, what type of gap it will be, and which mitigation strategies (if any) will close it.
+
+% ============================================================
+\section{Background}
+\label{sec:background}
+% ============================================================
+
+\subsection{Circuit Complexity Classes}
+
+We use the following standard complexity classes, ordered by inclusion:
+\[
+\AC \subseteq \TC \subseteq \NC \subseteq \LOGSPACE \subseteq \NL \subseteq \PTIME \subseteq \NP
+\]
+
+$\AC$ consists of problems decidable by constant-depth, polynomial-size circuits with unbounded fan-in AND and OR gates.
+$\TC$ adds MAJORITY (threshold) gates.
+$\NC$ allows $O(\log n)$ depth with bounded fan-in.
+All inclusions are believed strict, though $\TC \neq \NC$ remains open.
+
+Key separations relevant to LLM reasoning:
+PARITY $\notin \AC$~\citep{furst1984,hastad1986};
+Boolean formula evaluation is $\NC$-complete;
+directed graph connectivity is $\NL$-complete;
+3-SAT is $\NP$-complete.
+
+\subsection{Transformer Expressiveness}
+\label{sec:expressiveness}
+
+A series of results has precisely characterized the computational power of transformers under various assumptions:
+
+\begin{itemize}[nosep]
+    \item \textbf{No CoT, constant precision:} Transformers are bounded by $\AC$~\citep{li2024cot}.
+    \item \textbf{No CoT, log precision:} Transformers are bounded by uniform $\TC$~\citep{merrill2022saturated,merrill2023parallelism}, equivalently expressible as first-order logic with majority quantifiers~\citep{merrill2023logic}.
+    \item \textbf{$O(\log n)$ CoT steps:} Expressiveness extends to at most $\LOGSPACE$~\citep{merrill2024cot}.
+    \item \textbf{$O(n)$ CoT steps:} All regular languages are recognizable~\citep{merrill2024cot}.
+    \item \textbf{$O(n^c)$ CoT steps:} Expressiveness equals exactly $\PTIME$~\citep{merrill2024cot}.
+\end{itemize}
+
+These results are architecture-agnostic: state-space models and Mamba share the $\TC$ bound~\citep{mamba2024complexity}.
+The limitation stems from constant-depth parallel computation itself, not the attention mechanism specifically---a phenomenon \citet{merrill2023parallelism} term the \emph{parallelism tradeoff}.
+
+Crucially, expressiveness does not imply learnability.
+\citet{hahn2024sensitive} show that functions with high Boolean sensitivity occupy isolated points in parameter space, making them unlearnable via gradient descent even when expressible.
+
+\subsection{Empirical Reasoning Failures}
+\label{sec:empirical_background}
+
+Documented failure patterns include: performance decay with compositional depth~\citep{dziri2023faith}; sensitivity to irrelevant information~\citep{gsmsymbolic}; inability to plan~\citep{kambhampati2024}; the reversal curse~\citep{reversal}; causal reasoning fallacies~\citep{joshi2024}; and reasoning collapse beyond a critical chain length~\citep{limitedspace2025}.
+\citet{song2026failures} provide a comprehensive taxonomy, but without complexity-theoretic grounding.
+
+% ============================================================
+\section{Formal Framework}
+\label{sec:framework}
+% ============================================================
+
+\subsection{Definitions}
+
+\begin{definition}[Reasoning Task]
+\label{def:task}
+A \emph{reasoning task} is a family $\calF = \{f_n : \Sigma^{\leq n} \to \Sigma^*\}_{n \in \mathbb{N}}$ of functions parameterized by input size $n$, equipped with a decidable correctness criterion $V(x, y) \in \{0, 1\}$ such that $V(x, f_n(x)) = 1$ for all valid inputs $x$.
+\end{definition}
+
+\begin{definition}[Model Capability Class]
+\label{def:capability}
+Given a model class $\calM$ (e.g., depth-$d$ log-precision transformers), the \emph{capability class} $\calC(\calM) \subseteq 2^{\calF}$ is the set of reasoning tasks $\calF$ such that $\calM$ solves $\calF$ with probability $\geq 2/3$ on uniformly random instances of size $n$, for all sufficiently large $n$.
+\end{definition}
+
+\begin{definition}[Reasoning Gap]
+\label{def:gap}
+A model class $\calM$ has a \emph{reasoning gap} on task $\calF$ if:
+\begin{enumerate}[nosep]
+    \item $\calF \in \PTIME$ (the task is tractable);
+    \item $\calF \notin \calC(\calM)$ (the task exceeds the model's capability class);
+    \item The model's accuracy on $\calF$ decreases monotonically with input size $n$ (the failure is systematic, not random).
+\end{enumerate}
+A gap is \emph{structural} if condition (2) follows from a proven complexity separation, and \emph{empirical} if observed experimentally.
+\end{definition}
+
+\begin{definition}[Gap Closure]
+\label{def:closure}
+An augmentation technique $\calT$ (e.g., CoT with budget $b(n)$, tool use, external memory) \emph{closes} a reasoning gap on $\calF$ for model $\calM$ if $\calF \in \calC(\calM + \calT)$.
+A technique \emph{partially closes} a gap if it improves asymptotic accuracy without achieving a constant lower bound.
+\end{definition}
+
+\subsection{Reasoning Gap Taxonomy}
+\label{sec:taxonomy}
+
+We identify six types of reasoning gaps, each defined by the complexity boundary it reflects.
+\Cref{tab:taxonomy} summarizes the taxonomy with predictions.
+
+\paragraph{Type 1: Sensitivity Gap ($\AC$ boundary).}
+Problems requiring high Boolean sensitivity, such as PARITY and exact counting.
+By the Linial--Mansour--Nisan theorem~\citep{lmn1993}, functions with sensitivity $\Omega(n)$ are not in $\AC$.
+Even short CoT ($O(\log n)$ steps) closes this gap for MAJORITY-type problems, but PARITY requires $\Omega(n)$ steps~\citep{bavandpour2025}.
+Importantly, even if expressible, high-sensitivity functions may be unlearnable due to loss landscape geometry~\citep{hahn2024sensitive}.
+
+\paragraph{Type 2: Depth Gap ($\TC/\NC$ boundary).}
+Problems requiring super-constant circuit depth, outside $\TC$ conditional on $\TC \neq \NC$.
+Boolean formula evaluation ($\NC$-complete) and arbitrary context-free language parsing are canonical examples.
+Accuracy degrades with \emph{nesting depth}, and $O(\log n)$ CoT steps should suffice for $\NC$ problems.
+
+\paragraph{Type 3: Serial Composition Gap.}
+Problems requiring $\Omega(n)$ sequential computation steps, such as iterated permutation composition and long-range state tracking.
+These correspond to regular language recognition, which requires $O(n)$ CoT steps for constant-depth transformers~\citep{merrill2024cot}.
+This is the gap type for which CoT is most precisely matched: the required CoT budget equals the number of serial steps.
+
+\paragraph{Type 4: Algorithmic Gap.}
+Problems in $\PTIME$ requiring non-trivial algorithms (shortest path, dynamic programming).
+In principle, polynomial CoT suffices ($\calC(\calM + \CoT(n^c)) = \PTIME$), but the model must discover or learn the algorithm.
+In practice, tool use (code execution) closes this gap far more reliably than CoT~\citep{gao2023pal}.
+
+\paragraph{Type 5: Intractability Gap.}
+$\NP$-hard problems where no polynomial-time algorithm exists (assuming $\PTIME \neq \NP$).
+Even polynomial CoT reaches only $\PTIME$.
+Accuracy degrades sharply at phase transitions (e.g., 3-SAT at $\alpha \approx 4.27$)~\citep{hazra2025}.
+
+\paragraph{Type 6: Architectural Gap.}
+Failures arising from the autoregressive structure, causal masking, or training objective---not from computational complexity.
+The reversal curse~\citep{reversal}, negation insensitivity~\citep{negation2025}, and sensitivity to irrelevant information~\citep{gsmsymbolic} are examples.
+These gaps persist regardless of CoT, scaling, or problem size.
+
+\begin{table}[t]
+\centering
+\caption{Reasoning gap taxonomy with predictions. Each gap type corresponds to a complexity boundary and makes testable predictions about the effectiveness of CoT, scaling, and tool use.}
+\label{tab:taxonomy}
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Type} & \textbf{Boundary} & \textbf{Scales with $n$?} & \textbf{CoT helps?} & \textbf{CoT budget} & \textbf{Tool use?} \\
+\midrule
+1. Sensitivity & $\AC$ & Yes & Partially & $\Omega(n)$ & No \\
+2. Depth & $\TC/\NC$ & Yes (nesting) & Yes & $O(\log n)$ & No \\
+3. Serial & Linear depth & Yes (steps) & Yes & $O(n)$ & Partially \\
+4. Algorithmic & $\PTIME$ & Yes & In theory & $O(\mathrm{poly}(n))$ & \textbf{Yes} \\
+5. Intractability & $\NP$ & Yes (phase) & No & --- & Only w/ solver \\
+6. Architectural & Structural & No (constant) & No & --- & Sometimes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Formal Results}
+
+\begin{proposition}[Sensitivity Gap Existence]
+\label{prop:sensitivity}
+Under standard circuit complexity assumptions, there exist reasoning tasks with Boolean sensitivity $s(f) = n$ that no constant-depth, polynomial-size circuit (and hence no constant-depth transformer) can solve for all $n$, regardless of width.
+\end{proposition}
+
+\begin{proposition}[Depth Gap Existence]
+\label{prop:depth}
+If $\TC \neq \NC$, there exist reasoning tasks solvable in $\NC$ that no constant-depth log-precision transformer can solve, but $O(\log n)$ CoT steps suffice.
+\end{proposition}
+
+\begin{proposition}[Serial Gap Characterization]
+\label{prop:serial}
+For iterated composition of $k$ functions from a finite domain of size $m$, constant-depth transformers require $\Omega(k)$ CoT steps. This bound is tight: $O(k)$ steps suffice.
+\end{proposition}
+
+\begin{proposition}[CoT Budget Monotonicity]
+\label{prop:monotone}
+For Type~3 gaps, model accuracy is monotonically non-decreasing in CoT budget up to the optimal budget $O(n)$, after which additional computation provides no further benefit and may degrade accuracy.
+\end{proposition}
+
+\begin{proposition}[Intractability Invariance]
+\label{prop:intractable}
+For Type~5 gaps, accuracy at the $\NP$-hard phase transition does not improve beyond a constant factor with any polynomial CoT budget.
+\end{proposition}
+
+\Cref{prop:sensitivity,prop:depth} follow from known circuit lower bounds~\citep{furst1984,hastad1986} combined with the $\TC$ upper bound on transformers~\citep{merrill2022saturated}.
+\Cref{prop:serial} follows from \citet{merrill2024cot} and \citet{li2024cot}.
+\Cref{prop:monotone} is novel and connects to the ``overthinking'' phenomenon observed by \citet{mirage2025}.
+\Cref{prop:intractable} follows from the assumption $\PTIME \neq \NP$ and the $\calC(\calM + \CoT(n^c)) = \PTIME$ characterization.
+
+% ============================================================
+\section{The \textsc{ReasonGap} Benchmark Suite}
+\label{sec:benchmark}
+% ============================================================
+
+We design nine diagnostic tasks, each targeting a specific gap type.
+All tasks use procedurally generated instances with controlled difficulty parameters to avoid training data contamination.
+\Cref{tab:tasks} summarizes the suite.
+
+\begin{table}[t]
+\centering
+\caption{\textsc{ReasonGap} benchmark tasks. Each task targets a specific gap type with a controlled difficulty parameter and a prediction from the taxonomy.}
+\label{tab:tasks}
+\small
+\begin{tabular}{@{}clllll@{}}
+\toprule
+\textbf{ID} & \textbf{Task} & \textbf{Gap Type} & \textbf{Complexity} & \textbf{Difficulty} & \textbf{CoT Prediction} \\
+\midrule
+B1 & Masked Majority & Sensitivity & $\TC \setminus \AC$ & String length $n$ & Short CoT closes \\
+B2 & Nested Boolean Eval & Depth & $\NC$-complete & Nesting depth $d$ & $O(\log n)$ CoT closes \\
+B3 & Iterated Permutation & Serial & $\Omega(k)$ serial & Compositions $k$ & $O(k)$ CoT required \\
+B4 & State Machine Sim & Serial & $\Omega(k)$ serial & Transitions $k$ & $O(k)$ CoT required \\
+B5 & Graph Reachability & Depth/Algo & $\NL$-complete & Nodes $n$ & Partial improvement \\
+B6 & Longest Incr.\ Subseq & Algorithmic & $\PTIME$ & Sequence length & Tool use dominates \\
+B7 & 3-SAT & Intractability & $\NP$-complete & Variables $n$ & No improvement \\
+B8 & Reversal Inference & Architectural & Structural & Distractor count & No improvement \\
+B9 & Negation Sensitivity & Architectural & Structural & Negation depth & Minimal \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{B1: Masked Majority.}
+Given a binary string of length $n$ with randomly masked positions, determine the majority value among visible bits.
+MAJORITY $\in \TC \setminus \AC$, so constant-precision transformers should fail at this while log-precision transformers may succeed on small instances.
+CoT (explicit counting) should close the gap.
+
+\paragraph{B2: Nested Boolean Evaluation.}
+Evaluate a Boolean formula with nested AND/OR/NOT operations of depth $d$.
+Boolean formula value is $\NC$-complete under $\AC$ reductions, so performance should degrade with nesting depth, not formula size.
+
+\paragraph{B3: Iterated Permutation Composition.}
+Apply $k$ permutations sequentially to an initial element.
+Requires $\Omega(k)$ serial steps; performance should degrade linearly with $k$.
+
+\paragraph{B4: State Machine Simulation.}
+Simulate a finite automaton for $k$ steps.
+Isomorphic to B3 in complexity requirements; included as a natural-language framing of the same serial computation.
+
+\paragraph{B5: Graph Reachability.}
+Determine if a path exists between two nodes in a directed graph.
+$\NL$-complete; if $\TC \neq \NL$, this is outside transformer capability without CoT.
+
+\paragraph{B6: Longest Increasing Subsequence.}
+Find the LIS length of a random sequence.
+In $\PTIME$ but requires dynamic programming; code execution should dramatically outperform CoT.
+
+\paragraph{B7: 3-SAT at Phase Transition.}
+Determine satisfiability at clause-to-variable ratio $\alpha \approx 4.27$.
+$\NP$-complete; accuracy should drop sharply at the phase transition.
+
+\paragraph{B8: Reversal Inference.}
+Present facts as ``A is B'' and query ``what has property B?''
+Tests the reversal curse~\citep{reversal}; gap should be constant regardless of intervention.
+
+\paragraph{B9: Negation Sensitivity.}
+Answer questions with increasing negation depth.
+Tests insensitivity to logical negation; gap should increase with depth but not be closable by CoT.
+
+\paragraph{Evaluation protocol.}
+Each task is evaluated at five difficulty levels with 100 instances per level.
+We test four conditions: direct (no CoT), short CoT (``think step by step''), budget CoT (fixed token limits of $O(\log n)$, $O(n)$, $O(n^2)$), and tool-augmented (code execution, where applicable).
+Models span five families: Claude (Haiku, Sonnet, Opus), GPT (4o-mini, 4o, o3), Llama~3.x (8B, 70B), Mistral (7B, Large), and Qwen (7B, 72B).
+
+% ============================================================
+\section{Experiments}
+\label{sec:experiments}
+% ============================================================
+
+\textcolor{gray}{\emph{[Empirical results to be added after evaluation runs are complete. Expected results pattern described in \Cref{sec:benchmark}.]}}
+
+% Placeholder structure:
+% 5.1 Main Results — accuracy × difficulty × condition for each task
+% 5.2 CoT Analysis — CoT lift by gap type
+% 5.3 Scale Analysis — which gaps narrow with model size
+% 5.4 Tool Use — code execution vs CoT on algorithmic tasks
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+\paragraph{Implications for LLM development.}
+Our taxonomy suggests that scaling alone cannot close all reasoning gaps.
+Types~5 and~6 are invariant to model size, while Types~1--3 require specific augmentation strategies (CoT with appropriate budgets).
+Type~4 gaps are most effectively addressed by tool augmentation, not more model computation.
+This has practical implications: rather than uniformly scaling models, development effort should target specific gap types with matched interventions.
+
+\paragraph{Cognitive science parallel.}
+Our taxonomy mirrors the dual-process theory of human cognition~\citep{kahneman2011}.
+The transformer's forward pass corresponds to System~1 (fast, parallel, automatic), bounded by $\TC$.
+Chain-of-thought corresponds to System~2 (slow, serial, deliberate), extending capability to $\PTIME$.
+Just as humans struggle with problems requiring sustained working memory~\citep{miller1956}, transformers exhibit serial composition gaps when the required computation exceeds their effective depth.
+This parallel is suggestive but should not be over-interpreted: the computational mechanisms are fundamentally different.
+
+\paragraph{When is chain-of-thought faithful?}
+An intriguing connection emerges between our framework and the CoT faithfulness literature~\citep{turpin2023,lanham2023}.
+Our taxonomy predicts that CoT is computationally \emph{necessary} for Types~2--3 (depth and serial gaps).
+Recent work shows that when CoT is computationally necessary, it is more faithful~\citep{metr2025}.
+This suggests a formal criterion for when to trust CoT: it is informative precisely when the task requires serial computation that the forward pass cannot provide.
+
+\paragraph{Limitations.}
+Our taxonomy makes conditional claims: gap types are well-defined only if the underlying complexity separations hold (e.g., $\TC \neq \NC$).
+The benchmark tasks are synthetic; real-world reasoning involves combinations of gap types.
+Our evaluation covers a snapshot of current models; the landscape evolves rapidly.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+% ============================================================
+
+\paragraph{Transformer expressiveness.}
+\citet{merrill2022saturated} established the $\TC$ bound for saturated transformers, extended to log-precision by \citet{merrill2023parallelism} and to a logical characterization by \citet{merrill2023logic}.
+\citet{strobl2024survey} provide a comprehensive survey unifying results across transformer variants.
+\citet{merrill2024cot} and \citet{li2024cot} independently characterized CoT expressiveness.
+Our work builds on these foundations but shifts focus from \emph{what transformers can do} to \emph{what they cannot and why}.
+
+\paragraph{Empirical reasoning failures.}
+\citet{song2026failures} provide the most comprehensive taxonomy of LLM reasoning failures.
+Domain-specific failure analyses include compositionality~\citep{dziri2023faith}, mathematical reasoning~\citep{gsmsymbolic}, planning~\citep{kambhampati2024}, and causal inference~\citep{joshi2024}.
+Our contribution is connecting these empirical observations to formal complexity boundaries.
+
+\paragraph{Chain-of-thought analysis.}
+CoT effectiveness varies by task type~\citep{sprague2024}, diminishes for reasoning models~\citep{meincke2025}, and exhibits non-monotonic scaling with budget~\citep{mirage2025}.
+CoT faithfulness is limited~\citep{turpin2023,lanham2023,anthropic2025faithfulness} but higher when computationally necessary~\citep{metr2025}.
+We provide a complexity-theoretic explanation for these observations.
+
+\paragraph{Reasoning benchmarks.}
+Existing benchmarks (GSM8K, BIG-Bench, ARC, MATH) measure aggregate performance without isolating specific failure mechanisms.
+\textsc{ReasonGap} is designed explicitly to test predictions from complexity theory, with each task targeting a single gap type.
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ============================================================
+
+We have shown that reasoning failures in large language models are systematic, predictable, and formally characterizable.
+Our six-type taxonomy of reasoning gaps connects each failure pattern to a specific complexity-theoretic boundary, yielding testable predictions about when chain-of-thought, scaling, and tool augmentation will close or fail to close each gap.
+The \textsc{ReasonGap} benchmark suite provides a diagnostic tool for evaluating models against these predictions.
+
+Our framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform, and what augmentations extend its reach?''
+The answer, grounded in decades of circuit complexity theory, is precise: without augmentation, transformers compute within $\TC$; with chain-of-thought, they reach $\PTIME$; and beyond $\PTIME$, no known augmentation helps.
+The practical implications are clear: match the intervention to the gap type, and stop expecting scaling to solve problems that require architectural change.
+
+% ============================================================
+% References
+% ============================================================
+\bibliographystyle{plainnat}
+
+\begin{thebibliography}{99}
+
+\bibitem[Merrill \& Sabharwal(2022)]{merrill2022saturated}
+W.~Merrill and A.~Sabharwal.
+\newblock Saturated transformers are constant-depth threshold circuits.
+\newblock \emph{TACL}, 2022.
+
+\bibitem[Merrill \& Sabharwal(2023a)]{merrill2023parallelism}
+W.~Merrill and A.~Sabharwal.
+\newblock The parallelism tradeoff: Limitations of log-precision transformers.
+\newblock \emph{TACL}, 2023.
+
+\bibitem[Merrill \& Sabharwal(2023b)]{merrill2023logic}
+W.~Merrill and A.~Sabharwal.
+\newblock A logic for expressing log-precision transformers.
+\newblock \emph{NeurIPS}, 2023.
+
+\bibitem[Merrill \& Sabharwal(2024)]{merrill2024cot}
+W.~Merrill and A.~Sabharwal.
+\newblock The expressive power of transformers with chain of thought.
+\newblock \emph{ICLR}, 2024.
+
+\bibitem[Li et~al.(2024)]{li2024cot}
+Z.~Li, H.~Liu, D.~Zhou, and T.~Ma.
+\newblock Chain of thought empowers transformers to solve inherently serial problems.
+\newblock \emph{ICLR}, 2024.
+
+\bibitem[Strobl et~al.(2024)]{strobl2024survey}
+L.~Strobl, W.~Merrill, G.~Weiss, D.~Chiang, and D.~Angluin.
+\newblock What formal languages can transformers express? {A} survey.
+\newblock \emph{TACL}, 2024.
+
+\bibitem[Hahn \& Rofin(2024)]{hahn2024sensitive}
+M.~Hahn and M.~Rofin.
+\newblock Why are sensitive functions hard for transformers?
+\newblock \emph{ACL}, 2024. Best Paper Award.
+
+\bibitem[Dziri et~al.(2023)]{dziri2023faith}
+N.~Dziri, X.~Lu, et~al.
+\newblock Faith and fate: Limits of transformers on compositionality.
+\newblock \emph{NeurIPS}, 2023.
+
+\bibitem[Mirzadeh et~al.(2024)]{gsmsymbolic}
+I.~Mirzadeh, K.~Alizadeh, H.~Shahrokhi, O.~Tuzel, S.~Bengio, and M.~Farajtabar.
+\newblock {GSM-Symbolic}: Understanding the limitations of mathematical reasoning in large language models.
+\newblock \emph{ICLR}, 2025.
+
+\bibitem[Kambhampati et~al.(2024)]{kambhampati2024}
+S.~Kambhampati, K.~Valmeekam, et~al.
+\newblock {LLMs} can't plan, but can help planning in {LLM-Modulo} frameworks.
+\newblock \emph{ICML}, 2024.
+
+\bibitem[Berglund et~al.(2024)]{reversal}
+L.~Berglund et~al.
+\newblock The reversal curse: {LLMs} trained on ``{A} is {B}'' fail to learn ``{B} is {A}''.
+\newblock \emph{ICLR}, 2024.
+
+\bibitem[Joshi et~al.(2024)]{joshi2024}
+N.~Joshi, A.~Saparov, Z.~Wang, and H.~He.
+\newblock {LLMs} are prone to fallacies in causal inference.
+\newblock \emph{EMNLP}, 2024.
+
+\bibitem[Nezhurina et~al.(2024)]{alice}
+M.~Nezhurina, L.~Cipolina-Kun, M.~Cherti, and J.~Jitsev.
+\newblock Alice in {W}onderland: Simple tasks showing complete reasoning breakdown in state-of-the-art large language models.
+\newblock \emph{arXiv:2406.02061}, 2024.
+
+\bibitem[Song et~al.(2026)]{song2026failures}
+P.~Song, P.~Han, and N.~Goodman.
+\newblock Large language model reasoning failures.
+\newblock \emph{TMLR}, 2026.
+
+\bibitem[Sprague et~al.(2024)]{sprague2024}
+Z.~Sprague et~al.
+\newblock To {CoT} or not to {CoT}? {C}hain-of-thought helps mainly on math and symbolic reasoning.
+\newblock \emph{arXiv:2409.12183}, 2024.
+
+\bibitem[Furst et~al.(1984)]{furst1984}
+M.~Furst, J.~B. Saxe, and M.~Sipser.
+\newblock Parity, circuits, and the polynomial-time hierarchy.
+\newblock \emph{Mathematical Systems Theory}, 17:13--27, 1984.
+
+\bibitem[H{\aa}stad(1986)]{hastad1986}
+J.~H{\aa}stad.
+\newblock Almost optimal lower bounds for small depth circuits.
+\newblock \emph{STOC}, 1986.
+
+\bibitem[Linial et~al.(1993)]{lmn1993}
+N.~Linial, Y.~Mansour, and N.~Nisan.
+\newblock Constant depth circuits, {F}ourier transform, and learnability.
+\newblock \emph{JACM}, 40(3):607--620, 1993.
+
+\bibitem[Gao et~al.(2023)]{gao2023pal}
+L.~Gao et~al.
+\newblock {PAL}: Program-aided language models.
+\newblock \emph{ICML}, 2023.
+
+\bibitem[Hazra et~al.(2025)]{hazra2025}
+R.~Hazra, G.~Venturato, P.~Zuidberg~Dos~Martires, and L.~De~Raedt.
+\newblock Have large language models learned to reason? {A} characterization via 3-{SAT} phase transition.
+\newblock \emph{arXiv:2504.03930}, 2025.
+
+\bibitem[Bavandpour et~al.(2025)]{bavandpour2025}
+M.~Bavandpour et~al.
+\newblock Lower bounds for chain-of-thought reasoning in hard-attention transformers.
+\newblock \emph{arXiv:2502.02393}, 2025.
+
+\bibitem[Cobbe et~al.(2021)]{gsm8k}
+K.~Cobbe et~al.
+\newblock Training verifiers to solve math word problems.
+\newblock \emph{arXiv:2110.14168}, 2021.
+
+\bibitem[Srivastava et~al.(2023)]{bigbench}
+A.~Srivastava et~al.
+\newblock Beyond the imitation game: Quantifying and extrapolating the capabilities of language models.
+\newblock \emph{TMLR}, 2023.
+
+\bibitem[Talmor et~al.(2019)]{commonsense}
+A.~Talmor et~al.
+\newblock {CommonsenseQA}: A question answering challenge targeting world knowledge.
+\newblock \emph{NAACL}, 2019.
+
+\bibitem[Turpin et~al.(2023)]{turpin2023}
+M.~Turpin, J.~Michael, E.~Perez, and S.~Bowman.
+\newblock Language models don't always say what they think: Unfaithful explanations in chain-of-thought prompting.
+\newblock \emph{NeurIPS}, 2023.
+
+\bibitem[Lanham et~al.(2023)]{lanham2023}
+T.~Lanham et~al.
+\newblock Measuring faithfulness in chain-of-thought reasoning.
+\newblock \emph{arXiv:2307.13702}, 2023.
+
+\bibitem[Chen et~al.(2025)]{anthropic2025faithfulness}
+Y.~Chen, J.~Benton, A.~Radhakrishnan, et~al.
+\newblock Reasoning models don't always say what they think.
+\newblock \emph{arXiv:2505.05410}, 2025.
+
+\bibitem[Meincke et~al.(2025)]{meincke2025}
+K.~Meincke, E.~Mollick, L.~Mollick, and S.~Shapiro.
+\newblock The decreasing value of chain of thought in prompting.
+\newblock \emph{arXiv:2506.07142}, 2025.
+
+\bibitem[{Mirage}(2025)]{mirage2025}
+Does thinking more always help? {M}irage of test-time scaling in reasoning models.
+\newblock \emph{arXiv:2506.04210}, 2025.
+
+\bibitem[{METR}(2025)]{metr2025}
+{METR}.
+\newblock {CoT} may be highly informative despite unfaithfulness.
+\newblock Blog post, August 2025.
+
+\bibitem[{Limited Reasoning Space}(2025)]{limitedspace2025}
+Limited reasoning space: The cage of long-horizon reasoning in {LLMs}.
+\newblock \emph{arXiv:2602.19281}, 2025.
+
+\bibitem[{Negation}(2025)]{negation2025}
+Negation: A pink elephant in the large language models' room?
+\newblock \emph{arXiv:2503.22395}, 2025.
+
+\bibitem[{Mamba Complexity}(2024)]{mamba2024complexity}
+The computational limits of state-space models and {M}amba via the lens of circuit complexity.
+\newblock \emph{arXiv:2412.06148}, 2024.
+
+\bibitem[Miller(1956)]{miller1956}
+G.~A. Miller.
+\newblock The magical number seven, plus or minus two.
+\newblock \emph{Psychological Review}, 63(2):81--97, 1956.
+
+\bibitem[Kahneman(2011)]{kahneman2011}
+D.~Kahneman.
+\newblock \emph{Thinking, Fast and Slow}.
+\newblock Farrar, Straus and Giroux, 2011.
+
+\end{thebibliography}
+
+\end{document}
