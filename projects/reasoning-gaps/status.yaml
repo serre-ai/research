@@ -1,0 +1,35 @@
+project: reasoning-gaps
+title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
+venue: NeurIPS 2026
+created: 2026-03-07
+
+phase: literature-review
+status: active
+
+progress:
+  literature_review:
+    status: not_started
+    notes: "Survey transformer expressiveness, circuit complexity, reasoning benchmarks"
+  formal_framework:
+    status: not_started
+    notes: "Define reasoning gap formally, connect to complexity classes"
+  benchmark_design:
+    status: not_started
+    notes: "Diagnostic tasks isolating specific gap types"
+  empirical_evaluation:
+    status: not_started
+    notes: "Cross-model, cross-scale evaluation"
+  paper_writing:
+    status: not_started
+    notes: ""
+
+decisions_pending: []
+
+decisions_made:
+  - date: 2026-03-07
+    decision: "Target NeurIPS 2026 as venue"
+    rationale: "Strong fit for work bridging theory and empirical LLM evaluation"
+
+key_references: []
+
+notes: "Project initialized. Begin with literature survey of transformer expressiveness bounds and existing reasoning failure analyses."
