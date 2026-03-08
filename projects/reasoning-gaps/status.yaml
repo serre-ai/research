@@ -4,19 +4,19 @@ venue: NeurIPS 2026
 created: 2026-03-07
 updated: 2026-03-07
 
-phase: literature-review
+phase: formal-framework
 status: active
 
 progress:
   literature_review:
-    status: in_progress
-    notes: "Surveyed 80+ papers across three areas: transformer expressiveness (30+), empirical reasoning failures (25+), chain-of-thought analysis (30+). Synthesis complete. See notes/00-literature-synthesis.md"
+    status: complete
+    notes: "Surveyed 80+ papers across three areas. Synthesis in notes/00-literature-synthesis.md"
   formal_framework:
-    status: not_started
-    notes: "Ready to begin. Key building blocks identified: TC⁰ ceiling (Merrill & Sabharwal), CoT expressiveness hierarchy, failure-to-complexity mapping"
+    status: in_progress
+    notes: "6-type taxonomy defined. Formal definitions, 5 propositions, predictions matrix complete. See notes/05-formal-framework.md"
   benchmark_design:
-    status: not_started
-    notes: "Diagnostic tasks isolating specific gap types around complexity class boundaries"
+    status: in_progress
+    notes: "ReasonGap suite: 9 diagnostic tasks (B1-B9), one+ per gap type. Evaluation protocol designed. See notes/06-benchmark-design.md"
   empirical_evaluation:
     status: not_started
     notes: "Cross-model, cross-scale evaluation"
@@ -53,9 +53,9 @@ key_references:
   - "Sprague et al., To CoT or not to CoT? 2024"
 
 next_steps:
-  - "Define 'reasoning gap' formally using complexity-theoretic framework"
-  - "Create taxonomy mapping each empirical failure type to complexity class boundary"
-  - "Design diagnostic benchmark tasks around TC⁰/NC¹/P boundaries"
-  - "Begin paper outline with formal definitions section"
+  - "Write LaTeX paper draft starting with formal framework section"
+  - "Implement benchmark generation code (B1-B9 task generators)"
+  - "Begin empirical evaluation on available models via API"
+  - "Set up GPU server for open-source model evaluation"
 
 notes: "Literature review phase substantially complete. Strong foundation established. The key insight: reasoning gaps correspond to problems outside TC⁰ requiring serial depth exceeding the forward pass. CoT closes gaps for bounded serial composition but not unbounded recursion/search. Ready to formalize."
