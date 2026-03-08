@@ -1,0 +1,38 @@
+name: Research Decision
+description: A decision point requiring human input
+labels: ["decision-needed"]
+body:
+  - type: input
+    id: project
+    attributes:
+      label: Project
+      placeholder: e.g., quantum-error-correction
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Decision Question
+      placeholder: What needs to be decided?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      placeholder: Background and analysis leading to this decision
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      placeholder: |
+        1. Option A — pros/cons
+        2. Option B — pros/cons
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - low
+        - medium
+        - high

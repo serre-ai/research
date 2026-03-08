@@ -1,0 +1,32 @@
+budget:
+  monthly_limit_usd: 1000
+  categories:
+    - api_calls
+    - compute
+    - data_services
+  alert_threshold_pct: 80
+
+resources:
+  claude_code_max:
+    plan: max_2
+    accounts: 2
+    notes: "Two admin researcher accounts. Log into either to monitor and direct work."
+
+apis:
+  firecrawl:
+    key_env: FIRECRAWL_API_KEY
+    purpose: "Web scraping and content extraction for literature review"
+    estimated_monthly_cost_usd: 50
+
+decision_policy:
+  mode: autonomous
+  reasoning: extended_thinking
+  log_all: true
+  notes: |
+    All decisions are made autonomously by Claude. No human escalation required.
+    Use highest reasoning level (extended thinking) for:
+    - Research direction choices
+    - Methodology design
+    - Paper framing and scope
+    - Complexity-theoretic claims
+    Log every decision in the project's status.yaml for transparency.

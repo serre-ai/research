@@ -1,0 +1,16 @@
+{
+  "name": "deepwork",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-driven research platform for Turing Award-caliber work",
+  "workspaces": [
+    "orchestrator",
+    "cli"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=orchestrator",
+    "build": "npm run build --workspace=orchestrator && npm run build --workspace=cli",
+    "deepwork": "npm run start --workspace=cli --"
+  }
+}
