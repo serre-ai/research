@@ -91,10 +91,10 @@ deepwork/
 │   ├── src/
 │   │   ├── index.tsx            # Ink-based CLI entry
 │   │   ├── commands/
-│   │   │   ├── status.tsx       # turing status
-│   │   │   ├── start.tsx        # turing start <project>
-│   │   │   ├── decide.tsx       # turing decide (review queue)
-│   │   │   └── new.tsx          # turing new <project>
+│   │   │   ├── status.tsx       # deepwork status
+│   │   │   ├── start.tsx        # deepwork start <project>
+│   │   │   ├── decide.tsx       # deepwork decide (review queue)
+│   │   │   └── new.tsx          # deepwork new <project>
 │   │   └── components/
 │   │       ├── ProjectList.tsx
 │   │       ├── StatusBar.tsx

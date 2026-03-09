@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-For the Turing platform's monitoring needs, we recommend a **phased approach**: start with a GitHub-based MVP (Issues + Projects board + markdown status files), then graduate to a lightweight web dashboard (Next.js or SvelteKit) as requirements grow. A terminal UI (Ink) can serve as a complementary developer tool.
+For the Deepwork platform's monitoring needs, we recommend a **phased approach**: start with a GitHub-based MVP (Issues + Projects board + markdown status files), then graduate to a lightweight web dashboard (Next.js or SvelteKit) as requirements grow. A terminal UI (Ink) can serve as a complementary developer tool.
 
 ---
 
@@ -125,7 +125,7 @@ Based on research into LangGraph, Temporal, n8n, and other frameworks:
 - Over time, the threshold adjusts based on feedback
 - Used by: Most production AI agent systems
 
-### Recommended Implementation for Turing
+### Recommended Implementation for Deepwork
 
 **MVP (GitHub-based):**
 - Create GitHub Issues with a "decision-needed" label
@@ -162,7 +162,7 @@ Based on research into LangGraph, Temporal, n8n, and other frameworks:
 - Events: add, change, unlink, ready
 - Low CPU usage (avoids polling by default)
 
-**Use case for Turing:** Watch status files, research documents, and git directories for changes. Trigger dashboard updates on file changes.
+**Use case for Deepwork:** Watch status files, research documents, and git directories for changes. Trigger dashboard updates on file changes.
 
 ### Real-Time Dashboard Architecture
 
@@ -262,7 +262,7 @@ repo/
 ### Option C: CLI Monitoring Tool (Ink-based)
 
 **How it works:**
-- `turing status` command shows current state
+- `deepwork status` command shows current state
 - Reads from status files and git
 - Real-time updates via file watching
 - Interactive: can approve decisions from terminal
@@ -280,7 +280,7 @@ repo/
 ### Phase 1: MVP (Week 1-2)
 - **GitHub Issues + Projects board** for task tracking and decision queue
 - **Structured markdown status files** in the repo for machine-readable state
-- **Simple CLI tool** (`turing status`) using Ink for developer monitoring
+- **Simple CLI tool** (`deepwork status`) using Ink for developer monitoring
 - **`gh` CLI** for all GitHub interactions from agents
 
 ### Phase 2: Enhanced CLI + Simple Web (Week 3-4)
