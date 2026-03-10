@@ -132,37 +132,10 @@ class DummyClient(ModelClient):
 
 
 # ---------------------------------------------------------------------------
-# Answer extraction
+# Answer extraction (delegated to answer_extraction module)
 # ---------------------------------------------------------------------------
 
-def extract_answer(response: str, task: str) -> str:
-    """Extract the final answer from a model response.
-
-    For CoT responses, takes the last line. For direct responses,
-    takes the whole response. Strips whitespace and common prefixes.
-    """
-    if not response.strip():
-        return ""
-
-    # Take the last non-empty line
-    lines = [line.strip() for line in response.strip().split("\n") if line.strip()]
-    if not lines:
-        return ""
-
-    last_line = lines[-1]
-
-    # Remove common prefixes
-    for prefix in [
-        "Answer:", "The answer is", "Final answer:", "Result:",
-        "answer:", "the answer is", "final answer:", "result:",
-    ]:
-        if last_line.lower().startswith(prefix.lower()):
-            last_line = last_line[len(prefix):].strip()
-
-    # Remove trailing punctuation
-    last_line = last_line.rstrip(".")
-
-    return last_line.strip()
+from answer_extraction import extract_answer, is_refusal  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -213,8 +186,9 @@ def evaluate_instance(
     )
 
     # Extract and score
-    extracted = extract_answer(response, instance["task"])
     ground_truth = str(instance["answer"])
+    extracted = extract_answer(response, instance["task"], expected=ground_truth)
+    refusal = is_refusal(response)
     correct = extracted.strip().lower() == ground_truth.strip().lower()
 
     return EvalResult(
@@ -229,6 +203,7 @@ def evaluate_instance(
         ground_truth=ground_truth,
         correct=correct,
         latency_ms=latency,
+        metadata={"is_refusal": refusal},
     )
 
 
