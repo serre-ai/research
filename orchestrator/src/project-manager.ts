@@ -6,7 +6,7 @@ export interface ProjectStatus {
   project: string;
   title: string;
   status: "active" | "paused" | "review" | "completed";
-  phase: "research" | "drafting" | "revision" | "final";
+  phase: string;
   confidence: number;
   created: string;
   updated: string;
@@ -14,7 +14,7 @@ export interface ProjectStatus {
   current_focus: string;
   next_steps: string[];
   decisions_pending: Decision[];
-  git: {
+  git?: {
     branch: string;
     latest_commit: string;
     open_prs: string[];

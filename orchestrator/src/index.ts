@@ -61,7 +61,8 @@ async function main() {
       }
       for (const p of projects) {
         console.log(`${p.status === "active" ? "●" : "○"} ${p.project} — ${p.title}`);
-        console.log(`  Phase: ${p.phase} | Branch: ${p.git.branch}`);
+        const branch = p.git?.branch ?? `research/${p.project}`;
+        console.log(`  Phase: ${p.phase} | Branch: ${branch}`);
       }
       break;
     }

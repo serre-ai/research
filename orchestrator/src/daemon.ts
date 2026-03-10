@@ -18,10 +18,11 @@ interface ScoredProject {
 }
 
 const PHASE_TO_AGENT: Record<string, ScoredProject["agentType"]> = {
-  research: "researcher",
-  drafting: "writer",
-  revision: "reviewer",
-  final: "editor",
+  "research": "researcher",
+  "literature-review": "researcher",
+  "drafting": "writer",
+  "revision": "reviewer",
+  "final": "editor",
 };
 
 const DEFAULT_CONFIG: DaemonConfig = {
