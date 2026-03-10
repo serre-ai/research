@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { ProjectManager } from "./project-manager.js";
 import { GitEngine } from "./git-engine.js";
 import { SessionRunner, type SessionResult } from "./session-runner.js";
+import { ActivityLogger } from "./logger.js";
 
 export interface Session {
   projectName: string;
@@ -18,6 +19,7 @@ export class SessionManager {
   private projectManager: ProjectManager;
   private gitEngine: GitEngine;
   private sessionRunner: SessionRunner;
+  private logger: ActivityLogger;
   private rootDir: string;
 
   constructor(projectManager: ProjectManager, gitEngine: GitEngine, rootDir: string = process.cwd()) {
@@ -25,6 +27,7 @@ export class SessionManager {
     this.gitEngine = gitEngine;
     this.rootDir = rootDir;
     this.sessionRunner = new SessionRunner(rootDir);
+    this.logger = new ActivityLogger(rootDir);
   }
 
   async startProject(
@@ -72,6 +75,34 @@ export class SessionManager {
     } catch (err) {
       session.status = "failed";
       console.error(`Session crashed for ${projectName}:`, err);
+    }
+
+    // Auto-create PR if session produced commits
+    if (session.result && session.result.commitsCreated.length > 0) {
+      try {
+        const worktreeEngine = this.gitEngine.inDir(session.worktreePath);
+        const prUrl = await worktreeEngine.createSessionPR({
+          projectName,
+          branch: session.branch,
+          sessionId: session.result.sessionId,
+          status: session.result.status,
+          turnsUsed: session.result.turnsUsed,
+          costUsd: session.result.costUsd,
+          durationMs: session.result.durationMs,
+          commits: session.result.commitsCreated,
+        });
+
+        if (prUrl) {
+          console.log(`  PR created: ${prUrl}`);
+          await this.logger.log({
+            type: "pr_created",
+            project: projectName,
+            data: { url: prUrl, sessionId: session.result.sessionId },
+          });
+        }
+      } catch (err) {
+        console.error(`  Failed to create PR: ${err instanceof Error ? err.message : err}`);
+      }
     }
 
     await this.stopProject(projectName);

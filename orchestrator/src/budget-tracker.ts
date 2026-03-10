@@ -2,6 +2,7 @@ import { appendFile, readFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { parse } from "yaml";
 import { ActivityLogger } from "./logger.js";
+import { Notifier } from "./notifier.js";
 
 export interface SpendingRecord {
   timestamp: string;
@@ -30,12 +31,15 @@ export class BudgetTracker {
   private readonly spendingFile: string;
   private readonly rootDir: string;
   private readonly logger: ActivityLogger;
+  private readonly notifier: Notifier | null;
+  private lastAlertLevel: string = "ok";
   private monthlyLimit: number | null = null;
   private dirCreated = false;
 
-  constructor(rootDir: string, logger: ActivityLogger) {
+  constructor(rootDir: string, logger: ActivityLogger, notifier?: Notifier) {
     this.rootDir = rootDir;
     this.logger = logger;
+    this.notifier = notifier ?? null;
     this.logsDir = join(rootDir, ".logs");
     this.spendingFile = join(this.logsDir, "spending.jsonl");
   }
@@ -91,6 +95,15 @@ export class BudgetTracker {
     const dailyRemaining = Math.max(0, dailyLimit - dailySpent);
     const monthlyRemaining = Math.max(0, limit - monthlySpent);
     const alertLevel = this.computeAlertLevel(dailySpent, dailyLimit, monthlySpent, limit);
+
+    if (this.notifier && alertLevel !== "ok" && alertLevel !== this.lastAlertLevel) {
+      this.lastAlertLevel = alertLevel;
+      await this.notifier.notify({
+        event: `Budget ${alertLevel.charAt(0).toUpperCase() + alertLevel.slice(1)}`,
+        summary: `Daily: $${dailySpent.toFixed(2)}/$${dailyLimit.toFixed(2)} | Monthly: $${monthlySpent.toFixed(2)}/$${limit.toFixed(2)}`,
+        level: alertLevel === "exceeded" ? "error" : "warning",
+      });
+    }
 
     return {
       dailySpent,

@@ -5,6 +5,7 @@ import { SessionManager, type Session } from "./session-manager.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
+import { Notifier } from "./notifier.js";
 
 export interface DaemonConfig {
   pollIntervalMs: number;
@@ -51,6 +52,7 @@ export class Daemon {
   private gitEngine: GitEngine;
   private budgetTracker: BudgetTracker;
   private logger: ActivityLogger;
+  private notifier: Notifier;
   private running = false;
   private activeSessions = new Map<string, SessionTracker>();
   private abortController: AbortController | null = null;
@@ -67,6 +69,7 @@ export class Daemon {
     this.sessionManager = new SessionManager(this.projectManager, this.gitEngine, rootDir);
     this.logger = new ActivityLogger(rootDir);
     this.budgetTracker = new BudgetTracker(rootDir, this.logger);
+    this.notifier = new Notifier(rootDir);
   }
 
   async start(): Promise<void> {
@@ -140,10 +143,20 @@ export class Daemon {
     const budgetStatus = await this.budgetTracker.getStatus();
     if (budgetStatus.alertLevel === "exceeded") {
       console.log("Budget exceeded — skipping cycle");
+      await this.notifier.notify({
+        event: "Budget Exceeded",
+        summary: `Daily: $${budgetStatus.dailySpent.toFixed(2)}/$${budgetStatus.dailyLimit.toFixed(2)} | Monthly: $${budgetStatus.monthlySpent.toFixed(2)}/$${budgetStatus.monthlyLimit.toFixed(2)}`,
+        level: "error",
+      });
       return;
     }
     if (budgetStatus.alertLevel === "critical") {
       console.log(`Budget critical: $${budgetStatus.dailySpent.toFixed(2)}/$${budgetStatus.dailyLimit.toFixed(2)} daily`);
+      await this.notifier.notify({
+        event: "Budget Critical",
+        summary: `Daily: $${budgetStatus.dailySpent.toFixed(2)}/$${budgetStatus.dailyLimit.toFixed(2)}`,
+        level: "warning",
+      });
     }
 
     // Clean up finished sessions + detect stale ones
@@ -251,6 +264,19 @@ export class Daemon {
           },
         });
 
+        await this.notifier.notify({
+          event: "Session Completed",
+          project: projectName,
+          summary: `${agentType} session: ${session.result.status}`,
+          details: {
+            turns: session.result.turnsUsed,
+            cost: `$${session.result.costUsd.toFixed(4)}`,
+            duration: `${Math.round(session.result.durationMs / 60000)}m`,
+            commits: session.result.commitsCreated.length,
+          },
+          level: session.result.status === "completed" ? "info" : "warning",
+        });
+
         if (session.result.status === "completed") {
           this.clearFailure(projectName);
         } else {
@@ -275,6 +301,13 @@ export class Daemon {
       });
 
       this.recordFailure(projectName);
+
+      await this.notifier.notify({
+        event: "Session Failed",
+        project: projectName,
+        summary: errorMsg,
+        level: "error",
+      });
 
       // Retry once after delay
       console.log(`Retrying ${projectName} in ${RETRY_DELAY_MS / 1000}s...`);

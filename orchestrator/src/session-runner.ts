@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { query, type SDKMessage, type SDKResultMessage } from "@anthropic-ai/claude-agent-sdk";
 import { GitEngine } from "./git-engine.js";
+import { TranscriptWriter } from "./transcript-writer.js";
 
 export interface SessionConfig {
   projectName: string;
@@ -22,6 +23,7 @@ export interface SessionResult {
   costUsd: number;
   durationMs: number;
   commitsCreated: string[];
+  transcriptPath?: string;
   error?: string;
 }
 
@@ -42,6 +44,7 @@ export class SessionRunner {
 
   async run(config: SessionConfig): Promise<SessionResult> {
     const sessionId = randomUUID();
+    const writer = new TranscriptWriter(this.rootDir, config.projectName, sessionId);
     const maxTurns = config.maxTurns || DEFAULT_MAX_TURNS;
     const maxDurationMs = config.maxDurationMs || DEFAULT_MAX_DURATION_MS;
     const worktreePath = join(this.rootDir, ".worktrees", config.projectName);
@@ -78,6 +81,9 @@ export class SessionRunner {
       });
 
       for await (const message of stream) {
+        if ((message as any).type !== "stream_event") {
+          await writer.write(message);
+        }
         if (message.type === "result") {
           resultMessage = message as SDKResultMessage;
         }
@@ -111,7 +117,7 @@ export class SessionRunner {
 
     const worktreeEngine = new GitEngine(worktreePath);
     try {
-      const logs = await worktreeEngine.log(50);
+      const logs = await worktreeEngine.logBetween("main");
       commitsCreated.push(...logs.map((l) => l.split(" ")[0]));
     } catch {
       // No commits yet
@@ -130,6 +136,7 @@ export class SessionRunner {
       costUsd,
       durationMs,
       commitsCreated,
+      transcriptPath: writer.getFilePath(),
       error,
     };
   }

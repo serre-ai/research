@@ -242,6 +242,54 @@ export class GitEngine {
     await this.gh("pr", "merge", String(number), "--merge", "--delete-branch");
   }
 
+  /** Create a PR summarizing session work. Returns PR URL or null if skipped. */
+  async createSessionPR(opts: {
+    projectName: string;
+    branch: string;
+    sessionId: string;
+    status: string;
+    turnsUsed: number;
+    costUsd: number;
+    durationMs: number;
+    commits: string[];
+  }): Promise<string | null> {
+    // Skip if no commits ahead of main
+    const newCommits = await this.logBetween("main", "HEAD");
+    if (newCommits.length === 0) return null;
+
+    // Skip if PR already open for this branch
+    const openPRs = await this.listOpenPRs(opts.branch);
+    if (openPRs.length > 0) return null;
+
+    await this.pushSafe(opts.branch);
+
+    const commitList = newCommits.slice(0, 15).map((c) => `- ${c}`).join("\n");
+    const durationMin = Math.round(opts.durationMs / 60000);
+
+    return this.createPR({
+      title: `research(${opts.projectName}): session ${opts.sessionId.slice(0, 8)}`,
+      body: [
+        `## Session Summary`,
+        ``,
+        `| Metric | Value |`,
+        `|--------|-------|`,
+        `| Status | ${opts.status} |`,
+        `| Turns | ${opts.turnsUsed} |`,
+        `| Cost | $${opts.costUsd.toFixed(4)} |`,
+        `| Duration | ${durationMin}m |`,
+        `| Commits | ${newCommits.length} |`,
+        ``,
+        `## Commits`,
+        commitList,
+        newCommits.length > 15 ? `\n...and ${newCommits.length - 15} more` : "",
+        ``,
+        `## Project`,
+        `- **Branch**: \`${opts.branch}\``,
+        `- **Session**: \`${opts.sessionId}\``,
+      ].join("\n"),
+    });
+  }
+
   // ── High-level workflow ────────────────────────────────────
 
   /**
