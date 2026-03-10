@@ -5,3 +5,6 @@ dist/
 .worktrees/
 *.pdf
 .DS_Store
+.logs/
+.sessions/
+.deepwork.pid
