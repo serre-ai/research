@@ -436,10 +436,13 @@ def main() -> None:
     checkpoint = CheckpointManager(checkpoint_dir)
     logger.info("Checkpoint directory: %s", checkpoint_dir)
 
+    # Use the client's model_name for checkpoint keys (strip provider prefix)
+    checkpoint_model = client.model_name
+
     # Filter out already-completed instances if resuming
     if resume:
         completed_ids = checkpoint.get_completed_ids(
-            args.model, task_name, args.condition
+            checkpoint_model, task_name, args.condition
         )
         if completed_ids:
             remaining = [
@@ -460,7 +463,7 @@ def main() -> None:
     if not instances_to_eval:
         logger.info("All instances already complete. Nothing to do.")
         # Load existing results for summary
-        existing = checkpoint.load(args.model, task_name, args.condition)
+        existing = checkpoint.load(checkpoint_model, task_name, args.condition)
         results = [
             EvalResult(**{k: v for k, v in r.items() if k in EvalResult.__dataclass_fields__})
             for r in existing
@@ -520,7 +523,7 @@ def main() -> None:
 
     # If we resumed, include the previously completed results in the summary
     if resume and results:
-        all_results_data = checkpoint.load(args.model, task_name, args.condition)
+        all_results_data = checkpoint.load(checkpoint_model, task_name, args.condition)
         all_results = [
             EvalResult(**{k: v for k, v in r.items() if k in EvalResult.__dataclass_fields__})
             for r in all_results_data

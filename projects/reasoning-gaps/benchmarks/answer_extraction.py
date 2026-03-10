@@ -404,19 +404,20 @@ def extract_answer(response: str, task: str, expected: str | None = None) -> str
     if not response or not response.strip():
         return ""
 
-    task_upper = task.upper()
+    # Extract task key (e.g., "B1" from "B1_masked_majority")
+    task_key = task.split("_")[0].upper()
 
-    if task_upper in BINARY_TASKS:
+    if task_key in BINARY_TASKS:
         return _extract_binary(response)
-    elif task_upper in BOOLEAN_TASKS:
+    elif task_key in BOOLEAN_TASKS:
         return _extract_boolean(response)
-    elif task_upper in YESNO_TASKS:
+    elif task_key in YESNO_TASKS:
         return _extract_yesno(response)
-    elif task_upper in NUMERIC_TASKS:
+    elif task_key in NUMERIC_TASKS:
         return _extract_numeric(response)
-    elif task_upper in LETTER_TASKS:
+    elif task_key in LETTER_TASKS:
         return _extract_letter(response)
-    elif task_upper in ENTITY_TASKS:
+    elif task_key in ENTITY_TASKS:
         return _extract_entity(response, expected=expected)
     else:
         # Unknown task: fall back to generic preprocessing
