@@ -93,9 +93,11 @@ def generate(
 
         answer = "True" if final_truth else "False"
 
+        # Capitalize the first letter of the negated proposition for the statement
+        statement = negated_prop[0].upper() + negated_prop[1:]
         prompt = (
             f"Determine whether the following statement is true or false.\n\n"
-            f"Statement: Is it true that {negated_prop}?\n\n"
+            f"Statement: {statement}.\n\n"
             f"Answer with just 'True' or 'False'."
         )
 

@@ -58,13 +58,14 @@ def generate(
         elif zeros > ones:
             answer = "0"
         else:
-            # Tie -- skip and regenerate to avoid ambiguity
-            # Force a definite majority by flipping one bit
+            # Tie -- break randomly using the RNG for balanced distribution
             if visible_bits:
-                # Find a visible position and flip to break tie
+                tie_target = rng.choice([0, 1])
+                # Find a visible position that is NOT tie_target and flip it
+                opposite = 1 - tie_target
                 for j in range(n):
-                    if j not in mask_positions:
-                        bits[j] = 1  # force majority toward 1
+                    if j not in mask_positions and bits[j] == opposite:
+                        bits[j] = tie_target
                         break
                 # Rebuild
                 display = ""

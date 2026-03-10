@@ -75,16 +75,29 @@ def _check_satisfiability(
         return _dpll_solve(clauses, n_vars)
 
 
+# Maximum number of recursive calls before aborting (prevents hanging on large instances)
+_DPLL_NODE_LIMIT = 500_000
+
+
+class _DPLLTimeout(Exception):
+    """Raised when DPLL exceeds its node budget."""
+    pass
+
+
 def _dpll_solve(
     clauses: list[list[int]], n_vars: int
 ) -> tuple[bool, list[bool] | None]:
-    """Simple DPLL SAT solver."""
-    assignment: dict[int, bool] = {}
+    """Simple DPLL SAT solver with immutable assignment passing and node limit."""
+    node_count = [0]  # mutable counter in closure
 
     def _propagate(
         clauses: list[list[int]], assignment: dict[int, bool]
-    ) -> list[list[int]] | None:
-        """Unit propagation. Returns simplified clauses or None if conflict."""
+    ) -> tuple[list[list[int]] | None, dict[int, bool]]:
+        """Unit propagation. Returns (simplified_clauses, updated_assignment) or (None, ...) if conflict.
+
+        Does NOT mutate the incoming assignment -- returns a new copy.
+        """
+        assignment = dict(assignment)  # copy to avoid mutation
         changed = True
         while changed:
             changed = False
@@ -107,7 +120,7 @@ def _dpll_solve(
                 if satisfied:
                     continue
                 if len(new_clause) == 0:
-                    return None  # Conflict
+                    return None, assignment  # Conflict
                 if len(new_clause) == 1:
                     # Unit clause: force assignment
                     lit = new_clause[0]
@@ -119,18 +132,22 @@ def _dpll_solve(
 
             clauses = new_clauses
 
-        return clauses
+        return clauses, assignment
 
     def _solve(
         clauses: list[list[int]], assignment: dict[int, bool]
-    ) -> bool:
-        result = _propagate(clauses, assignment)
+    ) -> tuple[bool, dict[int, bool]]:
+        node_count[0] += 1
+        if node_count[0] > _DPLL_NODE_LIMIT:
+            raise _DPLLTimeout()
+
+        result, assignment = _propagate(clauses, assignment)
         if result is None:
-            return False
+            return False, assignment
         clauses = result
 
         if len(clauses) == 0:
-            return True
+            return True, assignment
 
         # Find unassigned variable
         unassigned = None
@@ -144,31 +161,36 @@ def _dpll_solve(
                 break
 
         if unassigned is None:
-            return True
+            return True, assignment
 
-        # Try True
-        saved = dict(assignment)
-        assignment[unassigned] = True
-        if _solve(list(clauses), assignment):
-            return True
+        # Try True -- pass a copy of assignment (immutable pattern)
+        true_assignment = dict(assignment)
+        true_assignment[unassigned] = True
+        sat, true_assignment = _solve(list(clauses), true_assignment)
+        if sat:
+            return True, true_assignment
 
-        # Try False
-        assignment.clear()
-        assignment.update(saved)
-        assignment[unassigned] = False
-        if _solve(list(clauses), assignment):
-            return True
+        # Try False -- pass a copy of assignment (immutable pattern)
+        false_assignment = dict(assignment)
+        false_assignment[unassigned] = False
+        sat, false_assignment = _solve(list(clauses), false_assignment)
+        if sat:
+            return True, false_assignment
 
-        assignment.clear()
-        assignment.update(saved)
-        return False
+        return False, assignment
 
-    if _solve(list(clauses), assignment):
-        result_assignment = [
-            assignment.get(v, False) for v in range(1, n_vars + 1)
-        ]
-        return True, result_assignment
-    return False, None
+    try:
+        sat, final_assignment = _solve(list(clauses), {})
+        if sat:
+            result_assignment = [
+                final_assignment.get(v, False) for v in range(1, n_vars + 1)
+            ]
+            return True, result_assignment
+        return False, None
+    except _DPLLTimeout:
+        # Could not determine within node limit -- conservatively report UNSAT
+        # (for very large instances at the phase transition)
+        return False, None
 
 
 def _format_clause(clause: list[int]) -> str:

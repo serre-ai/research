@@ -1,1 +1,6 @@
 benchmarks/data/
+benchmarks/.venv/
+benchmarks/.pytest_cache/
+benchmarks/__pycache__/
+benchmarks/tasks/__pycache__/
+benchmarks/tests/__pycache__/
