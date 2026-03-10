@@ -1,0 +1,99 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="About">
+  <div class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+
+    <!-- Page heading -->
+    <h1 class="text-5xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] mb-20">ABOUT</h1>
+
+    <!-- Oddur section -->
+    <section class="border-t-[3px] border-[var(--color-border-emphasis)] pt-8 mb-20">
+      <p class="font-mono text-2xl font-semibold text-[var(--color-text-bright)] mb-1">Oddur Sigurdsson</p>
+      <p class="label mb-8">Independent AI Researcher &middot; Reykjav&iacute;k, Iceland</p>
+
+      <div class="prose text-[var(--color-text-secondary)]">
+        <p>
+          Building Deepwork Research: an autonomous AI research platform that uses Claude Code agents to conduct literature reviews, develop formal frameworks, design experiments, and write papers targeting top ML/AI venues — NeurIPS, ICML, ICLR, ACL. The premise is straightforward: give AI agents the tools, structure, and oversight to do real research, then publish the results under rigorous peer review.
+        </p>
+        <p>
+          Before Deepwork, I spent years working at the intersection of software engineering and machine learning, building systems that needed to reason about uncertainty, language, and scale. The platform is the natural extension of that work: instead of using AI as a tool within a larger system, the AI <em>is</em> the researcher, and the system exists to keep it honest.
+        </p>
+      </div>
+    </section>
+
+    <!-- Research Agenda section -->
+    <section class="border-t-[3px] border-[var(--color-border-emphasis)] pt-8 mb-20">
+      <h2 class="text-2xl font-mono font-semibold text-[var(--color-text-bright)] mb-8">Research Agenda</h2>
+
+      <div class="space-y-8">
+        <div>
+          <p class="font-mono font-medium text-[var(--color-text-bright)] mb-2">LLM Reasoning Capabilities & Limitations</p>
+          <p class="text-[var(--color-text-secondary)]">
+            Characterizing what large language models can and cannot reason about. Formal analysis of reasoning gaps — the systematic failures that persist even as models scale. Current work targets NeurIPS 2026 with a paper on computational complexity bounds for chain-of-thought reasoning.
+          </p>
+        </div>
+
+        <div>
+          <p class="font-mono font-medium text-[var(--color-text-bright)] mb-2">Computational Complexity of AI Verification</p>
+          <p class="text-[var(--color-text-secondary)]">
+            Understanding the theoretical limits of verifying AI-generated outputs. When can we efficiently check that an LLM's reasoning is correct? When is verification fundamentally harder than generation? These questions connect to classical complexity theory in ways that have practical implications for AI safety.
+          </p>
+        </div>
+
+        <div>
+          <p class="font-mono font-medium text-[var(--color-text-bright)] mb-2">Autonomous Agent Architectures</p>
+          <p class="text-[var(--color-text-secondary)]">
+            Designing and studying multi-agent systems that can conduct sustained, independent research. This includes failure modes (an agent failure taxonomy targeting ACL 2027), coordination protocols, and the metacognitive capabilities required for an AI system to do genuinely novel work.
+          </p>
+        </div>
+
+        <div>
+          <p class="font-mono font-medium text-[var(--color-text-bright)] mb-2">Scaling Laws & Emergent Capabilities</p>
+          <p class="text-[var(--color-text-secondary)]">
+            Empirical and theoretical work on how capabilities emerge (or fail to emerge) as models scale. Particularly interested in phase transitions — the sharp thresholds where qualitative changes in behavior appear — and whether these can be predicted from first principles.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- The Platform section -->
+    <section class="border-t-[3px] border-[var(--color-border-emphasis)] pt-8 mb-20">
+      <h2 class="text-2xl font-mono font-semibold text-[var(--color-text-bright)] mb-8">The Platform</h2>
+
+      <div class="prose text-[var(--color-text-secondary)]">
+        <p>
+          Deepwork Research is an autonomous research platform built on Claude Code. It manages multiple research projects simultaneously, each running in isolated git worktrees with their own agent sessions, briefs, and status tracking. The platform operates 24/7 — agents read papers, develop theoretical frameworks, write LaTeX, run experiments, and iterate on drafts without waiting for human input.
+        </p>
+        <p>
+          The architecture is deliberately simple. A TypeScript orchestrator manages project state and coordinates agent sessions. Each project follows a structured workflow: literature review, framework development, experimentation, paper writing, and revision. Agents make decisions autonomously and log their reasoning. Human oversight happens through pull request review, status dashboards, and periodic check-ins — not through constant supervision.
+        </p>
+        <p>
+          The goal is not to remove humans from research but to test a hypothesis: that AI agents, given sufficient structure and autonomy, can produce work that survives peer review at top venues. Every paper produced by the platform will be submitted under full disclosure of its AI-driven methodology.
+        </p>
+      </div>
+    </section>
+
+    <!-- Links section -->
+    <section class="border-t-[3px] border-[var(--color-border-emphasis)] pt-8">
+      <h2 class="text-2xl font-mono font-semibold text-[var(--color-text-bright)] mb-8">Links</h2>
+
+      <div class="flex flex-col gap-4">
+        <a href="#" class="group flex items-center gap-3 hover:no-underline">
+          <span class="label group-hover:text-[var(--color-text-bright)] transition-colors">GitHub</span>
+          <span class="text-[var(--color-text-muted)] text-sm">&mdash; Code, experiments, and platform source</span>
+        </a>
+        <a href="#" class="group flex items-center gap-3 hover:no-underline">
+          <span class="label group-hover:text-[var(--color-text-bright)] transition-colors">Google Scholar</span>
+          <span class="text-[var(--color-text-muted)] text-sm">&mdash; Publications and citations</span>
+        </a>
+        <a href="#" class="group flex items-center gap-3 hover:no-underline">
+          <span class="label group-hover:text-[var(--color-text-bright)] transition-colors">ORCID</span>
+          <span class="text-[var(--color-text-muted)] text-sm">&mdash; Researcher identifier</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</Base>

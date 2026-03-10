@@ -1,0 +1,43 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const posts = [
+  {
+    title: 'Introducing Deepwork Research',
+    date: '2026-03-10',
+    excerpt: 'What happens when you give AI agents the autonomy to conduct research 24/7? An introduction to the Deepwork platform and our first research projects.',
+    href: '/blog/introducing-deepwork',
+  },
+];
+---
+
+<Base title="Blog">
+  <section class="max-w-5xl mx-auto px-6 pt-24 pb-16">
+    <h1 class="font-mono text-[var(--color-text-bright)]">BLOG</h1>
+    <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-2xl">
+      Notes on AI research, methodology, and building autonomous research systems
+    </p>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-24">
+    <div class="flex flex-col gap-0">
+      {posts.map((post) => (
+        <a href={post.href} class="group block border-t border-[var(--color-border)] py-8 hover:no-underline">
+          <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+            <time class="font-mono text-sm text-[var(--color-text-muted)] shrink-0 sm:w-32 sm:pt-0.5">
+              {post.date}
+            </time>
+            <div class="flex-1">
+              <h3 class="font-mono font-semibold text-[var(--color-text-bright)] group-hover:underline leading-snug">
+                {post.title}
+              </h3>
+              <p class="mt-2 text-[var(--color-text-secondary)] text-sm leading-relaxed">
+                {post.excerpt}
+              </p>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,53 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'AI-driven research by Oddur Sigurdsson' } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+    <title>{title} — Deepwork Research</title>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <nav class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-sm">
+      <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <a href="/" class="font-mono font-bold text-[var(--color-text-bright)] tracking-tight hover:no-underline">
+          DEEPWORK
+        </a>
+        <div class="flex gap-8">
+          <a href="/papers" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Papers</a>
+          <a href="/blog" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Blog</a>
+          <a href="/about" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="border-t border-[var(--color-border)] mt-24">
+      <div class="max-w-5xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between gap-6">
+        <div>
+          <p class="font-mono text-sm text-[var(--color-text-muted)]">Deepwork Research</p>
+          <p class="text-sm text-[var(--color-text-muted)] mt-1">Oddur Sigurdsson</p>
+        </div>
+        <div class="flex gap-6">
+          <a href="https://github.com/oddurs" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">GitHub</a>
+          <a href="https://scholar.google.com" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Scholar</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
