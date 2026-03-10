@@ -6,6 +6,7 @@ import { GitEngine } from "./git-engine.js";
 import { Daemon } from "./daemon.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
+import { Monitor } from "./monitor.js";
 
 function parseFlag(args: string[], flag: string, defaultValue: string): string {
   const idx = args.indexOf(flag);
@@ -82,6 +83,13 @@ async function main() {
       break;
     }
 
+    case "health": {
+      const monitor = new Monitor(rootDir, budgetTracker, logger);
+      const health = await monitor.getHealth();
+      console.log(monitor.formatHealth(health));
+      break;
+    }
+
     case "activity": {
       const count = parseInt(args[1] ?? "20", 10);
       const events = await logger.recent(count);
@@ -105,6 +113,7 @@ async function main() {
       console.log("    --agent <type>           Agent type (default: researcher)");
       console.log("    --turns <n>              Max turns (default: 50)");
       console.log("  list                       List all projects");
+      console.log("  health                     Show daemon & system health");
       console.log("  budget                     Show budget status");
       console.log("  activity [count]           Show recent activity");
   }
