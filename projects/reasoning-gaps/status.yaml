@@ -17,9 +17,12 @@ progress:
   benchmark_design:
     status: complete
     notes: "ReasonGap suite: 9 diagnostic tasks (B1-B9) implemented and tested. Evaluation protocol designed. See notes/06-benchmark-design.md"
+  analysis_infrastructure:
+    status: complete
+    notes: "Full analysis pipeline implemented in experiments/. Includes: statistical tests (stats_utils.py), 6 primary analyses (primary.py), visualization functions (viz_utils.py, figures.py), main pipeline script (run_full_analysis.py), and test suite. Ready to process evaluation results once data available."
   empirical_evaluation:
-    status: planned
-    notes: "Analysis plan complete (notes/08-empirical-analysis-plan.md). Awaiting infrastructure provisioning for execution. 6 primary analyses + 3 secondary analyses + robustness checks specified."
+    status: ready
+    notes: "Analysis plan complete (notes/08-empirical-analysis-plan.md). Analysis infrastructure implemented (experiments/). Awaiting GPU server provisioning for data collection. 6 primary analyses + 3 secondary analyses + robustness checks specified and coded."
   paper_writing:
     status: in_progress
     notes: "Sections 1-4 drafted in paper/main.tex. Section 5 (experiments) placeholder awaiting empirical results. Discussion and related work partially drafted."
@@ -45,6 +48,9 @@ decisions_made:
   - date: 2026-03-10
     decision: "Specify complete empirical analysis plan with statistical tests, visualizations, and success criteria"
     rationale: "Ensures reproducibility and prevents p-hacking. Pre-registration of analyses (6 primary + 3 secondary) with clear hypotheses and statistical methods. Estimated 331K evaluations total across 12 models × 9 tasks × 4 conditions."
+  - date: 2026-03-10
+    decision: "Implement complete analysis infrastructure before data collection"
+    rationale: "Building analysis pipeline before data ensures: (1) no researcher degrees of freedom, (2) pipeline tested and debugged early, (3) immediate analysis once data available, (4) reproducible and version-controlled from start. Includes statistical tests, visualizations, and automated pipeline."
 
 key_references:
   - "Merrill & Sabharwal, Saturated Transformers are Constant-Depth Threshold Circuits, TACL 2022"
@@ -59,14 +65,16 @@ key_references:
   - "Sprague et al., To CoT or not to CoT? 2024"
 
 next_steps:
+  - "Install Python dependencies for analysis pipeline: pip install -r experiments/requirements.txt"
   - "Provision GPU server for open-source model evaluation (Hetzner A100 80GB)"
   - "Set up vLLM inference endpoints for Llama, Mistral, Qwen models"
-  - "Begin empirical evaluation: run benchmark suite across 12 models × 4 conditions"
-  - "Execute empirical analysis pipeline per notes/08-empirical-analysis-plan.md"
-  - "Generate figures and tables for Section 5 (Experiments)"
-  - "Complete paper draft with empirical results"
-  - "Write appendix with full proofs and detailed results tables"
+  - "Generate benchmark data: python benchmarks/generate.py --all"
+  - "Run empirical evaluation: execute benchmarks/evaluate.py across 12 models × 9 tasks × 4 conditions (331K evaluations)"
+  - "Execute analysis pipeline: python experiments/run_full_analysis.py --results-dir results/raw --output-dir results/processed --figures-dir results/figures"
+  - "Write Section 5 (Experiments) with generated figures and analysis results"
+  - "Complete paper draft: write Discussion, Related Work, and Appendix"
+  - "Internal review and revision"
 
-notes: "Formal framework phase complete. All theoretical work done: 6-type taxonomy, 5 propositions with proofs, empirical analysis plan with statistical methods. Benchmarks implemented (B1-B9). Ready for empirical evaluation once infrastructure provisioned. Paper structure in place, awaiting results."
+notes: "All pre-empirical work complete: (1) Literature review (80+ papers), (2) Formal framework (6-type taxonomy, 5 propositions with proofs), (3) Benchmark implementation (B1-B9), (4) Analysis infrastructure (statistical tests, visualizations, pipeline). Infrastructure bottleneck: GPU server for open-source model evaluation. Once provisioned, path to completion is fully specified and automated."
 
-current_activity: "Completed formal proofs for Propositions 1-5 (notes/07-proposition-proofs.md) and comprehensive empirical analysis plan (notes/08-empirical-analysis-plan.md). Formal framework phase now complete. Ready to transition to empirical evaluation phase."
+current_activity: "Implemented complete analysis infrastructure in experiments/ directory. Built statistical test utilities, 6 primary analyses, visualization functions, and automated pipeline. Analysis code is pre-registered, version-controlled, and ready to process evaluation results. Main blocker: GPU server provisioning for data collection."
