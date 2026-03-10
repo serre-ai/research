@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-07
+updated: 2026-03-10
 
 phase: formal-framework
 status: active
@@ -12,17 +12,17 @@ progress:
     status: complete
     notes: "Surveyed 80+ papers across three areas. Synthesis in notes/00-literature-synthesis.md"
   formal_framework:
-    status: in_progress
-    notes: "6-type taxonomy defined. Formal definitions, 5 propositions, predictions matrix complete. See notes/05-formal-framework.md"
+    status: complete
+    notes: "6-type taxonomy defined. Formal definitions, 5 propositions with proofs/proof sketches, predictions matrix complete. See notes/05-formal-framework.md and notes/07-proposition-proofs.md"
   benchmark_design:
-    status: in_progress
-    notes: "ReasonGap suite: 9 diagnostic tasks (B1-B9), one+ per gap type. Evaluation protocol designed. See notes/06-benchmark-design.md"
+    status: complete
+    notes: "ReasonGap suite: 9 diagnostic tasks (B1-B9) implemented and tested. Evaluation protocol designed. See notes/06-benchmark-design.md"
   empirical_evaluation:
-    status: not_started
-    notes: "Cross-model, cross-scale evaluation"
+    status: planned
+    notes: "Analysis plan complete (notes/08-empirical-analysis-plan.md). Awaiting infrastructure provisioning for execution. 6 primary analyses + 3 secondary analyses + robustness checks specified."
   paper_writing:
-    status: not_started
-    notes: ""
+    status: in_progress
+    notes: "Sections 1-4 drafted in paper/main.tex. Section 5 (experiments) placeholder awaiting empirical results. Discussion and related work partially drafted."
 
 decisions_pending: []
 
@@ -35,10 +35,16 @@ decisions_made:
     rationale: "TC⁰ bounds and empirical failures are studied in isolation. Our contribution: formal mapping between them plus diagnostic benchmarks. Neither pure theory nor pure empirics."
   - date: 2026-03-07
     decision: "Use TC⁰ vs NC¹ vs P as primary complexity framework with conditional claims"
-    rationale: "Can make claims like 'if TC⁰ ≠ NC¹ then...' which are standard. Empirical results provide evidence without requiring resolution of open complexity questions."
+    rationale: "Can make claims like 'if TC⁰ ≠ ≠ NC¹ then...' which are standard. Empirical results provide evidence without requiring resolution of open complexity questions."
   - date: 2026-03-07
     decision: "Include cognitive science framing (System 1/2) in discussion only, not core framework"
     rationale: "Strengthens narrative but over-indexing would dilute technical contribution for NeurIPS audience"
+  - date: 2026-03-10
+    decision: "Develop rigorous proofs/proof sketches for all 5 propositions before empirical evaluation"
+    rationale: "Strengthens theoretical contribution and ensures predictions are formally grounded. Proofs provide clarity on assumptions (conditional on standard complexity conjectures) and tighten bounds on CoT effectiveness."
+  - date: 2026-03-10
+    decision: "Specify complete empirical analysis plan with statistical tests, visualizations, and success criteria"
+    rationale: "Ensures reproducibility and prevents p-hacking. Pre-registration of analyses (6 primary + 3 secondary) with clear hypotheses and statistical methods. Estimated 331K evaluations total across 12 models × 9 tasks × 4 conditions."
 
 key_references:
   - "Merrill & Sabharwal, Saturated Transformers are Constant-Depth Threshold Circuits, TACL 2022"
@@ -53,9 +59,14 @@ key_references:
   - "Sprague et al., To CoT or not to CoT? 2024"
 
 next_steps:
-  - "Write LaTeX paper draft starting with formal framework section"
-  - "Implement benchmark generation code (B1-B9 task generators)"
-  - "Begin empirical evaluation on available models via API"
-  - "Set up GPU server for open-source model evaluation"
+  - "Provision GPU server for open-source model evaluation (Hetzner A100 80GB)"
+  - "Set up vLLM inference endpoints for Llama, Mistral, Qwen models"
+  - "Begin empirical evaluation: run benchmark suite across 12 models × 4 conditions"
+  - "Execute empirical analysis pipeline per notes/08-empirical-analysis-plan.md"
+  - "Generate figures and tables for Section 5 (Experiments)"
+  - "Complete paper draft with empirical results"
+  - "Write appendix with full proofs and detailed results tables"
 
-notes: "Literature review phase substantially complete. Strong foundation established. The key insight: reasoning gaps correspond to problems outside TC⁰ requiring serial depth exceeding the forward pass. CoT closes gaps for bounded serial composition but not unbounded recursion/search. Ready to formalize."
+notes: "Formal framework phase complete. All theoretical work done: 6-type taxonomy, 5 propositions with proofs, empirical analysis plan with statistical methods. Benchmarks implemented (B1-B9). Ready for empirical evaluation once infrastructure provisioned. Paper structure in place, awaiting results."
+
+current_activity: "Completed formal proofs for Propositions 1-5 (notes/07-proposition-proofs.md) and comprehensive empirical analysis plan (notes/08-empirical-analysis-plan.md). Formal framework phase now complete. Ready to transition to empirical evaluation phase."
