@@ -107,15 +107,15 @@ Stream A (Benchmark Validation)  ←── BLOCKING
 - [ ] Plotting: accuracy-vs-difficulty curves, CoT lift heatmap, phase transition (B7)
 - [ ] LaTeX table generation (NeurIPS format)
 
-### Stream G — Batch Orchestration & Infrastructure
+### Stream G — Batch Orchestration & Infrastructure ✅
 
 **Goal**: One command runs the full 216K evaluation.
 
 - [ ] Modal setup: vLLM serving for open-source models
-- [ ] Batch runner: iterate models × tasks × conditions, manage concurrency
-- [ ] Cost estimation pre-flight check
-- [ ] Progress monitoring (% complete, ETA, spend)
-- [ ] Result collection into analysis-ready format
+- [x] Batch runner: iterate models × tasks × conditions, manage concurrency
+- [x] Cost estimation pre-flight check
+- [x] Progress monitoring (% complete, ETA, spend)
+- [x] Result collection into analysis-ready format
 
 ## Definition of Ready
 
