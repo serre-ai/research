@@ -180,15 +180,20 @@ def evaluate_instance(
     """
     base_prompt = instance["prompt"]
 
+    # Task-aware max_tokens: some tasks need more room even for direct answers
+    task_key = instance.get("task", "").split("_")[0].upper()
+    DIRECT_TOKEN_OVERRIDES = {"B7": 256, "B5": 128, "B6": 128}
+    COT_TOKEN_OVERRIDES = {"B7": 2048, "B5": 2048, "B6": 2048}
+
     # Build condition-specific prompt
     if condition == "direct":
         system_prompt = CONDITION_PROMPTS["direct"]
         full_prompt = base_prompt
-        max_tokens = 64
+        max_tokens = DIRECT_TOKEN_OVERRIDES.get(task_key, 64)
     elif condition == "short_cot":
         system_prompt = CONDITION_PROMPTS["short_cot"]
         full_prompt = base_prompt
-        max_tokens = 1024
+        max_tokens = COT_TOKEN_OVERRIDES.get(task_key, 1024)
     elif condition == "budget_cot":
         if budget is not None:
             budget_val = budget
