@@ -1,0 +1,144 @@
+# Quality gates and checklists for phase transitions.
+# Each gate lists conditions that must be met before advancing to the next phase.
+# Agents should evaluate these conditions and record pass/fail in status.yaml.
+# Last updated: 2026-03-09
+
+phase_transitions:
+
+  research_to_drafting:
+    description: "Transition from research/exploration phase to writing the paper draft."
+    required:
+      - id: lit_review_complete
+        check: "Literature review covers 20+ papers with structured summaries and synthesis"
+        field: "progress.literature_review.status == complete"
+
+      - id: hypotheses_tested
+        check: "All primary hypotheses from BRIEF.md have been empirically tested or formally analyzed"
+        field: "At least one experiment per hypothesis"
+
+      - id: main_result_exists
+        check: "At least one strong result exists that could anchor the paper"
+        field: "experiments/ contains results supporting a clear contribution"
+
+      - id: contribution_clear
+        check: "The paper's contribution can be stated in 1-2 sentences and is distinct from prior work"
+        field: "Agent can articulate what is new"
+
+      - id: methodology_sound
+        check: "Experimental methodology is defensible — proper baselines, controls, and metrics"
+        field: "experiments/ include baselines and statistical tests"
+
+      - id: negative_results_documented
+        check: "Failed approaches and negative results are documented"
+        field: "notes/ or experiments/ contain documentation of what didn't work"
+
+    recommended:
+      - id: secondary_results
+        check: "At least one secondary hypothesis has preliminary results"
+
+      - id: related_work_mapped
+        check: "Key related work is identified and differentiation is clear"
+
+      - id: figure_sketches
+        check: "Main figures and tables are sketched (even if not polished)"
+
+  drafting_to_revision:
+    description: "Transition from initial drafting to revision and polishing."
+    required:
+      - id: all_sections_drafted
+        check: "All major sections have at least a first draft (intro, method, experiments, conclusion)"
+        field: "metrics.sections_drafted >= 6"
+
+      - id: main_results_table
+        check: "Primary results table/figure exists with real numbers (not placeholders)"
+        field: "paper/figures/ or paper/ contains results"
+
+      - id: proofs_complete
+        check: "All stated theorems have proofs (in main text or appendix)"
+        field: "No proof sketch without full proof in appendix"
+
+      - id: related_work_written
+        check: "Related work section covers all major prior work streams"
+        field: "paper/main.tex related work section has 20+ citations"
+
+      - id: self_review_done
+        check: "Self-review conducted using shared/prompts/self-review.md"
+        field: "notes/ contains self-review output"
+
+      - id: abstract_written
+        check: "Abstract accurately reflects the paper's actual contributions"
+        field: "Abstract exists and matches content"
+
+    recommended:
+      - id: ablations_complete
+        check: "Ablation studies are run and documented"
+
+      - id: figure_quality
+        check: "All figures are publication-quality (vector graphics, readable fonts)"
+
+      - id: notation_consistent
+        check: "Mathematical notation is consistent throughout"
+
+  revision_to_submission:
+    description: "Transition from revision to final submission."
+    required:
+      - id: page_limit
+        check: "Paper fits within venue page limit"
+        field: "Check against shared/standards/venue-requirements.yaml"
+
+      - id: format_correct
+        check: "Paper compiles with correct venue style file"
+        field: "LaTeX compiles without errors using target style"
+
+      - id: anonymized
+        check: "Paper is properly anonymized (if required by venue)"
+        field: "No self-citations revealing identity, no acknowledgments"
+
+      - id: no_todos
+        check: "No TODO markers, placeholder text, or editing notes remain"
+        field: "Grep for TODO, FIXME, XXX, \\todo returns zero results"
+
+      - id: self_review_passing
+        check: "Self-review scores are 6+ on all dimensions"
+        field: "Most recent self-review in notes/"
+
+      - id: references_complete
+        check: "All citations are complete (no missing fields, no broken references)"
+        field: "LaTeX compiles without citation warnings"
+
+      - id: reproducibility_info
+        check: "Paper includes sufficient detail for reproduction (hyperparameters, seeds, compute)"
+        field: "Appendix contains full experimental details"
+
+      - id: supplementary_prepared
+        check: "Supplementary materials (code, data, appendix) are organized"
+        field: "If venue allows supplementary, it is prepared"
+
+    recommended:
+      - id: spelling_grammar
+        check: "Paper has been checked for spelling and grammar"
+
+      - id: figure_accessibility
+        check: "Figures are colorblind-friendly and readable in grayscale"
+
+      - id: ethical_review
+        check: "Paper discusses ethical considerations where relevant"
+
+      - id: code_reproducibility
+        check: "Code is clean, documented, and can reproduce key results"
+
+pre_submission_checklist:
+  description: "Final checks before clicking submit."
+  items:
+    - "Paper compiles without warnings"
+    - "All figures render correctly"
+    - "Page count is within limit"
+    - "Author information is correct (or properly anonymized)"
+    - "Abstract fits within character/word limit"
+    - "Supplementary materials are uploaded"
+    - "All co-authors have approved the submission"
+    - "Paper title matches across all submission fields"
+    - "Keywords and subject areas are selected"
+    - "Conflicts of interest are declared"
+    - "Bibliography entries use published versions (not arxiv) where available"
+    - "No TODOs or editing artifacts remain in the PDF"

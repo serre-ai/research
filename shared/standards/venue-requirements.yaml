@@ -1,0 +1,193 @@
+# Venue requirements for target conferences and journals.
+# Used by agents to configure paper format, check page limits, and plan timelines.
+# Last updated: 2026-03-09
+
+venues:
+  neurips:
+    name: "NeurIPS"
+    full_name: "Conference on Neural Information Processing Systems"
+    url: "https://neurips.cc"
+    format:
+      style_file: "neurips_2026"
+      page_limit: 9            # Main content (excluding references and appendix)
+      reference_pages: unlimited
+      appendix_pages: unlimited
+      columns: 1
+      font_size: 10pt
+    submission:
+      anonymized: true
+      supplementary_allowed: true
+      code_required: false     # Encouraged but not required
+      abstract_deadline: "2026-05-15"  # Typically one week before full paper
+      full_paper_deadline: "2026-05-22"
+      typical_decision_month: "September"
+      conference_month: "December"
+    review:
+      num_reviewers: 4
+      criteria:
+        - "Novelty and significance"
+        - "Technical correctness"
+        - "Clarity and quality of writing"
+        - "Experimental evaluation"
+        - "Reproducibility"
+      acceptance_rate: "~25%"
+      rebuttal: true
+      revision_after_rebuttal: false
+
+  icml:
+    name: "ICML"
+    full_name: "International Conference on Machine Learning"
+    url: "https://icml.cc"
+    format:
+      style_file: "icml2026"
+      page_limit: 8            # Main content
+      reference_pages: unlimited
+      appendix_pages: unlimited
+      columns: 2
+      font_size: 10pt
+    submission:
+      anonymized: true
+      supplementary_allowed: true
+      code_required: false
+      abstract_deadline: "2026-01-23"
+      full_paper_deadline: "2026-01-30"
+      typical_decision_month: "April"
+      conference_month: "July"
+    review:
+      num_reviewers: 3
+      criteria:
+        - "Significance and novelty"
+        - "Potential impact"
+        - "Technical correctness"
+        - "Clarity"
+        - "Adequate evaluation"
+      acceptance_rate: "~25%"
+      rebuttal: true
+      revision_after_rebuttal: false
+
+  iclr:
+    name: "ICLR"
+    full_name: "International Conference on Learning Representations"
+    url: "https://iclr.cc"
+    format:
+      style_file: "iclr2026_conference"
+      page_limit: 10           # Main content
+      reference_pages: unlimited
+      appendix_pages: unlimited
+      columns: 1
+      font_size: 10pt
+    submission:
+      anonymized: true
+      supplementary_allowed: true
+      code_required: false     # Encouraged via reproducibility checklist
+      full_paper_deadline: "2025-10-01"
+      typical_decision_month: "January"
+      conference_month: "April"
+    review:
+      num_reviewers: 3
+      criteria:
+        - "Originality"
+        - "Quality"
+        - "Clarity"
+        - "Significance"
+        - "Reproducibility"
+      acceptance_rate: "~30%"
+      rebuttal: true
+      revision_after_rebuttal: true  # ICLR allows post-rebuttal revision
+      open_review: true              # Reviews are public on OpenReview
+
+  acl:
+    name: "ACL"
+    full_name: "Annual Meeting of the Association for Computational Linguistics"
+    url: "https://www.aclweb.org/portal/"
+    format:
+      style_file: "acl2026"
+      page_limit: 8            # Long papers; short papers = 4 pages
+      reference_pages: unlimited
+      appendix_pages: unlimited
+      columns: 2
+      font_size: 11pt
+    submission:
+      anonymized: true
+      supplementary_allowed: true
+      code_required: false
+      full_paper_deadline: "2026-02-15"
+      typical_decision_month: "May"
+      conference_month: "August"
+    review:
+      num_reviewers: 3
+      criteria:
+        - "Soundness"
+        - "Meaningful comparison"
+        - "Substance"
+        - "Clarity"
+        - "Originality and significance"
+        - "Ethical considerations"
+      acceptance_rate: "~22%"
+      rebuttal: true
+      revision_after_rebuttal: false
+    notes: "Also accepts short papers (4 pages). ARR (ACL Rolling Review) submission possible."
+
+  emnlp:
+    name: "EMNLP"
+    full_name: "Conference on Empirical Methods in Natural Language Processing"
+    url: "https://www.aclweb.org/portal/"
+    format:
+      style_file: "emnlp2026"
+      page_limit: 8            # Long papers; short papers = 4 pages
+      reference_pages: unlimited
+      appendix_pages: unlimited
+      columns: 2
+      font_size: 11pt
+    submission:
+      anonymized: true
+      supplementary_allowed: true
+      code_required: false
+      full_paper_deadline: "2026-06-15"
+      typical_decision_month: "September"
+      conference_month: "December"
+    review:
+      num_reviewers: 3
+      criteria:
+        - "Soundness"
+        - "Meaningful comparison"
+        - "Substance"
+        - "Clarity"
+        - "Originality and significance"
+        - "Ethical considerations"
+      acceptance_rate: "~22%"
+      rebuttal: true
+      revision_after_rebuttal: false
+    notes: "Uses ARR (ACL Rolling Review). Emphasis on empirical methodology."
+
+  aaai:
+    name: "AAAI"
+    full_name: "AAAI Conference on Artificial Intelligence"
+    url: "https://aaai.org/conference/aaai/"
+    format:
+      style_file: "aaai26"
+      page_limit: 7            # Main content (excluding references)
+      reference_pages: 1       # One additional page for references
+      appendix_pages: unlimited  # In supplementary materials
+      columns: 2
+      font_size: 10pt
+    submission:
+      anonymized: true
+      supplementary_allowed: true
+      code_required: false
+      abstract_deadline: "2025-08-07"
+      full_paper_deadline: "2025-08-15"
+      typical_decision_month: "December"
+      conference_month: "February"
+    review:
+      num_reviewers: 3
+      criteria:
+        - "Significance"
+        - "Novelty"
+        - "Technical quality"
+        - "Clarity of presentation"
+        - "Relevance to AAAI"
+      acceptance_rate: "~20%"
+      rebuttal: true
+      revision_after_rebuttal: false
+    notes: "Broad AI scope. Stricter page limits than NeurIPS/ICML."

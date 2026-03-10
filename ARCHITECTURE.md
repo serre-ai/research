@@ -4,22 +4,51 @@
 
 A platform that uses Claude Code to autonomously research, write, and iterate on Turing Award-caliber work — papers, lectures, code, and experiments. Multiple research projects run simultaneously, each with its own Claude Code agent, coordinated through automated git workflows with human oversight.
 
+## Documentation Index
+
+| Document | Purpose |
+|----------|---------|
+| [EXECUTION-PLAN.md](docs/EXECUTION-PLAN.md) | **Start here** — sprint-by-sprint plan to first running research |
+| [BUILD-PLAN.md](docs/BUILD-PLAN.md) | Service architecture — interfaces, dependencies, technical specs |
+| [OPERATIONS.md](docs/OPERATIONS.md) | How the platform runs day-to-day — lifecycle, cadences, failure recovery |
+| [INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md) | Servers, daemon setup, GPU compute, environment configuration |
+| [SCALING.md](docs/SCALING.md) | Budget tiers, concurrent capacity, cost-per-paper estimates |
+| [AGENT-TEAM.md](docs/AGENT-TEAM.md) | Agent roles, handoff protocols, session configuration |
+| [PORTFOLIO.md](docs/PORTFOLIO.md) | Project mix, venue targeting, staggering strategy |
+| [QUALITY-STANDARDS.md](docs/QUALITY-STANDARDS.md) | Publication standards, review rubrics, quality gates |
+| [PUBLISHING.md](docs/PUBLISHING.md) | arXiv, conference submissions, website, social media |
+| [IDEA-PIPELINE.md](docs/IDEA-PIPELINE.md) | How research ideas are captured, scored, and promoted to projects |
+| [CREDIBILITY.md](docs/CREDIBILITY.md) | Building recognition as an independent researcher |
+| [ROADMAP.md](docs/ROADMAP.md) | 12-month plan with milestones and budget projections |
+
 ---
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Human Layer                        │
-│  CLI Dashboard (deepwork)  ·  GitHub Projects Board    │
-│  Decision Queue  ·  Notifications  ·  Paper Preview  │
-└──────────────────────┬──────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────┐
-│                Orchestrator (Node.js)                 │
-│  Project Manager  ·  Session Manager  ·  Git Engine  │
-│  Decision Router  ·  Status Writer                   │
-└──────┬───────────────┬───────────────┬──────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                         Human Layer                              │
+│  CLI Dashboard (deepwork)  ·  Research Website  ·  GitHub        │
+│  Decision Queue  ·  Notifications  ·  Paper Preview              │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────────────┐
+│                    Deepwork Daemon (Node.js)                      │
+│                                                                   │
+│  ┌────────────┐  ┌────────────────┐  ┌──────────────┐           │
+│  │ Scheduler  │→ │ Session Runner │→ │ Budget       │           │
+│  │            │  │ (Agent SDK)    │  │ Tracker      │           │
+│  └────────────┘  └───────┬────────┘  └──────────────┘           │
+│                          │                                       │
+│  ┌───────────────┐  ┌────▼───────┐  ┌──────────────┐           │
+│  │ Decision      │  │ Activity   │  │ Experiment   │           │
+│  │ Router        │  │ Logger     │  │ Runner       │           │
+│  └───────┬───────┘  └────────────┘  └──────┬───────┘           │
+│          │                                  │                    │
+│  ┌───────▼──────────────────────────────────▼───────────────┐   │
+│  │  Project Manager  ·  Git Engine  ·  Monitor              │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└──────┬───────────────┬───────────────┬───────────────────────────┘
        │               │               │
 ┌──────▼─────┐  ┌──────▼─────┐  ┌──────▼─────┐
 │  Project A  │  │  Project B  │  │  Project C  │
@@ -32,7 +61,17 @@ A platform that uses Claude Code to autonomously research, write, and iterate on
 │                  Git Monorepo                         │
 │  main ← PRs ← research/project-* branches           │
 │  Automated commits · Conventional format · CI/CD     │
-└─────────────────────────────────────────────────────┘
+└──────────┬───────────────────────────┬──────────────┘
+           │                           │
+    ┌──────▼──────┐             ┌──────▼──────┐
+    │   GitHub    │             │ Modal (GPUs) │
+    │  Issues/PRs │             │ scale-to-zero│
+    └──────┬──────┘             └──────────────┘
+           │
+    ┌──────▼──────┐
+    │  Research   │
+    │  Website    │
+    └─────────────┘
 ```
 
 ---
@@ -265,43 +304,43 @@ When an agent encounters a decision point (low confidence, multiple approaches, 
 
 ---
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Foundation (Now)
+### Phase 1: Foundation — COMPLETE
 - [x] Research and architecture design
-- [ ] Initialize git repo with monorepo structure
-- [ ] Create CLAUDE.md with project conventions
-- [ ] Build minimal orchestrator: single project, single session
-- [ ] Create first research project brief
-- [ ] Set up GitHub repo with branch protection
+- [x] Git repo with monorepo structure (orchestrator + cli workspaces)
+- [x] CLAUDE.md with project conventions
+- [x] Git engine: full worktree/branch/commit/PR operations
+- [x] Project manager: status.yaml CRUD, project scaffolding
+- [x] Session manager: worktree setup, prompt building (SDK integration TODO)
+- [x] CLI dashboard: projects, budget, activity, resources display
+- [x] First research project (reasoning-gaps, NeurIPS 2026)
+- [x] Agent definitions: researcher, writer, reviewer, strategist, editor
+- [x] Shared templates, prompts, and standards library
+- [x] Comprehensive documentation suite (12 docs)
 
-### Phase 2: Core Platform (Week 1-2)
-- [ ] Session manager with Claude SDK integration
-- [ ] Git engine (automated commits, branches, PRs)
-- [ ] Status file reading/writing
-- [ ] Decision routing via GitHub Issues
-- [ ] CLI tool: `deepwork status`, `deepwork new`, `deepwork start`
-- [ ] First automated research run
+### Phase 2: Core Autonomy — NEXT (see [BUILD-PLAN.md](docs/BUILD-PLAN.md))
+- [ ] **Session Runner**: Claude Agent SDK integration (the critical missing piece)
+- [ ] **Activity Logger**: centralized event logging
+- [ ] **Budget Tracker**: per-session cost tracking, daily/monthly limits
+- [ ] **Daemon Scheduler**: `deepwork run` — the always-on loop
+- [ ] First fully autonomous research session
 
-### Phase 3: Multi-Project (Week 2-3)
-- [ ] Parallel project sessions via worktrees
-- [ ] Rate limit management across sessions
-- [ ] Project lifecycle management
-- [ ] GitHub Actions CI/CD (paper compilation, linting)
-- [ ] PR templates and review workflows
+### Phase 3: Human Interface
+- [ ] Enhanced CLI: `new`, `decide`, `status`, `health`, `logs`, `budget` commands
+- [ ] Decision Router: status.yaml ↔ GitHub Issues bridge
+- [ ] Monitor: health checks, stale detection, disk/budget alerts
 
-### Phase 4: Enhanced Interface (Month 2)
-- [ ] Richer CLI with real-time monitoring
-- [ ] Slack/email notifications
-- [ ] GitHub Pages static dashboard
-- [ ] Collaborative features (multiple human reviewers)
+### Phase 4: Research Output
+- [ ] Research website (Astro static site, GitHub Pages)
+- [ ] arXiv submission packager
+- [ ] Blog post auto-generation from papers
+- [ ] GitHub Actions: paper compilation, site deployment, status validation
 
-### Phase 5: Full Dashboard (Month 2-3)
-- [ ] Next.js web dashboard
-- [ ] Real-time session monitoring
-- [ ] Interactive decision queue
-- [ ] Paper preview and diff viewer
-- [ ] Analytics and progress tracking
+### Phase 5: Compute
+- [ ] Experiment Runner: GPU provisioning (Lambda Labs API)
+- [ ] Experiment lifecycle: spec → provision → execute → collect → terminate
+- [ ] Cost tracking for GPU compute
 
 ---
 
