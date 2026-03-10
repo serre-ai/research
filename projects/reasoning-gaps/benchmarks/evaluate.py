@@ -349,12 +349,14 @@ def main() -> None:
         print("\nWARNING: Using dummy client. Implement ModelClient subclass "
               "for actual evaluation.\n")
     else:
-        # TODO: Implement provider-specific clients
-        # e.g., parse "openai:gpt-4o" -> OpenAIClient("gpt-4o")
-        #        parse "anthropic:claude-3-opus" -> AnthropicClient(...)
-        print(f"Error: Model provider not implemented: {args.model}", file=sys.stderr)
-        print("Implement a ModelClient subclass for your provider.", file=sys.stderr)
-        sys.exit(1)
+        # Parse model spec and create client
+        from clients import create_client
+
+        try:
+            client = create_client(args.model)
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
 
     # Run evaluation
     results: list[EvalResult] = []
