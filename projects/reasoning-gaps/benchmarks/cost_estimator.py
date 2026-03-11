@@ -25,9 +25,11 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
     "openai:gpt-4.1-mini": {"input": 0.40, "output": 1.60},
     "openai:gpt-4.1-nano": {"input": 0.10, "output": 0.40},
     "openai:o1": {"input": 15.00, "output": 60.00},
+    "openai:o3": {"input": 10.00, "output": 40.00},
     "openai:o3-mini": {"input": 1.10, "output": 4.40},
     "gpt-4o": {"input": 2.50, "output": 10.00},
     "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+    "o3": {"input": 10.00, "output": 40.00},
     # vLLM (self-hosted: ~$0 per token, but track compute cost separately)
     "vllm:*": {"input": 0.0, "output": 0.0},
     # Dummy
