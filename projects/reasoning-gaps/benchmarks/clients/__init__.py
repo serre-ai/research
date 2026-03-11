@@ -10,11 +10,13 @@ from evaluate import ModelClient
 
 from .anthropic_client import AnthropicClient
 from .openai_client import OpenAIClient
+from .openrouter_client import OpenRouterClient
 from .vllm_client import VLLMClient
 
 __all__ = [
     "AnthropicClient",
     "OpenAIClient",
+    "OpenRouterClient",
     "VLLMClient",
     "ModelClient",
     "create_client",
@@ -23,6 +25,7 @@ __all__ = [
 _PROVIDER_MAP: dict[str, type[ModelClient]] = {
     "anthropic": AnthropicClient,
     "openai": OpenAIClient,
+    "openrouter": OpenRouterClient,
     "vllm": VLLMClient,
 }
 
@@ -33,7 +36,7 @@ def create_client(model_spec: str, **kwargs) -> ModelClient:
     Examples:
         >>> client = create_client("anthropic:claude-haiku-4-5-20251001")
         >>> client = create_client("openai:gpt-4o")
-        >>> client = create_client("vllm:meta-llama/Llama-3-70B", base_url="http://gpu:8000/v1")
+        >>> client = create_client("vllm:meta-llama/Meta-Llama-3.1-70B-Instruct", base_url="http://gpu:8000/v1")
 
     Args:
         model_spec: String in ``"provider:model_name"`` format.

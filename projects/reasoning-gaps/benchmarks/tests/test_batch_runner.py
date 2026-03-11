@@ -157,7 +157,7 @@ class TestApiKeyChecks:
 
     def test_detects_missing_vllm_url(self):
         with mock.patch.dict(os.environ, {}, clear=True):
-            errors = check_api_keys(["vllm:meta-llama/Llama-3-8B"])
+            errors = check_api_keys(["vllm:meta-llama/Meta-Llama-3.1-8B-Instruct"])
             assert len(errors) == 1
             assert "VLLM_BASE_URL" in errors[0]
 
@@ -171,7 +171,7 @@ class TestApiKeyChecks:
             errors = check_api_keys([
                 "anthropic:claude-haiku-4-5-20251001",
                 "openai:gpt-4o",
-                "vllm:meta-llama/Llama-3-8B",
+                "vllm:meta-llama/Meta-Llama-3.1-8B-Instruct",
             ])
             assert len(errors) == 3
 
@@ -810,7 +810,7 @@ class TestRunSingleEvaluation:
             mock_run.return_value = mock.Mock(returncode=0)
 
             run_single_evaluation(
-                model="vllm:meta-llama/Llama-3-8B",
+                model="vllm:meta-llama/Meta-Llama-3.1-8B-Instruct",
                 task="B1",
                 condition="direct",
                 benchmarks_dir=tmp_path,

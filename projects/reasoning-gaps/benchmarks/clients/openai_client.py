@@ -53,18 +53,24 @@ class OpenAIClient(ModelClient):
         model_name: str,
         *,
         api_key: str | None = None,
+        base_url: str | None = None,
+        api_key_env: str = "OPENAI_API_KEY",
         max_rpm: int = 60,
         timeout: float = 120.0,
         **kwargs: Any,
     ) -> None:
         super().__init__(model_name, **kwargs)
-        key = api_key or os.environ.get("OPENAI_API_KEY")
+        key = api_key or os.environ.get(api_key_env)
         if not key:
             raise ValueError(
-                "OpenAI API key required. Set OPENAI_API_KEY env var "
-                "or pass api_key parameter."
+                f"API key required. Set {api_key_env} env var "
+                f"or pass api_key parameter."
             )
-        self._client = openai.OpenAI(api_key=key, timeout=timeout)
+        self._client = openai.OpenAI(
+            api_key=key,
+            base_url=base_url,
+            timeout=timeout,
+        )
         self._max_rpm = max_rpm
         self._timeout = timeout
 

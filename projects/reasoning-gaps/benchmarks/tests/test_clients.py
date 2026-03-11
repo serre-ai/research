@@ -48,9 +48,9 @@ class TestCreateClient:
         assert client.model_name == "gpt-4o"
 
     def test_vllm_provider(self):
-        client = create_client("vllm:meta-llama/Llama-3-70B")
+        client = create_client("vllm:meta-llama/Meta-Llama-3.1-70B-Instruct")
         assert isinstance(client, VLLMClient)
-        assert client.model_name == "meta-llama/Llama-3-70B"
+        assert client.model_name == "meta-llama/Meta-Llama-3.1-70B-Instruct"
 
     def test_all_clients_are_model_clients(self):
         """Every client class must be a subclass of ModelClient."""
@@ -337,7 +337,7 @@ class TestOpenAIClient:
 class TestVLLMClient:
     """Unit tests for VLLMClient with mocked httpx."""
 
-    def _make_client(self, model="meta-llama/Llama-3-70B", base_url="http://fake:8000/v1"):
+    def _make_client(self, model="meta-llama/Meta-Llama-3.1-70B-Instruct", base_url="http://fake:8000/v1"):
         client = VLLMClient(model, base_url=base_url)
         return client
 
@@ -514,7 +514,7 @@ class TestVLLMIntegration:
             pytest.skip("VLLM_BASE_URL not set")
 
     def test_simple_query(self):
-        model = os.environ.get("VLLM_MODEL", "meta-llama/Llama-3-70B")
+        model = os.environ.get("VLLM_MODEL", "meta-llama/Meta-Llama-3.1-70B-Instruct")
         client = VLLMClient(model)
         result, latency = client.query("What is 2+2? Answer with just the number.")
         assert "4" in result

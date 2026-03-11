@@ -47,14 +47,57 @@ MODELS: dict[str, dict[str, str]] = {
     "openai:gpt-4o-mini": {"family": "gpt", "size": "small"},
     "openai:gpt-4o": {"family": "gpt", "size": "medium"},
     "openai:o3": {"family": "gpt", "size": "large"},
-    # Open-source (vLLM)
-    "vllm:meta-llama/Llama-3-8B": {"family": "llama", "size": "small"},
-    "vllm:meta-llama/Llama-3-70B": {"family": "llama", "size": "large"},
-    "vllm:mistralai/Mistral-7B": {"family": "mistral", "size": "small"},
-    "vllm:mistralai/Mistral-Large": {"family": "mistral", "size": "large"},
-    "vllm:Qwen/Qwen2-7B": {"family": "qwen", "size": "small"},
-    "vllm:Qwen/Qwen2-72B": {"family": "qwen", "size": "large"},
+    # Open-source (OpenRouter API — fast iteration)
+    "openrouter:meta-llama/llama-3.1-8b-instruct": {"family": "llama", "size": "small"},
+    "openrouter:meta-llama/llama-3.1-70b-instruct": {"family": "llama", "size": "large"},
+    "openrouter:mistralai/ministral-8b-2512": {"family": "mistral", "size": "small"},
+    "openrouter:mistralai/mistral-small-24b-instruct-2501": {"family": "mistral", "size": "large"},
+    "openrouter:qwen/qwen-2.5-7b-instruct": {"family": "qwen", "size": "small"},
+    "openrouter:qwen/qwen-2.5-72b-instruct": {"family": "qwen", "size": "large"},
+    # Open-source (vLLM on Modal — reproducibility validation)
+    "vllm:meta-llama/Meta-Llama-3.1-8B-Instruct": {"family": "llama", "size": "small"},
+    "vllm:meta-llama/Meta-Llama-3.1-70B-Instruct": {"family": "llama", "size": "large"},
+    "vllm:mistralai/Mistral-7B-Instruct-v0.3": {"family": "mistral", "size": "small"},
+    "vllm:mistralai/Mistral-Small-24B-Instruct-2501": {"family": "mistral", "size": "large"},
+    "vllm:Qwen/Qwen2.5-7B-Instruct": {"family": "qwen", "size": "small"},
+    "vllm:Qwen/Qwen2.5-72B-Instruct": {"family": "qwen", "size": "large"},
 }
+
+# vLLM endpoint URLs per model (populated from vllm_endpoints.json or env).
+# Each Modal deployment gets its own URL.
+VLLM_ENDPOINTS: dict[str, str] = {}
+
+def _load_vllm_endpoints() -> dict[str, str]:
+    """Load vLLM endpoint URLs from config file or environment.
+
+    Checks (in order):
+    1. VLLM_ENDPOINTS_FILE env var pointing to a JSON file
+    2. vllm_endpoints.json in the benchmarks directory
+    3. VLLM_BASE_URL env var (single URL for all models)
+    """
+    global VLLM_ENDPOINTS
+
+    # Try config file
+    endpoints_file = os.environ.get("VLLM_ENDPOINTS_FILE")
+    if not endpoints_file:
+        default_path = Path(__file__).resolve().parent / "vllm_endpoints.json"
+        if default_path.exists():
+            endpoints_file = str(default_path)
+
+    if endpoints_file and Path(endpoints_file).exists():
+        with open(endpoints_file) as f:
+            VLLM_ENDPOINTS = json.load(f)
+        return VLLM_ENDPOINTS
+
+    # Fallback: single URL for all models
+    base_url = os.environ.get("VLLM_BASE_URL")
+    if base_url:
+        for model_spec in MODELS:
+            if model_spec.startswith("vllm:"):
+                model_name = model_spec.split(":", 1)[1]
+                VLLM_ENDPOINTS[model_name] = base_url
+
+    return VLLM_ENDPOINTS
 
 TASKS: list[str] = ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
 
@@ -77,6 +120,7 @@ TASK_FILE_MAP: dict[str, str] = {
 PROVIDER_ENV_KEYS: dict[str, str] = {
     "anthropic": "ANTHROPIC_API_KEY",
     "openai": "OPENAI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
     "vllm": "VLLM_BASE_URL",
 }
 
@@ -84,6 +128,7 @@ PROVIDER_ENV_KEYS: dict[str, str] = {
 PROVIDER_PARALLEL: dict[str, int] = {
     "anthropic": 5,
     "openai": 5,
+    "openrouter": 5,
     "vllm": 1,
 }
 
@@ -391,6 +436,16 @@ def run_single_evaluation(
 
     start = time.monotonic()
 
+    # Set per-model VLLM_BASE_URL for vLLM models
+    env = os.environ.copy()
+    if provider == "vllm":
+        model_name = model.split(":", 1)[1]
+        endpoint_url = VLLM_ENDPOINTS.get(model_name)
+        if endpoint_url:
+            env["VLLM_BASE_URL"] = endpoint_url
+        elif not env.get("VLLM_BASE_URL"):
+            print(f"  WARNING: No endpoint URL for {model_name}")
+
     try:
         with open(stdout_log, "w") as out_f, open(stderr_log, "w") as err_f:
             result = subprocess.run(
@@ -399,6 +454,7 @@ def run_single_evaluation(
                 stderr=err_f,
                 timeout=7200,  # 2 hour timeout per combination
                 cwd=str(benchmarks_dir),
+                env=env,
             )
 
         duration = time.monotonic() - start
@@ -809,6 +865,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Determine python executable (use the same one running this script)
     python_exe = sys.executable
+
+    # Load vLLM endpoint URLs
+    _load_vllm_endpoints()
 
     # Print header
     n_combos = len(args.models) * len(args.tasks) * len(args.conditions)

@@ -142,6 +142,9 @@ class VLLMClient(ModelClient):
             "model": self.model_name,
             "messages": messages,
             "max_tokens": max_tokens,
+            "temperature": 0,
+            "top_p": 1.0,
+            "seed": 42,
         }
 
         start = time.perf_counter()
