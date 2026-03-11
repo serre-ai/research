@@ -351,17 +351,17 @@ For scale analysis, we partition open-source models into \emph{small} ($\leq$10B
 \small
 \begin{tabular}{@{}llrl@{}}
 \toprule
-\textbf{Family} & \textbf{Model} & \textbf{Size} & \textbf{Access} \
+\textbf{Family} & \textbf{Model} & \textbf{Size} & \textbf{Access} \\
 \midrule
-Claude & Haiku 4.5 & --- & API \
-GPT & GPT-4o & --- & API \
-GPT & GPT-4o-mini & --- & API \
-Llama & Llama 3.1 8B & 8B & Local \
-Llama & Llama 3.1 70B & 70B & Local \
-Mistral & Ministral 8B & 8B & Local \
-Mistral & Mistral Small 24B & 24B & Local \
-Qwen & Qwen 2.5 7B & 7B & Local \
-Qwen & Qwen 2.5 72B & 72B & Local \
+Claude & Haiku 4.5 & --- & API \\
+GPT & GPT-4o & --- & API \\
+GPT & GPT-4o-mini & --- & API \\
+Llama & Llama 3.1 8B & 8B & Local \\
+Llama & Llama 3.1 70B & 70B & Local \\
+Mistral & Ministral 8B & 8B & Local \\
+Mistral & Mistral Small 24B & 24B & Local \\
+Qwen & Qwen 2.5 7B & 7B & Local \\
+Qwen & Qwen 2.5 72B & 72B & Local \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -403,17 +403,17 @@ This 60-percentage-point range across tasks, compared to a typical within-task r
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lccccccccc@{}}
 \toprule
- & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \
+ & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \\
 \midrule
-B1: Majority & .63 & .78 & .72 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \
-B2: Bool Eval & .53 & .69 & .63 & .64 & .52 & .61 & .55 & \textbf{.76} & .66 \
-B3: Perm Comp & .58 & \textbf{.69} & .58 & .60 & .27 & .62 & .57 & .62 & .31 \
-B4: State Track & .71 & .55 & .62 & .69 & .48 & .66 & .68 & \textbf{.72} & .52 \
-B5: Graph Reach & .79 & \textbf{.84} & .79 & .70 & .51 & .78 & .65 & .83 & .66 \
-B6: LIS & .31 & \textbf{.38} & .30 & .24 & .21 & .24 & .22 & .35 & .28 \
-B7: 3-SAT & .37 & \textbf{.67} & .63 & .34 & .32 & .42 & .51 & .61 & .56 \
-B8: Reversal & \textbf{1.00} & .99 & .94 & 1.00 & .97 & .99 & .98 & .99 & .95 \
-B9: Negation & .73 & .57 & .54 & .74 & .50 & .56 & .57 & \textbf{.75} & .59 \
+B1: Majority & .63 & .78 & .72 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \\
+B2: Bool Eval & .53 & .69 & .63 & .64 & .52 & .61 & .55 & \textbf{.76} & .66 \\
+B3: Perm Comp & .58 & \textbf{.69} & .58 & .60 & .27 & .62 & .57 & .62 & .31 \\
+B4: State Track & .71 & .55 & .62 & .69 & .48 & .66 & .68 & \textbf{.72} & .52 \\
+B5: Graph Reach & .79 & \textbf{.84} & .79 & .70 & .51 & .78 & .65 & .83 & .66 \\
+B6: LIS & .31 & \textbf{.38} & .30 & .24 & .21 & .24 & .22 & .35 & .28 \\
+B7: 3-SAT & .37 & \textbf{.67} & .63 & .34 & .32 & .42 & .51 & .61 & .56 \\
+B8: Reversal & \textbf{1.00} & .99 & .94 & 1.00 & .97 & .99 & .98 & .99 & .95 \\
+B9: Negation & .73 & .57 & .54 & .74 & .50 & .56 & .57 & \textbf{.75} & .59 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -431,17 +431,17 @@ Second, \textbf{B6 (LIS) is uniformly hard}: even with unconstrained CoT, accura
 \small
 \begin{tabular}{@{}lccc@{}}
 \toprule
- & \textbf{Direct} & \textbf{Short CoT} & \textbf{Budget CoT} \
+ & \textbf{Direct} & \textbf{Short CoT} & \textbf{Budget CoT} \\
 \midrule
-B1: Majority & 0.66 & 0.75 & 0.68 \
-B2: Bool Eval & 0.71 & 0.85 & 0.31 \
-B3: Perm Comp & 0.20 & 0.76 & 0.64 \
-B4: State Track & 0.39 & 0.75 & 0.75 \
-B5: Graph Reach & 0.75 & 0.78 & 0.64 \
-B6: LIS & 0.25 & 0.35 & 0.24 \
-B7: 3-SAT & 0.52 & 0.51 & 0.44 \
-B8: Reversal & 0.97 & 0.98 & 0.99 \
-B9: Negation & 0.56 & 0.67 & 0.61 \
+B1: Majority & 0.66 & 0.75 & 0.68 \\
+B2: Bool Eval & 0.71 & 0.85 & 0.31 \\
+B3: Perm Comp & 0.20 & 0.76 & 0.64 \\
+B4: State Track & 0.39 & 0.75 & 0.75 \\
+B5: Graph Reach & 0.75 & 0.78 & 0.64 \\
+B6: LIS & 0.25 & 0.35 & 0.24 \\
+B7: 3-SAT & 0.52 & 0.51 & 0.44 \\
+B8: Reversal & 0.97 & 0.98 & 0.99 \\
+B9: Negation & 0.56 & 0.67 & 0.61 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -470,14 +470,14 @@ The central empirical finding of this paper is that \textbf{chain-of-thought eff
 \small
 \begin{tabular}{@{}lcc@{}}
 \toprule
-\textbf{Gap Type} & \textbf{Short CoT Lift} & \textbf{Budget CoT Lift} \
+\textbf{Gap Type} & \textbf{Short CoT Lift} & \textbf{Budget CoT Lift} \\
 \midrule
-Type 1: Sensitivity & $+$0.094 & $+$0.022 \
-Type 2: Depth & $+$0.087 & $-$0.254 \
-Type 3: Serial & \textbf{$+$0.456} & $+$0.399 \
-Type 4: Algorithmic & $+$0.096 & $-$0.008 \
-Type 5: Intractability & $-$0.013 & $-$0.082 \
-Type 6: Architectural & $+$0.062 & $+$0.034 \
+Type 1: Sensitivity & $+$0.094 & $+$0.022 \\
+Type 2: Depth & $+$0.087 & $-$0.254 \\
+Type 3: Serial & \textbf{$+$0.456} & $+$0.399 \\
+Type 4: Algorithmic & $+$0.096 & $-$0.008 \\
+Type 5: Intractability & $-$0.013 & $-$0.082 \\
+Type 6: Architectural & $+$0.062 & $+$0.034 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -546,14 +546,14 @@ We partition models into small ($\leq$10B) and medium (10--80B) categories.
 \small
 \begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Gap Type} & \textbf{Small ($\leq$10B)} & \textbf{Medium (10--80B)} & \textbf{$\Delta$} \
+\textbf{Gap Type} & \textbf{Small ($\leq$10B)} & \textbf{Medium (10--80B)} & \textbf{$\Delta$} \\
 \midrule
-Type 1: Sensitivity & 0.64 & 0.74 & $+$0.10 \
-Type 2: Depth & 0.62 & 0.69 & $+$0.07 \
-Type 3: Serial & 0.47 & 0.64 & $+$0.17 \
-Type 4: Algorithmic & 0.24 & 0.27 & $+$0.03 \
-Type 5: Intractability & 0.43 & 0.49 & $+$0.06 \
-Type 6: Architectural & 0.76 & 0.84 & $+$0.08 \
+Type 1: Sensitivity & 0.64 & 0.74 & $+$0.10 \\
+Type 2: Depth & 0.62 & 0.69 & $+$0.07 \\
+Type 3: Serial & 0.47 & 0.64 & $+$0.17 \\
+Type 4: Algorithmic & 0.24 & 0.27 & $+$0.03 \\
+Type 5: Intractability & 0.43 & 0.49 & $+$0.06 \\
+Type 6: Architectural & 0.76 & 0.84 & $+$0.08 \\
 \bottomrule
 \end{tabular}
 \end{table}
