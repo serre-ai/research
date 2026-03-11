@@ -3,41 +3,81 @@
 import { ProjectManager } from "./project-manager.js";
 import { SessionManager } from "./session-manager.js";
 import { GitEngine } from "./git-engine.js";
-import { Daemon } from "./daemon.js";
-import { BudgetTracker } from "./budget-tracker.js";
-import { ActivityLogger } from "./logger.js";
-import { Monitor } from "./monitor.js";
+import { Daemon, type DaemonConfig } from "./daemon.js";
+import { createApi } from "./api.js";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-function parseFlag(args: string[], flag: string, defaultValue: string): string {
-  const idx = args.indexOf(flag);
-  if (idx === -1 || idx + 1 >= args.length) return defaultValue;
-  return args[idx + 1];
+function loadEnv(): void {
+  try {
+    const envPath = join(process.cwd(), ".env");
+    const content = readFileSync(envPath, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const value = trimmed.slice(eqIdx + 1).trim();
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
+    }
+  } catch {
+    // .env not found, continue with existing env
+  }
 }
 
 async function main() {
-  const rootDir = process.cwd();
-  const projectManager = new ProjectManager(rootDir);
-  const gitEngine = new GitEngine(rootDir);
-  const sessionManager = new SessionManager(projectManager, gitEngine, rootDir);
-  const logger = new ActivityLogger(rootDir);
-  const budgetTracker = new BudgetTracker(rootDir, logger);
+  loadEnv();
+
+  const projectManager = new ProjectManager();
+  const gitEngine = new GitEngine();
+  const sessionManager = new SessionManager(projectManager, gitEngine);
 
   const args = process.argv.slice(2);
   const command = args[0];
 
   switch (command) {
     case "run": {
-      const interval = parseInt(parseFlag(args, "--interval", String(process.env.POLL_INTERVAL_MINUTES ?? "30")), 10);
-      const maxSessions = parseInt(parseFlag(args, "--max-sessions", String(process.env.MAX_CONCURRENT_SESSIONS ?? "2")), 10);
-      const budget = parseInt(parseFlag(args, "--budget", String(process.env.DAILY_BUDGET_USD ?? "40")), 10);
+      // Parse flags
+      let interval = Number(process.env.POLL_INTERVAL_MINUTES) || 30;
+      let maxSessions = Number(process.env.MAX_CONCURRENT_SESSIONS) || 2;
+      let budget = Number(process.env.DAILY_BUDGET_USD) || 40;
 
-      const daemon = new Daemon({
+      for (let i = 1; i < args.length; i++) {
+        if (args[i] === "--interval" && args[i + 1]) interval = Number(args[++i]);
+        if (args[i] === "--max-sessions" && args[i + 1]) maxSessions = Number(args[++i]);
+        if (args[i] === "--budget" && args[i + 1]) budget = Number(args[++i]);
+      }
+
+      const config: DaemonConfig = {
         pollIntervalMs: interval * 60 * 1000,
         maxConcurrentSessions: maxSessions,
         dailyBudgetUsd: budget,
-        rootDir,
-      });
+        rootDir: process.cwd(),
+      };
 
+      console.log(`Starting daemon: interval=${interval}m, sessions=${maxSessions}, budget=$${budget}/day`);
+
+      // Start API server if configured
+      const apiKey = process.env.DEEPWORK_API_KEY;
+      const databaseUrl = process.env.DATABASE_URL;
+      const apiPort = Number(process.env.API_PORT) || 3001;
+
+      if (apiKey && databaseUrl) {
+        const { server, broadcast } = createApi({
+          port: apiPort,
+          apiKey,
+          databaseUrl,
+        });
+        console.log(`API server listening on port ${apiPort}`);
+      } else {
+        console.log("API server skipped (DEEPWORK_API_KEY or DATABASE_URL not set)");
+      }
+
+      // Start daemon loop
+      const daemon = new Daemon(config);
       await daemon.start();
       break;
     }
@@ -45,78 +85,29 @@ async function main() {
     case "start": {
       const projectName = args[1];
       if (!projectName) {
-        console.error("Usage: deepwork start <project-name> [--agent <type>] [--turns <n>]");
+        console.error("Usage: deepwork start <project-name>");
         process.exit(1);
       }
-      const agentType = parseFlag(args, "--agent", "researcher") as "researcher" | "writer" | "reviewer" | "editor" | "strategist";
-      const maxTurns = parseInt(parseFlag(args, "--turns", "50"), 10);
-      await sessionManager.startProject(projectName, agentType, { maxTurns });
+      await sessionManager.startProject(projectName);
       break;
     }
 
     case "list": {
       const projects = await projectManager.listProjects();
-      if (projects.length === 0) {
-        console.log("No projects found.");
-        break;
-      }
       for (const p of projects) {
         console.log(`${p.status === "active" ? "●" : "○"} ${p.project} — ${p.title}`);
-        const branch = p.git?.branch ?? `research/${p.project}`;
-        console.log(`  Phase: ${p.phase} | Branch: ${branch}`);
-      }
-      break;
-    }
-
-    case "budget": {
-      const status = await budgetTracker.getStatus();
-      console.log("Budget Status");
-      console.log(`  Daily:   $${status.dailySpent.toFixed(2)} / $${status.dailyLimit.toFixed(2)} (${status.dailyRemaining.toFixed(2)} remaining)`);
-      console.log(`  Monthly: $${status.monthlySpent.toFixed(2)} / $${status.monthlyLimit.toFixed(2)} (${status.monthlyRemaining.toFixed(2)} remaining)`);
-      console.log(`  Alert:   ${status.alertLevel}`);
-      if (Object.keys(status.byProject).length > 0) {
-        console.log("  By project:");
-        for (const [name, cost] of Object.entries(status.byProject)) {
-          console.log(`    ${name}: $${cost.toFixed(2)}`);
-        }
-      }
-      break;
-    }
-
-    case "health": {
-      const monitor = new Monitor(rootDir, budgetTracker, logger);
-      const health = await monitor.getHealth();
-      console.log(monitor.formatHealth(health));
-      break;
-    }
-
-    case "activity": {
-      const count = parseInt(args[1] ?? "20", 10);
-      const events = await logger.recent(count);
-      for (const e of events) {
-        const time = e.timestamp.slice(11, 19);
-        const proj = e.project ? ` [${e.project}]` : "";
-        console.log(`${time} ${e.type}${proj}`);
+        console.log(`  Phase: ${p.phase} | Branch: ${p.git.branch}`);
       }
       break;
     }
 
     default:
       console.log("Deepwork Research Platform v0.1.0");
-      console.log("");
-      console.log("Commands:");
-      console.log("  run                        Start the daemon scheduler");
-      console.log("    --interval <minutes>     Poll interval (default: 30)");
-      console.log("    --max-sessions <n>       Max concurrent sessions (default: 2)");
-      console.log("    --budget <usd>           Daily budget limit (default: 40)");
-      console.log("  start <project> [opts]     Run a single session");
-      console.log("    --agent <type>           Agent type (default: researcher)");
-      console.log("    --turns <n>              Max turns (default: 50)");
-      console.log("  list                       List all projects");
-      console.log("  health                     Show daemon & system health");
-      console.log("  budget                     Show budget status");
-      console.log("  activity [count]           Show recent activity");
+      console.log("Commands: run, start <project>, list");
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error("Fatal:", err);
+  process.exit(1);
+});

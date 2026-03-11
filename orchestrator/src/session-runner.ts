@@ -1,9 +1,17 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { query, type SDKMessage, type SDKResultMessage } from "@anthropic-ai/claude-agent-sdk";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 import { GitEngine } from "./git-engine.js";
 import { TranscriptWriter } from "./transcript-writer.js";
+
+const DEFAULT_MAX_TURNS = 50;
+const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;
+
+const SONNET_PRICING = {
+  inputPer1MTokens: 3,
+  outputPer1MTokens: 15,
+};
 
 export interface SessionConfig {
   projectName: string;
@@ -27,14 +35,6 @@ export interface SessionResult {
   error?: string;
 }
 
-const DEFAULT_MAX_TURNS = 50;
-const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;
-
-const SONNET_PRICING = {
-  inputPer1MTokens: 3,
-  outputPer1MTokens: 15,
-};
-
 export class SessionRunner {
   private rootDir: string;
 
@@ -49,11 +49,11 @@ export class SessionRunner {
     const maxDurationMs = config.maxDurationMs || DEFAULT_MAX_DURATION_MS;
     const worktreePath = join(this.rootDir, ".worktrees", config.projectName);
     const startTime = Date.now();
-
     const prompt = await this.buildPrompt(config.projectName, config.agentType);
-    const commitsCreated: string[] = [];
 
-    let resultMessage: SDKResultMessage | undefined;
+    const commitsCreated: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resultMessage: any;
     let error: string | undefined;
     let sessionStatus: SessionResult["status"] = "completed";
 
@@ -81,11 +81,13 @@ export class SessionRunner {
       });
 
       for await (const message of stream) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((message as any).type !== "stream_event") {
           await writer.write(message);
         }
-        if (message.type === "result") {
-          resultMessage = message as SDKResultMessage;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((message as any).type === "result") {
+          resultMessage = message;
         }
       }
     } catch (err) {
@@ -114,11 +116,10 @@ export class SessionRunner {
     }
 
     const durationMs = Date.now() - startTime;
-
     const worktreeEngine = new GitEngine(worktreePath);
     try {
       const logs = await worktreeEngine.logBetween("main");
-      commitsCreated.push(...logs.map((l) => l.split(" ")[0]));
+      commitsCreated.push(...logs.map((l: string) => l.split(" ")[0]));
     } catch {
       // No commits yet
     }
@@ -141,15 +142,10 @@ export class SessionRunner {
     };
   }
 
-  private async buildPrompt(
-    projectName: string,
-    agentType: string,
-  ): Promise<string> {
+  private async buildPrompt(projectName: string, agentType: string): Promise<string> {
     const sections: string[] = [];
 
-    const globalClaude = await this.readOptional(
-      join(this.rootDir, "CLAUDE.md"),
-    );
+    const globalClaude = await this.readOptional(join(this.rootDir, "CLAUDE.md"));
     if (globalClaude) {
       sections.push("# Global Platform Instructions\n\n" + globalClaude);
     }
@@ -174,25 +170,24 @@ export class SessionRunner {
     if (statusYaml) {
       sections.push(
         "# Current Project Status (status.yaml)\n\n```yaml\n" +
-          statusYaml +
-          "\n```",
+        statusYaml +
+        "\n```",
       );
     }
 
-    sections.push(`# Session Workflow
-
-You are working autonomously on the "${projectName}" project as a ${agentType} agent.
-
-1. Read project files to understand current state before making changes
-2. Make all decisions autonomously using your best judgment
-3. Use extended thinking for critical research decisions
-4. Make frequent conventional commits: type(${projectName}): description
-5. Update status.yaml after significant progress
-6. Log all decisions in decisions_made with date and rationale
-7. Push changes to remote regularly
-8. Create a PR to main when you reach a milestone
-
-Today's date is ${new Date().toISOString().split("T")[0]}.`);
+    sections.push(
+      "# Session Workflow\n\n" +
+      `You are working autonomously on the "${projectName}" project as a ${agentType} agent.\n\n` +
+      "1. Read project files to understand current state before making changes\n" +
+      "2. Make all decisions autonomously using your best judgment\n" +
+      "3. Use extended thinking for critical research decisions\n" +
+      `4. Make frequent conventional commits: type(${projectName}): description\n` +
+      "5. Update status.yaml after significant progress\n" +
+      "6. Log all decisions in decisions_made with date and rationale\n" +
+      "7. Push changes to remote regularly\n" +
+      "8. Create a PR to main when you reach a milestone\n\n" +
+      "Today's date is " + new Date().toISOString().split("T")[0] + ".",
+    );
 
     return sections.join("\n\n---\n\n");
   }
@@ -205,9 +200,8 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`);
     }
   }
 
-  private extractTokenUsage(
-    result: SDKResultMessage | undefined,
-  ): { input: number; output: number } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private extractTokenUsage(result: any): { input: number; output: number } {
     if (!result) return { input: 0, output: 0 };
     return {
       input: result.usage.input_tokens,

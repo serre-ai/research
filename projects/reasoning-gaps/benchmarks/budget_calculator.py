@@ -6,7 +6,7 @@ and instance metadata, following the theoretical complexity of each task:
 | Task | Budget Formula              | Rationale                          |
 |------|-----------------------------|------------------------------------|
 | B1   | O(n) where n = string len   | Need to count bits                 |
-| B2   | O(log n) where n = formula  | Log-depth evaluation               |
+| B2   | O(2^d) where d = depth      | Exponential formula evaluation     |
 | B3   | O(k) where k = compositions | Must trace each step               |
 | B4   | O(k) where k = transitions  | Must trace each step               |
 | B5   | O(d) where d = est diameter | BFS-like reasoning                 |
@@ -37,17 +37,17 @@ def _budget_b1(instance: dict[str, Any], multiplier: float) -> int:
 
 
 def _budget_b2(instance: dict[str, Any], multiplier: float) -> int:
-    """B2 Nested Boolean: O(log n) words where n = formula size.
+    """B2 Nested Boolean: O(2^depth) words for exponential formula evaluation.
 
-    The formula size grows exponentially with depth, so log(formula_size)
-    is roughly proportional to depth.
+    Nested boolean formulas have exponential structure with depth.
+    To properly evaluate them, we need reasoning budget that scales
+    exponentially with depth, not logarithmically.
     """
     metadata = instance.get("metadata", {})
     depth = metadata.get("depth", 3)
-    # Formula size is roughly 2^depth nodes; log of that is depth
-    # But we need more than 1 word per level -- use depth * base_words
-    base_words = max(5, depth)
-    return round(base_words * multiplier)
+    # Formula evaluation requires exponential reasoning space
+    # Base formula: 2^depth nodes × multiplier
+    return round((2 ** depth) * multiplier)
 
 
 def _budget_b3(instance: dict[str, Any], multiplier: float) -> int:

@@ -1,11 +1,19 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ProjectManager, type ProjectStatus } from "./project-manager.js";
-import { SessionManager, type Session } from "./session-manager.js";
+import { ProjectManager, ProjectStatus } from "./project-manager.js";
+import { SessionManager } from "./session-manager.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
 import { Notifier } from "./notifier.js";
+
+const PHASE_TO_AGENT: Record<string, string> = {
+  "research": "researcher",
+  "literature-review": "researcher",
+  "drafting": "writer",
+  "revision": "reviewer",
+  "final": "editor",
+};
 
 export interface DaemonConfig {
   pollIntervalMs: number;
@@ -13,26 +21,6 @@ export interface DaemonConfig {
   dailyBudgetUsd: number;
   rootDir: string;
 }
-
-interface ScoredProject {
-  project: ProjectStatus;
-  score: number;
-  agentType: "researcher" | "writer" | "reviewer" | "editor" | "strategist";
-}
-
-interface SessionTracker {
-  promise: Promise<Session>;
-  projectName: string;
-  startedAt: number;
-}
-
-const PHASE_TO_AGENT: Record<string, ScoredProject["agentType"]> = {
-  "research": "researcher",
-  "literature-review": "researcher",
-  "drafting": "writer",
-  "revision": "reviewer",
-  "final": "editor",
-};
 
 const DEFAULT_CONFIG: DaemonConfig = {
   pollIntervalMs: 30 * 60 * 1000,
@@ -43,7 +31,18 @@ const DEFAULT_CONFIG: DaemonConfig = {
 
 const MAX_SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour hard limit
 const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 min before retry
-const MAX_BACKOFF_MS = 4 * 60 * 60 * 1000; // 4 hour max backoff
+
+interface SessionTracker {
+  promise: Promise<unknown>;
+  projectName: string;
+  startedAt: number;
+}
+
+interface ScoredProject {
+  project: ProjectStatus;
+  score: number;
+  agentType: string;
+}
 
 export class Daemon {
   private config: DaemonConfig;
@@ -63,10 +62,9 @@ export class Daemon {
   constructor(config: Partial<DaemonConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     const rootDir = this.config.rootDir;
-
     this.projectManager = new ProjectManager(rootDir);
     this.gitEngine = new GitEngine(rootDir);
-    this.sessionManager = new SessionManager(this.projectManager, this.gitEngine, rootDir);
+    this.sessionManager = new SessionManager(this.projectManager, this.gitEngine);
     this.logger = new ActivityLogger(rootDir);
     this.budgetTracker = new BudgetTracker(rootDir, this.logger);
     this.notifier = new Notifier(rootDir);
@@ -87,9 +85,9 @@ export class Daemon {
     });
 
     console.log("Deepwork daemon started");
-    console.log(`  Poll interval: ${Math.round(this.config.pollIntervalMs / 60000)}m`);
-    console.log(`  Max concurrent: ${this.config.maxConcurrentSessions}`);
-    console.log(`  Daily budget: $${this.config.dailyBudgetUsd}`);
+    console.log("  Poll interval: " + Math.round(this.config.pollIntervalMs / 60000) + "m");
+    console.log("  Max concurrent: " + this.config.maxConcurrentSessions);
+    console.log("  Daily budget: $" + this.config.dailyBudgetUsd);
 
     process.on("SIGTERM", () => this.shutdown("SIGTERM"));
     process.on("SIGINT", () => this.shutdown("SIGINT"));
@@ -105,7 +103,6 @@ export class Daemon {
           data: { error: err instanceof Error ? err.message : String(err) },
         });
       }
-
       if (!this.running) break;
       await this.sleep(this.config.pollIntervalMs);
     }
@@ -114,18 +111,11 @@ export class Daemon {
     console.log("Deepwork daemon stopped");
   }
 
-  async getHealth(): Promise<{
-    running: boolean;
-    uptimeMs: number;
-    cyclesCompleted: number;
-    activeSessions: { project: string; runningMs: number }[];
-    failureCounts: Record<string, number>;
-  }> {
+  async getHealth() {
     const sessions = Array.from(this.activeSessions.values()).map((t) => ({
       project: t.projectName,
       runningMs: Date.now() - t.startedAt,
     }));
-
     return {
       running: this.running,
       uptimeMs: Date.now() - this.startedAt,
@@ -137,24 +127,25 @@ export class Daemon {
 
   private async cycle(): Promise<void> {
     this.cycleCount++;
-    console.log(`\n--- Cycle ${this.cycleCount} ---`);
+    console.log("\n--- Cycle " + this.cycleCount + " ---");
 
     // Check budget before doing anything
     const budgetStatus = await this.budgetTracker.getStatus();
     if (budgetStatus.alertLevel === "exceeded") {
-      console.log("Budget exceeded — skipping cycle");
+      console.log("Budget exceeded -- skipping cycle");
       await this.notifier.notify({
         event: "Budget Exceeded",
-        summary: `Daily: $${budgetStatus.dailySpent.toFixed(2)}/$${budgetStatus.dailyLimit.toFixed(2)} | Monthly: $${budgetStatus.monthlySpent.toFixed(2)}/$${budgetStatus.monthlyLimit.toFixed(2)}`,
+        summary: "Daily: $" + budgetStatus.dailySpent.toFixed(2) + "/$" + budgetStatus.dailyLimit.toFixed(2) + " | Monthly: $" + budgetStatus.monthlySpent.toFixed(2) + "/$" + budgetStatus.monthlyLimit.toFixed(2),
         level: "error",
       });
       return;
     }
+
     if (budgetStatus.alertLevel === "critical") {
-      console.log(`Budget critical: $${budgetStatus.dailySpent.toFixed(2)}/$${budgetStatus.dailyLimit.toFixed(2)} daily`);
+      console.log("Budget critical: $" + budgetStatus.dailySpent.toFixed(2) + "/$" + budgetStatus.dailyLimit.toFixed(2) + " daily");
       await this.notifier.notify({
         event: "Budget Critical",
-        summary: `Daily: $${budgetStatus.dailySpent.toFixed(2)}/$${budgetStatus.dailyLimit.toFixed(2)}`,
+        summary: "Daily: $" + budgetStatus.dailySpent.toFixed(2) + "/$" + budgetStatus.dailyLimit.toFixed(2),
         level: "warning",
       });
     }
@@ -164,7 +155,7 @@ export class Daemon {
 
     const availableSlots = this.config.maxConcurrentSessions - this.activeSessions.size;
     if (availableSlots <= 0) {
-      console.log(`All ${this.config.maxConcurrentSessions} session slots occupied — waiting`);
+      console.log("All " + this.config.maxConcurrentSessions + " session slots occupied -- waiting");
       return;
     }
 
@@ -186,7 +177,7 @@ export class Daemon {
     // Launch sessions for selected projects
     for (const candidate of candidates) {
       const { project, agentType } = candidate;
-      console.log(`Launching ${agentType} session for ${project.project} (score: ${candidate.score})`);
+      console.log("Launching " + agentType + " session for " + project.project + " (score: " + candidate.score + ")");
 
       await this.logger.log({
         type: "session_start",
@@ -215,7 +206,7 @@ export class Daemon {
       // Stale session detection: kill if running > hard limit
       const runningMs = Date.now() - tracker.startedAt;
       if (runningMs > MAX_SESSION_DURATION_MS) {
-        console.log(`Session for ${name} exceeded ${MAX_SESSION_DURATION_MS / 60000}min hard limit — marking stale`);
+        console.log("Session for " + name + " exceeded " + (MAX_SESSION_DURATION_MS / 60000) + "min hard limit -- marking stale");
         await this.logger.log({
           type: "session_error",
           project: name,
@@ -227,76 +218,43 @@ export class Daemon {
     }
   }
 
-  private async runSession(
-    projectName: string,
-    agentType: ScoredProject["agentType"],
-  ): Promise<Session> {
-    const attempt = async (): Promise<Session> => {
-      const session = await this.sessionManager.startProject(projectName, agentType, {
-        maxTurns: 50,
-        maxDurationMs: 45 * 60 * 1000,
+  private async runSession(projectName: string, _agentType: string): Promise<void> {
+    const attempt = async () => {
+      // startProject sets up worktree and returns session info
+      const session = await this.sessionManager.startProject(projectName);
+
+      await this.logger.log({
+        type: "session_end",
+        project: projectName,
+        agent: _agentType,
+        data: {
+          worktreePath: session.worktreePath,
+          branch: session.branch,
+          status: session.status,
+        },
       });
 
-      // Record spending
-      if (session.result) {
-        await this.budgetTracker.record({
-          projectName,
-          sessionId: session.result.sessionId,
-          agentType,
-          tokensInput: session.result.tokensUsed.input,
-          tokensOutput: session.result.tokensUsed.output,
-          costUsd: session.result.costUsd,
-          model: "claude-sonnet-4-20250514",
-        });
+      await this.notifier.notify({
+        event: "Session Started",
+        project: projectName,
+        summary: _agentType + " session: worktree ready at " + session.worktreePath,
+        level: "info",
+      });
 
-        await this.logger.log({
-          type: "session_end",
-          project: projectName,
-          agent: agentType,
-          data: {
-            sessionId: session.result.sessionId,
-            status: session.result.status,
-            turnsUsed: session.result.turnsUsed,
-            costUsd: session.result.costUsd,
-            durationMs: session.result.durationMs,
-            commitsCreated: session.result.commitsCreated.length,
-            error: session.result.error,
-          },
-        });
-
-        await this.notifier.notify({
-          event: "Session Completed",
-          project: projectName,
-          summary: `${agentType} session: ${session.result.status}`,
-          details: {
-            turns: session.result.turnsUsed,
-            cost: `$${session.result.costUsd.toFixed(4)}`,
-            duration: `${Math.round(session.result.durationMs / 60000)}m`,
-            commits: session.result.commitsCreated.length,
-          },
-          level: session.result.status === "completed" ? "info" : "warning",
-        });
-
-        if (session.result.status === "completed") {
-          this.clearFailure(projectName);
-        } else {
-          this.recordFailure(projectName);
-        }
-      }
-
+      this.clearFailure(projectName);
       return session;
     };
 
     try {
-      return await attempt();
+      await attempt();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`Session failed for ${projectName}: ${errorMsg}`);
+      console.error("Session failed for " + projectName + ": " + errorMsg);
 
       await this.logger.log({
         type: "session_error",
         project: projectName,
-        agent: agentType,
+        agent: _agentType,
         data: { error: errorMsg, willRetry: true },
       });
 
@@ -310,22 +268,20 @@ export class Daemon {
       });
 
       // Retry once after delay
-      console.log(`Retrying ${projectName} in ${RETRY_DELAY_MS / 1000}s...`);
+      console.log("Retrying " + projectName + " in " + (RETRY_DELAY_MS / 1000) + "s...");
       await this.sleep(RETRY_DELAY_MS);
 
       try {
-        return await attempt();
+        await attempt();
       } catch (retryErr) {
         const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-        console.error(`Retry also failed for ${projectName}: ${retryMsg}`);
-
+        console.error("Retry also failed for " + projectName + ": " + retryMsg);
         await this.logger.log({
           type: "session_error",
           project: projectName,
-          agent: agentType,
+          agent: _agentType,
           data: { error: retryMsg, retryFailed: true },
         });
-
         this.recordFailure(projectName);
         throw retryErr;
       }
@@ -373,7 +329,7 @@ export class Daemon {
       if (failures > 0) {
         const backoffPenalty = Math.min(failures * 5, 20);
         score -= backoffPenalty;
-        console.log(`  ${project.project}: -${backoffPenalty} (${failures} recent failures)`);
+        console.log("  " + project.project + ": -" + backoffPenalty + " (" + failures + " recent failures)");
       }
 
       // -10: check if project has exhausted its per-project daily budget
@@ -394,7 +350,7 @@ export class Daemon {
 
     // Log scoring summary
     for (const s of scored) {
-      console.log(`  ${s.project.project}: score=${s.score} agent=${s.agentType}`);
+      console.log("  " + s.project.project + ": score=" + s.score + " agent=" + s.agentType);
     }
 
     return scored;
@@ -428,23 +384,28 @@ export class Daemon {
   }
 
   private async shutdown(signal: string): Promise<void> {
-    console.log(`\nReceived ${signal} — shutting down gracefully...`);
+    console.log("\nReceived " + signal + " -- shutting down gracefully...");
     this.running = false;
     this.abortController?.abort();
-
     if (this.activeSessions.size > 0) {
-      console.log(`Waiting for ${this.activeSessions.size} active session(s) to finish...`);
-      await Promise.allSettled(Array.from(this.activeSessions.values()).map((t) => t.promise));
+      console.log("Waiting for " + this.activeSessions.size + " active session(s) to finish...");
+      await Promise.allSettled(
+        Array.from(this.activeSessions.values()).map((t) => t.promise),
+      );
     }
   }
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
       const timer = setTimeout(resolve, ms);
-      this.abortController?.signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        resolve();
-      }, { once: true });
+      this.abortController?.signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true },
+      );
     });
   }
 }

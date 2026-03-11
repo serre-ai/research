@@ -46,12 +46,11 @@ export class BudgetTracker {
 
   async record(record: Omit<SpendingRecord, "timestamp">): Promise<void> {
     await this.ensureDir();
-    const entry: SpendingRecord = {
+    const entry = {
       timestamp: new Date().toISOString(),
       ...record,
     };
     await appendFile(this.spendingFile, JSON.stringify(entry) + "\n", "utf-8");
-
     await this.logger.log({
       type: "budget_spend",
       project: record.projectName,
@@ -70,7 +69,6 @@ export class BudgetTracker {
     const limit = await this.getMonthlyLimit();
     const dailyLimit = limit / 30;
     const records = await this.readRecords();
-
     const today = new Date().toISOString().split("T")[0];
     const thisMonth = new Date().toISOString().slice(0, 7);
 
@@ -81,12 +79,10 @@ export class BudgetTracker {
     for (const r of records) {
       const recordDate = r.timestamp.split("T")[0];
       const recordMonth = r.timestamp.slice(0, 7);
-
       if (recordMonth === thisMonth) {
         monthlySpent += r.costUsd;
         byProject[r.projectName] = (byProject[r.projectName] ?? 0) + r.costUsd;
       }
-
       if (recordDate === today) {
         dailySpent += r.costUsd;
       }
@@ -142,10 +138,9 @@ export class BudgetTracker {
     dailyLimit: number,
     monthlySpent: number,
     monthlyLimit: number,
-  ): BudgetStatus["alertLevel"] {
+  ): "ok" | "warning" | "critical" | "exceeded" {
     const dailyPct = dailyLimit > 0 ? dailySpent / dailyLimit : 0;
     const monthlyPct = monthlyLimit > 0 ? monthlySpent / monthlyLimit : 0;
-
     if (dailyPct > 1 || monthlyPct > 1) return "exceeded";
     if (dailyPct >= 0.95 || monthlyPct >= 0.95) return "critical";
     if (dailyPct >= 0.8 || monthlyPct >= 0.8) return "warning";
@@ -163,20 +158,20 @@ export class BudgetTracker {
       .trim()
       .split("\n")
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as SpendingRecord);
+      .map((line) => JSON.parse(line));
   }
 
   private async getMonthlyLimit(): Promise<number> {
     if (this.monthlyLimit !== null) return this.monthlyLimit;
     try {
       const configText = await readFile(join(this.rootDir, "config.yaml"), "utf-8");
-      const config = parse(configText) as Record<string, unknown>;
-      const budget = config.budget as Record<string, unknown> | undefined;
-      this.monthlyLimit = (budget?.monthly_limit_usd as number) ?? 1000;
+      const config = parse(configText);
+      const budget = config.budget;
+      this.monthlyLimit = budget?.monthly_limit_usd ?? 1000;
     } catch {
       this.monthlyLimit = 1000;
     }
-    return this.monthlyLimit;
+    return this.monthlyLimit!;
   }
 
   private async ensureDir(): Promise<void> {
