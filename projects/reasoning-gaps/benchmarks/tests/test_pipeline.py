@@ -436,7 +436,7 @@ class TestCostEstimator:
         est = estimate_cost(
             models=[
                 "anthropic:claude-haiku-4-5-20251001",
-                "anthropic:claude-sonnet-4-6-20250514",
+                "anthropic:claude-sonnet-4-20250514",
                 "openai:gpt-4o",
                 "openai:gpt-4o-mini",
             ],

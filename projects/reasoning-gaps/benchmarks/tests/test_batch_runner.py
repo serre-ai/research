@@ -189,8 +189,8 @@ class TestApiKeyChecks:
         with mock.patch.dict(os.environ, {}, clear=True):
             errors = check_api_keys([
                 "anthropic:claude-haiku-4-5-20251001",
-                "anthropic:claude-sonnet-4-6-20250514",
-                "anthropic:claude-opus-4-6-20250514",
+                "anthropic:claude-sonnet-4-20250514",
+                "anthropic:claude-opus-4-20250514",
             ])
             assert len(errors) == 1
 
