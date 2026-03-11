@@ -4,37 +4,35 @@
 **Updated**: 2026-03-11
 **Goal**: Remote-first autonomous research platform with visual monitoring
 
-## Current State
+## Current State (Updated 2026-03-11)
 
-Evaluation phase largely complete — 9/12 models evaluated locally, no active eval jobs running:
-- 121,614 evaluation instances collected across 9 models × 9 tasks × 3 conditions (zero failures)
-- API models (Haiku, GPT-4o-mini, GPT-4o) evaluated via Anthropic/OpenAI APIs
-- Open-source models (Llama 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 7B/72B) evaluated via OpenRouter API — eliminated need for Modal GPU deployment
-- Total eval cost: ~$75 (Anthropic ~$15, OpenAI ~$60, OpenRouter ~$0.22)
-- 3 models pending cost decisions: Sonnet 4.6, Opus 4.6, o3
-- Analysis pipeline ready but full analysis not yet run on complete dataset
-- Claude Code sessions are interactive and local
-- No remote monitoring or notifications
-- No persistent database — all state in YAML/JSONL flat files
-- Orchestrator daemon exists in compiled JS but isn't deployed anywhere
+**VPS deployed and operational.** Remote-first infrastructure is live.
 
-### What Already Exists
+### What's Running
+
+- **VPS** (89.167.5.50): Hetzner CPX21, Ubuntu 24.04, 3.7GB RAM, 75GB disk (6% used)
+- **Daemon**: systemd-managed `deepwork-daemon.service`, polling every 30m, auto-restart
+- **API**: Express REST + WebSocket on port 3001, proxied by nginx on port 80
+- **PostgreSQL 16**: 121,146 eval results, 243 eval_runs, project records, materialized views
+- **Python venv**: All analysis/eval deps installed at `~/deepwork/.venv`
+- **Security**: fail2ban, UFW (22/80/443), API key auth, .env chmod 600
+
+### What Exists in Codebase
 
 **Orchestrator** (`orchestrator/`):
-- 5 TypeScript source files: index.ts, project-manager.ts, session-manager.ts, git-engine.ts, yaml.ts
-- 7 compiled-only JS modules: daemon.js, session-runner.js, budget-tracker.js, notifier.js, monitor.js, transcript-writer.js, logger.js
-- The daemon has: polling loop, project scoring/prioritization, concurrent session management, budget enforcement, heartbeat, graceful shutdown, failure backoff, Slack notifications, transcript recording
-- SessionRunner integrates with `@anthropic-ai/claude-agent-sdk` for headless Claude Code
+- 12 TypeScript source files (all restored). Build passes cleanly.
+- `index.ts` wired with `run` command: starts daemon loop + API server
+- `api.ts`: REST endpoints (projects, eval, budget, health) + WebSocket
+- `daemon.ts`: polling loop, project scoring, session management
+- `session-runner.ts`: Claude Agent SDK integration (needs SDK package for runtime)
+- Deploy configs: systemd units, nginx conf, setup script
 
-**Evaluation Infrastructure** (`benchmarks/`, `experiments/`):
-- Model clients for Anthropic, OpenAI, vLLM, and OpenRouter
-- Checkpoint/resume system (crash-safe JSONL)
-- Analysis pipeline with statistical tests, visualizations, LaTeX output
-- Modal serving code preserved but not deployed (OpenRouter was cheaper/simpler)
+**Evaluation** (`benchmarks/`):
+- 4 model clients (Anthropic, OpenAI, OpenRouter, vLLM)
+- Checkpoint/resume, analysis pipeline, cost monitoring
+- 121,614 instances across 9 models × 9 tasks × 3 conditions
 
-**CLI** (`cli/`): Ink/React terminal dashboard (display-only, reads status files)
-
-**Website** (`site/`): Astro-based deepwork.site
+**Site** (`site/`): Astro dashboard pages (overview, eval monitor, budget tracker) with mock data
 
 ## Target Architecture
 
@@ -92,59 +90,41 @@ Hetzner VPS (CPX21, ~$8/mo)                    External Services
 
 ## Implementation Phases
 
-### Phase 1: VPS Foundation
-- Provision Hetzner CPX21 ($8/mo)
-- Clone repo, install deps, copy .env (including OpenRouter key)
-- Test: orchestrator reads project state
-- Run any remaining eval jobs (Sonnet/Opus/o3 if decided)
+### Phases 1-4: COMPLETE (deployed 2026-03-11)
+- [x] VPS Foundation — provisioned, configured, secured
+- [x] Orchestrator — all TS sources, build passes, daemon running
+- [x] Database — PostgreSQL 16, schema applied, 121K rows backfilled
+- [x] API Layer — REST + WebSocket, nginx proxy, API key auth
 
-### Phase 2: Restore Orchestrator
-- Reconstruct 7 TypeScript source files from compiled JS
-- Wire SessionManager -> SessionRunner
-- Add CLI subcommands: daemon, health, eval, logs
-- Create systemd service files
-- Test daemon loop on VPS
-
-### Phase 3: Database
-- Install PostgreSQL on VPS
-- Design and create schema (projects, eval_results, sessions, budget_events, etc.)
-- Add Postgres writes to eval pipeline (alongside existing JSONL)
-- Add sync: daemon reads status.yaml -> inserts into projects table
-- Backfill existing eval results into Postgres
-
-### Phase 4: API Layer
-- Add REST endpoints to daemon process (Express/Fastify)
-- Endpoints: projects, eval progress, budget, health, sessions, decisions
-- Add WebSocket for real-time eval progress + log streaming
-- API key auth
-- Test from curl / Postman
-
-### Phase 5: Web Dashboard
-- Design dashboard views (eval monitor, results, budget, sessions, health)
-- Integrate into deepwork.site (or separate dashboard subdomain)
-- Real-time eval progress bars, accuracy heatmaps
-- Budget burn rate charts
-- Session transcript browser
-- System health panel
+### Phase 5: Web Dashboard (next infrastructure sprint)
+- [ ] Point `api.deepwork.site` DNS A record to 89.167.5.50
+- [ ] Run `certbot --nginx -d api.deepwork.site` for HTTPS
+- [ ] Wire dashboard pages to call VPS API (replace mock data with fetch calls)
+- [ ] Deploy updated site to Vercel/Cloudflare
 
 ### Phase 6: Notifications & Polish
-- Slack webhook integration (Notifier class exists)
-- Daily summary cron
-- Nightly backup to Hetzner Storage Box ($4/mo)
-- GitHub Actions for LaTeX compilation
-- End-to-end crash recovery test
+- [ ] Add `SLACK_WEBHOOK_URL` to VPS `.env`
+- [ ] Daily summary cron job
+- [ ] Nightly backup to Hetzner Storage Box ($4/mo)
+- [ ] GitHub Actions for LaTeX compilation on push
+- [ ] Merge `main` and `research/reasoning-gaps` branches (resolve conflicts)
+
+### Phase 7: VPS Scale-Up
+- [ ] Resize VPS from CPX21 → CPX31 (4 vCPU, 8GB RAM, 160GB, ~$16/mo)
+- [ ] Increase `MAX_CONCURRENT_SESSIONS` from 2 → 4
+- [ ] Run eval jobs on VPS instead of locally (transfer checkpoints + scripts)
+- [ ] Add swap (2-4GB) as safety net for memory spikes
+- **Rationale**: Agent sessions are API-bound, not compute-bound. Doubling RAM is the highest-leverage upgrade — enables 4 concurrent agents and co-located eval jobs for ~$8/mo more. GPU/dedicated server not justified while OpenRouter inference costs pennies.
 
 ## Monthly Budget
 
 | Item | Cost | Notes |
 |------|------|-------|
-| Hetzner CPX21 VPS | $8 | |
-| Hetzner Storage Box (1TB backup) | $4 | |
-| Anthropic API (sessions + eval) | $200-400 | |
-| OpenAI API (eval) | $50-100 | |
-| OpenRouter API (open-source eval) | $1-5 | Replaced Modal GPU — 100x cheaper |
-| Vercel (website hosting) | $0-20 | |
-| Slack | $0 | |
-| **Total** | **$263-537** | Well within $1,000/month budget |
+| Hetzner CPX21 VPS | $8 | Running since 2026-03-10 |
+| Anthropic API | $200-400 | Eval + sessions |
+| OpenAI API | $50-100 | Eval only |
+| OpenRouter API | $1-5 | Open-source models |
+| **Total** | **$259-513** | Well within $1,000/month budget |
 
-Note: Modal GPU line item removed. OpenRouter eliminated the need for GPU infrastructure for open-source model evaluation, saving an estimated $100-200/month.
+**Spent to date**: ~$83 (Anthropic ~$15, OpenAI ~$60, OpenRouter ~$0.22, VPS ~$8)
+**Planned next**: ~$98 (Sonnet 4.6 ~$55, o3 ~$40, B2 recal ~$3-5)

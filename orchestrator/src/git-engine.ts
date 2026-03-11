@@ -70,13 +70,22 @@ export class GitEngine {
 
   // ── Worktree operations ────────────────────────────────────
 
-  async createWorktree(path: string, branch: string): Promise<void> {
+  async createWorktree(path: string, branch: string): Promise<string> {
+    // Check if the branch is already checked out in an existing worktree
+    const worktrees = await this.listWorktrees();
+    const existing = worktrees.find((w) => w.branch === branch);
+    if (existing) {
+      console.log(`Branch '${branch}' already checked out at ${existing.path}, reusing`);
+      return existing.path;
+    }
+
     const exists = await this.branchExists(branch);
     if (exists) {
       await this.git("worktree", "add", path, branch);
     } else {
       await this.git("worktree", "add", "-b", branch, path);
     }
+    return path;
   }
 
   async removeWorktree(path: string): Promise<void> {
@@ -253,12 +262,12 @@ export class GitEngine {
     basePath: string = ".worktrees",
   ): Promise<{ worktreePath: string; branch: string; engine: GitEngine }> {
     const branch = `research/${projectName}`;
-    const worktreePath = join(basePath, projectName);
-    await this.createWorktree(worktreePath, branch);
+    const requestedPath = join(basePath, projectName);
+    const actualPath = await this.createWorktree(requestedPath, branch);
     return {
-      worktreePath,
+      worktreePath: actualPath,
       branch,
-      engine: this.inDir(worktreePath),
+      engine: this.inDir(actualPath),
     };
   }
 

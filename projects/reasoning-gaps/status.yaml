@@ -66,6 +66,15 @@ decisions_made:
   - date: 2026-03-11
     decision: "Run all 6 open-source models in parallel via separate processes"
     rationale: "Parallelizing across 6 models reduced total wall-clock time from ~30 hours (sequential) to ~5 hours. Each model runs independently with its own checkpoint file, so no coordination overhead or failure propagation."
+  - date: 2026-03-11
+    decision: "Deploy VPS infrastructure: daemon, API, PostgreSQL, nginx"
+    rationale: "Remote-first infrastructure enables 24/7 operation independent of laptop. Daemon manages project sessions, API serves eval data for dashboard, PostgreSQL provides fast queryable access to 121K eval results."
+  - date: 2026-03-11
+    decision: "Run Sonnet 4.6 ($55) and o3 ($40) evaluations; defer Opus 4.6 ($272)"
+    rationale: "Sonnet 4.6 gives Claude small+medium comparison (Haiku vs Sonnet). o3 adds reasoning-specialized model for unique CoT analysis. Together ($95) they provide more marginal value than Opus alone ($272). Opus deferred — budget better spent on two diverse additions than one expensive one."
+  - date: 2026-03-11
+    decision: "Analysis pipeline confirms theoretical predictions; proceed to paper writing"
+    rationale: "CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6 matches framework predictions. Budget_cot B2 anomaly (-0.254) traced to miscalibrated token budget (20 words for exponentially complex formulas). Fix identified."
 
 key_references:
   - "Merrill & Sabharwal, Saturated Transformers are Constant-Depth Threshold Circuits, TACL 2022"
@@ -80,15 +89,15 @@ key_references:
   - "Sprague et al., To CoT or not to CoT? 2024"
 
 next_steps:
-  - "Run full analysis pipeline: python experiments/run_full_analysis.py on complete 9-model dataset"
-  - "Decide on Sonnet 4.6 evaluation (~$55) — strong candidate for flagship model comparison"
-  - "Decide on Opus 4.6 evaluation (~$272) — worth it for scale analysis within Claude family?"
-  - "Decide on o3 evaluation (~$40) — worth it for reasoning-model comparison?"
-  - "Recalibrate budget_cot budgets (B2 budget too tight: 13% vs 93% with full CoT). Fix _budget_b2 in budget_calculator.py and re-run budget_cot condition only for affected models"
-  - "Write Section 5 (Experiments) with generated figures and analysis results"
-  - "Complete paper draft: Discussion, Related Work, Appendix"
-  - "Internal review and revision"
+  - "Fix _budget_b2 in budget_calculator.py (exponential scaling: 2^depth * 3 words) and re-run B2 budget_cot for all 9 models"
+  - "Run Sonnet 4.6 evaluation (27 combinations, ~$55)"
+  - "Run o3 evaluation (27 combinations, ~$40)"
+  - "Re-run full analysis pipeline with 11 models + recalibrated B2"
+  - "Write Section 5 (Experiments) — scaffold immediately, fill after data final"
+  - "Expand Related Work, write Appendix (proofs, benchmark details, full results)"
+  - "Expand Discussion — B8 ceiling, budget_cot calibration, practical implications"
+  - "Convert to NeurIPS format, internal review and revision"
 
-notes: "Major milestone: 9/12 models fully evaluated with zero failures. 121,614 evaluation instances across 9 tasks × 3 conditions × 9 models. Open-source models evaluated via OpenRouter API at negligible cost ($0.22 total), eliminating the Modal GPU infrastructure bottleneck entirely. Total eval spend: ~$75 (Anthropic ~$15, OpenAI ~$60, OpenRouter ~$0.22). Average accuracy by model: Qwen 72B 71.5%, GPT-4o 68.4%, GPT-4o-mini 64.0%, Haiku 4.5 62.8%, Llama 70B 62.5%, Ministral 8B 62.2%, Mistral Small 24B 60.5%, Qwen 7B 57.7%, Llama 8B 48.2%. Key observations: (1) Qwen 72B leads overall, (2) model size matters but not linearly, (3) Ministral 8B outperforms much larger Mistral Small 24B — warrants investigation. Next critical path: run analysis pipeline, then write Section 5."
+notes: "VPS infrastructure deployed 2026-03-11: daemon, API, PostgreSQL, nginx all running at 89.167.5.50. Analysis pipeline completed on 121,614 instances — predictions confirmed. CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6. Budget_cot B2 anomaly identified (flat 20-word budget for exponential-depth formulas). Total eval spend: ~$83. Planned: Sonnet 4.6 + o3 (~$95). Remaining budget: ~$267."
 
-current_activity: "9-model evaluation complete. Ready to run full analysis pipeline on 121,614 instances and begin writing Section 5 (Experiments). Pending decisions on 3 additional models (Sonnet 4.6, Opus 4.6, o3)."
+current_activity: "Paper-critical sprint: 4 parallel streams — (1) budget_cot B2 fix + re-eval, (2) Sonnet 4.6 + o3 evaluations, (3) Section 5 writing, (4) Discussion + Related Work + Appendix."
