@@ -2,9 +2,9 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-10
+updated: 2026-03-11
 
-phase: formal-framework
+phase: empirical-evaluation
 status: active
 
 progress:
@@ -21,11 +21,11 @@ progress:
     status: complete
     notes: "Full analysis pipeline implemented in experiments/. Includes: statistical tests (stats_utils.py), 6 primary analyses (primary.py), visualization functions (viz_utils.py, figures.py), main pipeline script (run_full_analysis.py), and test suite. Ready to process evaluation results once data available."
   empirical_evaluation:
-    status: ready
-    notes: "Analysis plan complete (notes/08-empirical-analysis-plan.md). Analysis infrastructure implemented (experiments/). Awaiting GPU server provisioning for data collection. 6 primary analyses + 3 secondary analyses + robustness checks specified and coded."
+    status: in_progress
+    notes: "9/12 models fully evaluated across 9 tasks × 3 conditions = 243 combinations (121,614 instances total, zero failures). Completed: Haiku 4.5, GPT-4o-mini, GPT-4o, Llama 3.1 8B, Llama 3.1 70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B, Qwen 2.5 72B. API models via Anthropic/OpenAI APIs; open-source models via OpenRouter. Pending: Sonnet 4.6, Opus 4.6, o3 (cost decisions needed)."
   paper_writing:
     status: in_progress
-    notes: "Sections 1-4 drafted in paper/main.tex. Section 5 (experiments) placeholder awaiting empirical results. Discussion and related work partially drafted."
+    notes: "Sections 1-4 drafted in paper/main.tex. Section 5 (experiments) placeholder awaiting full analysis. Discussion and related work partially drafted."
 
 decisions_pending: []
 
@@ -51,6 +51,21 @@ decisions_made:
   - date: 2026-03-10
     decision: "Implement complete analysis infrastructure before data collection"
     rationale: "Building analysis pipeline before data ensures: (1) no researcher degrees of freedom, (2) pipeline tested and debugged early, (3) immediate analysis once data available, (4) reproducible and version-controlled from start. Includes statistical tests, visualizations, and automated pipeline."
+  - date: 2026-03-10
+    decision: "Replace Mistral-Large (123B) with Mistral-Small-24B-Instruct-2501 in evaluation matrix"
+    rationale: "Mistral-Large-Instruct-2411 (123B) requires 2x A100-80GB with tensor parallelism, adding infra complexity and cost. Mistral-Small-24B fits on single A100-80GB, still provides 3.4x scale gap vs 7B for within-family scaling analysis. Trade-off: less extreme scale contrast, but practical and reliable."
+  - date: 2026-03-10
+    decision: "Use Modal serverless GPU for open-source model inference instead of dedicated Hetzner server"
+    rationale: "Scale-to-zero billing means we only pay for active inference time (~$272-515 estimated). No idle GPU costs during development. Individual model endpoints scale independently. Cold starts (~2-3 min) acceptable for batch evaluation."
+  - date: 2026-03-11
+    decision: "Use OpenRouter API for open-source model evaluation instead of Modal GPU deployment"
+    rationale: "OpenRouter provides simple API access to all 6 open-source models with no infrastructure setup. Total cost ~$0.22 vs estimated $100-200 for Modal GPU time. Eliminates cold start delays, GPU provisioning, and Modal configuration. vLLM client preserved in codebase for reproducibility validation if needed."
+  - date: 2026-03-11
+    decision: "Replace Mistral-7B-Instruct-v0.3 with Ministral-8B-2512 in evaluation matrix"
+    rationale: "Mistral-7B-Instruct-v0.3 not available on OpenRouter. Ministral-8B-2512 is the closest available model in size and family, maintaining the small/large scale contrast within the Mistral family for scaling analysis."
+  - date: 2026-03-11
+    decision: "Run all 6 open-source models in parallel via separate processes"
+    rationale: "Parallelizing across 6 models reduced total wall-clock time from ~30 hours (sequential) to ~5 hours. Each model runs independently with its own checkpoint file, so no coordination overhead or failure propagation."
 
 key_references:
   - "Merrill & Sabharwal, Saturated Transformers are Constant-Depth Threshold Circuits, TACL 2022"
@@ -65,16 +80,15 @@ key_references:
   - "Sprague et al., To CoT or not to CoT? 2024"
 
 next_steps:
-  - "Install Python dependencies for analysis pipeline: pip install -r experiments/requirements.txt"
-  - "Provision GPU server for open-source model evaluation (Hetzner A100 80GB)"
-  - "Set up vLLM inference endpoints for Llama, Mistral, Qwen models"
-  - "Generate benchmark data: python benchmarks/generate.py --all"
-  - "Run empirical evaluation: execute benchmarks/evaluate.py across 12 models × 9 tasks × 4 conditions (331K evaluations)"
-  - "Execute analysis pipeline: python experiments/run_full_analysis.py --results-dir results/raw --output-dir results/processed --figures-dir results/figures"
+  - "Run full analysis pipeline: python experiments/run_full_analysis.py on complete 9-model dataset"
+  - "Decide on Sonnet 4.6 evaluation (~$55) — strong candidate for flagship model comparison"
+  - "Decide on Opus 4.6 evaluation (~$272) — worth it for scale analysis within Claude family?"
+  - "Decide on o3 evaluation (~$40) — worth it for reasoning-model comparison?"
+  - "Recalibrate budget_cot budgets (B2 budget too tight: 13% vs 93% with full CoT). Fix _budget_b2 in budget_calculator.py and re-run budget_cot condition only for affected models"
   - "Write Section 5 (Experiments) with generated figures and analysis results"
-  - "Complete paper draft: write Discussion, Related Work, and Appendix"
+  - "Complete paper draft: Discussion, Related Work, Appendix"
   - "Internal review and revision"
 
-notes: "All pre-empirical work complete: (1) Literature review (80+ papers), (2) Formal framework (6-type taxonomy, 5 propositions with proofs), (3) Benchmark implementation (B1-B9), (4) Analysis infrastructure (statistical tests, visualizations, pipeline). Infrastructure bottleneck: GPU server for open-source model evaluation. Once provisioned, path to completion is fully specified and automated."
+notes: "Major milestone: 9/12 models fully evaluated with zero failures. 121,614 evaluation instances across 9 tasks × 3 conditions × 9 models. Open-source models evaluated via OpenRouter API at negligible cost ($0.22 total), eliminating the Modal GPU infrastructure bottleneck entirely. Total eval spend: ~$75 (Anthropic ~$15, OpenAI ~$60, OpenRouter ~$0.22). Average accuracy by model: Qwen 72B 71.5%, GPT-4o 68.4%, GPT-4o-mini 64.0%, Haiku 4.5 62.8%, Llama 70B 62.5%, Ministral 8B 62.2%, Mistral Small 24B 60.5%, Qwen 7B 57.7%, Llama 8B 48.2%. Key observations: (1) Qwen 72B leads overall, (2) model size matters but not linearly, (3) Ministral 8B outperforms much larger Mistral Small 24B — warrants investigation. Next critical path: run analysis pipeline, then write Section 5."
 
-current_activity: "Implemented complete analysis infrastructure in experiments/ directory. Built statistical test utilities, 6 primary analyses, visualization functions, and automated pipeline. Analysis code is pre-registered, version-controlled, and ready to process evaluation results. Main blocker: GPU server provisioning for data collection."
+current_activity: "9-model evaluation complete. Ready to run full analysis pipeline on 121,614 instances and begin writing Section 5 (Experiments). Pending decisions on 3 additional models (Sonnet 4.6, Opus 4.6, o3)."
