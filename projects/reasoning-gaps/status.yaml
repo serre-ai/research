@@ -3,25 +3,36 @@ title: "On the Reasoning Gaps of Large Language Models: A Formal Characterizatio
 venue: NeurIPS 2026
 created: 2026-03-07
 
-phase: literature-review
+phase: formal-framework
 status: active
 
 progress:
   literature_review:
-    status: not_started
-    notes: "Survey transformer expressiveness, circuit complexity, reasoning benchmarks"
+    status: completed
+    notes: "Surveyed 27 papers across 7 themes. Coverage: transformer expressiveness (TC⁰ bounds), working memory limits, compositional failures, counterfactual reasoning, emergence/scaling, mitigation strategies. Files: notes/literature-review.md, notes/gap-analysis.md"
+    papers_surveyed: 27
+    completion_date: 2026-03-10
   formal_framework:
-    status: not_started
-    notes: "Define reasoning gap formally, connect to complexity classes"
+    status: completed
+    notes: "Defined reasoning gap formally as tuple (P,M,D,δ,θ). Classified gaps: architectural/capacity/training. Formalized 6 gap types with complexity-theoretic grounding. Characterized CoT effectiveness via serial decomposability. Connected to all hypotheses H1-H3. File: notes/framework.md"
+    completion_date: 2026-03-11
+  taxonomy:
+    status: completed
+    notes: "Organized 9 gap types into 3 categories (computational/resource/distributional). Each characterized across complexity theory, architecture, empirical dimensions. Includes diagnostic framework and mitigation guidance. File: notes/taxonomy.md"
+    completion_date: 2026-03-11
   benchmark_design:
+    status: completed
+    notes: "Designed 9 diagnostic benchmarks (B1-B9) with controlled difficulty parameters. ~3000 instances total. Defined evaluation protocol, statistical analysis plan. Budget estimate: $600. File: notes/benchmark-design.md"
+    completion_date: 2026-03-11
+  benchmark_implementation:
     status: not_started
-    notes: "Diagnostic tasks isolating specific gap types"
+    notes: "Implement generators for benchmarks B1-B9. Start with B1 (compositional), B3 (working memory), B5 (counterfactual)"
   empirical_evaluation:
     status: not_started
-    notes: "Cross-model, cross-scale evaluation"
+    notes: "Run evaluation across ≥3 model families at multiple scales. Test with/without CoT. Generate performance curves and statistical analysis."
   paper_writing:
     status: not_started
-    notes: ""
+    notes: "Draft paper targeting NeurIPS 2026 format. Sections: intro, related work, formal framework, taxonomy, benchmarks, empirical results, discussion"
 
 decisions_pending: []
 
@@ -30,6 +41,51 @@ decisions_made:
     decision: "Target NeurIPS 2026 as venue"
     rationale: "Strong fit for work bridging theory and empirical LLM evaluation"
 
-key_references: []
+  - date: 2026-03-11
+    decision: "Define 9 gap types organized into 3 categories"
+    rationale: "Provides comprehensive coverage while maintaining theoretical coherence. Categories (computational/resource/distributional) map cleanly to scale-invariant/scale-dependent/training-dependent distinctions"
 
-notes: "Project initialized. Begin with literature survey of transformer expressiveness bounds and existing reasoning failure analyses."
+  - date: 2026-03-11
+    decision: "Design 9 benchmarks covering all major gap types with ~3000 instances total"
+    rationale: "Balances comprehensive coverage with feasibility. 9 benchmarks allow statistical power while remaining within budget (~$600 estimated API costs). Controlled parameters enable hypothesis testing for H1-H3"
+
+  - date: 2026-03-11
+    decision: "Formalize CoT effectiveness via serial decomposability"
+    rationale: "Provides precise characterization of when CoT helps (serially decomposable problems) vs. when it only masks gaps (distribution-dependent success). Directly addresses H2"
+
+  - date: 2026-03-11
+    decision: "Evaluate across ≥3 model families at multiple scales"
+    rationale: "Required for testing H3 (scale dependence). Minimum 3 families ensures robustness. Multiple scales within families isolates architectural vs capacity effects"
+
+key_references:
+  - "[Merrill22-TC0] Merrill et al., 2022 - Saturated Transformers are Constant-Depth Threshold Circuits (TACL)"
+  - "[Strobl24-Survey] Strobl et al., 2024 - What Formal Languages Can Transformers Express? A Survey (TACL)"
+  - "[MemCap24] Wang et al., 2024 - Self-Attention Limits Working Memory Capacity (NeurIPS)"
+  - "[CoT-Mirage] Zhang et al., 2025 - Is Chain-of-Thought Reasoning a Mirage? (arXiv)"
+  - "[Comp-Collapse] Wang et al., 2024 - Compositional Generalization in LLMs"
+  - "[CF-Knowledge] Chen et al., 2025 - Can LLMs Reconcile Knowledge Conflicts in Counterfactual Reasoning? (arXiv)"
+  - "[Exec-CF] Miller et al., 2024 - LLMs Must Think Thrice to Solve Executable Counterfactuals (OpenReview)"
+  - "[Abstract-Reason] Kumar et al., 2024 - Large Language Models Are Not Strong Abstract Reasoners (IJCAI)"
+  - "[Emergent-Survey] Liu et al., 2025 - Emergent Abilities in Large Language Models: A Survey (arXiv)"
+
+gaps_identified:
+  - "Gap 1 (CRITICAL): No formal definition bridging empirical failures to complexity-theoretic bounds"
+  - "Gap 2 (HIGH): No unified taxonomy connecting complexity, architecture, and empirical patterns"
+  - "Gap 3 (HIGH): CoT effectiveness not formally characterized - gap closure vs masking unclear"
+  - "Gap 4 (MEDIUM-HIGH): No principled distinction between scale-dependent and scale-invariant gaps"
+  - "Gap 5 (MEDIUM): No unified diagnostic benchmark with complexity grounding"
+  - "Gap 6 (MEDIUM): No systematic framework for selecting architectural vs prompt-based mitigations"
+
+current_activity: "Completed formal framework, taxonomy, and benchmark design. Ready to begin implementation phase."
+
+next_steps:
+  - "Implement benchmark generators (B1, B3, B5 first as core representatives)"
+  - "Pilot evaluation on single model to validate benchmarks"
+  - "Refine benchmarks based on pilot results"
+  - "Execute full multi-model evaluation"
+  - "Statistical analysis and hypothesis testing"
+  - "Begin paper drafting with completed theoretical framework"
+
+blockers: []
+
+notes: "Session 2026-03-11: Major progress on theoretical foundations. Completed formal framework defining reasoning gaps, comprehensive taxonomy with 9 gap types, and detailed benchmark specifications. Literature review from previous session covered 27 papers. All core theoretical contributions (Gaps 1-3) now have initial formulations. Ready to transition to implementation and empirical evaluation phase."
