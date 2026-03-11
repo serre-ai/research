@@ -1,0 +1,33 @@
+[Unit]
+Description=Deepwork Research Platform Daemon
+Documentation=https://github.com/oddurs/deepwork
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deepwork
+Group=deepwork
+WorkingDirectory=/opt/deepwork
+ExecStart=/usr/bin/node orchestrator/dist/index.js run --interval 30 --max-sessions 2 --budget 40
+Restart=always
+RestartSec=30
+TimeoutStopSec=120
+
+# Environment
+EnvironmentFile=/opt/deepwork/.env
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/deepwork
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=deepwork-daemon
+
+[Install]
+WantedBy=multi-user.target

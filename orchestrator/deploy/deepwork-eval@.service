@@ -1,0 +1,42 @@
+[Unit]
+Description=Deepwork Eval Job — %i
+Documentation=https://github.com/oddurs/deepwork
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deepwork
+Group=deepwork
+WorkingDirectory=/opt/deepwork/projects/reasoning-gaps/benchmarks
+
+# Instance name format: model_task_condition
+# Example: systemctl start deepwork-eval@claude-haiku-4-5-20251001_B1_masked_majority_direct
+ExecStart=/usr/bin/python3 run_evaluation.py --resume --instance %i
+
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=300
+
+# Allow graceful checkpoint save on stop
+KillSignal=SIGINT
+SendSIGHUP=yes
+TimeoutStopSec=120
+
+# Environment
+EnvironmentFile=/opt/deepwork/.env
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/deepwork
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=deepwork-eval-%i
+
+[Install]
+WantedBy=multi-user.target
