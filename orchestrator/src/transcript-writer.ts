@@ -20,18 +20,12 @@ export class TranscriptWriter {
 
     try {
       await this.ensureDir();
-      const line =
-        JSON.stringify({ t: Date.now(), ...message as object }) + "\n";
+      const line = JSON.stringify({ t: Date.now(), ...message as Record<string, unknown> }) + "\n";
       this.currentSize += Buffer.byteLength(line);
 
       if (this.currentSize > MAX_FILE_SIZE_BYTES) {
         this.sizeLimitReached = true;
-        await appendFile(
-          this.filePath,
-          JSON.stringify({ t: Date.now(), type: "_transcript_truncated" }) +
-            "\n",
-          "utf-8",
-        );
+        await appendFile(this.filePath, JSON.stringify({ t: Date.now(), type: "_transcript_truncated" }) + "\n", "utf-8");
         return;
       }
 

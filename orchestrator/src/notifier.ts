@@ -24,12 +24,9 @@ export class Notifier {
       const url = await this.getWebhookUrl();
       if (!url) return;
 
-      const icon =
-        payload.level === "error"
-          ? ":red_circle:"
-          : payload.level === "warning"
-            ? ":warning:"
-            : ":large_blue_circle:";
+      const icon = payload.level === "error" ? ":red_circle:"
+        : payload.level === "warning" ? ":warning:"
+        : ":large_blue_circle:";
 
       const projectTag = payload.project ? ` [${payload.project}]` : "";
       const text = `${icon} *${payload.event}*${projectTag}\n${payload.summary}`;
@@ -58,12 +55,14 @@ export class Notifier {
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
+
       await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         signal: controller.signal,
       });
+
       clearTimeout(timeout);
     } catch {
       // Fire-and-forget: never throw
@@ -81,15 +80,10 @@ export class Notifier {
     }
 
     try {
-      const configText = await readFile(
-        join(this.rootDir, "config.yaml"),
-        "utf-8",
-      );
-      const config = parse(configText);
-      const notifications = config.notifications as
-        | { webhook_url?: string }
-        | undefined;
-      this.webhookUrl = notifications?.webhook_url ?? null;
+      const configText = await readFile(join(this.rootDir, "config.yaml"), "utf-8");
+      const config = parse(configText) as Record<string, unknown>;
+      const notifications = config.notifications as Record<string, unknown> | undefined;
+      this.webhookUrl = (notifications?.webhook_url as string) ?? null;
     } catch {
       this.webhookUrl = null;
     }

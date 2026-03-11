@@ -6,7 +6,8 @@
   "description": "AI-driven research platform for Turing Award-caliber work",
   "workspaces": [
     "orchestrator",
-    "cli"
+    "cli",
+    "site"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=orchestrator",

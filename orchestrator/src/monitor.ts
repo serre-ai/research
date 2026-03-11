@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -38,25 +38,21 @@ export class Monitor {
   private budgetTracker: BudgetTracker;
   private logger: ActivityLogger;
 
-  constructor(
-    rootDir: string,
-    budgetTracker: BudgetTracker,
-    logger: ActivityLogger,
-  ) {
+  constructor(rootDir: string, budgetTracker: BudgetTracker, logger: ActivityLogger) {
     this.rootDir = rootDir;
     this.budgetTracker = budgetTracker;
     this.logger = logger;
   }
 
   async getHealth(): Promise<HealthStatus> {
-    const [daemon, budget, disk, recentErrors, lastActivity] =
-      await Promise.all([
-        this.getDaemonStatus(),
-        this.getBudgetStatus(),
-        this.getDiskUsage(),
-        this.getRecentErrorCount(),
-        this.getLastActivity(),
-      ]);
+    const [daemon, budget, disk, recentErrors, lastActivity] = await Promise.all([
+      this.getDaemonStatus(),
+      this.getBudgetStatus(),
+      this.getDiskUsage(),
+      this.getRecentErrorCount(),
+      this.getLastActivity(),
+    ]);
+
     return { daemon, budget, disk, recentErrors, lastActivity };
   }
 
@@ -64,10 +60,16 @@ export class Monitor {
     const heartbeatPath = join(this.rootDir, ".deepwork.heartbeat");
     try {
       const content = await readFile(heartbeatPath, "utf-8");
-      const data = JSON.parse(content);
+      const data = JSON.parse(content) as {
+        timestamp: string;
+        cycle: number;
+        activeSessions: string[];
+        uptimeMs: number;
+      };
       const heartbeatAge = Date.now() - new Date(data.timestamp).getTime();
       // Consider daemon running if heartbeat is <2x poll interval (default 60 min)
       const running = heartbeatAge < 2 * 60 * 60 * 1000;
+
       return {
         running,
         lastHeartbeat: data.timestamp,
@@ -109,7 +111,6 @@ export class Monitor {
       const parts = lines[1].split(/\s+/);
       const totalKb = parseInt(parts[1], 10);
       const usedKb = parseInt(parts[2], 10);
-
       return {
         usedGb: parseFloat((usedKb / 1024 / 1024).toFixed(1)),
         totalGb: parseFloat((totalKb / 1024 / 1024).toFixed(1)),
@@ -123,9 +124,7 @@ export class Monitor {
   private async getRecentErrorCount(): Promise<number> {
     const events = await this.logger.recent(100, { type: "session_error" });
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    return events.filter(
-      (e) => new Date(e.timestamp).getTime() > oneDayAgo,
-    ).length;
+    return events.filter((e) => new Date(e.timestamp).getTime() > oneDayAgo).length;
   }
 
   private async getLastActivity(): Promise<string | null> {
@@ -138,13 +137,8 @@ export class Monitor {
 
     // Daemon
     const daemonStatus = health.daemon.running ? "running" : "stopped";
-    const uptime =
-      health.daemon.uptimeMs > 0
-        ? this.formatDuration(health.daemon.uptimeMs)
-        : "—";
-    lines.push(
-      `Daemon:   ${daemonStatus} (uptime: ${uptime}, cycles: ${health.daemon.cycle})`,
-    );
+    const uptime = health.daemon.uptimeMs > 0 ? this.formatDuration(health.daemon.uptimeMs) : "—";
+    lines.push(`Daemon:   ${daemonStatus} (uptime: ${uptime}, cycles: ${health.daemon.cycle})`);
     if (health.daemon.activeSessions.length > 0) {
       lines.push(`Sessions: ${health.daemon.activeSessions.join(", ")}`);
     } else {
@@ -152,28 +146,22 @@ export class Monitor {
     }
 
     // Budget
-    lines.push(
-      `Budget:   $${health.budget.dailySpent.toFixed(2)} / $${health.budget.dailyLimit.toFixed(2)} today, $${health.budget.monthlySpent.toFixed(2)} / $${health.budget.monthlyLimit.toFixed(2)} this month [${health.budget.alertLevel}]`,
-    );
+    lines.push(`Budget:   $${health.budget.dailySpent.toFixed(2)} / $${health.budget.dailyLimit.toFixed(2)} today, $${health.budget.monthlySpent.toFixed(2)} / $${health.budget.monthlyLimit.toFixed(2)} this month [${health.budget.alertLevel}]`);
     if (Object.keys(health.budget.byProject).length > 0) {
       for (const [name, cost] of Object.entries(health.budget.byProject)) {
-        lines.push(`          ${name}: $${(cost as number).toFixed(2)}`);
+        lines.push(`          ${name}: $${cost.toFixed(2)}`);
       }
     }
 
     // Disk
-    lines.push(
-      `Disk:     ${health.disk.usedGb} GB / ${health.disk.totalGb} GB (${health.disk.percentUsed}%)`,
-    );
+    lines.push(`Disk:     ${health.disk.usedGb} GB / ${health.disk.totalGb} GB (${health.disk.percentUsed}%)`);
 
     // Errors
     lines.push(`Errors:   ${health.recentErrors} in last 24h`);
 
     // Last activity
     if (health.lastActivity) {
-      const ago = this.formatDuration(
-        Date.now() - new Date(health.lastActivity).getTime(),
-      );
+      const ago = this.formatDuration(Date.now() - new Date(health.lastActivity).getTime());
       lines.push(`Activity: ${ago} ago`);
     } else {
       lines.push("Activity: none recorded");

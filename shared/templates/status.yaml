@@ -1,0 +1,86 @@
+# Project status file — single source of truth for project state.
+# Compatible with ProjectStatus interface in orchestrator/src/project-manager.ts.
+
+# Unique project identifier (kebab-case, matches directory name)
+project: "{{project_name}}"
+
+# Full paper/project title
+title: "{{project_title}}"
+
+# Current status: active | paused | review | completed
+status: active
+
+# Current phase: research | drafting | revision | final
+# research  — literature review, framework development, experiments
+# drafting  — writing the paper
+# revision  — incorporating feedback, self-review, rewriting
+# final     — camera-ready preparation, submission
+phase: research
+
+# Confidence that the project will reach publication (0.0–1.0)
+# Update as evidence accumulates. Start at 0.5 for new projects.
+confidence: 0.5
+
+# Date project was created (YYYY-MM-DD)
+created: "{{created_date}}"
+
+# ISO timestamp of last status update (auto-updated by orchestrator)
+updated: "{{created_date}}T00:00:00Z"
+
+# Target venue and year
+venue: "{{venue}}"
+
+# List of collaborator identifiers (empty for solo agent projects)
+collaborators: []
+
+# One-line description of what the agent should be working on right now
+current_focus: "Initial research and literature review"
+
+# Ordered list of upcoming tasks
+next_steps:
+  - "Survey existing literature"
+  - "Identify research gap"
+  - "Draft methodology"
+
+# Granular progress tracking per work stream
+# status: not_started | in_progress | complete
+progress:
+  literature_review:
+    status: not_started
+    notes: ""
+  framework_development:
+    status: not_started
+    notes: ""
+  experiments:
+    status: not_started
+    notes: ""
+  paper_writing:
+    status: not_started
+    notes: ""
+
+# Decisions awaiting resolution (structured per Decision interface)
+# Each entry: { id, question, context, options, priority, created }
+decisions_pending: []
+
+# Log of decisions already made (append-only)
+# Each entry: { date, decision, rationale }
+decisions_made: []
+
+# Key references discovered during research
+# Each entry: "Author et al. (Year) - Short description"
+key_references: []
+
+# Git tracking
+git:
+  branch: "research/{{project_name}}"
+  latest_commit: ""
+  open_prs: []
+
+# Quantitative metrics for dashboard
+metrics:
+  papers_reviewed: 0
+  sections_drafted: 0
+  experiments_run: 0
+
+# Free-form notes for the agent
+notes: "Project initialized. Begin with literature survey."

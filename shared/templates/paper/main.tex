@@ -1,0 +1,268 @@
+% ==============================================================================
+% Paper Template — Deepwork Research Platform
+% Targeting NeurIPS 2026 style. Adjust \usepackage{neurips_2026} for other venues.
+% ==============================================================================
+
+\documentclass{article}
+
+% --- Venue style ---
+% Swap this line for your target venue's style file.
+% Options: neurips_2026, icml2026, iclr2026_conference
+\usepackage[preprint]{neurips_2026}
+
+% --- Core packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}       % Professional tables
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{nicefrac}
+\usepackage{microtype}       % Better typography
+\usepackage{xcolor}
+
+% --- Figures and graphics ---
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% --- Algorithms ---
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+% --- Tables ---
+\usepackage{multirow}
+\usepackage{makecell}
+
+% --- Theorem environments ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}[theorem]{Assumption}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% --- Common math macros ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\ind}{\mathbbm{1}}
+\newcommand{\norm}[1]{\left\| #1 \right\|}
+\newcommand{\abs}[1]{\left| #1 \right|}
+\newcommand{\inner}[2]{\langle #1, #2 \rangle}
+\newcommand{\set}[1]{\left\{ #1 \right\}}
+\newcommand{\ceil}[1]{\left\lceil #1 \right\rceil}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\softmax}{\mathrm{softmax}}
+\newcommand{\sigmoid}{\sigma}
+
+% --- Editing macros (remove before submission) ---
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+\newcommand{\note}[1]{\textcolor{blue}{\textbf{Note:} #1}}
+
+% ==============================================================================
+
+\title{[Paper Title]}
+
+% For anonymous submission, comment out authors and use:
+% \author{Anonymous}
+
+\author{
+  [Author Name] \\
+  [Affiliation] \\
+  \texttt{[email]} \\
+  % Add more authors with \And
+}
+
+\begin{document}
+
+\maketitle
+
+% ==============================================================================
+\begin{abstract}
+% 150-250 words. Four sentences minimum:
+% 1. What is the problem and why does it matter?
+% 2. What is your approach/contribution?
+% 3. What are the key results?
+% 4. What is the broader implication?
+
+\todo{Write abstract last, after all other sections are complete.}
+\end{abstract}
+
+% ==============================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+% Structure (typically 4-6 paragraphs):
+% 1. Opening: The broad problem area and why it matters (cite foundational work)
+% 2. Specific gap: What's missing in current understanding? (cite recent work showing the gap)
+% 3. This work: What we do — state contributions clearly
+% 4. Key results: The headline findings, briefly
+% 5. Implications: Why these results matter
+% 6. Paper outline: "The remainder of this paper is organized as follows..."
+
+% Clearly state contributions as a bulleted list:
+% Our main contributions are:
+% \begin{itemize}
+%   \item We propose...
+%   \item We prove/show...
+%   \item We empirically demonstrate...
+% \end{itemize}
+
+\todo{Write introduction.}
+
+% ==============================================================================
+\section{Related Work}
+\label{sec:related_work}
+
+% Organize by theme, not chronologically. Common structure:
+% \paragraph{[Theme 1].} Discuss the most relevant prior work stream...
+% \paragraph{[Theme 2].} Another related area...
+% \paragraph{[Theme 3].} Additional context...
+%
+% End each paragraph by clearly differentiating our work.
+% Aim for 30+ citations. Be generous and fair to related work.
+
+\todo{Write related work.}
+
+% ==============================================================================
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+% Define notation, key concepts, and problem setup.
+% Include formal definitions that later sections build on.
+% Only include what the reader needs — move supplementary background to the appendix.
+
+\todo{Write preliminaries.}
+
+% ==============================================================================
+\section{Method}
+\label{sec:method}
+% Alternative titles: "Approach", "Framework", "Theoretical Framework", "[Name of Your Method]"
+
+% This is the core contribution section. Structure depends on the paper type:
+%
+% Theory paper:
+%   - Formal definitions → Main theorem → Proof sketch → Implications
+%   - Full proofs in appendix if they're long
+%
+% Systems/methods paper:
+%   - Problem formulation → Algorithm/Architecture → Analysis
+%
+% Empirical paper:
+%   - Experimental framework → Benchmark design → Evaluation protocol
+
+\todo{Write method section.}
+
+% ==============================================================================
+\section{Experiments}
+\label{sec:experiments}
+
+% Standard structure:
+% 5.1 Experimental Setup
+%   - Datasets, models, baselines, hyperparameters, compute budget
+%   - Evaluation metrics with formal definitions
+% 5.2 Main Results
+%   - Table or figure with headline results
+%   - Statistical significance and confidence intervals
+% 5.3 Ablation Studies
+%   - What happens when you remove each component?
+% 5.4 Analysis
+%   - Qualitative examples, failure cases, scaling behavior, etc.
+
+\subsection{Experimental Setup}
+\label{sec:experimental_setup}
+
+\todo{Describe setup.}
+
+\subsection{Main Results}
+\label{sec:main_results}
+
+\todo{Present main results.}
+
+\subsection{Ablation Studies}
+\label{sec:ablations}
+
+\todo{Present ablations.}
+
+\subsection{Analysis}
+\label{sec:analysis}
+
+\todo{Deeper analysis.}
+
+% ==============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+% Address:
+% - Limitations of the current work (be honest — reviewers respect this)
+% - Broader implications of the findings
+% - Connections to other fields or applications
+% - Ethical considerations, if applicable
+% - Future work directions (be specific, not vague)
+
+\todo{Write discussion.}
+
+% ==============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+% 1-2 paragraphs. Restate the problem, summarize what was done, highlight key findings,
+% and end with the broader significance. Do not introduce new information.
+
+\todo{Write conclusion.}
+
+% ==============================================================================
+% Acknowledgments (hidden during anonymous review)
+\begin{ack}
+\todo{Add acknowledgments.}
+\end{ack}
+
+% ==============================================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% ==============================================================================
+\newpage
+\appendix
+
+\section{Proofs}
+\label{app:proofs}
+
+% Full proofs of theorems stated in the main text.
+
+\todo{Add proofs.}
+
+\section{Additional Experiments}
+\label{app:additional_experiments}
+
+% Supplementary experimental results, extended tables, additional figures.
+
+\todo{Add supplementary experiments.}
+
+\section{Hyperparameter Details}
+\label{app:hyperparameters}
+
+% Full hyperparameter configurations for reproducibility.
+
+\todo{Add hyperparameter details.}
+
+\end{document}

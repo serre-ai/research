@@ -2,23 +2,13 @@ import { appendFile, readFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 export type EventType =
-  | "session_start"
-  | "session_end"
-  | "session_error"
-  | "commit"
-  | "push"
-  | "pr_created"
-  | "pr_merged"
-  | "decision_created"
-  | "decision_resolved"
-  | "budget_spend"
-  | "budget_alert"
-  | "experiment_start"
-  | "experiment_end"
+  | "session_start" | "session_end" | "session_error"
+  | "commit" | "push" | "pr_created" | "pr_merged"
+  | "decision_created" | "decision_resolved"
+  | "budget_spend" | "budget_alert"
+  | "experiment_start" | "experiment_end"
   | "phase_transition"
-  | "daemon_start"
-  | "daemon_stop"
-  | "daemon_error";
+  | "daemon_start" | "daemon_stop" | "daemon_error";
 
 export interface ActivityEvent {
   timestamp: string;
@@ -40,7 +30,7 @@ export class ActivityLogger {
 
   async log(event: Omit<ActivityEvent, "timestamp">): Promise<void> {
     await this.ensureDir();
-    const entry = {
+    const entry: ActivityEvent = {
       timestamp: new Date().toISOString(),
       ...event,
     };
@@ -59,7 +49,7 @@ export class ActivityLogger {
     }
 
     const lines = content.trim().split("\n").filter(Boolean);
-    let events: ActivityEvent[] = lines.map((line) => JSON.parse(line));
+    let events: ActivityEvent[] = lines.map((line) => JSON.parse(line) as ActivityEvent);
 
     if (filter?.type) {
       events = events.filter((e) => e.type === filter.type);

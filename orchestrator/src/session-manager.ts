@@ -1,33 +1,43 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ProjectManager } from "./project-manager.js";
 import { GitEngine } from "./git-engine.js";
+import { SessionRunner, type SessionResult } from "./session-runner.js";
+import { ActivityLogger } from "./logger.js";
 
-interface Session {
+export interface Session {
   projectName: string;
   sessionId?: string;
   worktreePath: string;
   branch: string;
-  status: "running" | "paused" | "completed";
+  status: "running" | "paused" | "completed" | "failed";
   startedAt: string;
+  result?: SessionResult;
 }
 
 export class SessionManager {
   private sessions = new Map<string, Session>();
   private projectManager: ProjectManager;
   private gitEngine: GitEngine;
+  private sessionRunner: SessionRunner;
+  private logger: ActivityLogger;
+  private rootDir: string;
 
-  constructor(projectManager: ProjectManager, gitEngine: GitEngine) {
+  constructor(projectManager: ProjectManager, gitEngine: GitEngine, rootDir: string = process.cwd()) {
     this.projectManager = projectManager;
     this.gitEngine = gitEngine;
+    this.rootDir = rootDir;
+    this.sessionRunner = new SessionRunner(rootDir);
+    this.logger = new ActivityLogger(rootDir);
   }
 
-  async startProject(projectName: string): Promise<Session> {
-    const status = await this.projectManager.getProjectStatus(projectName);
+  async startProject(
+    projectName: string,
+    agentType: "researcher" | "writer" | "reviewer" | "editor" | "strategist" = "researcher",
+    options?: { maxTurns?: number; maxDurationMs?: number },
+  ): Promise<Session> {
     const branch = `research/${projectName}`;
-    const worktreePath = join(process.cwd(), ".worktrees", projectName);
+    const worktreePath = join(this.rootDir, ".worktrees", projectName);
 
-    // Set up isolated worktree
     await this.gitEngine.createWorktree(worktreePath, branch);
 
     const session: Session = {
@@ -40,84 +50,80 @@ export class SessionManager {
     this.sessions.set(projectName, session);
 
     console.log(`Started session for ${projectName}`);
+    console.log(`  Agent: ${agentType}`);
     console.log(`  Branch: ${branch}`);
     console.log(`  Worktree: ${worktreePath}`);
 
-    // Read project files for the agent prompt
-    const brief = await readFile(
-      join("projects", projectName, "BRIEF.md"),
-      "utf-8",
-    );
-    const projectClaude = await readFile(
-      join("projects", projectName, "CLAUDE.md"),
-      "utf-8",
-    ).catch(() => "");
+    try {
+      const result = await this.sessionRunner.run({
+        projectName,
+        agentType,
+        maxTurns: options?.maxTurns ?? 50,
+        maxDurationMs: options?.maxDurationMs ?? 45 * 60 * 1000,
+      });
 
-    const prompt = this.buildPrompt(projectName, brief, projectClaude, status);
+      session.sessionId = result.sessionId;
+      session.result = result;
+      session.status = result.status === "completed" ? "completed" : "failed";
 
-    // TODO: Integrate with @anthropic-ai/claude-agent-sdk
-    console.log("\nAgent prompt prepared. Launch with Claude SDK or manually:\n");
-    console.log(`  cd ${worktreePath}`);
-    console.log(`  claude -p "${prompt.slice(0, 80)}..."\n`);
+      console.log(`Session finished for ${projectName}: ${result.status}`);
+      console.log(`  Turns: ${result.turnsUsed} | Cost: $${result.costUsd.toFixed(4)} | Duration: ${Math.round(result.durationMs / 1000)}s`);
+
+      if (result.error) {
+        console.log(`  Error: ${result.error}`);
+      }
+    } catch (err) {
+      session.status = "failed";
+      console.error(`Session crashed for ${projectName}:`, err);
+    }
+
+    // Auto-create PR if session produced commits
+    if (session.result && session.result.commitsCreated.length > 0) {
+      try {
+        const worktreeEngine = this.gitEngine.inDir(session.worktreePath);
+        const prUrl = await worktreeEngine.createSessionPR({
+          projectName,
+          branch: session.branch,
+          sessionId: session.result.sessionId,
+          status: session.result.status,
+          turnsUsed: session.result.turnsUsed,
+          costUsd: session.result.costUsd,
+          durationMs: session.result.durationMs,
+          commits: session.result.commitsCreated,
+        });
+
+        if (prUrl) {
+          console.log(`  PR created: ${prUrl}`);
+          await this.logger.log({
+            type: "pr_created",
+            project: projectName,
+            data: { url: prUrl, sessionId: session.result.sessionId },
+          });
+        }
+      } catch (err) {
+        console.error(`  Failed to create PR: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    await this.stopProject(projectName);
 
     return session;
-  }
-
-  private buildPrompt(
-    projectName: string,
-    brief: string,
-    projectClaude: string,
-    status: {
-      phase: string;
-      current_focus?: string;
-      next_steps?: string[];
-      progress?: Record<string, unknown>;
-    },
-  ): string {
-    const nextSteps = status.next_steps
-      ?.map((s: string) => `  - ${s}`)
-      .join("\n") ?? "  - Check status.yaml for current tasks";
-
-    return `You are an autonomous research agent working on the "${projectName}" project.
-
-## Research Brief
-${brief}
-
-## Project Instructions
-${projectClaude}
-
-## Current State
-- Phase: ${status.phase}
-- Focus: ${status.current_focus ?? "See status.yaml"}
-- Next steps:
-${nextSteps}
-
-## Workflow
-1. Read the project files to understand current state
-2. Work autonomously — make all decisions yourself using your best judgment
-3. Use extended thinking for critical research decisions
-4. Make frequent conventional commits: type(${projectName}): description
-5. Update status.yaml after significant progress
-6. Log all decisions in decisions_made with date and rationale
-7. Push changes to remote regularly
-8. Create a PR to main when you reach a milestone
-`;
   }
 
   async stopProject(projectName: string): Promise<void> {
     const session = this.sessions.get(projectName);
     if (!session) return;
 
-    // Commit any pending changes
     const worktreeEngine = this.gitEngine.inDir(session.worktreePath);
     await worktreeEngine.commitAndPush(
       `chore(${projectName}): save session state`,
     );
 
-    session.status = "completed";
+    if (session.status === "running") {
+      session.status = "completed";
+    }
     this.sessions.delete(projectName);
 
-    // Clean up worktree
     await this.gitEngine.cleanupProjectWorktree(projectName);
     console.log(`Stopped session for ${projectName}`);
   }

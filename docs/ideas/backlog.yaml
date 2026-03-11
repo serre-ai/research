@@ -1,0 +1,284 @@
+# Research Idea Backlog
+# Last updated: 2026-03-09
+# Scoring: novelty (0.30) + feasibility (0.25) + impact (0.25) + portfolio_fit (0.20)
+
+ideas:
+
+  - name: cot-faithfulness-audit
+    title: "How Faithful Are Chains of Thought? A Systematic Audit of Reasoning Trace Accuracy"
+    area: LLM Capabilities
+    type: empirical
+    venue_targets:
+      - EMNLP 2026
+      - NeurIPS 2026
+    estimated_months: 3
+    brief_description: |
+      Chain-of-thought prompting is widely used to improve LLM reasoning, but the degree to which
+      the generated reasoning trace reflects the model's actual computation is poorly understood.
+      This project conducts a systematic audit: comparing CoT traces to logit-level evidence,
+      measuring consistency under paraphrase, and quantifying when CoT helps performance
+      without producing faithful explanations.
+    key_hypotheses:
+      - "CoT traces are faithful (predict model behavior under perturbation) for arithmetic and simple logic but unfaithful for multi-step commonsense reasoning"
+      - "Models that produce correct answers with unfaithful CoT are more brittle to distribution shift than those with faithful CoT"
+      - "Faithfulness degrades as problem complexity increases, even when accuracy remains high"
+    novelty_score: 3
+    feasibility_score: 5
+    impact_score: 4
+    portfolio_fit: |
+      Directly complements reasoning-gaps: reasoning-gaps provides the formal framework,
+      this project provides large-scale empirical evidence on a specific failure mode (unfaithful reasoning).
+    status: scoping
+    # composite: 3*0.30 + 5*0.25 + 4*0.25 + 4*0.20 = 0.90 + 1.25 + 1.00 + 0.80 = 3.95
+
+  - name: scaling-emergence-thresholds
+    title: "Phase Transitions in Emergent Capabilities: Predicting When New Abilities Appear"
+    area: Scaling Laws
+    type: empirical
+    venue_targets:
+      - ICML 2027
+      - ICLR 2027
+    estimated_months: 3
+    brief_description: |
+      Emergent capabilities in LLMs appear to arise suddenly at certain scale thresholds, but
+      recent work questions whether this is a real phenomenon or a metric artifact. This project
+      designs controlled experiments to distinguish true phase transitions from smooth scaling
+      with sharp evaluation metrics, using information-theoretic measures and fine-grained
+      evaluation protocols across model families.
+    key_hypotheses:
+      - "Most reported emergent capabilities disappear when evaluated with continuous (non-threshold) metrics, but a small subset (3-5 tasks) exhibit genuine discontinuities"
+      - "True phase transitions correlate with the acquisition of specific computational primitives (variable binding, recursive composition) identifiable via probing"
+      - "The scale at which emergence occurs is predictable from task complexity measures derived from circuit analysis"
+    novelty_score: 4
+    feasibility_score: 3
+    impact_score: 5
+    portfolio_fit: |
+      Extends reasoning-gaps into the scaling dimension: reasoning-gaps characterizes what fails,
+      this project characterizes when (at what scale) things start to work. Shares theoretical framework.
+    status: idea
+    # composite: 4*0.30 + 3*0.25 + 5*0.25 + 4*0.20 = 1.20 + 0.75 + 1.25 + 0.80 = 4.00
+
+  - name: self-improvement-limits
+    title: "Impossibility Results for Unsupervised Self-Improvement in Language Models"
+    area: AI Safety
+    type: theory
+    venue_targets:
+      - ICLR 2027
+      - NeurIPS 2026
+    estimated_months: 4
+    brief_description: |
+      Can a language model improve its own capabilities without external ground truth? This project
+      develops formal impossibility results showing that self-improvement without verification
+      oracles is fundamentally limited. We formalize self-improvement as an iterative process
+      and prove bounds on the maximum capability gain achievable through self-training,
+      self-refinement, and self-play under various assumptions about the verification problem.
+    key_hypotheses:
+      - "Self-improvement without external verification converges to a fixed point that is bounded by the model's initial verification capability"
+      - "The gap between generation and verification difficulty determines the ceiling for self-improvement gains"
+      - "Self-play can exceed self-training bounds only when the game structure provides implicit verification"
+    novelty_score: 5
+    feasibility_score: 3
+    impact_score: 5
+    portfolio_fit: |
+      Complements reasoning-gaps by providing impossibility results rather than just characterization.
+      Together they form a theoretical program: what can't LLMs do (reasoning-gaps) and what can't
+      they learn to do on their own (self-improvement-limits). Strong theory-theory synergy.
+    status: idea
+    # composite: 5*0.30 + 3*0.25 + 5*0.25 + 4*0.20 = 1.50 + 0.75 + 1.25 + 0.80 = 4.30
+
+  - name: reasoning-gap-benchmark
+    title: "ReasonGap: A Diagnostic Benchmark Suite for Systematic LLM Reasoning Failures"
+    area: Benchmarks
+    type: tool
+    venue_targets:
+      - NeurIPS Datasets & Benchmarks 2026
+      - AAAI 2027
+    estimated_months: 2
+    brief_description: |
+      A companion benchmark to the reasoning-gaps paper, designed to isolate and measure specific
+      types of reasoning failures in LLMs. Each task in the suite targets a single reasoning
+      primitive (variable binding, compositional depth, state tracking, counterfactual reasoning)
+      with controlled difficulty scaling, known ground truth, and automated scoring.
+    key_hypotheses:
+      - "Existing benchmarks conflate multiple reasoning primitives; ReasonGap tasks that isolate primitives reveal failure patterns invisible on aggregate benchmarks"
+      - "Performance on ReasonGap subtasks predicts downstream reasoning performance better than aggregate benchmark scores"
+      - "ReasonGap difficulty parameters (depth, width, variable count) create smooth difficulty curves that expose precise capability boundaries per model"
+    novelty_score: 3
+    feasibility_score: 5
+    impact_score: 4
+    portfolio_fit: |
+      Direct artifact from reasoning-gaps project. Maximizes the impact of reasoning-gaps by giving
+      the community a reusable evaluation tool. High citation potential as others use the benchmark
+      to evaluate their own methods.
+    status: scoping
+    # composite: 3*0.30 + 5*0.25 + 4*0.25 + 5*0.20 = 0.90 + 1.25 + 1.00 + 1.00 = 4.15
+
+  - name: agent-failure-taxonomy
+    title: "A Taxonomy of Failure Modes in LLM-Based Autonomous Agents"
+    area: Agent Architectures
+    type: survey
+    venue_targets:
+      - ACL 2027
+      - AAAI 2027
+    estimated_months: 2
+    brief_description: |
+      LLM-based agents (ReAct, AutoGPT, Claude Code, etc.) fail in systematic ways that are
+      poorly documented. This survey collects, categorizes, and analyzes failure modes across
+      agent frameworks, proposing a taxonomy that distinguishes planning failures, tool-use errors,
+      grounding failures, and feedback loop pathologies. We analyze 100+ reported agent failures
+      from published work and public demonstrations.
+    key_hypotheses:
+      - "Agent failures cluster into 5-7 distinct categories that are largely independent of the underlying LLM"
+      - "Most agent failures stem from planning and state tracking limitations rather than knowledge or tool-use errors"
+      - "Failure mode frequency shifts predictably with agent architecture choices (e.g., ReAct vs. plan-then-execute)"
+    novelty_score: 4
+    feasibility_score: 5
+    impact_score: 4
+    portfolio_fit: |
+      Extends reasoning-gaps into the agent setting: if reasoning-gaps characterizes LLM limits,
+      this project characterizes how those limits manifest when LLMs act autonomously. Also directly
+      relevant to improving the Deepwork platform itself. Survey type diversifies the portfolio.
+    status: idea
+    # composite: 4*0.30 + 5*0.25 + 4*0.25 + 4*0.20 = 1.20 + 1.25 + 1.00 + 0.80 = 4.25
+
+  - name: synthetic-data-collapse
+    title: "Model Collapse Under Recursive Synthetic Data: Rates, Detection, and Prevention"
+    area: Training Dynamics
+    type: empirical
+    venue_targets:
+      - ICML 2027
+      - NeurIPS 2026
+    estimated_months: 3
+    brief_description: |
+      As AI-generated text becomes prevalent on the web, future models will increasingly train on
+      synthetic data from prior model generations. This project empirically measures collapse rates
+      across controlled recursive training loops, develops early-warning detection metrics for
+      distributional drift, and evaluates prevention strategies including data provenance filtering,
+      diversity-preserving sampling, and mixing ratio optimization.
+    key_hypotheses:
+      - "Model collapse follows a predictable trajectory: distributional narrowing begins within 3-5 recursive generations, with tail distributions collapsing first"
+      - "Token-level entropy and n-gram diversity metrics can detect impending collapse 1-2 generations before quality degradation is human-perceptible"
+      - "A mixing ratio of at least 30% human-generated data per generation prevents collapse indefinitely, but the exact threshold depends on domain complexity"
+    novelty_score: 3
+    feasibility_score: 4
+    impact_score: 4
+    portfolio_fit: |
+      Diversifies into training dynamics, an area not covered by reasoning-gaps. Empirical project
+      type balances theory-heavy portfolio. Shares methodology (controlled LLM experiments) with
+      other empirical projects.
+    status: idea
+    # composite: 3*0.30 + 4*0.25 + 4*0.25 + 3*0.20 = 0.90 + 1.00 + 1.00 + 0.60 = 3.50
+
+  - name: multimodal-reasoning-transfer
+    title: "Does Vision Help Reasoning? Measuring Cross-Modal Transfer of Reasoning Capabilities"
+    area: Multimodal Reasoning
+    type: empirical
+    venue_targets:
+      - ICLR 2027
+      - EMNLP 2026
+    estimated_months: 3
+    brief_description: |
+      Multimodal models (GPT-4V, Claude vision, Gemini) can reason over images and text jointly,
+      but it is unclear whether visual training improves abstract reasoning capabilities or merely
+      adds a visual input channel. This project designs controlled experiments comparing reasoning
+      performance on text-only tasks between vision-language models and text-only models matched
+      for parameter count and training compute, isolating the contribution of visual grounding.
+    key_hypotheses:
+      - "Vision-language training improves spatial and relational reasoning on text-only tasks by 5-15% relative to matched text-only models"
+      - "The transfer benefit is concentrated in tasks requiring physical/spatial mental models and absent for purely symbolic reasoning"
+      - "The transfer effect is smaller than the effect of equivalent additional text training compute, suggesting vision is helpful but not efficient for reasoning improvement"
+    novelty_score: 4
+    feasibility_score: 3
+    impact_score: 4
+    portfolio_fit: |
+      Extends reasoning-gaps analysis into the multimodal domain. Tests whether a different
+      modality can close the reasoning gaps identified in the primary project. Brings in a new
+      area (multimodal) to diversify the portfolio.
+    status: idea
+    # composite: 4*0.30 + 3*0.25 + 4*0.25 + 3*0.20 = 1.20 + 0.75 + 1.00 + 0.60 = 3.55
+
+  - name: verification-complexity
+    title: "The Computational Complexity of Verifying LLM Outputs Across Reasoning Domains"
+    area: ML Theory
+    type: theory
+    venue_targets:
+      - NeurIPS 2026
+      - ICLR 2027
+    estimated_months: 3
+    brief_description: |
+      Verification of LLM outputs (checking if an answer is correct) is often assumed to be easier
+      than generation, but this assumption is not always valid. This project formally characterizes
+      the generation-verification gap across reasoning domains, connecting to classical complexity
+      theory (P vs NP, interactive proofs) and showing that for certain reasoning tasks, verification
+      is nearly as hard as generation, undermining RLHF-style training and self-consistency methods.
+    key_hypotheses:
+      - "For mathematical proof generation, verification is strictly easier (polynomial-time checkable) and RLHF-style methods can leverage this gap effectively"
+      - "For open-ended reasoning tasks (planning, creative problem-solving), the generation-verification gap collapses: verifying the quality of a plan is as hard as generating a good one"
+      - "The verification complexity class of a task predicts whether self-consistency and majority voting improve performance"
+    novelty_score: 5
+    feasibility_score: 3
+    impact_score: 5
+    portfolio_fit: |
+      Directly complements both reasoning-gaps and self-improvement-limits. Forms a theoretical
+      trilogy: what LLMs can't reason about, what they can't learn on their own, and what can't
+      be verified. Critical for AI safety arguments about oversight difficulty.
+    status: idea
+    # composite: 5*0.30 + 3*0.25 + 5*0.25 + 5*0.20 = 1.50 + 0.75 + 1.25 + 1.00 = 4.50
+
+  - name: context-window-utilization
+    title: "Do LLMs Actually Use Long Contexts? Measuring Effective Context Utilization at Scale"
+    area: LLM Capabilities
+    type: empirical
+    venue_targets:
+      - EMNLP 2026
+      - ACL 2027
+    estimated_months: 2
+    brief_description: |
+      Context windows have grown from 4K to 200K+ tokens, but claims about effective utilization
+      are based on narrow benchmarks (needle-in-a-haystack). This project develops a comprehensive
+      evaluation framework measuring how models actually use long contexts in realistic tasks:
+      multi-document QA, long-form summarization, code repository understanding, and
+      multi-turn dialogue. We measure attention patterns, information integration across
+      distances, and the relationship between context length and output quality.
+    key_hypotheses:
+      - "Effective context utilization follows a logarithmic curve: doubling context length yields diminishing returns in downstream task quality beyond a task-dependent threshold"
+      - "Models show strong primacy and recency biases even at 200K tokens: information in the middle 60% of context is utilized 3-5x less than information at the boundaries"
+      - "Structured context (explicit section headers, consistent formatting) improves utilization of middle-context information by 20-40% compared to unstructured concatenation"
+    novelty_score: 3
+    feasibility_score: 5
+    impact_score: 4
+    portfolio_fit: |
+      Empirical complement to reasoning-gaps: focuses on a practical capability (context utilization)
+      rather than abstract reasoning. Fast timeline (2 months) provides a quick win for the portfolio.
+      Different enough from reasoning-gaps to avoid overlap.
+    status: idea
+    # composite: 3*0.30 + 5*0.25 + 4*0.25 + 3*0.20 = 0.90 + 1.25 + 1.00 + 0.60 = 3.75
+
+  - name: adversarial-robustness-reasoning
+    title: "Adversarial Fragility of LLM Reasoning: How Small Perturbations Break Complex Chains"
+    area: AI Safety
+    type: empirical
+    venue_targets:
+      - AAAI 2027
+      - ICLR 2027
+    estimated_months: 3
+    brief_description: |
+      LLMs that solve complex reasoning tasks can be made to fail by surprisingly small input
+      perturbations (irrelevant context, rephrased premises, reordered information). This project
+      systematically measures the adversarial robustness of LLM reasoning across perturbation
+      types and reasoning depths, developing a fragility index that quantifies how much reasoning
+      quality degrades per unit of input perturbation. We connect fragility patterns to the
+      reasoning gap taxonomy from the reasoning-gaps project.
+    key_hypotheses:
+      - "Reasoning fragility increases superlinearly with chain length: 5-step reasoning chains are more than 5x more fragile than 1-step chains"
+      - "Irrelevant context insertion is more damaging than premise rephrasing, suggesting attention-based distraction is a primary failure mechanism"
+      - "Fragility patterns cluster by reasoning gap type: compositional reasoning is fragile to ordering changes, while state-tracking is fragile to irrelevant context"
+    novelty_score: 3
+    feasibility_score: 4
+    impact_score: 4
+    portfolio_fit: |
+      Safety-focused empirical companion to reasoning-gaps. While reasoning-gaps characterizes
+      what models can't do, this project shows how easily what they can do breaks under adversarial
+      conditions. Connects safety and capability evaluation in a novel way.
+    status: idea
+    # composite: 3*0.30 + 4*0.25 + 4*0.25 + 4*0.20 = 0.90 + 1.00 + 1.00 + 0.80 = 3.70
