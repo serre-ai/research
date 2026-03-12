@@ -74,8 +74,9 @@ export class Notifier {
     if (this.initialized) return this.webhookUrl;
     this.initialized = true;
 
-    if (process.env.NOTIFICATION_WEBHOOK_URL) {
-      this.webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+    const envUrl = process.env.NOTIFICATION_WEBHOOK_URL ?? process.env.SLACK_WEBHOOK_URL;
+    if (envUrl) {
+      this.webhookUrl = envUrl;
       return this.webhookUrl;
     }
 

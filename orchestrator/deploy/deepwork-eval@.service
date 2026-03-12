@@ -10,18 +10,18 @@ User=deepwork
 Group=deepwork
 WorkingDirectory=/opt/deepwork/projects/reasoning-gaps/benchmarks
 
-# Instance name format: model_task_condition
-# Example: systemctl start deepwork-eval@claude-haiku-4-5-20251001_B1_masked_majority_direct
-ExecStart=/usr/bin/python3 run_evaluation.py --resume --instance %i
+# Instance name format: model::task::condition (using :: delimiter)
+# Example: systemctl start deepwork-eval@openai:o3::B5::budget_cot
+# Runs eval then auto-ingests results into PostgreSQL
+ExecStart=/bin/bash -c '/opt/deepwork/.venv/bin/python3 run_evaluation.py --instance %i && /opt/deepwork/.venv/bin/python3 ingest_results.py'
 
-Restart=on-failure
+Restart=no
 RestartSec=60
-TimeoutStopSec=300
 
 # Allow graceful checkpoint save on stop
 KillSignal=SIGINT
 SendSIGHUP=yes
-TimeoutStopSec=120
+TimeoutStopSec=300
 
 # Environment
 EnvironmentFile=/opt/deepwork/.env

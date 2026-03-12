@@ -818,8 +818,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Skip running the analysis pipeline after evaluation.",
     )
+    parser.add_argument(
+        "--instance",
+        type=str,
+        default=None,
+        help=(
+            "Systemd instance specifier: model::task::condition "
+            "(e.g., 'openai:o3::B5::budget_cot'). "
+            "Uses '::' as delimiter to avoid ambiguity with model names containing colons/underscores."
+        ),
+    )
 
     args = parser.parse_args(argv)
+
+    # Parse --instance into --models, --tasks, --conditions
+    if args.instance:
+        parts = args.instance.split("::")
+        if len(parts) != 3:
+            parser.error(
+                f"--instance must be 'model::task::condition', got: {args.instance}"
+            )
+        args.models = [parts[0]]
+        args.tasks = [parts[1]]
+        args.conditions = [parts[2]]
+        args.yes = True
+        args.skip_analysis = True
 
     # Resolve models/tasks/conditions
     if args.all:
@@ -829,9 +852,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             args.tasks = list(TASKS)
         if args.conditions is None:
             args.conditions = list(CONDITIONS)
+    elif args.instance:
+        pass  # Already set above
     else:
         if args.models is None:
-            parser.error("--models is required unless --all is set")
+            parser.error("--models is required unless --all or --instance is set")
         if args.tasks is None:
             args.tasks = list(TASKS)
         if args.conditions is None:
