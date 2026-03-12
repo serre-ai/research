@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-12T21:00:00
+updated: 2026-03-12T23:55:00
 
 phase: paper-finalization
 status: active
@@ -10,7 +10,7 @@ status: active
 progress:
   literature_review:
     status: complete
-    notes: "Surveyed 80+ papers across three areas. Synthesis in notes/00-literature-synthesis.md"
+    notes: "Surveyed 85+ papers across three areas. Initial synthesis in notes/00-literature-synthesis.md. March 2026 updates in notes/09-literature-update-2026.md and notes/10-literature-update-march-2026.md. Added Raju & Netrapalli (2026) error accumulation model to Discussion section."
   formal_framework:
     status: complete
     notes: "6-type taxonomy defined. Formal definitions, 5 propositions with proofs/proof sketches, predictions matrix complete. See notes/05-formal-framework.md and notes/07-proposition-proofs.md"
@@ -25,7 +25,7 @@ progress:
     notes: "9/12 models fully evaluated across 9 tasks × 3 conditions = 243 combinations (121,614 instances total, zero failures). Completed: Haiku 4.5, GPT-4o-mini, GPT-4o, Llama 3.1 8B, Llama 3.1 70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B, Qwen 2.5 72B. In progress: o3 evaluation running on VPS (started 2026-03-12 19:21, PID 60369). Pending: Sonnet 4.6 (queued after o3), B2 budget_cot recalibration re-run for all 9 models."
   paper_writing:
     status: near-complete
-    notes: "All sections complete: (1) Sections 1-4 fully drafted with formal framework and benchmark design, (2) Section 5 drafted with 9-model preliminary results (tables, figures, narratives), (3) Sections 6-8 complete (Discussion with B8 ceiling and budget_cot insights, comprehensive Related Work, Conclusion), (4) Appendix A complete with all 5 proposition proofs, (5) Appendix B complete with all 9 benchmark specifications, (6) Appendix C with full 9-model results table. Paper at 1,435 lines. Awaiting final 11-model data to update Section 5 and remove B2 footnote."
+    notes: "All sections complete: (1) Sections 1-4 fully drafted with formal framework and benchmark design, (2) Section 5 drafted with 9-model preliminary results (tables, figures, narratives), (3) Sections 6-8 complete (Discussion with B8 ceiling, budget_cot insights, error accumulation paragraph, comprehensive Related Work, Conclusion), (4) Appendix A complete with all 5 proposition proofs, (5) Appendix B complete with all 9 benchmark specifications, (6) Appendix C with full 9-model results table. Paper at 1,453 lines (added error accumulation paragraph and Raju & Netrapalli citation). Awaiting final 11-model data to update Section 5 and remove B2 footnote."
 
 decisions_pending: []
 
@@ -87,6 +87,8 @@ key_references:
   - "Hahn & Rofin, Why are Sensitive Functions Hard for Transformers? ACL 2024"
   - "Song et al., Large Language Model Reasoning Failures, TMLR 2026"
   - "Sprague et al., To CoT or not to CoT? 2024"
+  - "Raju & Netrapalli, A Model of Errors in Transformers, arXiv 2026"
+  - "Ye et al., Mechanistic Evidence for Faithfulness Decay in CoT, arXiv 2026"
 
 next_steps:
   - "Re-run B2 budget_cot for all 9 models with fixed exponential scaling (via VPS, ~$3-5)"
@@ -101,4 +103,4 @@ next_steps:
 
 notes: "VPS infrastructure deployed 2026-03-11: daemon, API, PostgreSQL, nginx all running at 89.167.5.50. Analysis pipeline completed on 121,614 instances — predictions confirmed. CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6. B2 budget_cot fix committed 2026-03-11 (32e153b): changed to exponential scaling 2^depth * 3 words. o3 evaluation started 2026-03-12 19:21 on VPS. Total eval spend: ~$83. Planned: o3 completion (~$40), Sonnet 4.6 (~$55), B2 recal (~$3-5). Remaining budget: ~$267."
 
-current_activity: "Monitoring o3 evaluation completion on VPS. Next: queue Sonnet 4.6, re-run B2 budget_cot with fixed calibration, then final analysis and Section 5 update. Paper near-complete at 1,435 lines."
+current_activity: "Literature review update: surveyed recent 2026 papers, added Raju & Netrapalli error accumulation model to Discussion section. Paper now 1,453 lines. Awaiting VPS evaluation completion (o3, Sonnet 4.6, B2 recal) for final analysis and Section 5 update."
