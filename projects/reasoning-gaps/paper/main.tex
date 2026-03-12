@@ -672,6 +672,7 @@ Sixth, the budget\_cot sensitivity to calibration (discussed above) means our bu
 A series of results has precisely characterized the computational power of transformers.
 \citet{merrill2022saturated} showed that saturated (constant-precision) transformers are captured by $\AC$ circuits; \citet{merrill2023parallelism} extended this to log-precision, placing such models within uniform $\TC$ and identifying a fundamental \emph{parallelism tradeoff}: depth can be traded for precision, but not overcome.
 \citet{merrill2023logic} gave an equivalent logical characterization as first-order logic with majority quantifiers.
+\citet{chen2025rope} recently extended these bounds to RoPE-based transformers, showing that under standard assumptions ($\TC \neq \NC$), such architectures cannot solve arithmetic or Boolean formula evaluation---confirming that the $\TC$ ceiling applies to modern position encoding schemes.
 \citet{strobl2024survey} provide a comprehensive survey unifying these results across transformer variants, state-space models, and recurrent architectures.
 On the CoT side, \citet{merrill2024cot} and \citet{li2024cot} independently proved that polynomially many CoT steps extend expressiveness to exactly $\PTIME$, while logarithmically many steps reach $\LOGSPACE$.
 \citet{hahn2024sensitive} showed that functions with high Boolean sensitivity occupy isolated points in transformer parameter space, making them hard to learn via gradient descent even when formally expressible---an important distinction between expressiveness and learnability.
@@ -683,10 +684,10 @@ A growing body of work documents systematic reasoning failures in LLMs.
 \citet{gsmsymbolic} showed that LLMs are sensitive to irrelevant information in mathematical problems, suggesting surface pattern matching rather than genuine reasoning.
 \citet{kambhampati2024} provided evidence that LLMs cannot plan autonomously but can serve as components in hybrid systems.
 \citet{joshi2024} catalogued causal reasoning fallacies, including post hoc and confounding errors.
-\citet{song2026failures} offer the most comprehensive taxonomy to date, organizing failures by cognitive category (deductive, inductive, abductive, analogical).
-Our contribution differs from this line of work in two ways.
-First, we ground each failure pattern in a specific complexity-theoretic boundary rather than a cognitive category.
-Second, our taxonomy yields \emph{testable predictions} about which interventions (CoT, tools, scaling) close which gaps---predictions that we validate empirically.
+\citet{song2026failures} offer the most comprehensive survey to date, organizing failures by reasoning type (embodied vs.\ non-embodied, intuitive vs.\ logical) and failure category (fundamental architectural limitations, domain-specific constraints, robustness issues).
+Our contribution is complementary: where \citet{song2026failures} use a task-based taxonomy, we ground each failure pattern in a specific complexity-theoretic boundary.
+This yields \emph{testable predictions} about which interventions (CoT, tools, scaling) close which gaps---predictions that we validate empirically.
+The convergence of these independently developed taxonomies (their survey submitted February 2026, our work targeting NeurIPS 2026) underscores the timeliness and importance of systematic reasoning failure analysis.
 
 \paragraph{Chain-of-thought reasoning.}
 Since \citet{wei2022cot} demonstrated that chain-of-thought prompting substantially improves multi-step reasoning, a rich literature has explored when and why CoT helps.
@@ -694,8 +695,9 @@ Since \citet{wei2022cot} demonstrated that chain-of-thought prompting substantia
 \citet{meincke2025} showed that CoT prompting provides diminishing returns as base model reasoning capabilities improve.
 The reasoning budget literature reveals additional nuance: \citet{mirage2025} documented a ``mirage of test-time scaling'' where excessive computation degrades accuracy, while \citet{limitedspace2025} showed that performance collapses beyond a critical reasoning chain length.
 CoT faithfulness is a related concern: \citet{turpin2023} and \citet{lanham2023} showed that CoT explanations often do not reflect the model's true reasoning process, though \citet{anthropic2025faithfulness} found that reasoning models show higher but imperfect faithfulness, and \citet{metr2025} argued that CoT is most informative when it is computationally necessary.
+\citet{ye2026faithfulness} provide mechanistic evidence for this claim, introducing the Normalized Logit Difference Decay (NLDD) metric and demonstrating a ``Reasoning Horizon'' beyond which CoT tokens cease to influence predictions---typically at 70--85\% of chain length across model families.
 Our framework provides a complexity-theoretic explanation for these observations: CoT is computationally necessary and effective for Types~2--3 (depth and serial gaps), where the forward pass provably cannot solve the problem, and unnecessary for Types~5--6, where the problem lies beyond $\PTIME$ or is architectural in nature.
-The first prediction that CoT effectiveness varies systematically by gap \emph{type}---not merely by task domain---is, to our knowledge, novel.
+The prediction that CoT effectiveness varies systematically by gap \emph{type}---not merely by task domain---is, to our knowledge, novel.
 
 \paragraph{Reasoning benchmarks.}
 Standard reasoning benchmarks---GSM8K~\citep{gsm8k}, BIG-Bench~\citep{bigbench}, ARC~\citep{arc2019}, MATH~\citep{math2021}, and FrontierMath~\citep{frontiermath2024}---measure aggregate performance on fixed problem sets without isolating the computational mechanism responsible for failure.
@@ -757,6 +759,11 @@ L.~Strobl, W.~Merrill, G.~Weiss, D.~Chiang, and D.~Angluin.
 \newblock What formal languages can transformers express? {A} survey.
 \newblock \emph{TACL}, 2024.
 
+\bibitem[Chen et~al.(2025)]{chen2025rope}
+J.~Chen et~al.
+\newblock Circuit complexity bounds for {RoPE}-based transformer architecture.
+\newblock \emph{EMNLP}, 2025.
+
 \bibitem[Hahn \& Rofin(2024)]{hahn2024sensitive}
 M.~Hahn and M.~Rofin.
 \newblock Why are sensitive functions hard for transformers?
@@ -796,6 +803,11 @@ M.~Nezhurina, L.~Cipolina-Kun, M.~Cherti, and J.~Jitsev.
 P.~Song, P.~Han, and N.~Goodman.
 \newblock Large language model reasoning failures.
 \newblock \emph{TMLR}, 2026.
+
+\bibitem[Ye et~al.(2026)]{ye2026faithfulness}
+D.~Ye, M.~Loffgren, O.~Kotadia, and L.~Wong.
+\newblock Mechanistic evidence for faithfulness decay in chain-of-thought reasoning.
+\newblock \emph{arXiv:2602.11201}, 2026.
 
 \bibitem[Sprague et~al.(2024)]{sprague2024}
 Z.~Sprague et~al.
