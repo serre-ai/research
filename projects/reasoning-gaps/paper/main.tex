@@ -645,6 +645,13 @@ This finding has implications beyond our benchmark: insufficient reasoning budge
 In deployed systems with token limits, a model that starts but cannot finish a chain of thought may produce lower-quality outputs than one forced to answer immediately.
 The practical lesson is that CoT budget should be calibrated to the computational complexity of the task---precisely the quantity our taxonomy characterizes.
 
+\paragraph{Error accumulation and depth.}
+Our finding that accuracy degrades with compositional depth (Types~2 and~3) aligns with recent mechanistic work on transformer error propagation.
+\citet{raju2026errors} developed a quantitative model showing that incorrect predictions arise when small errors in the attention mechanism accumulate to cross a threshold, with a two-parameter relationship between accuracy and task complexity.
+Their empirical validation on Gemini and DeepSeek models confirms that error rate scales with task complexity---precisely the pattern we observe across all models on B2 (nested Boolean) and B3 (iterated permutation).
+This provides a mechanistic explanation for why depth gaps exist: deeper compositional structure provides more opportunities for attention errors to accumulate, eventually exceeding the threshold for correct prediction.
+Our taxonomy characterizes the \emph{computational} boundary (what requires serial depth); their error model explains \emph{why} models fail near that boundary.
+
 \paragraph{When is chain-of-thought faithful?}
 An intriguing connection emerges between our framework and the CoT faithfulness literature~\citep{turpin2023,lanham2023}.
 Our taxonomy predicts that CoT is computationally \emph{necessary} for Types~2--3 (depth and serial gaps).
@@ -798,6 +805,11 @@ N.~Joshi, A.~Saparov, Z.~Wang, and H.~He.
 M.~Nezhurina, L.~Cipolina-Kun, M.~Cherti, and J.~Jitsev.
 \newblock Alice in {W}onderland: Simple tasks showing complete reasoning breakdown in state-of-the-art large language models.
 \newblock \emph{arXiv:2406.02061}, 2024.
+
+\bibitem[Raju \& Netrapalli(2026)]{raju2026errors}
+S.~Raju and P.~Netrapalli.
+\newblock A model of errors in transformers.
+\newblock \emph{arXiv:2601.14175}, 2026.
 
 \bibitem[Song et~al.(2026)]{song2026failures}
 P.~Song, P.~Han, and N.~Goodman.
