@@ -20,6 +20,15 @@
   --color-border-emphasis: #e5e5e5;
 
   --color-accent: #e5e5e5;
+
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-muted: rgba(59, 130, 246, 0.15);
+  --color-secondary: #f59e0b;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+
+  --color-subnav-bg: #111111;
 }
 
 @layer base {

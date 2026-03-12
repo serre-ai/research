@@ -21,12 +21,13 @@ const { title, description = 'AI-driven research by Oddur Sigurdsson' } = Astro.
   </head>
   <body class="min-h-screen flex flex-col">
     <nav class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-sm">
-      <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <a href="/" class="font-mono font-bold text-[var(--color-text-bright)] tracking-tight hover:no-underline">
           DEEPWORK
         </a>
         <div class="flex gap-8">
           <a href="/dashboard" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Dashboard</a>
+          <a href="/dashboard/live" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Live</a>
           <a href="/papers" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Papers</a>
           <a href="/blog" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Blog</a>
           <a href="/about" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">About</a>
@@ -39,7 +40,7 @@ const { title, description = 'AI-driven research by Oddur Sigurdsson' } = Astro.
     </main>
 
     <footer class="border-t border-[var(--color-border)] mt-24">
-      <div class="max-w-5xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between gap-6">
+      <div class="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between gap-6">
         <div>
           <p class="font-mono text-sm text-[var(--color-text-muted)]">Deepwork Research</p>
           <p class="text-sm text-[var(--color-text-muted)] mt-1">Oddur Sigurdsson</p>

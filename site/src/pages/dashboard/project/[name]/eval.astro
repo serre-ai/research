@@ -1,0 +1,235 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import ProjectSubnav from '../../../../components/ProjectSubnav.astro';
+import { getProjects, getEvalData, evalTasks } from '../../../../data';
+import { cellBg, cellText, liftColor, liftBg } from '../../../../utils/helpers';
+
+export function getStaticPaths() {
+  return [
+    { params: { name: 'reasoning-gaps' } },
+    { params: { name: 'agent-failure-taxonomy' } },
+  ];
+}
+
+const allProjects = await getProjects();
+const { name } = Astro.params;
+const project = allProjects.find(p => p.name === name)!;
+const projectEval = await getEvalData(name);
+
+const models = projectEval?.models ?? [];
+const tasks = projectEval?.tasks ?? evalTasks;
+const modelsWithData = models.filter(m =>
+  Object.values(m.results).some(r => r.direct !== null || r.cot !== null)
+);
+---
+
+<Base title={`${project.title} — Eval`}>
+
+  <ProjectSubnav projectName={name} activeTab="eval" />
+
+  <section class="max-w-6xl mx-auto px-6 pt-10 pb-6">
+    <div class="flex items-center gap-2 mb-4">
+      <a href="/dashboard" class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">Dashboard</a>
+      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
+      <a href={`/dashboard/project/${name}`} class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">{project.name}</a>
+      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
+      <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">Eval</span>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
+      EVAL MONITOR
+    </h1>
+    <p class="text-sm text-[var(--color-text-muted)] mt-2">
+      {project.name} benchmark evaluation across models and prompting strategies
+    </p>
+  </section>
+
+  <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
+
+  {!projectEval ? (
+    <section class="max-w-6xl mx-auto px-6 py-20 text-center">
+      <p class="font-mono text-sm text-[var(--color-text-muted)]">No evaluation data available.</p>
+      <p class="text-xs text-[var(--color-text-muted)] mt-2">This project is in the {project.phases.find(p => p.status === 'active')?.name} phase.</p>
+    </section>
+  ) : (
+    <>
+      {/* Accuracy Heatmap */}
+      <section class="max-w-6xl mx-auto px-6 pt-10 pb-8">
+        <p class="label mb-6">Accuracy Heatmap &mdash; Direct Prompting</p>
+        <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--color-border)]">
+                <th class="text-left font-mono text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider p-3 min-w-[180px]">Task</th>
+                {models.map((m) => (
+                  <th class="text-center font-mono text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider p-3 min-w-[90px]">
+                    <div>{m.name}</div>
+                    <div class="text-[9px] font-normal normal-case tracking-normal mt-0.5 text-[var(--color-text-muted)] opacity-60">{m.scale}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map((task, i) => (
+                <tr class={`border-b border-[var(--color-border)] ${i % 2 === 0 ? '' : 'bg-white/[0.01]'}`}>
+                  <td class="p-3">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono text-xs font-semibold text-[var(--color-text-bright)] tabular-nums w-6">{task.id}</span>
+                      <div>
+                        <span class="font-mono text-xs text-[var(--color-text-secondary)]">{task.label}</span>
+                        <span class="block font-mono text-[9px] text-[var(--color-text-muted)]">{task.gapType}</span>
+                      </div>
+                    </div>
+                  </td>
+                  {models.map((m) => {
+                    const r = m.results[task.id];
+                    const val = r?.direct;
+                    return (
+                      <td class={`text-center p-2 ${cellBg(val)}`}>
+                        <span class={`font-mono text-sm font-semibold tabular-nums ${cellText(val)}`}>
+                          {val !== null && val !== undefined ? `${val}` : '\u2014'}
+                        </span>
+                        {val !== null && val !== undefined && <span class={`font-mono text-[9px] ${cellText(val)} opacity-60`}>%</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div class="flex items-center gap-6 mt-4 font-mono text-[10px] text-[var(--color-text-muted)]">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-red-500/15 border border-red-500/20 inline-block"></span>&lt;40%</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-amber-500/15 border border-amber-500/20 inline-block"></span>40-69%</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-emerald-500/15 border border-emerald-500/20 inline-block"></span>70-89%</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-emerald-500/25 border border-emerald-500/30 inline-block"></span>90%+</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-[var(--color-bg-surface)] border border-[var(--color-border)] inline-block"></span>Pending</span>
+        </div>
+      </section>
+
+      {/* CoT Lift Analysis */}
+      <section class="max-w-6xl mx-auto px-6 pb-8">
+        <p class="label mb-6">Chain-of-Thought Lift Analysis</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {modelsWithData.map((model) => (
+            <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-mono text-sm font-semibold text-[var(--color-text-bright)]">{model.name}</h3>
+                  <p class="font-mono text-[10px] text-[var(--color-text-muted)]">{model.provider} / {model.scale}</p>
+                </div>
+              </div>
+              <div class="space-y-2">
+                {tasks.map((task) => {
+                  const r = model.results[task.id];
+                  if (!r || r.direct === null) return null;
+                  const lift = r.cot !== null && r.direct !== null ? r.cot - r.direct : null;
+                  return (
+                    <div class="flex items-center gap-3">
+                      <span class="font-mono text-[10px] text-[var(--color-text-muted)] w-6 shrink-0 tabular-nums">{task.id}</span>
+                      <div class="flex-1 flex items-center gap-2">
+                        <div class="flex-1 h-4 bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden">
+                          <div class="absolute inset-y-0 left-0 bg-red-500/30 border-r border-red-500/40"
+                            style={`width: ${r.direct}%`}></div>
+                          {r.cot !== null && (
+                            <div class="absolute inset-y-0 left-0 bg-emerald-500/20 border-r border-emerald-500/40"
+                              style={`width: ${r.cot}%`}></div>
+                          )}
+                          <div class="absolute inset-y-0 left-0 bg-red-500/40"
+                            style={`width: ${r.direct}%`}></div>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-1 shrink-0 w-[120px]">
+                        <span class="font-mono text-[10px] tabular-nums text-red-400 w-8 text-right">{r.direct}</span>
+                        <span class="font-mono text-[9px] text-[var(--color-text-muted)]">/</span>
+                        <span class={`font-mono text-[10px] tabular-nums w-8 text-right ${r.cot !== null ? 'text-emerald-400' : 'text-[var(--color-text-muted)]'}`}>{r.cot !== null ? r.cot : '\u2014'}</span>
+                        {lift !== null && (
+                          <span class={`font-mono text-[10px] tabular-nums w-10 text-right font-semibold ${liftColor(lift)} ${liftBg(lift)} px-1`}>
+                            +{lift}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div class="flex gap-4 mt-3 pt-2 border-t border-[var(--color-border)] font-mono text-[9px] text-[var(--color-text-muted)]">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 bg-red-500/40 inline-block"></span>Direct</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 bg-emerald-500/20 inline-block"></span>CoT</span>
+                <span>Lift = CoT - Direct</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Scale Comparison */}
+      <section class="max-w-6xl mx-auto px-6 pb-20">
+        <p class="label mb-6">Scale Analysis &mdash; Small vs Large (Within Family)</p>
+        <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--color-border)]">
+                <th class="text-left font-mono text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider p-3">Family</th>
+                <th class="text-left font-mono text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider p-3">Small Model</th>
+                <th class="text-left font-mono text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider p-3">Large Model</th>
+                {tasks.map((t) => (
+                  <th class="text-center font-mono text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider p-3">{t.id}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {['Claude', 'GPT', 'Llama', 'Mistral', 'Qwen'].map((family) => {
+                const small = models.find(m => m.family === family && m.scale === 'small');
+                const large = models.find(m => m.family === family && m.scale === 'large');
+                if (!small || !large) return null;
+                return (
+                  <>
+                    <tr class="border-b border-[var(--color-border)]">
+                      <td rowspan="2" class="p-3 border-r border-[var(--color-border)] align-middle">
+                        <span class="font-mono text-sm font-semibold text-[var(--color-text-bright)]">{family}</span>
+                      </td>
+                      <td class="p-3 border-r border-[var(--color-border)]">
+                        <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">{small.name}</span>
+                      </td>
+                      <td class="p-3 border-r border-[var(--color-border)] bg-[var(--color-bg-surface)]"></td>
+                      {tasks.map((t) => {
+                        const val = small.results[t.id]?.direct;
+                        return (
+                          <td class={`text-center p-2 ${cellBg(val)}`}>
+                            <span class={`font-mono text-xs tabular-nums font-medium ${cellText(val)}`}>
+                              {val !== null && val !== undefined ? val : '\u2014'}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr class="border-b-2 border-[var(--color-border-strong)]">
+                      <td class="p-3 border-r border-[var(--color-border)] bg-[var(--color-bg-surface)]"></td>
+                      <td class="p-3 border-r border-[var(--color-border)]">
+                        <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">{large.name}</span>
+                      </td>
+                      {tasks.map((t) => {
+                        const val = large.results[t.id]?.direct;
+                        return (
+                          <td class={`text-center p-2 ${cellBg(val)}`}>
+                            <span class={`font-mono text-xs tabular-nums font-medium ${cellText(val)}`}>
+                              {val !== null && val !== undefined ? val : '\u2014'}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-3">
+          Values shown are Direct prompting accuracy. Scale effect = Large - Small accuracy.
+        </p>
+      </section>
+    </>
+  )}
+
+</Base>

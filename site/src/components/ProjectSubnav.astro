@@ -1,0 +1,37 @@
+---
+interface Props {
+  projectName: string;
+  activeTab: 'overview' | 'eval' | 'budget' | 'decisions';
+}
+
+const { projectName, activeTab } = Astro.props;
+
+const base = `/dashboard/project/${projectName}`;
+const links = [
+  { href: base, key: 'overview', label: 'Overview' },
+  { href: `${base}/eval`, key: 'eval', label: 'Eval' },
+  { href: `${base}/budget`, key: 'budget', label: 'Budget' },
+  { href: `${base}/decisions`, key: 'decisions', label: 'Decisions' },
+];
+---
+
+<div class="bg-[var(--color-subnav-bg)] border-b border-[var(--color-border)]">
+  <div class="max-w-6xl mx-auto px-6 flex items-center gap-1">
+    {links.map((link) => (
+      <a
+        href={link.href}
+        class:list={[
+          'relative font-mono text-xs px-4 py-3 transition-colors hover:no-underline',
+          activeTab === link.key
+            ? 'text-[var(--color-primary)] font-medium'
+            : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
+        ]}
+      >
+        {link.label}
+        {activeTab === link.key && (
+          <span class="absolute bottom-0 left-4 right-4 h-[2px] bg-[var(--color-primary)]" />
+        )}
+      </a>
+    ))}
+  </div>
+</div>

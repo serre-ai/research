@@ -1,0 +1,67 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import ProjectSubnav from '../../../../components/ProjectSubnav.astro';
+import { getProjects, getDecisions } from '../../../../data';
+
+export function getStaticPaths() {
+  return [
+    { params: { name: 'reasoning-gaps' } },
+    { params: { name: 'agent-failure-taxonomy' } },
+  ];
+}
+
+const allProjects = await getProjects();
+const { name } = Astro.params;
+const project = allProjects.find(p => p.name === name)!;
+const projectDecisions = await getDecisions(name);
+---
+
+<Base title={`${project.title} — Decisions`}>
+
+  <ProjectSubnav projectName={name} activeTab="decisions" />
+
+  <section class="max-w-6xl mx-auto px-6 pt-10 pb-6">
+    <div class="flex items-center gap-2 mb-4">
+      <a href="/dashboard" class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">Dashboard</a>
+      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
+      <a href={`/dashboard/project/${name}`} class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">{project.name}</a>
+      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
+      <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">Decisions</span>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
+      DECISION LOG
+    </h1>
+    <p class="text-sm text-[var(--color-text-muted)] mt-2">
+      {projectDecisions.length} autonomous decisions logged for {project.name}
+    </p>
+  </section>
+
+  <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
+
+  <section class="max-w-6xl mx-auto px-6 pt-10 pb-20">
+    {projectDecisions.length === 0 ? (
+      <div class="text-center py-20">
+        <p class="font-mono text-sm text-[var(--color-text-muted)]">No decisions logged yet.</p>
+      </div>
+    ) : (
+      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <div class="space-y-0 divide-y divide-[var(--color-border)]">
+          {projectDecisions.map((d) => (
+            <div class="py-4 first:pt-0 last:pb-0">
+              <div class="flex items-start gap-4">
+                <div class="shrink-0 pt-0.5">
+                  <span class="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">{d.date}</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="font-mono text-sm text-[var(--color-text-bright)] leading-snug">{d.decision}</p>
+                  <p class="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">{d.rationale}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </section>
+
+</Base>

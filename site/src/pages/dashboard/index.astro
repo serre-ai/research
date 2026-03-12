@@ -1,226 +1,130 @@
 ---
-// TODO: Replace mock data with API calls to /api/projects
 import Base from '../../layouts/Base.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
+import { getProjects, getDecisions, getAggregateStats, getSystemHealth } from '../../data';
+import { timeAgo, healthColor, healthDot } from '../../utils/helpers';
 
-const projects = [
-  {
-    name: 'reasoning-gaps',
-    title: 'On the Reasoning Gaps of LLMs',
-    venue: 'NeurIPS 2026',
-    phase: 'Phase 3 — Evaluation',
-    status: 'running',
-    lastActivity: '2026-03-11T08:42:00Z',
-    modelsCompleted: 2,
-    modelsTotal: 6,
-    tasksCompleted: 15,
-    tasksTotal: 54,
-    completionPct: 28,
-  },
-  {
-    name: 'agent-failure-taxonomy',
-    title: 'Taxonomy of LLM Agent Failures',
-    venue: 'ACL 2027',
-    phase: 'Phase 1 — Literature Review',
-    status: 'paused',
-    lastActivity: '2026-03-09T14:20:00Z',
-    modelsCompleted: 0,
-    modelsTotal: 0,
-    tasksCompleted: 0,
-    tasksTotal: 0,
-    completionPct: 0,
-  },
-];
-
-const evalSummary = {
-  totalModels: 6,
-  completedModels: 2,
-  totalInstances: 5400,
-  completedInstances: 1500,
-  overallCompletion: 28,
-  runningNow: ['claude-3-5-haiku', 'gpt-4o-mini'],
-};
-
-const recentDecisions = [
-  {
-    date: '2026-03-11',
-    project: 'reasoning-gaps',
-    decision: 'Switch to autonomous decision workflow',
-    rationale: 'Human-in-the-loop bottleneck slowing evaluation progress. All decisions logged in status.yaml.',
-  },
-  {
-    date: '2026-03-10',
-    project: 'reasoning-gaps',
-    decision: 'Run Haiku 4.5 and GPT-4o-mini in parallel',
-    rationale: 'Both APIs have sufficient rate limits. Maximize throughput across providers.',
-  },
-  {
-    date: '2026-03-10',
-    project: 'reasoning-gaps',
-    decision: 'Use 100 instances per task-model-strategy combination',
-    rationale: 'Balances statistical significance with budget constraints.',
-  },
-  {
-    date: '2026-03-09',
-    project: 'reasoning-gaps',
-    decision: 'Prioritize B1-B6 tasks for initial evaluation',
-    rationale: 'These cover the core gap types. B7-B9 are supplementary.',
-  },
-];
-
-const systemHealth = {
-  orchestrator: 'offline',
-  anthropicApi: 'operational',
-  openaiApi: 'operational',
-  openrouterApi: 'operational',
-  gitSync: 'ok',
-  budgetRemaining: '$925',
-};
-
-function timeAgo(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  if (hours < 1) return 'just now';
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function statusColor(status: string): string {
-  switch (status) {
-    case 'running': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-    case 'paused': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    case 'error': return 'bg-red-500/20 text-red-400 border-red-500/30';
-    default: return 'bg-neutral-500/20 text-neutral-400 border-neutral-500/30';
-  }
-}
-
-function healthColor(status: string): string {
-  switch (status) {
-    case 'operational': case 'ok': return 'text-emerald-400';
-    case 'degraded': return 'text-amber-400';
-    case 'offline': case 'error': return 'text-red-400';
-    default: return 'text-neutral-400';
-  }
-}
-
-function healthDot(status: string): string {
-  switch (status) {
-    case 'operational': case 'ok': return 'bg-emerald-400';
-    case 'degraded': return 'bg-amber-400';
-    case 'offline': case 'error': return 'bg-red-400';
-    default: return 'bg-neutral-400';
-  }
-}
+const projects = await getProjects();
+const decisions = await getDecisions();
+const aggregateStats = await getAggregateStats();
+const systemHealth = await getSystemHealth();
 ---
 
 <Base title="Dashboard">
 
   <section class="max-w-6xl mx-auto px-6 pt-16 pb-6">
-    <div class="flex items-end justify-between mb-2">
-      <div>
-        <p class="label mb-2">Dashboard</p>
-        <h1 class="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
-          MISSION CONTROL
-        </h1>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="flex gap-4 font-mono text-xs text-[var(--color-text-muted)]">
-          <a href="/dashboard" class="text-[var(--color-text-bright)] hover:no-underline">Overview</a>
-          <a href="/dashboard/eval" class="hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Eval</a>
-          <a href="/dashboard/budget" class="hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Budget</a>
-        </div>
-      </div>
-    </div>
+    <p class="label mb-2">Dashboard</p>
+    <h1 class="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
+      PORTFOLIO
+    </h1>
     <p class="font-mono text-xs text-[var(--color-text-muted)] tabular-nums mt-3">
-      Last updated: 2026-03-11 08:42 UTC
+      {projects.length} projects &middot; ${aggregateStats.monthlySpend.toFixed(0)} / ${aggregateStats.monthlyBudget} this month
     </p>
   </section>
 
   <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
 
-  <!-- Project Cards -->
+  <!-- Aggregate Stats -->
   <section class="max-w-6xl mx-auto px-6 pt-10 pb-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Projects</p>
+        <p class="font-mono text-3xl font-bold text-[var(--color-text-bright)] tabular-nums">{aggregateStats.totalProjects}</p>
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">{projects.filter(p => p.status === 'running').length} active</p>
+      </div>
+      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Active Sessions</p>
+        <p class="font-mono text-3xl font-bold text-emerald-400 tabular-nums">{aggregateStats.activeSessions}</p>
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">agent processes</p>
+      </div>
+      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Papers in Pipeline</p>
+        <p class="font-mono text-3xl font-bold text-[var(--color-text-bright)] tabular-nums">{aggregateStats.papersInPipeline}</p>
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">targeting venues</p>
+      </div>
+      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Monthly Spend</p>
+        <p class="font-mono text-3xl font-bold text-emerald-400 tabular-nums">${aggregateStats.monthlySpend.toFixed(0)}</p>
+        <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1 tabular-nums">of ${aggregateStats.monthlyBudget} budget</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project Cards -->
+  <section class="max-w-6xl mx-auto px-6 pb-8">
     <p class="label mb-6">Projects</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       {projects.map((p) => (
-        <article class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] relative overflow-hidden">
-          <div class="absolute top-0 left-0 right-0 h-[2px]" style={`background: ${p.status === 'running' ? '#10b981' : '#f59e0b'}`}></div>
-          <div class="p-5">
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <p class="font-mono text-xs text-[var(--color-text-muted)] tracking-wider uppercase mb-1">{p.venue}</p>
-                <h3 class="font-mono text-base font-semibold text-[var(--color-text-bright)] leading-snug">{p.title}</h3>
+        <a href={`/dashboard/project/${p.name}`} class="block hover:no-underline group">
+          <article class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] relative overflow-hidden transition-colors group-hover:border-[var(--color-border-strong)]">
+            <div class="absolute top-0 left-0 right-0 h-[2px]" style={`background: ${p.status === 'running' ? '#10b981' : '#f59e0b'}`}></div>
+            <div class="p-5">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <p class="font-mono text-[10px] text-[var(--color-text-muted)] tracking-wider uppercase mb-1">{p.venue}</p>
+                  <h3 class="font-mono text-base font-semibold text-[var(--color-text-bright)] leading-snug">{p.title}</h3>
+                </div>
+                <StatusBadge status={p.status} />
               </div>
-              <span class={`font-mono text-[10px] px-2 py-0.5 border shrink-0 ml-3 ${statusColor(p.status)}`}>
-                {p.status.toUpperCase()}
-              </span>
-            </div>
-            <p class="font-mono text-xs text-[var(--color-text-secondary)] mb-4">{p.phase}</p>
-            {p.completionPct > 0 ? (
-              <div>
-                <div class="flex justify-between font-mono text-xs mb-1.5">
-                  <span class="text-[var(--color-text-muted)]">Eval progress</span>
-                  <span class="text-[var(--color-text-secondary)] tabular-nums">{p.completionPct}%</span>
+              <p class="font-mono text-xs text-[var(--color-text-secondary)] mb-4">{p.phase}</p>
+              {p.completionPct > 0 ? (
+                <div>
+                  <div class="flex justify-between font-mono text-xs mb-1.5">
+                    <span class="text-[var(--color-text-muted)]">Eval progress</span>
+                    <span class="text-[var(--color-text-secondary)] tabular-nums">{p.completionPct}%</span>
+                  </div>
+                  <div class="h-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border)] overflow-hidden">
+                    <div class="h-full bg-emerald-500/60 transition-all" style={`width: ${p.completionPct}%`}></div>
+                  </div>
+                  <div class="flex gap-6 mt-3 font-mono text-[10px] text-[var(--color-text-muted)]">
+                    <span><span class="text-[var(--color-text-secondary)] tabular-nums">{p.modelsCompleted}</span>/{p.modelsTotal} models</span>
+                    <span><span class="text-[var(--color-text-secondary)] tabular-nums">{p.tasksCompleted}</span>/{p.tasksTotal} combos</span>
+                  </div>
                 </div>
-                <div class="h-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border)] overflow-hidden">
-                  <div class="h-full bg-emerald-500/60 transition-all" style={`width: ${p.completionPct}%`}></div>
-                </div>
-                <div class="flex gap-6 mt-3 font-mono text-[10px] text-[var(--color-text-muted)]">
-                  <span><span class="text-[var(--color-text-secondary)] tabular-nums">{p.modelsCompleted}</span>/{p.modelsTotal} models</span>
-                  <span><span class="text-[var(--color-text-secondary)] tabular-nums">{p.tasksCompleted}</span>/{p.tasksTotal} combos</span>
-                </div>
+              ) : (
+                <p class="font-mono text-[10px] text-[var(--color-text-muted)]">No active evaluations</p>
+              )}
+              <div class="mt-4 pt-3 border-t border-[var(--color-border)] flex justify-between items-center">
+                <span class="font-mono text-[10px] text-[var(--color-text-muted)]">
+                  Last activity: {timeAgo(p.lastActivity)}
+                </span>
+                <span class="font-mono text-[10px] text-[var(--color-text-muted)]">
+                  {p.name}
+                </span>
               </div>
-            ) : (
-              <p class="font-mono text-[10px] text-[var(--color-text-muted)]">No active evaluations</p>
-            )}
-            <div class="mt-4 pt-3 border-t border-[var(--color-border)] flex justify-between items-center">
-              <span class="font-mono text-[10px] text-[var(--color-text-muted)]">
-                Last activity: {timeAgo(p.lastActivity)}
-              </span>
-              <span class="font-mono text-[10px] text-[var(--color-text-muted)]">
-                {p.name}
-              </span>
             </div>
-          </div>
-        </article>
+          </article>
+        </a>
       ))}
     </div>
   </section>
 
-  <!-- Eval Summary + System Health -->
-  <section class="max-w-6xl mx-auto px-6 pb-8">
+  <!-- System Health + Recent Decisions -->
+  <section class="max-w-6xl mx-auto px-6 pb-20">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-      <!-- Eval Summary -->
+      <!-- Recent Decisions -->
       <div class="md:col-span-2 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-        <p class="label mb-5">Evaluation Pipeline</p>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">{evalSummary.completedModels}<span class="text-[var(--color-text-muted)] text-base font-normal">/{evalSummary.totalModels}</span></p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Models Complete</p>
-          </div>
-          <div>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">{evalSummary.completedInstances.toLocaleString()}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Instances Run</p>
-          </div>
-          <div>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">{evalSummary.overallCompletion}<span class="text-[var(--color-text-muted)] text-lg font-normal">%</span></p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Overall Progress</p>
-          </div>
-          <div>
-            <p class="font-mono text-2xl font-bold text-emerald-400 tabular-nums">{evalSummary.runningNow.length}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Running Now</p>
-          </div>
-        </div>
-        <div class="mt-5 pt-4 border-t border-[var(--color-border)]">
-          <p class="font-mono text-[10px] text-[var(--color-text-muted)] mb-2">ACTIVE RUNS</p>
-          <div class="flex flex-wrap gap-2">
-            {evalSummary.runningNow.map((model) => (
-              <span class="font-mono text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                {model}
-              </span>
-            ))}
-          </div>
+        <p class="label mb-5">Recent Decisions</p>
+        <div class="space-y-0 divide-y divide-[var(--color-border)]">
+          {decisions.slice(0, 5).map((d) => (
+            <div class="py-3 first:pt-0 last:pb-0">
+              <div class="flex items-start gap-4">
+                <div class="shrink-0 pt-0.5">
+                  <span class="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">{d.date}</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <a href={`/dashboard/project/${d.project}`} class="font-mono text-[10px] px-1.5 py-0 bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)] hover:text-[var(--color-text-secondary)] hover:no-underline transition-colors">
+                      {d.project}
+                    </a>
+                  </div>
+                  <p class="font-mono text-sm text-[var(--color-text-bright)] leading-snug">{d.decision}</p>
+                  <p class="text-xs text-[var(--color-text-muted)] mt-1 leading-relaxed">{d.rationale}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -244,33 +148,6 @@ function healthDot(status: string): string {
         </div>
       </div>
 
-    </div>
-  </section>
-
-  <!-- Recent Decisions -->
-  <section class="max-w-6xl mx-auto px-6 pb-20">
-    <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-      <p class="label mb-5">Recent Decisions</p>
-      <div class="space-y-0 divide-y divide-[var(--color-border)]">
-        {recentDecisions.map((d) => (
-          <div class="py-3 first:pt-0 last:pb-0">
-            <div class="flex items-start gap-4">
-              <div class="shrink-0 pt-0.5">
-                <span class="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">{d.date}</span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2 mb-0.5">
-                  <span class="font-mono text-[10px] px-1.5 py-0 bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)]">
-                    {d.project}
-                  </span>
-                </div>
-                <p class="font-mono text-sm text-[var(--color-text-bright)] leading-snug">{d.decision}</p>
-                <p class="text-xs text-[var(--color-text-muted)] mt-1 leading-relaxed">{d.rationale}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   </section>
 
