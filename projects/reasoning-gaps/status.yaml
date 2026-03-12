@@ -2,9 +2,9 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-11
+updated: 2026-03-12
 
-phase: empirical-evaluation
+phase: paper-finalization
 status: active
 
 progress:
@@ -24,8 +24,8 @@ progress:
     status: in_progress
     notes: "9/12 models fully evaluated across 9 tasks × 3 conditions = 243 combinations (121,614 instances total, zero failures). Completed: Haiku 4.5, GPT-4o-mini, GPT-4o, Llama 3.1 8B, Llama 3.1 70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B, Qwen 2.5 72B. API models via Anthropic/OpenAI APIs; open-source models via OpenRouter. Pending: Sonnet 4.6, Opus 4.6, o3 (cost decisions needed)."
   paper_writing:
-    status: in_progress
-    notes: "Sections 1-4 drafted in paper/main.tex. Section 5 (experiments) placeholder awaiting full analysis. Discussion and related work partially drafted."
+    status: near-complete
+    notes: "All sections complete: (1) Sections 1-4 fully drafted with formal framework and benchmark design, (2) Section 5 drafted with 9-model preliminary results (tables, figures, narratives), (3) Sections 6-8 complete (Discussion with B8 ceiling and budget_cot insights, comprehensive Related Work, Conclusion), (4) Appendix A complete with all 5 proposition proofs, (5) Appendix B complete with all 9 benchmark specifications, (6) Appendix C with full 9-model results table. Paper at 1,435 lines. Awaiting final 11-model data to update Section 5 and remove B2 footnote."
 
 decisions_pending: []
 
@@ -89,14 +89,15 @@ key_references:
   - "Sprague et al., To CoT or not to CoT? 2024"
 
 next_steps:
-  - "Fix _budget_b2 in budget_calculator.py (exponential scaling: 2^depth * 3 words) and re-run B2 budget_cot for all 9 models"
-  - "Run Sonnet 4.6 evaluation (27 combinations, ~$55)"
-  - "Run o3 evaluation (27 combinations, ~$40)"
+  - "Re-run B2 budget_cot for all 9 models with fixed exponential scaling (via VPS, ~$3-5)"
+  - "Run Sonnet 4.6 evaluation (27 combinations, ~$55, via VPS/API)"
+  - "Run o3 evaluation (27 combinations, ~$40, via VPS/API)"
   - "Re-run full analysis pipeline with 11 models + recalibrated B2"
-  - "Write Section 5 (Experiments) — scaffold immediately, fill after data final"
-  - "Expand Related Work, write Appendix (proofs, benchmark details, full results)"
-  - "Expand Discussion — B8 ceiling, budget_cot calibration, practical implications"
-  - "Convert to NeurIPS format, internal review and revision"
+  - "Update Section 5 with final 11-model results and remove B2 footnote"
+  - "Final paper polish: check LaTeX compilation, verify all references, consistency pass"
+  - "Convert to NeurIPS format with neurips_2026.sty"
+  - "Internal review and final revision pass"
+  - "Submit to NeurIPS 2026"
 
 notes: "VPS infrastructure deployed 2026-03-11: daemon, API, PostgreSQL, nginx all running at 89.167.5.50. Analysis pipeline completed on 121,614 instances — predictions confirmed. CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6. Budget_cot B2 anomaly identified (flat 20-word budget for exponential-depth formulas). Total eval spend: ~$83. Planned: Sonnet 4.6 + o3 (~$95). Remaining budget: ~$267."
 
