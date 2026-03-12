@@ -60,24 +60,30 @@ async function main() {
 
       console.log(`Starting daemon: interval=${interval}m, sessions=${maxSessions}, budget=$${budget}/day`);
 
+      // Create daemon first so we can pass its eval manager to the API
+      const daemon = new Daemon(config);
+
       // Start API server if configured
       const apiKey = process.env.DEEPWORK_API_KEY;
       const databaseUrl = process.env.DATABASE_URL;
       const apiPort = Number(process.env.API_PORT) || 3001;
 
       if (apiKey && databaseUrl) {
-        const { server, broadcast } = createApi({
+        const { broadcast } = createApi({
           port: apiPort,
           apiKey,
           databaseUrl,
-        });
+        }, daemon.getEvalManager(), daemon.getLogger());
+
+        // Wire activity logger → WebSocket broadcast
+        daemon.getLogger().setBroadcast((event) => broadcast("logs", event));
+
         console.log(`API server listening on port ${apiPort}`);
       } else {
         console.log("API server skipped (DEEPWORK_API_KEY or DATABASE_URL not set)");
       }
 
       // Start daemon loop
-      const daemon = new Daemon(config);
       await daemon.start();
       break;
     }
@@ -96,7 +102,7 @@ async function main() {
       const projects = await projectManager.listProjects();
       for (const p of projects) {
         console.log(`${p.status === "active" ? "●" : "○"} ${p.project} — ${p.title}`);
-        console.log(`  Phase: ${p.phase} | Branch: ${p.git.branch}`);
+        console.log(`  Phase: ${p.phase} | Branch: ${p.git?.branch ?? "n/a"}`);
       }
       break;
     }

@@ -6,6 +6,7 @@ import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
 import { Notifier } from "./notifier.js";
+import { EvalJobManager } from "./eval-manager.js";
 
 const PHASE_TO_AGENT: Record<string, string> = {
   "research": "researcher",
@@ -52,6 +53,7 @@ export class Daemon {
   private budgetTracker: BudgetTracker;
   private logger: ActivityLogger;
   private notifier: Notifier;
+  private evalManager: EvalJobManager;
   private running = false;
   private activeSessions = new Map<string, SessionTracker>();
   private abortController: AbortController | null = null;
@@ -68,6 +70,15 @@ export class Daemon {
     this.logger = new ActivityLogger(rootDir);
     this.budgetTracker = new BudgetTracker(rootDir, this.logger);
     this.notifier = new Notifier(rootDir);
+    this.evalManager = new EvalJobManager(rootDir, this.logger, this.notifier);
+  }
+
+  getEvalManager(): EvalJobManager {
+    return this.evalManager;
+  }
+
+  getLogger(): ActivityLogger {
+    return this.logger;
   }
 
   async start(): Promise<void> {
@@ -191,6 +202,17 @@ export class Daemon {
         promise,
         projectName: project.project,
         startedAt: Date.now(),
+      });
+    }
+
+    // Tick eval job manager — check running jobs, start queued ones
+    try {
+      await this.evalManager.tick();
+    } catch (err) {
+      console.error("Eval manager tick error:", err);
+      await this.logger.log({
+        type: "daemon_error",
+        data: { error: "Eval manager tick failed: " + (err instanceof Error ? err.message : String(err)) },
       });
     }
   }

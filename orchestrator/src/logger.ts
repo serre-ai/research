@@ -7,6 +7,7 @@ export type EventType =
   | "decision_created" | "decision_resolved"
   | "budget_spend" | "budget_alert"
   | "experiment_start" | "experiment_end"
+  | "eval_job_queued" | "eval_job_started" | "eval_job_completed" | "eval_job_failed"
   | "phase_transition"
   | "daemon_start" | "daemon_stop" | "daemon_error";
 
@@ -22,10 +23,15 @@ export class ActivityLogger {
   private readonly logsDir: string;
   private readonly logFile: string;
   private dirCreated = false;
+  private onEvent?: (event: ActivityEvent) => void;
 
   constructor(rootDir: string = process.cwd()) {
     this.logsDir = join(rootDir, ".logs");
     this.logFile = join(this.logsDir, "activity.jsonl");
+  }
+
+  setBroadcast(fn: (event: ActivityEvent) => void): void {
+    this.onEvent = fn;
   }
 
   async log(event: Omit<ActivityEvent, "timestamp">): Promise<void> {
@@ -35,6 +41,7 @@ export class ActivityLogger {
       ...event,
     };
     await appendFile(this.logFile, JSON.stringify(entry) + "\n", "utf-8");
+    this.onEvent?.(entry);
   }
 
   async recent(

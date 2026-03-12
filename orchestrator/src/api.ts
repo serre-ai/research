@@ -3,6 +3,8 @@ import { freemem, totalmem, cpus } from "node:os";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { WebSocketServer, type WebSocket } from "ws";
 import pg from "pg";
+import { EvalJobManager, type EvalJobStatus } from "./eval-manager.js";
+import { ActivityLogger, type EventType } from "./logger.js";
 
 const { Pool } = pg;
 
@@ -232,10 +234,106 @@ function budgetRoutes(): express.Router {
   return router;
 }
 
-function evalControlRoutes(broadcast: (channel: string, data: unknown) => void): express.Router {
+function evalControlRoutes(
+  broadcast: (channel: string, data: unknown) => void,
+  evalManager?: EvalJobManager,
+): express.Router {
   const router = express.Router();
 
-  // POST /api/eval/start — trigger an eval run
+  // POST /api/eval/jobs — enqueue a new eval job
+  router.post("/jobs", async (req: Request, res: Response) => {
+    if (!evalManager) {
+      res.status(503).json({ error: "Eval manager not available (daemon not running)" });
+      return;
+    }
+
+    const { model, task, condition, project } = req.body as {
+      model?: string;
+      task?: string;
+      condition?: string;
+      project?: string;
+    };
+
+    if (!model || !task || !condition) {
+      res.status(400).json({ error: "Required: model, task, condition" });
+      return;
+    }
+
+    try {
+      const job = await evalManager.enqueue({ model, task, condition, project });
+
+      broadcast("eval-progress", {
+        type: "job_queued",
+        job,
+        timestamp: new Date().toISOString(),
+      });
+
+      res.json(job);
+    } catch (err) {
+      console.error("POST /api/eval/jobs error:", err);
+      res.status(500).json({ error: "Failed to enqueue eval job" });
+    }
+  });
+
+  // GET /api/eval/jobs — list all eval jobs
+  router.get("/jobs", async (req: Request, res: Response) => {
+    if (!evalManager) {
+      res.status(503).json({ error: "Eval manager not available" });
+      return;
+    }
+
+    const status = req.query["status"] as EvalJobStatus | undefined;
+    res.json(evalManager.listJobs(status));
+  });
+
+  // DELETE /api/eval/jobs/:id — cancel a job
+  router.delete("/jobs/:id", async (req: Request, res: Response) => {
+    if (!evalManager) {
+      res.status(503).json({ error: "Eval manager not available" });
+      return;
+    }
+
+    const jobId = req.params.id as string;
+    const cancelled = await evalManager.cancel(jobId);
+    if (!cancelled) {
+      res.status(404).json({ error: "Job not found or not cancellable" });
+      return;
+    }
+
+    broadcast("eval-progress", {
+      type: "job_cancelled",
+      jobId,
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json({ id: jobId, status: "cancelled" });
+  });
+
+  // GET /api/eval/status — summary of eval pipeline status
+  router.get("/status", async (_req: Request, res: Response) => {
+    if (!evalManager) {
+      res.status(503).json({ error: "Eval manager not available" });
+      return;
+    }
+
+    const jobs = evalManager.listJobs();
+    const running = jobs.filter((j) => j.status === "running");
+    const queued = jobs.filter((j) => j.status === "queued");
+    const completed = jobs.filter((j) => j.status === "completed");
+    const failed = jobs.filter((j) => j.status === "failed");
+
+    res.json({
+      running: running.length,
+      queued: queued.length,
+      completed: completed.length,
+      failed: failed.length,
+      total: jobs.length,
+      runningJobs: running,
+      queuedJobs: queued,
+    });
+  });
+
+  // Legacy: POST /api/eval/start — DB-only run tracking (kept for compatibility)
   router.post("/start", async (req: Request, res: Response) => {
     const { model, task, condition, instances } = req.body as {
       model?: string;
@@ -278,7 +376,7 @@ function evalControlRoutes(broadcast: (channel: string, data: unknown) => void):
     }
   });
 
-  // POST /api/eval/stop — stop a running eval
+  // Legacy: POST /api/eval/stop
   router.post("/stop", async (req: Request, res: Response) => {
     const { runId } = req.body as { runId?: string };
 
@@ -427,7 +525,33 @@ function setupWebSocket(
 // Public API: create and mount the Express app
 // ============================================================
 
-export function createApi(config: ApiConfig): {
+function activityRoutes(logger?: ActivityLogger): express.Router {
+  const router = express.Router();
+
+  // GET /api/activity/recent?count=50&type=...&project=...
+  router.get("/recent", async (req: Request, res: Response) => {
+    if (!logger) {
+      res.status(503).json({ error: "Activity logger not available" });
+      return;
+    }
+
+    const count = Math.min(parseInt(req.query["count"] as string) || 50, 500);
+    const type = req.query["type"] as EventType | undefined;
+    const project = req.query["project"] as string | undefined;
+
+    try {
+      const events = await logger.recent(count, { type, project });
+      res.json(events);
+    } catch (err) {
+      console.error("GET /api/activity/recent error:", err);
+      res.status(500).json({ error: "Failed to fetch activity" });
+    }
+  });
+
+  return router;
+}
+
+export function createApi(config: ApiConfig, evalManager?: EvalJobManager, logger?: ActivityLogger): {
   app: express.Application;
   server: HttpServer;
   broadcast: (channel: string, data: unknown) => void;
@@ -473,7 +597,8 @@ export function createApi(config: ApiConfig): {
   app.use("/api/health", healthRoute(startedAt));
   app.use("/api/projects", projectRoutes());
   app.use("/api/budget", budgetRoutes());
-  app.use("/api/eval", evalControlRoutes(broadcast));
+  app.use("/api/eval", evalControlRoutes(broadcast, evalManager));
+  app.use("/api/activity", activityRoutes(logger));
 
   // Start listening
   server.listen(config.port, () => {
