@@ -1,253 +1,247 @@
-# Deepwork Platform Roadmap
+# 6-12 Month Research Roadmap
 
-**Single source of truth for what's done, what's next, and what's planned.**
-Supersedes `INFRASTRUCTURE-ROADMAP.md` and `projects/reasoning-gaps/EVAL-ROADMAP.md`.
+Starting date: March 2026.
 
-**Created**: 2026-03-11
-**Updated**: 2026-03-11
+This roadmap charts the growth of the Deepwork platform from a single active research project to a steady-state autonomous research lab producing monthly submissions to top ML/AI venues.
 
----
+## Phase 1: Foundation (Months 1-2, March-April 2026)
 
-## Completed Work
+### Objectives
+- Complete the reasoning-gaps project through literature review and formal framework
+- Launch a second research project (empirical study, lower risk)
+- Establish the publishing pipeline (arXiv workflow, blog, website skeleton)
+- Validate the autonomous research workflow end-to-end
 
-### Platform Foundation (2026-03-07 through 2026-03-11)
+### Milestones
 
-**Orchestrator** (`orchestrator/`):
-- 10 TypeScript source files on `main`: `index.ts`, `api.ts`, `git-engine.ts`, `project-manager.ts`, `session-manager.ts`, `monitor.ts`, `notifier.ts`, `logger.ts`, `transcript-writer.ts`, `yaml.ts`
-- 3 compiled-only JS modules (TS sources exist on VPS/research branch, not yet merged to `main`): `daemon.js`, `session-runner.js`, `budget-tracker.js`
-- `index.ts` wired with `run` command: starts daemon loop + API server
-- `api.ts`: REST endpoints (projects, eval, budget, health) + WebSocket
-- `session-runner.js`: Claude Agent SDK integration (needs SDK package at runtime)
-- Build passes cleanly on `main`
+| Milestone | Target Date | Description |
+|-----------|------------|-------------|
+| reasoning-gaps lit review complete | March 31 | 50+ papers surveyed, formal framework sketched |
+| Second project launched | April 7 | Selected from idea backlog, BRIEF.md written |
+| Research website skeleton | April 15 | Static site deployed with papers page and first blog post |
+| reasoning-gaps formal framework | April 30 | Core definitions and main theorem statements complete |
+| First arXiv preprint | April 30 | Position/survey piece or early reasoning-gaps draft |
 
-**Git Automation** (`git-engine.ts`):
-- Worktree creation and management for isolated project sessions
-- Branch creation, switching, commit, push
-- PR creation via GitHub CLI
+### Resource Allocation
+- **Budget**: $1,000/month
+- **Projects**: 2 (reasoning-gaps + one empirical/survey)
+- **Agent hours**: ~60% reasoning-gaps, ~30% second project, ~10% infrastructure
 
-**Database**:
-- PostgreSQL 16 on VPS, 6 tables: `projects`, `eval_results`, `eval_runs`, `sessions`, `decisions`, `budget_events`
-- Materialized view + 3 standard views for dashboard queries
-- 121,146 eval results backfilled from checkpoint files
-
-**VPS** (Hetzner CPX21 at 89.167.5.50):
-- Ubuntu 24.04, Node.js 22, Python 3.12
-- systemd-managed daemon (`deepwork-daemon.service`), polling every 30 minutes, auto-restart
-- nginx reverse proxy on port 80 -> Express on port 3001
-- fail2ban, UFW (ports 22/80/443), API key auth, `.env` chmod 600
-- Python venv with all analysis/eval dependencies
-- 243 checkpoint files (201MB) transferred from local
-
-**CLI** (`cli/`):
-- Ink/React terminal dashboard (read-only)
-- Project status, eval progress, budget views
-
-**Site** (`site/`):
-- Astro + Tailwind, neo-brutalist design, IBM Plex Mono
-- Dashboard pages: overview (`index.astro`), eval monitor (`eval.astro`), budget tracker (`budget.astro`)
-- Currently renders mock data (TODO markers for API integration)
-
-**Agent Definitions** (`.claude/agents/`):
-- `researcher.md`: literature review, formal framework, benchmark design
-- `writer.md`: paper drafting, LaTeX formatting, section writing
-- `reviewer.md`: internal review, quality checks, revision suggestions
-
-### reasoning-gaps Project (NeurIPS 2026)
-
-**Literature Review** (complete):
-- 80+ papers synthesized across transformer expressiveness, circuit complexity, and reasoning benchmarks
-- Key references: Merrill & Sabharwal (TACL 2022/2023, ICLR 2024), Li et al. (ICLR 2024), Dziri et al. (NeurIPS 2023), Mirzadeh et al. (ICLR 2025)
-- Synthesis in `projects/reasoning-gaps/notes/00-literature-synthesis.md`
-
-**Formal Framework** (complete):
-- 6-type reasoning gap taxonomy grounded in TC^0/NC^1/P complexity classes
-- 5 formal propositions with proofs and proof sketches
-- Predictions matrix: which gap types respond to CoT, which don't
-- Framework in `notes/05-formal-framework.md`, proofs in `notes/07-proposition-proofs.md`
-
-**Benchmark Suite** (complete):
-- ReasonGap suite: 9 diagnostic tasks (B1-B9) with controlled difficulty parameters
-- B1: multi-step arithmetic, B2: formula evaluation, B3: list reversal, B4: variable binding, B5: graph reachability, B6: parity checking, B7: compositional semantics, B8: state tracking, B9: recursive pattern matching
-- Known ground truth for all tasks, parameterized difficulty
-- Evaluation protocol: 3 conditions per task (direct, chain-of-thought, budget-constrained CoT)
-- Implementation in `benchmarks/`
-- 4 model clients: Anthropic, OpenAI, OpenRouter, vLLM
-- Checkpoint/resume (crash-safe JSONL), dynamic CoT budgets, parallel evaluation
-
-**Empirical Evaluation** (9/12 models complete):
-- 121,614 instances across 9 models x 9 tasks x 3 conditions, zero failures
-- Completed models:
-
-| Model | Family | Size | Avg Accuracy | Provider | Cost |
-|-------|--------|------|-------------|----------|------|
-| Qwen 2.5 72B | Qwen | 72B | 71.5% | OpenRouter | ~$0.04 |
-| GPT-4o | GPT | -- | 68.4% | OpenAI | ~$18 |
-| GPT-4o-mini | GPT | -- | 64.0% | OpenAI | ~$2 |
-| Haiku 4.5 | Claude | -- | 62.8% | Anthropic | ~$15 |
-| Llama 3.1 70B | Llama | 70B | 62.5% | OpenRouter | ~$0.04 |
-| Ministral 8B | Mistral | 8B | 62.2% | OpenRouter | ~$0.03 |
-| Mistral Small 24B | Mistral | 24B | 60.5% | OpenRouter | ~$0.03 |
-| Qwen 2.5 7B | Qwen | 7B | 57.7% | OpenRouter | ~$0.04 |
-| Llama 3.1 8B | Llama | 8B | 48.2% | OpenRouter | ~$0.04 |
-
-**Analysis Pipeline** (complete):
-- Full pipeline in `experiments/`: `run_full_analysis.py`, `primary.py`, `stats_utils.py`, `viz_utils.py`, `figures.py`
-- 4 tables, 5 figures, 243-group bootstrap confidence intervals
-- Statistical tests: McNemar's test for condition comparisons, bootstrap CIs for accuracy estimates
-- LaTeX output: `.tex` tables and `.pdf` figures ready for `\input{}` and `\includegraphics{}`
-
-**Paper** (in progress):
-- Sections 1-8 drafted in `paper/main.tex`
-- Appendix A (proofs), B (benchmark details), C (per-model results) written
-- Section 5 (experiments) placeholder awaiting final 11-model analysis
-- Key finding: CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6 -- confirms theoretical predictions
-
-### In Progress (as of 2026-03-11)
-
-- **Sonnet 4 evaluation**: 4/27 combinations complete, running locally (~$55 estimated)
-- **o3 evaluation**: 4/27 combinations complete, running locally (~$40 estimated)
-- **B2 budget_cot recalibration**: 4/9 models complete, running locally (~$3-5 estimated)
-- **VPS daemon**: Running, spawns Claude sessions, worktree path fix deployed
+### Key Decisions Required
+- Select the second project from the idea backlog (by March 20)
+- Decide on static site generator (Astro vs. Hugo) for research website
+- Establish LaTeX build pipeline in CI
 
 ---
 
-## Phase 1: Complete the Loop (Week of 2026-03-11)
+## Phase 2: Scale (Months 3-4, May-June 2026)
 
-**Priority**: Get the daemon completing full autonomous research cycles. Finish reasoning-gaps paper.
+### Objectives
+- Submit reasoning-gaps to NeurIPS 2026 (deadline mid-May)
+- Have 3-4 concurrent projects running
+- First empirical project approaching submission (targeting EMNLP 2026 in June)
+- Website live with 3+ blog posts
+- Idea backlog at 15+ ideas
 
-- [ ] **1.1 Fix VPS status sync** -- Update `main` branch's `projects/reasoning-gaps/status.yaml` to reflect current state (`empirical-evaluation` phase), so daemon agents get correct context when spawned
-- [ ] **1.2 Complete active evaluations** -- Finish Sonnet 4, o3, B2 recalibration (running locally, ETA ~6h). Transfer new checkpoints to VPS, ingest into PostgreSQL
-- [ ] **1.3 Merge branches** -- Resolve conflicts between `main` and `research/reasoning-gaps`. Known conflicts: `.claude/agents/*.md`, `orchestrator/package.json`, utility TS files, `site/` layout. Get all 13 orchestrator modules as TS sources on one branch
-- [ ] **1.4 Wire notifications** -- Add `SLACK_WEBHOOK_URL` to VPS `.env`. Implement daily digest (project progress, budget status, eval completions). Session completion alerts via `notifier.ts`
-- [ ] **1.5 Add research-log.md** -- Create append-only research log per project (`projects/<name>/research-log.md`). Wire agents to read it on session start for continuity between sessions
-- [ ] **1.6 Final analysis + paper integration** -- Re-run `run_full_analysis.py` with 11 models + recalibrated B2 data. Update Section 5 with final numbers, tables, figures. Compile and verify no LaTeX errors
-- [ ] **1.7 Submit reasoning-gaps to NeurIPS 2026** -- Format with `neurips_2026.sty`, final review pass, arXiv preprint, camera-ready submission
+### Milestones
 
----
+| Milestone | Target Date | Description |
+|-----------|------------|-------------|
+| reasoning-gaps NeurIPS submission | May 15 | Full paper submitted, arXiv preprint posted |
+| Third project launched | May 1 | Targeting AAAI 2027 (August deadline) |
+| Fourth project launched | May 20 | Tool/benchmark project, targeting NeurIPS D&B |
+| Blog post: reasoning-gaps | May 20 | Accessible summary of the submitted paper |
+| Second paper submission | June 15 | Empirical project submitted to EMNLP 2026 |
+| Budget increase to $2,000/month | June 1 | Based on demonstrated output |
 
-## Phase 2: Research Radar + Taste Engine (Week 2)
+### Resource Allocation
+- **Budget**: $1,000 -> $2,000/month
+- **Projects**: 3-4
+- **Agent distribution**: Balanced across projects; writing-phase projects get priority
 
-**Priority**: The system should find research opportunities, not just execute on given ones.
-
-- [ ] **2.1 Scout agent** -- Define `scout.md` agent role. Implement as cron job (daily, 6am UTC). Scan arXiv new submissions (cs.CL, cs.AI, cs.LG, cs.CC) via arXiv API. Query Semantic Scholar API for citation context. Score relevance to active projects using embedding similarity + keyword matching
-- [ ] **2.2 Idea pipeline** -- Create `ideas.yaml` schema per project: `question`, `hypothesis`, `novelty_estimate` (1-5), `effort_days`, `venue_fit` (list of venues), `status` (proposed/approved/rejected/active). Scout populates with proposals. Human approves or vetoes via CLI or Slack reaction
-- [ ] **2.3 Daily digest** -- Slack message at 7am UTC: relevant new papers (top 5 with one-line summaries), project progress per active project, decisions made in last 24h, budget burn rate, system health (daemon uptime, failed sessions)
-- [ ] **2.4 Kill criteria** -- Every project gets explicit kill conditions at creation in `BRIEF.md`. Examples: "Kill if no novel contribution identified by week 3", "Kill if primary hypothesis falsified with >95% confidence". Daemon checks automatically at each phase transition
-- [ ] **2.5 Literature knowledge base** -- Per-project persistent knowledge store of related work. Scout appends new relevant papers daily. Agents read on session start. Prevents the failure mode of rediscovering known concepts or missing recent related work
-
----
-
-## Phase 3: Multi-Agent Orchestration (Week 3-4)
-
-**Priority**: Move from single-agent sessions to specialized agent teams with defined handoffs.
-
-- [ ] **3.1 Agent definitions** -- Create new agent files in `.claude/agents/`: `scout.md`, `theorist.md`, `experimenter.md`, `critic.md`, `editor.md`. Existing agents: `researcher.md`, `writer.md`, `reviewer.md`. Each agent file specifies: role, capabilities, inputs it expects, outputs it produces, quality criteria
-- [ ] **3.2 Phase progression rules** -- Define prerequisites for each phase transition in a `phase-rules.yaml` schema. Example: `literature_review` -> `formal_framework` requires `literature/synthesis.md` exists and has 30+ references. Daemon validates before advancing `status.yaml`
-- [ ] **3.3 Agent sequencing** -- Implement project lifecycle pipeline: scout -> researcher -> theorist -> experimenter -> writer -> critic -> editor. Each phase maps to one or more agent types. `session-runner` selects agent based on current phase
-- [ ] **3.4 Critic gate** -- Critic review blocks submission. Critic produces structured review: {strengths, weaknesses, questions, verdict}. Verdict options: "accept" (proceed to editor), "revise" (loop back to writer with specific feedback, max 3 cycles), "reject" (flag for human review). Review stored in `reviews/` directory
-- [ ] **3.5 Parallel execution** -- Run experimenter while writer drafts setup section (they don't depend on each other). Scout runs daily independent of project phase. `session-manager.ts` tracks dependencies and allows concurrent non-conflicting agents
-- [ ] **3.6 Inter-agent communication** -- Agents share context via `research-log.md` (append-only), `status.yaml` (structured state), and phase-specific output files. No direct message passing between agents. Each agent reads shared state at session start
+### Risks
+- NeurIPS deadline pressure may degrade quality. Mitigation: enforce quality gates; submit only if self-review >= 7/10; fallback to ICLR 2027 if not ready.
+- Scaling to 3-4 projects may reveal coordination issues. Mitigation: stagger phases; no more than 2 projects in the same phase simultaneously.
 
 ---
 
-## Phase 4: Quality Framework (Month 2)
+## Phase 3: Optimize (Months 5-6, July-August 2026)
 
-**Priority**: Systematic quality assurance so every output meets publication standards.
+### Objectives
+- 5-6 concurrent projects at various phases
+- Receive NeurIPS 2026 reviews (September) — prepare for rebuttal
+- Submit 1-2 more papers (AAAI 2027 in August, ICLR 2027 prep)
+- Refine agent workflow based on first submission experiences
+- Website has 8+ blog posts and all submitted papers listed
 
-- [ ] **4.1 Quality gates** -- Implement 5 gates as automated checks, each with pass/fail criteria:
-  1. **Novelty check**: Semantic Scholar overlap score < 0.8
-  2. **Theoretical soundness**: All propositions have proofs or proof sketches; assumptions stated
-  3. **Experimental rigor**: CIs computed, sample sizes >= 1000 per condition, effect sizes reported, multiple testing corrections applied
-  4. **Adversarial review**: Critic agent finds no fatal flaws in 2 independent passes
-  5. **Community value**: Benchmark is reproducible, code runs, data is accessible
-- [ ] **4.2 Automated novelty check** -- Before formalizing a research direction: query Semantic Scholar for 50 most similar papers (by title + abstract embedding). Compute overlap score (cosine similarity of contribution claims). Flag if > 0.8, proceed with caution if 0.5-0.8, green light if < 0.5. Log results in `status.yaml`
-- [ ] **4.3 Statistical rigor checks** -- Automated validation script that verifies: confidence intervals computed for all reported metrics, sample sizes meet minimum thresholds, effect sizes (Cohen's d or equivalent) reported alongside p-values, Bonferroni or Holm-Bonferroni correction applied when testing multiple hypotheses, no p-hacking patterns (all analyses pre-registered in analysis plan)
-- [ ] **4.4 Reproducibility package** -- Auto-generate for each project: `requirements.txt` (pinned versions), `run.sh` (end-to-end execution), `data/README.md` (download instructions, checksums), `expected_outputs/` (reference results for validation). Test package runs in clean environment before submission
-- [ ] **4.5 Internal review process** -- Critic agent runs after every major paper revision. Produces structured review with scores (1-5) on: novelty, clarity, correctness, significance, reproducibility. Track scores over revision history. Target: all scores >= 4 before submission
+### Milestones
 
----
+| Milestone | Target Date | Description |
+|-----------|------------|-------------|
+| Fifth project launched | July 1 | Survey or position paper |
+| Sixth project launched | July 15 | Exploratory high-risk project |
+| AAAI 2027 submission | August 15 | Theory or empirical project |
+| NeurIPS workshop submissions | August 30 | 1-2 workshop papers from exploratory work |
+| Agent workflow retrospective | August 15 | Document what works, what doesn't, adjust process |
+| EMNLP 2026 decisions received | August 30 | First acceptance/rejection data |
 
-## Phase 5: Community Artifacts (Month 2)
+### Resource Allocation
+- **Budget**: $2,000/month
+- **Projects**: 5-6
+- **Agent distribution**: Writing-phase projects get 2x allocation; exploration gets 0.5x
 
-**Priority**: Make every project produce reusable outputs that the research community adopts.
-
-- [ ] **5.1 Benchmark packaging** -- Auto-generate pip-installable packages from `benchmarks/` code. Structure: `reasongap/` package with `tasks.py`, `evaluate.py`, `metrics.py`. Entry point: `pip install reasongap && python -m reasongap.evaluate --model openai:gpt-4o --tasks B1,B2,B3`. Include comprehensive docstrings and type hints
-- [ ] **5.2 HuggingFace integration** -- Upload evaluation datasets with dataset cards: description, intended use, data format, splits (train/test/challenge), usage examples, citation info. Auto-generate cards from project metadata. Target: `deepwork/reasongap-benchmark` on HuggingFace Hub
-- [ ] **5.3 GitHub releases** -- Tag releases matching paper versions (`v1.0` = submission, `v1.1` = camera-ready). Each release includes: benchmark code, evaluation data, analysis scripts, paper PDF. Automated via GitHub Actions on tag push
-- [ ] **5.4 Blog post agent** -- New agent type that generates 1500-word accessible summaries. Input: paper + results. Output: markdown blog post with key findings, methodology overview, practical implications, figures. Published on `deepwork.site/blog/`. Target: one post per accepted paper
-- [ ] **5.5 Leaderboard** -- Public page on `deepwork.site/leaderboards/<benchmark>`. Auto-updated when new evaluation results land in PostgreSQL. Shows: model name, overall accuracy, per-task breakdown, CoT lift, submission date. Community can submit results via PR to `leaderboard-submissions/` directory
-
----
-
-## Phase 6: Infrastructure Scaling (Month 2-3)
-
-- [ ] **6.1 VPS resize** -- CPX21 (3 vCPU, 4GB RAM, 80GB) -> CPX31 (4 vCPU, 8GB RAM, 160GB, ~$16/mo). Enables 4 concurrent agent sessions (currently 2). Add 2-4GB swap as safety net. Agent sessions are API-bound, not compute-bound, so CPU/RAM is the bottleneck for concurrency, not GPU
-- [ ] **6.2 SSL/HTTPS** -- Point `api.deepwork.site` DNS A record to 89.167.5.50. Run `certbot --nginx -d api.deepwork.site`. Update nginx config for TLS termination. Required before dashboard goes live
-- [ ] **6.3 Dashboard frontend** -- Wire Astro pages (`site/src/pages/dashboard/`) to VPS API. Replace mock data in `index.astro`, `eval.astro`, `budget.astro` with `fetch()` calls to `https://api.deepwork.site`. Add WebSocket connection for real-time eval progress. Deploy updated site to Vercel
-- [ ] **6.4 Backup** -- Hetzner Storage Box (~$4/mo). Nightly cron: `pg_dump` PostgreSQL, rsync git repo + checkpoints. Retention: 7 daily, 4 weekly. Test restore procedure monthly
-- [ ] **6.5 CI/CD** -- GitHub Actions workflows: (1) LaTeX compilation on push to `research/*` or `paper/*` branches, (2) orchestrator TypeScript build + lint, (3) evaluation pipeline tests (`pytest benchmarks/tests/`), (4) leaderboard update on new data
+### Key Activities
+- **Rebuttal preparation**: When NeurIPS reviews arrive, allocate focused agent time for rebuttal (typically 1 week)
+- **Kill/pivot decisions**: By this point, at least one project likely needs to be killed or pivoted. Use kill criteria from PORTFOLIO.md.
+- **Process refinement**: Analyze which project types produce the best agent output. Adjust portfolio mix accordingly.
 
 ---
 
-## Phase 7: Portfolio Management (Month 3+)
+## Phase 4: Steady State (Months 7-9, September-November 2026)
 
-- [ ] **7.1 Cross-project resource allocation** -- Budget distribution algorithm: score projects by (priority x phase_urgency x expected_impact). Higher-scoring projects get more API budget and agent session time. Rebalance weekly. Enforce per-project budget caps in `budget-tracker`
-- [ ] **7.2 Exploration/exploitation balance** -- Maintain portfolio mix: 60% safe bets (clear contribution, strong venue fit), 30% medium risk (novel angle, uncertain reception), 10% moonshots (high novelty, may not work). Scout agent proposes, human approves portfolio allocation
-- [ ] **7.3 Venue calendar** -- Track submission deadlines for target venues (NeurIPS, ICML, ACL, EMNLP, ICLR, AAAI, COLM). Auto-generate project timelines working backward from deadline. Alert at T-4 weeks, T-2 weeks, T-3 days. Store in `venues.yaml`
-- [ ] **7.4 Rejection recovery** -- When a paper is rejected: (1) ingest reviewer comments into `reviews/`, (2) critic agent analyzes feedback and produces revision plan, (3) identify next suitable venue from calendar, (4) writer + editor execute revision, (5) resubmit. Target turnaround: 2-3 weeks
-- [ ] **7.5 Impact tracking** -- Monitor post-publication metrics: Semantic Scholar citations (weekly), HuggingFace dataset downloads (weekly), GitHub stars (daily), blog post analytics (weekly). Dashboard view showing impact trajectory per project. Alert when citation count crosses milestones (10, 50, 100)
+### Objectives
+- Regular monthly submission cadence (1 paper/month)
+- NeurIPS 2026 decision: if accepted, prepare camera-ready and presentation
+- ICLR 2027 submission (October deadline)
+- Portfolio rebalancing based on 6 months of data
+- 15+ blog posts, 4+ open-source releases
+
+### Milestones
+
+| Milestone | Target Date | Description |
+|-----------|------------|-------------|
+| NeurIPS 2026 decisions | September 15 | Accept/reject; plan next steps |
+| Camera-ready (if accepted) | October 1 | Final version with de-anonymization |
+| ICLR 2027 submission | October 10 | At least one strong paper |
+| Monthly submission cadence achieved | October 31 | Confirmed: 1 submission per month for 3 consecutive months |
+| Budget increase to $3,000/month | November 1 | Based on portfolio performance |
+| AAAI 2027 decisions | November 15 | Second round of acceptance data |
+| Open-source release #3 | November 30 | Third code/benchmark/dataset release |
+
+### Resource Allocation
+- **Budget**: $2,000 -> $3,000/month
+- **Projects**: 5-6 (rolling; some complete, new ones start)
+- **Agent distribution**: Mature projects get priority; new projects enter slowly
+
+### Key Activities
+- **Conference presentation prep**: If NeurIPS accepts, prepare poster or talk. Agent can draft poster content and talking points.
+- **Portfolio rebalancing**: With 6 months of data, assess which project types have the best ROI. Adjust the 6-project mix.
+- **Community engagement**: Respond to citations, engage with papers that build on our work, attend (virtually) workshop sessions.
+
+---
+
+## Phase 5: Evaluate and Plan (Months 10-12, December 2026-February 2027)
+
+### Objectives
+- Year 1 impact assessment
+- Methodology refinement based on acceptance/rejection data
+- Plan Year 2 research agenda
+- ICML 2027 submission (January deadline)
+- Comprehensive retrospective
+
+### Milestones
+
+| Milestone | Target Date | Description |
+|-----------|------------|-------------|
+| ICML 2027 submission | January 25, 2027 | Flagship empirical or theory paper |
+| ACL 2027 submission | February 15, 2027 | NLP-focused project |
+| Year 1 retrospective | December 31 | Full assessment of all metrics |
+| Year 2 research strategy | January 15, 2027 | Updated roadmap, portfolio plan, budget plan |
+| Idea backlog refresh | January 31, 2027 | Full re-scoring, 20+ ideas, clear A-tier candidates |
+| ICLR 2027 decisions | January 2027 | Third round of acceptance data |
+
+### Resource Allocation
+- **Budget**: $3,000/month
+- **Projects**: 5-6
+- **Additional**: Allocate 10% of budget for retrospective analysis and tooling improvements
+
+### Key Activities
+- **Impact assessment**: Count papers submitted, accepted, cited. Calculate cost per paper, cost per acceptance.
+- **Methodology refinement**: Which quality standards predicted acceptance? Which agent workflows produced the best papers? Update QUALITY-STANDARDS.md and agent instructions.
+- **Year 2 planning**: Based on what worked, plan the next year's portfolio. Consider:
+  - Doubling down on successful research areas
+  - Entering new areas where the platform has proven capability
+  - Increasing budget if ROI is positive
+  - Hiring human collaborators for specific projects
 
 ---
 
 ## Budget Projections
 
-| Phase | Timeline | Infra Cost | API Cost | Total |
-|-------|----------|-----------|----------|-------|
-| Phase 1 | Week 1 | $8 (VPS) | ~$150 (evals + sessions) | ~$158 |
-| Phase 2 | Week 2 | $8 | ~$50 (scout + sessions) | ~$58 |
-| Phase 3 | Week 3-4 | $16 (resize) | ~$200 (multi-agent) | ~$216 |
-| Phase 4 | Month 2 | $16 | ~$100 (quality reviews) | ~$116 |
-| Phase 5 | Month 2 | $16 | ~$50 (blog + packaging) | ~$66 |
-| Phase 6 | Month 2-3 | $20 (SSL, backup) | $0 | ~$20 |
-| Phase 7 | Month 3+ | $20 | ~$300 (portfolio) | ~$320 |
+| Quarter | Monthly Budget | Quarterly Total | Allocation |
+|---------|---------------|----------------|------------|
+| Q1 (Mar-May 2026) | $1,000-1,500 | $3,500 | 2 projects, infrastructure setup |
+| Q2 (Jun-Aug 2026) | $2,000 | $6,000 | 4-6 projects, first submissions |
+| Q3 (Sep-Nov 2026) | $2,500-3,000 | $8,000 | 5-6 projects, steady state |
+| Q4 (Dec-Feb 2027) | $3,000 | $9,000 | 5-6 projects, Year 2 planning |
+| **Year 1 Total** | — | **$26,500** | — |
 
-**Monthly steady-state estimate**: $500-700/month (within $1,000 budget).
+### Budget Breakdown by Category
 
-### Spent to Date (as of 2026-03-11)
+| Category | Share | Monthly at $3K | Notes |
+|----------|-------|---------------|-------|
+| API calls (model evaluations) | 45% | $1,350 | Empirical projects drive this |
+| Compute (inference, benchmarks) | 25% | $750 | Scales with project count |
+| Data services (Firecrawl, APIs) | 15% | $450 | Literature review, web scraping |
+| Infrastructure (hosting, CI) | 10% | $300 | Website, GitHub Actions |
+| Reserve | 5% | $150 | Unexpected costs |
 
-| Item | Cost | Notes |
-|------|------|-------|
-| Anthropic API (Haiku 4.5 eval) | ~$15 | 27/27 complete |
-| OpenAI API (GPT-4o-mini + GPT-4o) | ~$60 | 54/54 complete |
-| OpenRouter (6 open-source models) | ~$0.22 | 162/162 complete |
-| Hetzner VPS (CPX21) | ~$8 | Running since 2026-03-10 |
-| **Total spent** | **~$83** | |
-
-### Committed Spend (in progress)
-
-| Item | Est. Cost | Notes |
-|------|-----------|-------|
-| Sonnet 4 eval (27 combos) | ~$55 | 4/27 complete, running |
-| o3 eval (27 combos) | ~$40 | 4/27 complete, running |
-| B2 budget_cot recal (9 models) | ~$3-5 | 4/9 complete, running |
-| **Total committed** | **~$98** | |
-
-**Remaining budget (March)**: ~$267 after committed spend. Ample for revision rounds and Phase 2 work.
+### Budget Guardrails
+- No single project may exceed 35% of monthly budget
+- Reserve fund: maintain $500 buffer at all times
+- If monthly spending exceeds 90% of budget by the 20th, freeze new project launches until next month
+- Budget increases require demonstrated output (1+ submissions in the prior period)
 
 ---
 
-## Key Design Decisions
+## Success Metrics (Year 1)
 
-These decisions are locked in. Rationale preserved for future reference.
+### Primary Metrics
 
-**PostgreSQL over SQLite**: Need concurrent reads (dashboard) + writes (daemon/eval). SQLite's write lock would block dashboard queries during eval ingestion.
+| Metric | Target | Stretch | How Measured |
+|--------|--------|---------|-------------|
+| Papers submitted to top venues | 8 | 12 | Count of unique submissions |
+| Papers accepted at top venues | 3 | 5 | Acceptance notifications |
+| Workshop papers submitted | 4 | 6 | Count |
+| Workshop papers accepted | 3 | 5 | Acceptance notifications |
+| arXiv preprints | 8 | 12 | arXiv listings |
+| Open-source releases | 3 | 5 | Public GitHub repos |
+| Blog posts | 12 | 20 | Published on research website |
+| Total citations (12-month) | 20 | 50 | Google Scholar + Semantic Scholar |
 
-**OpenRouter over Modal for open-source models**: OpenRouter costs $0.22 total vs estimated $100-200 for Modal GPU time. No cold starts, no GPU provisioning. Modal code preserved in `benchmarks/modal_serving.py` for reproducibility validation on dedicated hardware.
+### Secondary Metrics
 
-**Frontend on Vercel, API on VPS**: Website deployment stays on Vercel (fast, existing workflow). VPS exposes REST + WebSocket API. Single-user system, so API key auth is sufficient.
+| Metric | Target | How Measured |
+|--------|--------|-------------|
+| Avg. self-review score at submission | 7.5/10 | status.yaml records |
+| Avg. reviewer score (where available) | 5.5/10 | Venue review data |
+| Cost per submitted paper | < $500 | Budget tracking |
+| Cost per accepted paper | < $1,500 | Budget tracking |
+| Time from idea to submission | < 4 months | Pipeline tracking |
+| Idea backlog depth | 15+ ideas | backlog.yaml |
+| Portfolio diversity (distinct areas) | 4+ areas | Project metadata |
 
-**Daemon + API in one process**: Daemon loop and Express routes run in the same Node.js process. No separate API service. Simpler deployment, shared state, single systemd unit.
+### Quarterly Checkpoints
 
-**Opus 4 deferred**: $272 is 68% of remaining budget at time of decision. Sonnet 4 ($55) + o3 ($40) provide more marginal value per dollar -- two diverse model additions vs one expensive one.
+**Month 3 (May 2026)**: First submission completed. Is the workflow viable? Are quality gates being met? Decide whether to accelerate scaling.
 
-**Agents communicate via files, not messages**: `research-log.md` (append-only narrative), `status.yaml` (structured state), and phase-specific output files. No direct agent-to-agent communication. Simpler, auditable, crash-safe.
+**Month 6 (August 2026)**: 3+ submissions completed. First acceptance/rejection data. Is the acceptance rate on track? Decide on budget increase to $3K. Major strategy adjustment if acceptance rate is 0%.
+
+**Month 9 (November 2026)**: 6+ submissions. Multiple rounds of feedback. Calibrate quality standards against actual reviewer expectations. Decide Year 2 scope.
+
+**Month 12 (February 2027)**: Full year retrospective. All metrics evaluated. Year 2 plan finalized.
+
+---
+
+## Risk Factors and Mitigation
+
+| Risk | Probability | Impact | Mitigation |
+|------|------------|--------|------------|
+| Low acceptance rate (< 20%) | Medium | High | Improve quality gates; get human feedback on drafts; target workshops as stepping stones |
+| Budget insufficient for planned scale | Low | Medium | Prioritize empirical projects (lower API cost for higher output); use open-source models more |
+| Agent quality plateau | Medium | Medium | Invest in better prompts, specialized agents, and human-in-the-loop for critical decisions |
+| Research area becomes saturated | Low | Medium | Monitor arXiv velocity in target areas; pivot to adjacent areas quickly |
+| Technical infrastructure failure | Low | Medium | Keep platform simple; git is the source of truth; minimal dependencies |
+| Scooping on active project | Medium | High per-project | Maintain 5-6 projects (portfolio diversification); monitor arXiv daily; accelerate promising projects |
+| Reviewer lottery (bad luck) | Medium | Medium per-paper | Always have backup venue; workshop as fallback; resubmit with improvements |
+| Burnout on operator side | Low | High | Platform is autonomous by design; operator involvement is review and direction-setting, not execution |
