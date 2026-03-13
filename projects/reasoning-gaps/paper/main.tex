@@ -649,8 +649,9 @@ The practical lesson is that CoT budget should be calibrated to the computationa
 Our finding that accuracy degrades with compositional depth (Types~2 and~3) aligns with recent mechanistic work on transformer error propagation.
 \citet{raju2026errors} developed a quantitative model showing that incorrect predictions arise when small errors in the attention mechanism accumulate to cross a threshold, with a two-parameter relationship between accuracy and task complexity.
 Their empirical validation on Gemini and DeepSeek models confirms that error rate scales with task complexity---precisely the pattern we observe across all models on B2 (nested Boolean) and B3 (iterated permutation).
+This finding aligns with quantitative measurements from concurrent work: \citet{convexbench2026} report F1-scores dropping from 1.0 to 0.2 as compositional depth increases from 2 to 100 in convexity recognition tasks, while \citet{xray2026} identify depth-complexity interaction as the universal reasoning bottleneck across eight models and four domains.
 This provides a mechanistic explanation for why depth gaps exist: deeper compositional structure provides more opportunities for attention errors to accumulate, eventually exceeding the threshold for correct prediction.
-Our taxonomy characterizes the \emph{computational} boundary (what requires serial depth); their error model explains \emph{why} models fail near that boundary.
+Our taxonomy characterizes the \emph{computational} boundary (what requires serial depth); the error model explains \emph{why} models fail near that boundary.
 
 \paragraph{When is chain-of-thought faithful?}
 An intriguing connection emerges between our framework and the CoT faithfulness literature~\citep{turpin2023,lanham2023}.
@@ -712,6 +713,11 @@ This makes it difficult to diagnose \emph{why} a model fails or to predict which
 \textsc{ReasonGap} addresses this by design: each task targets a specific gap type with a controlled difficulty parameter (e.g., nesting depth for Type~2, composition steps for Type~3), procedurally generated instances to prevent contamination, and testable predictions derived from complexity theory.
 The closest prior work is the diagnostic approach of \citet{dziri2023faith}, who controlled compositional depth, but their benchmark targets a single gap type.
 Our suite covers all six types with nine tasks.
+
+Concurrent work develops complementary diagnostic frameworks.
+\citet{xray2026} introduce X-RAY, which measures reasoning capability using four structural dimensions (conjunctive width, compositional depth, cross-constraint coupling, dependency-chain length), finding that depth-complexity interaction is the universal bottleneck across models and domains.
+\citet{convexbench2026} demonstrate a sharp compositional reasoning gap in ConvexBench: LLM performance on convexity recognition degrades from F1-score 1.0 at depth 2 to 0.2 at depth 100, though agentic tool use recovers perfect performance.
+Both studies confirm our taxonomy's predictions about depth gaps and tool-based mitigation.
 
 % ============================================================
 \section{Conclusion}
