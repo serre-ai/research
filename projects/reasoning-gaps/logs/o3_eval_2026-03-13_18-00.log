@@ -1,0 +1,40 @@
+============================================================
+ReasonGap Batch Evaluation Runner
+============================================================
+Models:      1
+Tasks:       9
+Conditions:  3
+Combinations: 27
+
+Pre-flight checks...
+  [OK] All benchmark data files present
+  [OK] API credentials configured
+  [OK] No existing checkpoints (fresh start)
+
+============================================================
+COST ESTIMATE
+============================================================
+Total instances: 13,500
+Total tokens:    8,893,500 (6,576,000 input + 2,317,500 output)
+Estimated cost:  $158.46
+
+By model:
+  openai:o3                                      $158.46
+
+By task:
+  B1          $13.84
+  B2          $14.44
+  B3          $17.95
+  B4          $16.09
+  B5          $29.86
+  B6          $15.52
+  B7          $20.20
+  B8          $17.80
+  B9          $12.76
+============================================================
+
+Starting batch evaluation: 27 combinations
+Checkpoint dir: /home/deepwork/deepwork/.worktrees/reasoning-gaps/projects/reasoning-gaps/benchmarks/results/checkpoints
+Log dir: /home/deepwork/deepwork/.worktrees/reasoning-gaps/projects/reasoning-gaps/benchmarks/results/logs
+
+[1/27] openai:o3 / B1 / direct ...
