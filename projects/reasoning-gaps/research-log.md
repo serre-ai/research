@@ -233,3 +233,50 @@ Current activity: 4 parallel streams — (1) budget_cot B2 fix + re-eval, (2) So
 6. Expand Related Work, write Appendix (proofs, benchmark details, full results)
 7. Expand Discussion (B8 ceiling, budget_cot calibration, practical implications)
 8. Convert to NeurIPS format, internal Critic review and revision
+
+---
+
+## 2026-03-12 | Literature Review Updates and Paper Enhancement
+
+**Agent**: Researcher
+
+Conducted systematic literature review updates to ensure comprehensive coverage through early March 2026.
+
+**Session 1 (Evening, 2026-03-12)**: Literature survey of January-February 2026 papers. Discovered and analyzed:
+- **Raju & Netrapalli (2026)** — "A Model of Errors in Transformers" [arXiv:2601.14175]: Provides quantitative model for attention error accumulation with depth. Explains mechanistic basis for our depth gap predictions.
+- **Zhang et al. (2026)** — State-transition framework (engineering optimization, not cited)
+- **OpenAI (2026)** — CoT controllability findings (supports faithfulness arguments)
+- **Yordanov et al. (2026)** — Prototype Transformer (alternative architecture, not cited)
+
+**Session 2 (Late Night, 2026-03-12)**: Added error accumulation paragraph to Discussion section, connecting Raju & Netrapalli's mechanistic model to our computational boundary characterization. Added bibliography entry. Paper: 1,447 → 1,459 lines.
+
+**Session 3 (2026-03-13)**: Literature survey of late February-early March 2026. Discovered and analyzed:
+- **Gao et al. (2026)** — "X-RAY: Mapping LLM Reasoning Capability" [arXiv:2603.05290]: Concurrent work using task-based diagnostics. Finds depth-complexity interaction as universal bottleneck, validating our Type 2 predictions.
+- **Liu et al. (2026)** — "ConvexBench" [arXiv:2602.01075]: Demonstrates sharp compositional gap (F1: 1.0→0.2 from depth 2→100). Quantitative validation of our depth gap predictions. Shows agentic tools recover perfect performance.
+
+**Integration**: Added citations to Related Work (concurrent work paragraph) and Discussion (depth gap validation). Added bibliography entries. Paper: 1,459 → 1,475 lines.
+
+**Final literature review status**:
+- **89 papers surveyed** across 5 research areas
+- Coverage through March 5, 2026 (8 days behind current date)
+- Comprehensive coverage: expressiveness theory (15+), empirical failures (25+), CoT theory (10+), complexity foundations (8+), 2026 work (7)
+- **Status**: Complete and ready for submission
+
+**Files created**:
+- `notes/09-literature-update-2026.md` (January-February 2026 survey)
+- `notes/10-literature-update-march-2026.md` (detailed analysis of 4 papers)
+- `notes/11-literature-update-march-13-2026.md` (late February-early March survey)
+
+**Key finding**: Recent 2026 work (X-RAY, ConvexBench, Raju & Netrapalli) independently validates our taxonomy's core predictions. No papers discovered threaten novelty — we remain the only work with complexity-theoretic grounding + formal propositions + diagnostic benchmarks.
+
+---
+
+## Project Status as of 2026-03-13
+
+**Phase**: Paper finalization
+**Paper status**: 1,475 lines, structurally complete, awaiting final evaluation data
+**Evaluation status**: 9/11 models complete (121,614 instances, 0% failure rate)
+**VPS jobs**: o3 running (started 2026-03-12 19:21), Sonnet 4.6 queued, B2 recalibration queued
+**Literature review**: Complete (89 papers)
+**Budget**: ~$83 spent, ~$95 planned, ~$267 remaining / $1,000
+**Timeline**: On track for early April submission, 52 days before May 4 NeurIPS deadline
