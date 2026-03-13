@@ -3,8 +3,19 @@ current_month: "2026-03"
 
 spending:
   "2026-03":
-    api_calls: 0
+    api_calls: 355  # $83 VPS evals (9 models) + $272 Sonnet 4.6 local (planned)
     compute: 0
     data_services: 0
 
-history: []
+history:
+  - date: "2026-03-11"
+    project: "reasoning-gaps"
+    category: "api_calls"
+    amount: 83
+    description: "VPS evaluations: 9 models via OpenRouter/Anthropic APIs (Haiku, GPT-4o-mini, GPT-4o, Llama 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 7B/72B)"
+  - date: "2026-03-13"
+    project: "reasoning-gaps"
+    category: "api_calls"
+    amount: 272
+    description: "Sonnet 4.6 local evaluation (27 combinations, 13,500 instances, planned)"
+    status: "planned"
