@@ -1,0 +1,81 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="{{title}}" description="{{one_line_description}}">
+
+  <article class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+
+    <!-- Header -->
+    <div class="mb-12">
+      <p class="label mb-3">Research Explainer</p>
+      <h1 class="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1] mb-4">
+        {{title}}
+      </h1>
+      <p class="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
+        {{one_line_description}}
+      </p>
+      <div class="flex gap-4 mt-5 font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
+        <span>{{venue}}</span>
+        <span>&middot;</span>
+        <span>Oddur Sigurdsson</span>
+      </div>
+    </div>
+
+    <hr class="border-[var(--color-border)] mb-12" />
+
+    <!--
+      SECTIONS TO INCLUDE (write for technically-minded non-experts):
+
+      1. The Problem — What gap exists? Why should anyone care?
+      2. The Insight — What's the core idea? What makes this approach different?
+      3. The Method — How are you testing/proving/building this? (high level)
+      4. The Result — What did you find? (update when results are available)
+      5. Why It Matters — Practical implications, who benefits, what changes.
+
+      Use the existing reasoning-gaps explainer at
+      site/src/pages/research/reasoning-gaps.astro as a reference for
+      tone, structure, and styling conventions.
+    -->
+
+    <section class="prose mb-16">
+      <h2 class="!border-0 !pt-0 !mt-0">The Problem</h2>
+      <p>{{problem_description}}</p>
+
+      <h2>The Insight</h2>
+      <p>{{core_insight}}</p>
+
+      <h2>The Method</h2>
+      <p>{{methodology_overview}}</p>
+
+      <h2>Why It Matters</h2>
+      <p>{{practical_implications}}</p>
+    </section>
+
+    <hr class="border-[var(--color-border)] mb-12" />
+
+    <!-- Glossary -->
+    <section class="mb-8">
+      <h2 class="text-xl font-mono font-semibold text-[var(--color-text-bright)] mb-8">Glossary</h2>
+
+      <div class="space-y-0 divide-y divide-[var(--color-border)]">
+        <!--
+          Add 8-15 key terms. For each:
+          <div class="py-5">
+            <h3 class="font-mono text-sm font-semibold text-[var(--color-text-bright)] mb-1">Term Name</h3>
+            <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">Plain-language definition.</p>
+          </div>
+        -->
+      </div>
+    </section>
+
+    <!-- Footer links -->
+    <hr class="border-[var(--color-border)] mb-8" />
+    <div class="flex gap-6">
+      <a href="/dashboard/project/{{project_name}}" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Dashboard</a>
+      <a href="/papers" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Papers</a>
+    </div>
+
+  </article>
+
+</Base>

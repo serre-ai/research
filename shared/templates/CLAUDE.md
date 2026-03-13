@@ -28,6 +28,9 @@
 - Related work should be comprehensive and fair to competing approaches
 {{project_specific_style — Add any style notes specific to this paper, e.g., "Connect to cognitive science perspectives" or "Use running example throughout"}}
 
+### Research Explainer
+Each project has a public-facing explainer page at `site/src/pages/research/{{project_name}}.astro`. Update it when the project hits a milestone (framework defined, first results, major pivot). Write for technically-minded non-experts — not paper formalism. See `site/src/pages/research/reasoning-gaps.astro` for reference.
+
 ### Key Directories
 - `literature/` — Survey notes and reference summaries
 - `experiments/` — Scripts, results, and analysis
