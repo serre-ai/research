@@ -612,6 +612,7 @@ The phase transition result connects to complexity theory: at the critical ratio
 Our taxonomy suggests that scaling alone cannot close all reasoning gaps.
 Types~5 and~6 are invariant to model size, while Types~1--3 require specific augmentation strategies (CoT with appropriate budgets).
 Type~4 gaps are most effectively addressed by tool augmentation, not more model computation.
+For depth gaps (Type~2), architectural innovations such as PaTH attention~\citep{yang2025path} offer promising directions beyond CoT, achieving $\NC$-completeness through data-dependent position encodings.
 This has practical implications: rather than uniformly scaling models, development effort should target specific gap types with matched interventions.
 
 \paragraph{Practical diagnostic workflow.}
@@ -685,6 +686,7 @@ A series of results has precisely characterized the computational power of trans
 \citet{chen2025rope} recently extended these bounds to RoPE-based transformers, showing that under standard assumptions ($\TC \neq \NC$), such architectures cannot solve arithmetic or Boolean formula evaluation---confirming that the $\TC$ ceiling applies to modern position encoding schemes.
 \citet{yehudai2026compositional} prove that transformers solving compositional reasoning questions (CRQs) must have depth scaling with tree depth, while transformers augmented with CoT can use constant depth but require linear CoT tokens and sacrifice parallelizability.
 \citet{strobl2024survey} provide a comprehensive survey unifying these results across transformer variants, state-space models, and recurrent architectures.
+Recent work has explored architectural modifications to escape $\TC$ bounds: \citet{yang2025path} introduce PaTH attention with data-dependent Householder transformations, proving that a one-layer PaTH transformer can solve $\NC$-complete problems---demonstrating the architectural changes our framework identifies as necessary for closing depth gaps (Type~2).
 On the CoT side, \citet{merrill2024cot} and \citet{li2024cot} independently proved that polynomially many CoT steps extend expressiveness to exactly $\PTIME$, while logarithmically many steps reach $\LOGSPACE$.
 \citet{hahn2024sensitive} showed that functions with high Boolean sensitivity occupy isolated points in transformer parameter space, making them hard to learn via gradient descent even when formally expressible---an important distinction between expressiveness and learnability.
 Our work builds on these foundations but shifts focus: where prior work characterizes what transformers \emph{can} compute, we characterize what they \emph{cannot} and connect these impossibility results to empirically observed failures.
@@ -780,6 +782,11 @@ J.~Li, R.~Li, Y.~Zhou, B.~Ma, and J.~Z. Pan.
 L.~Strobl, W.~Merrill, G.~Weiss, D.~Chiang, and D.~Angluin.
 \newblock What formal languages can transformers express? {A} survey.
 \newblock \emph{TACL}, 2024.
+
+\bibitem[Yang et~al.(2025)]{yang2025path}
+S.~Yang, Y.~Shen, K.~Wen, S.~Tan, M.~Mishra, L.~Ren, R.~Panda, and Y.~Kim.
+\newblock {PaTH} attention: Position encoding via accumulating {H}ouseholder transformations.
+\newblock \emph{NeurIPS}, 2025.
 
 \bibitem[Chen et~al.(2025)]{chen2025rope}
 B.~Chen, X.~Li, Y.~Liang, J.~Long, Z.~Shi, and Z.~Song.
