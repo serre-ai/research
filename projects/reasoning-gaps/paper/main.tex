@@ -181,6 +181,7 @@ Importantly, even if expressible, high-sensitivity functions may be unlearnable 
 \paragraph{Type 2: Depth Gap ($\TC/\NC$ boundary).}
 Problems requiring super-constant circuit depth, outside $\TC$ conditional on $\TC \neq \NC$.
 Boolean formula evaluation ($\NC$-complete) and arbitrary context-free language parsing are canonical examples.
+Recent hardness results confirm this prediction: \citet{yehudai2026compositional} prove that transformers solving compositional reasoning problems require depth proportional to tree depth.
 Accuracy degrades with \emph{nesting depth}, and $O(\log n)$ CoT steps should suffice for $\NC$ problems.
 
 \paragraph{Type 3: Serial Composition Gap.}
@@ -641,6 +642,7 @@ Future work should design reversal tasks that more faithfully isolate the traini
 The budget\_cot condition for B2 (nested Boolean evaluation) initially produced a CoT lift of $-0.254$---\emph{worse} than direct prompting.
 Investigation revealed the cause: a flat 20-word budget applied to formulas requiring exponentially more reasoning with depth.
 Models began evaluating the formula but could not complete the computation within the budget, producing truncated and incoherent outputs.
+This aligns with \citet{li2026cot_compression}'s theoretical analysis showing that omitting intermediate reasoning steps triggers exponential decay in learning signals for high-order logical dependencies---precisely what occurs when token budgets are insufficient for the required computational depth.
 This finding has implications beyond our benchmark: insufficient reasoning budget can be actively worse than no reasoning at all.
 In deployed systems with token limits, a model that starts but cannot finish a chain of thought may produce lower-quality outputs than one forced to answer immediately.
 The practical lesson is that CoT budget should be calibrated to the computational complexity of the task---precisely the quantity our taxonomy characterizes.
@@ -703,6 +705,7 @@ Since \citet{wei2022cot} demonstrated that chain-of-thought prompting substantia
 \citet{sprague2024} found that CoT benefits are concentrated on mathematical and symbolic reasoning tasks, with negligible gains on commonsense and factual tasks.
 \citet{meincke2025} showed that CoT prompting provides diminishing returns as base model reasoning capabilities improve.
 The reasoning budget literature reveals additional nuance: \citet{mirage2025} documented a ``mirage of test-time scaling'' where excessive computation degrades accuracy, while \citet{limitedspace2025} showed that performance collapses beyond a critical reasoning chain length.
+\citet{li2026cot_compression} provide a theoretical explanation for why compressing CoT reasoning fails: the learning signal for high-order logical dependencies decays exponentially when intermediate steps are omitted, explaining why token budget constraints cause performance collapse on complex tasks.
 CoT faithfulness is a related concern: \citet{turpin2023} and \citet{lanham2023} showed that CoT explanations often do not reflect the model's true reasoning process, though \citet{anthropic2025faithfulness} found that reasoning models show higher but imperfect faithfulness, and \citet{metr2025} argued that CoT is most informative when it is computationally necessary.
 \citet{ye2026faithfulness} provide mechanistic evidence for this claim, introducing the Normalized Logit Difference Decay (NLDD) metric and demonstrating a ``Reasoning Horizon'' beyond which CoT tokens cease to influence predictions---typically at 70--85\% of chain length across model families.
 Our framework provides a complexity-theoretic explanation for these observations: CoT is computationally necessary and effective for Types~2--3 (depth and serial gaps), where the forward pass provably cannot solve the problem, and unnecessary for Types~5--6, where the problem lies beyond $\PTIME$ or is architectural in nature.
