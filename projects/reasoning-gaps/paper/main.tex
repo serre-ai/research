@@ -681,6 +681,7 @@ A series of results has precisely characterized the computational power of trans
 \citet{merrill2022saturated} showed that saturated (constant-precision) transformers are captured by $\AC$ circuits; \citet{merrill2023parallelism} extended this to log-precision, placing such models within uniform $\TC$ and identifying a fundamental \emph{parallelism tradeoff}: depth can be traded for precision, but not overcome.
 \citet{merrill2023logic} gave an equivalent logical characterization as first-order logic with majority quantifiers.
 \citet{chen2025rope} recently extended these bounds to RoPE-based transformers, showing that under standard assumptions ($\TC \neq \NC$), such architectures cannot solve arithmetic or Boolean formula evaluation---confirming that the $\TC$ ceiling applies to modern position encoding schemes.
+\citet{yehudai2026compositional} prove that transformers solving compositional reasoning questions (CRQs) must have depth scaling with tree depth, while transformers augmented with CoT can use constant depth but require linear CoT tokens and sacrifice parallelizability.
 \citet{strobl2024survey} provide a comprehensive survey unifying these results across transformer variants, state-space models, and recurrent architectures.
 On the CoT side, \citet{merrill2024cot} and \citet{li2024cot} independently proved that polynomially many CoT steps extend expressiveness to exactly $\PTIME$, while logarithmically many steps reach $\LOGSPACE$.
 \citet{hahn2024sensitive} showed that functions with high Boolean sensitivity occupy isolated points in transformer parameter space, making them hard to learn via gradient descent even when formally expressible---an important distinction between expressiveness and learnability.
@@ -767,13 +768,18 @@ Z.~Li, H.~Liu, D.~Zhou, and T.~Ma.
 \newblock Chain of thought empowers transformers to solve inherently serial problems.
 \newblock \emph{ICLR}, 2024.
 
+\bibitem[Li et~al.(2026)]{li2026cot_compression}
+J.~Li, R.~Li, Y.~Zhou, B.~Ma, and J.~Z. Pan.
+\newblock Chain of thought compression: A theoretical analysis.
+\newblock \emph{arXiv:2601.21576}, 2026.
+
 \bibitem[Strobl et~al.(2024)]{strobl2024survey}
 L.~Strobl, W.~Merrill, G.~Weiss, D.~Chiang, and D.~Angluin.
 \newblock What formal languages can transformers express? {A} survey.
 \newblock \emph{TACL}, 2024.
 
 \bibitem[Chen et~al.(2025)]{chen2025rope}
-J.~Chen et~al.
+B.~Chen, X.~Li, Y.~Liang, J.~Long, Z.~Shi, and Z.~Song.
 \newblock Circuit complexity bounds for {RoPE}-based transformer architecture.
 \newblock \emph{EMNLP}, 2025.
 
@@ -932,6 +938,11 @@ D.~Kahneman.
 J.~Wei, X.~Wang, D.~Schuurmans, M.~Bosma, B.~Ichter, F.~Xia, E.~Chi, Q.~Le, and D.~Zhou.
 \newblock Chain-of-thought prompting elicits reasoning in large language models.
 \newblock \emph{NeurIPS}, 2022.
+
+\bibitem[Yehudai et~al.(2026)]{yehudai2026compositional}
+G.~Yehudai, N.~Amsel, and J.~Bruna.
+\newblock Compositional reasoning with transformers, {RNNs}, and chain of thought.
+\newblock \emph{arXiv:2503.01544}, 2026.
 
 \bibitem[Clark et~al.(2018)]{arc2019}
 P.~Clark et~al.
