@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-13T16:45:00
+updated: 2026-03-13T22:30:00
 
 phase: paper-finalization
 status: active
@@ -101,6 +101,6 @@ next_steps:
   - "Internal review and final revision pass"
   - "Submit to NeurIPS 2026"
 
-notes: "VPS infrastructure deployed 2026-03-11: daemon, API, PostgreSQL, nginx all running at 89.167.5.50. Analysis pipeline completed on 121,614 instances — predictions confirmed. CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6. B2 budget_cot fix committed 2026-03-11 (32e153b): changed to exponential scaling 2^depth * 3 words. o3 evaluation started 2026-03-12 19:21 on VPS. Total eval spend: ~$83. Planned: o3 completion (~$40), Sonnet 4.6 (~$55), B2 recal (~$3-5). Remaining budget: ~$267. Paper review 2026-03-13: 1,489 lines complete, 49 bibliography entries verified, all sections ready, analysis pipeline confirmed ready for final 11-model run."
+notes: "VPS infrastructure deployed 2026-03-11: daemon, API, PostgreSQL, nginx all running at 89.167.5.50. Analysis pipeline completed on 121,614 instances — predictions confirmed. CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6. B2 budget_cot fix committed 2026-03-11 (32e153b): changed to exponential scaling 2^depth * 3 words. o3 evaluation started 2026-03-12 19:21 on VPS. Total eval spend: ~$83. Planned: o3 completion (~$40), Sonnet 4.6 (~$55), B2 recal (~$3-5). Remaining budget: ~$267. Paper review 2026-03-13: 1,489 lines complete, 49 bibliography entries verified, all sections ready, analysis pipeline confirmed ready for final 11-model run. Evening session 2026-03-13: Created comprehensive planning documentation (monitoring session notes, supplementary materials plan, post-evaluation action plan). All preparatory work complete, clear 10-day timeline established for post-evaluation work. Project in optimal waiting state."
 
-current_activity: "Paper review completed 2026-03-13 afternoon. Verified: (1) Paper structurally complete at 1,489 lines with all 8 sections + appendix, (2) Bibliography complete with 49 entries and 75 citations resolved, (3) Analysis pipeline ready (primary.py, figures.py, run_full_analysis.py tested), (4) Literature review complete at 89 papers through March 5. VPS evaluations running autonomously (o3, Sonnet 4.6, B2 recal). Paper awaiting final 11-model data for Section 5 update. Project on track for early April submission, 52 days before NeurIPS deadline."
+current_activity: "Project monitoring and planning completed 2026-03-13 evening. Created comprehensive documentation: (1) SESSION-2026-03-13-monitoring.md with full status verification, (2) SUPPLEMENTARY-MATERIALS-PLAN.md with detailed packaging strategy, (3) POST-EVALUATION-ACTION-PLAN.md with step-by-step 10-day timeline from data retrieval to submission. All preparatory work complete. VPS evaluations running autonomously. Project in healthy waiting state with clear action plan for post-evaluation work. 52 days to NeurIPS deadline."
