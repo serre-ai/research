@@ -181,6 +181,7 @@ Importantly, even if expressible, high-sensitivity functions may be unlearnable 
 \paragraph{Type 2: Depth Gap ($\TC/\NC$ boundary).}
 Problems requiring super-constant circuit depth, outside $\TC$ conditional on $\TC \neq \NC$.
 Boolean formula evaluation ($\NC$-complete) and arbitrary context-free language parsing are canonical examples.
+Recent hardness results confirm this prediction: \citet{yehudai2026compositional} prove that transformers solving compositional reasoning problems require depth proportional to tree depth.
 Accuracy degrades with \emph{nesting depth}, and $O(\log n)$ CoT steps should suffice for $\NC$ problems.
 
 \paragraph{Type 3: Serial Composition Gap.}
@@ -641,9 +642,18 @@ Future work should design reversal tasks that more faithfully isolate the traini
 The budget\_cot condition for B2 (nested Boolean evaluation) initially produced a CoT lift of $-0.254$---\emph{worse} than direct prompting.
 Investigation revealed the cause: a flat 20-word budget applied to formulas requiring exponentially more reasoning with depth.
 Models began evaluating the formula but could not complete the computation within the budget, producing truncated and incoherent outputs.
+This aligns with \citet{li2026cot_compression}'s theoretical analysis showing that omitting intermediate reasoning steps triggers exponential decay in learning signals for high-order logical dependencies---precisely what occurs when token budgets are insufficient for the required computational depth.
 This finding has implications beyond our benchmark: insufficient reasoning budget can be actively worse than no reasoning at all.
 In deployed systems with token limits, a model that starts but cannot finish a chain of thought may produce lower-quality outputs than one forced to answer immediately.
 The practical lesson is that CoT budget should be calibrated to the computational complexity of the task---precisely the quantity our taxonomy characterizes.
+
+\paragraph{Error accumulation and depth.}
+Our finding that accuracy degrades with compositional depth (Types~2 and~3) aligns with recent mechanistic work on transformer error propagation.
+\citet{raju2026errors} developed a quantitative model showing that incorrect predictions arise when small errors in the attention mechanism accumulate to cross a threshold, with a two-parameter relationship between accuracy and task complexity.
+Their empirical validation on Gemini and DeepSeek models confirms that error rate scales with task complexity---precisely the pattern we observe across all models on B2 (nested Boolean) and B3 (iterated permutation).
+This finding aligns with quantitative measurements from concurrent work: \citet{convexbench2026} report F1-scores dropping from 1.0 to 0.2 as compositional depth increases from 2 to 100 in convexity recognition tasks, while \citet{xray2026} identify depth-complexity interaction as the universal reasoning bottleneck across eight models and four domains.
+This provides a mechanistic explanation for why depth gaps exist: deeper compositional structure provides more opportunities for attention errors to accumulate, eventually exceeding the threshold for correct prediction.
+Our taxonomy characterizes the \emph{computational} boundary (what requires serial depth); the error model explains \emph{why} models fail near that boundary.
 
 \paragraph{When is chain-of-thought faithful?}
 An intriguing connection emerges between our framework and the CoT faithfulness literature~\citep{turpin2023,lanham2023}.
@@ -672,6 +682,8 @@ Sixth, the budget\_cot sensitivity to calibration (discussed above) means our bu
 A series of results has precisely characterized the computational power of transformers.
 \citet{merrill2022saturated} showed that saturated (constant-precision) transformers are captured by $\AC$ circuits; \citet{merrill2023parallelism} extended this to log-precision, placing such models within uniform $\TC$ and identifying a fundamental \emph{parallelism tradeoff}: depth can be traded for precision, but not overcome.
 \citet{merrill2023logic} gave an equivalent logical characterization as first-order logic with majority quantifiers.
+\citet{chen2025rope} recently extended these bounds to RoPE-based transformers, showing that under standard assumptions ($\TC \neq \NC$), such architectures cannot solve arithmetic or Boolean formula evaluation---confirming that the $\TC$ ceiling applies to modern position encoding schemes.
+\citet{yehudai2026compositional} prove that transformers solving compositional reasoning questions (CRQs) must have depth scaling with tree depth, while transformers augmented with CoT can use constant depth but require linear CoT tokens and sacrifice parallelizability.
 \citet{strobl2024survey} provide a comprehensive survey unifying these results across transformer variants, state-space models, and recurrent architectures.
 On the CoT side, \citet{merrill2024cot} and \citet{li2024cot} independently proved that polynomially many CoT steps extend expressiveness to exactly $\PTIME$, while logarithmically many steps reach $\LOGSPACE$.
 \citet{hahn2024sensitive} showed that functions with high Boolean sensitivity occupy isolated points in transformer parameter space, making them hard to learn via gradient descent even when formally expressible---an important distinction between expressiveness and learnability.
@@ -683,19 +695,21 @@ A growing body of work documents systematic reasoning failures in LLMs.
 \citet{gsmsymbolic} showed that LLMs are sensitive to irrelevant information in mathematical problems, suggesting surface pattern matching rather than genuine reasoning.
 \citet{kambhampati2024} provided evidence that LLMs cannot plan autonomously but can serve as components in hybrid systems.
 \citet{joshi2024} catalogued causal reasoning fallacies, including post hoc and confounding errors.
-\citet{song2026failures} offer the most comprehensive taxonomy to date, organizing failures by cognitive category (deductive, inductive, abductive, analogical).
-Our contribution differs from this line of work in two ways.
-First, we ground each failure pattern in a specific complexity-theoretic boundary rather than a cognitive category.
-Second, our taxonomy yields \emph{testable predictions} about which interventions (CoT, tools, scaling) close which gaps---predictions that we validate empirically.
+\citet{song2026failures} offer the most comprehensive survey to date, organizing failures by reasoning type (embodied vs.\ non-embodied, intuitive vs.\ logical) and failure category (fundamental architectural limitations, domain-specific constraints, robustness issues).
+Our contribution is complementary: where \citet{song2026failures} use a task-based taxonomy, we ground each failure pattern in a specific complexity-theoretic boundary.
+This yields \emph{testable predictions} about which interventions (CoT, tools, scaling) close which gaps---predictions that we validate empirically.
+The convergence of these independently developed taxonomies (their survey submitted February 2026, our work targeting NeurIPS 2026) underscores the timeliness and importance of systematic reasoning failure analysis.
 
 \paragraph{Chain-of-thought reasoning.}
 Since \citet{wei2022cot} demonstrated that chain-of-thought prompting substantially improves multi-step reasoning, a rich literature has explored when and why CoT helps.
 \citet{sprague2024} found that CoT benefits are concentrated on mathematical and symbolic reasoning tasks, with negligible gains on commonsense and factual tasks.
 \citet{meincke2025} showed that CoT prompting provides diminishing returns as base model reasoning capabilities improve.
 The reasoning budget literature reveals additional nuance: \citet{mirage2025} documented a ``mirage of test-time scaling'' where excessive computation degrades accuracy, while \citet{limitedspace2025} showed that performance collapses beyond a critical reasoning chain length.
+\citet{li2026cot_compression} provide a theoretical explanation for why compressing CoT reasoning fails: the learning signal for high-order logical dependencies decays exponentially when intermediate steps are omitted, explaining why token budget constraints cause performance collapse on complex tasks.
 CoT faithfulness is a related concern: \citet{turpin2023} and \citet{lanham2023} showed that CoT explanations often do not reflect the model's true reasoning process, though \citet{anthropic2025faithfulness} found that reasoning models show higher but imperfect faithfulness, and \citet{metr2025} argued that CoT is most informative when it is computationally necessary.
+\citet{ye2026faithfulness} provide mechanistic evidence for this claim, introducing the Normalized Logit Difference Decay (NLDD) metric and demonstrating a ``Reasoning Horizon'' beyond which CoT tokens cease to influence predictions---typically at 70--85\% of chain length across model families.
 Our framework provides a complexity-theoretic explanation for these observations: CoT is computationally necessary and effective for Types~2--3 (depth and serial gaps), where the forward pass provably cannot solve the problem, and unnecessary for Types~5--6, where the problem lies beyond $\PTIME$ or is architectural in nature.
-The first prediction that CoT effectiveness varies systematically by gap \emph{type}---not merely by task domain---is, to our knowledge, novel.
+The prediction that CoT effectiveness varies systematically by gap \emph{type}---not merely by task domain---is, to our knowledge, novel.
 
 \paragraph{Reasoning benchmarks.}
 Standard reasoning benchmarks---GSM8K~\citep{gsm8k}, BIG-Bench~\citep{bigbench}, ARC~\citep{arc2019}, MATH~\citep{math2021}, and FrontierMath~\citep{frontiermath2024}---measure aggregate performance on fixed problem sets without isolating the computational mechanism responsible for failure.
@@ -703,6 +717,11 @@ This makes it difficult to diagnose \emph{why} a model fails or to predict which
 \textsc{ReasonGap} addresses this by design: each task targets a specific gap type with a controlled difficulty parameter (e.g., nesting depth for Type~2, composition steps for Type~3), procedurally generated instances to prevent contamination, and testable predictions derived from complexity theory.
 The closest prior work is the diagnostic approach of \citet{dziri2023faith}, who controlled compositional depth, but their benchmark targets a single gap type.
 Our suite covers all six types with nine tasks.
+
+Concurrent work develops complementary diagnostic frameworks.
+\citet{xray2026} introduce X-RAY, which measures reasoning capability using four structural dimensions (conjunctive width, compositional depth, cross-constraint coupling, dependency-chain length), finding that depth-complexity interaction is the universal bottleneck across models and domains.
+\citet{convexbench2026} demonstrate a sharp compositional reasoning gap in ConvexBench: LLM performance on convexity recognition degrades from F1-score 1.0 at depth 2 to 0.2 at depth 100, though agentic tool use recovers perfect performance.
+Both studies confirm our taxonomy's predictions about depth gaps and tool-based mitigation.
 
 % ============================================================
 \section{Conclusion}
@@ -752,10 +771,20 @@ Z.~Li, H.~Liu, D.~Zhou, and T.~Ma.
 \newblock Chain of thought empowers transformers to solve inherently serial problems.
 \newblock \emph{ICLR}, 2024.
 
+\bibitem[Li et~al.(2026)]{li2026cot_compression}
+J.~Li, R.~Li, Y.~Zhou, B.~Ma, and J.~Z. Pan.
+\newblock Chain of thought compression: A theoretical analysis.
+\newblock \emph{arXiv:2601.21576}, 2026.
+
 \bibitem[Strobl et~al.(2024)]{strobl2024survey}
 L.~Strobl, W.~Merrill, G.~Weiss, D.~Chiang, and D.~Angluin.
 \newblock What formal languages can transformers express? {A} survey.
 \newblock \emph{TACL}, 2024.
+
+\bibitem[Chen et~al.(2025)]{chen2025rope}
+B.~Chen, X.~Li, Y.~Liang, J.~Long, Z.~Shi, and Z.~Song.
+\newblock Circuit complexity bounds for {RoPE}-based transformer architecture.
+\newblock \emph{EMNLP}, 2025.
 
 \bibitem[Hahn \& Rofin(2024)]{hahn2024sensitive}
 M.~Hahn and M.~Rofin.
@@ -792,10 +821,20 @@ M.~Nezhurina, L.~Cipolina-Kun, M.~Cherti, and J.~Jitsev.
 \newblock Alice in {W}onderland: Simple tasks showing complete reasoning breakdown in state-of-the-art large language models.
 \newblock \emph{arXiv:2406.02061}, 2024.
 
+\bibitem[Raju \& Netrapalli(2026)]{raju2026errors}
+S.~Raju and P.~Netrapalli.
+\newblock A model of errors in transformers.
+\newblock \emph{arXiv:2601.14175}, 2026.
+
 \bibitem[Song et~al.(2026)]{song2026failures}
 P.~Song, P.~Han, and N.~Goodman.
 \newblock Large language model reasoning failures.
 \newblock \emph{TMLR}, 2026.
+
+\bibitem[Ye et~al.(2026)]{ye2026faithfulness}
+D.~Ye, M.~Loffgren, O.~Kotadia, and L.~Wong.
+\newblock Mechanistic evidence for faithfulness decay in chain-of-thought reasoning.
+\newblock \emph{arXiv:2602.11201}, 2026.
 
 \bibitem[Sprague et~al.(2024)]{sprague2024}
 Z.~Sprague et~al.
@@ -903,6 +942,11 @@ J.~Wei, X.~Wang, D.~Schuurmans, M.~Bosma, B.~Ichter, F.~Xia, E.~Chi, Q.~Le, and 
 \newblock Chain-of-thought prompting elicits reasoning in large language models.
 \newblock \emph{NeurIPS}, 2022.
 
+\bibitem[Yehudai et~al.(2026)]{yehudai2026compositional}
+G.~Yehudai, N.~Amsel, and J.~Bruna.
+\newblock Compositional reasoning with transformers, {RNNs}, and chain of thought.
+\newblock \emph{arXiv:2503.01544}, 2026.
+
 \bibitem[Clark et~al.(2018)]{arc2019}
 P.~Clark et~al.
 \newblock Think you have solved question answering? {T}ry {ARC}, the {AI2} reasoning challenge.
@@ -932,6 +976,16 @@ S.~A. Cook.
 P.~Cheeseman, B.~Kanefsky, and W.~M. Taylor.
 \newblock Where the really hard problems are.
 \newblock \emph{IJCAI}, 1991.
+
+\bibitem[Gao et~al.(2026)]{xray2026}
+T.~Gao, Y.~Cai, Y.~Yuan, and J.~S. Dong.
+\newblock {X-RAY}: Mapping {LLM} reasoning capability via formalized and calibrated probes.
+\newblock \emph{arXiv:2603.05290}, 2026.
+
+\bibitem[Liu et~al.(2026)]{convexbench2026}
+Y.~Liu, Y.~Huang, Y.-X. Wang, Y.~Liang, and Y.~Bu.
+\newblock {ConvexBench}: Can {LLMs} recognize convex functions?
+\newblock \emph{arXiv:2602.01075}, 2026.
 
 \end{thebibliography}
 
