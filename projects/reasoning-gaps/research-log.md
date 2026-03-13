@@ -703,3 +703,72 @@ Conducted afternoon monitoring session with focus on confirming NeurIPS 2026 dea
 **Status**: ✅ **Excellent health, optimal waiting state, 55 days to deadline**
 
 **Next milestone**: VPS completion → execute 10-day action plan → submit by March 31
+
+---
+
+## 2026-03-13 Evening | PaTH Architecture Discovery and Literature Verification
+
+**Agent**: Researcher
+
+Conducted evening literature scan to verify coverage beyond afternoon check. **Major discovery**: PaTH attention architecture (Yang et al., NeurIPS 2025) with formal NC1-completeness proof—directly validates our Type 2 (Depth Gap) framework predictions.
+
+**Key Findings**:
+
+**1. PaTH Attention Architecture** (HIGH RELEVANCE):
+- **Paper**: "PaTH Attention: Position Encoding via Accumulating Householder Transformations"
+- **Authors**: Yang, Shen, Wen, Tan, Mishra, Ren, Panda, Kim (MIT, MIT-IBM Watson AI Lab)
+- **Publication**: NeurIPS 2025, arXiv:2505.16381 (May 2025, revised Feb 2026)
+- **Core Result**: **Theorem 2.1** proves one-layer PaTH transformer with 2 heads solves NC1-complete problem (iterative permutation tracking) under AC0-reductions
+- **Technical Innovation**: Data-dependent Householder transformations H_t = I - β_t w_t w_t^T provide compositional depth, escaping TC0 bounds
+- **Complexity Claim**: Standard transformers bounded by TC0; PaTH achieves NC1-complete expressiveness
+- **Why Relevant**: This is the **exact TC0 → NC1 transition we identify as Type 2 (Depth Gap)**. Validates our framework's prediction that architectural changes (not CoT/scaling) are needed to close depth gaps.
+
+**2. Additional Papers Scanned** (March 6-13):
+- **Truth as a Trajectory** (arXiv:2603.01326, March 1) - geometric analysis of reasoning trajectories; orthogonal to complexity theory
+- **Barriers to Discrete Reasoning** (arXiv:2602.11175, Feb) - already assessed in afternoon session
+- **Agentic Proposing** (arXiv:2602.03279, Feb) - compositional skill synthesis; engineering focus
+
+**Integration Decision**:
+- **Status**: PaTH is HIGH-value but NOT blocking
+- **Action**: Integrate during post-evaluation revision (Phase 3 of action plan)
+- **Where**: Related Work (concurrent architectures), Discussion (architectural solutions to depth gaps)
+- **Effort**: ~30 minutes (bibliography + 3 sentences)
+- **Impact**: Strengthens our argument; provides concrete example validating Type 2 predictions
+
+**Why Missed Earlier**:
+- Published NeurIPS 2025 proceedings (we focused on arXiv March 2026)
+- Position encoding framing (vs "reasoning gaps" keywords)
+- Feb 2026 revision didn't trigger our recent paper filters
+
+**Literature Status Update**:
+- ✅ **89 papers → 90 papers** (recommended addition: Yang et al. 2025)
+- ✅ **Coverage window**: Through March 13 evening
+- ✅ **No critical gaps** requiring immediate integration
+- ✅ **No threats** to novelty or positioning
+- ✅ **Validation**: PaTH confirms our framework predictions
+
+**Search Coverage**:
+Conducted 8 comprehensive searches:
+- "transformer reasoning limitations 2026 arxiv"
+- "large language model compositional reasoning March 2026"
+- "chain of thought expressiveness complexity 2026"
+- "reasoning gaps transformers LLM 2026"
+- "TC0 NC1 complexity transformers 2026" ← yielded PaTH
+- "PaTH attention NC1-complete complexity proof" ← confirmed theorem
+- "arXiv LLM reasoning March 2026"
+- "transformer expressiveness complexity theory 2026"
+
+**VPS Status**:
+- ✅ API healthy (18 hours uptime, 30% memory, database connected)
+- ⏳ o3 evaluation running (~42 hours since start)
+- ⏳ Expected completion: March 15-16 (unchanged)
+
+**Timeline Impact**: None. PaTH integration adds 30 minutes to planned revision phase. No effect on critical path.
+
+**Session Artifacts**:
+- `notes/SESSION-2026-03-13-evening-literature-scan.md` (detailed findings and integration plan)
+
+**Project Status**: ✅ **Optimal waiting state maintained**. All preparatory work complete. PaTH discovery strengthens paper; integration deferred to post-VPS revision. Literature coverage comprehensive and current through March 13 evening.
+
+**Next action**: Monitor VPS; execute POST-EVALUATION-ACTION-PLAN.md when evaluations complete (est. March 15-16).
+
