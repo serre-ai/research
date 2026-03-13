@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-13T01:58:00
+updated: 2026-03-13T08:30:00
 
 phase: paper-finalization
 status: active
@@ -103,4 +103,4 @@ next_steps:
 
 notes: "VPS infrastructure deployed 2026-03-11: daemon, API, PostgreSQL, nginx all running at 89.167.5.50. Analysis pipeline completed on 121,614 instances — predictions confirmed. CoT lift +0.271 for Types 2,3 vs +0.037 for Types 5,6. B2 budget_cot fix committed 2026-03-11 (32e153b): changed to exponential scaling 2^depth * 3 words. o3 evaluation started 2026-03-12 19:21 on VPS. Total eval spend: ~$83. Planned: o3 completion (~$40), Sonnet 4.6 (~$55), B2 recal (~$3-5). Remaining budget: ~$267."
 
-current_activity: "Added X-RAY and ConvexBench bibliography entries and integrated citations into paper. Paper now 1,475 lines with 89 papers in bibliography. Literature review fully complete. Awaiting VPS evaluation completion (o3, Sonnet 4.6, B2 recal) for final analysis and Section 5 update."
+current_activity: "Comprehensive status check completed 2026-03-13. All major components complete or in progress. VPS evaluations running (o3, Sonnet 4.6, B2 recal). Paper structurally complete at 1,489 lines with 89 bibliography entries. Awaiting VPS completion for final analysis and Section 5 update. Session documentation created."
