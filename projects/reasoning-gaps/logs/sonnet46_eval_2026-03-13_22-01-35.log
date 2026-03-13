@@ -1,0 +1,40 @@
+============================================================
+ReasonGap Batch Evaluation Runner
+============================================================
+Models:      1
+Tasks:       9
+Conditions:  3
+Combinations: 27
+
+Pre-flight checks...
+  [OK] All benchmark data files present
+  [OK] API credentials configured
+  [OK] No existing checkpoints (fresh start)
+
+============================================================
+COST ESTIMATE
+============================================================
+Total instances: 67,500
+Total tokens:    44,467,500 (32,880,000 input + 11,587,500 output)
+Estimated cost:  $272.45
+
+By model:
+  anthropic:claude-sonnet-4-20250514             $272.45
+
+By task:
+  B1          $24.62
+  B2          $25.52
+  B3          $30.79
+  B4          $28.00
+  B5          $48.65
+  B6          $27.14
+  B7          $34.16
+  B8          $30.56
+  B9          $23.00
+============================================================
+
+Starting batch evaluation: 27 combinations
+Checkpoint dir: /home/deepwork/deepwork/.worktrees/reasoning-gaps/projects/reasoning-gaps/benchmarks/results/checkpoints
+Log dir: /home/deepwork/deepwork/.worktrees/reasoning-gaps/projects/reasoning-gaps/benchmarks/results/logs
+
+[1/27] anthropic:claude-sonnet-4-20250514 / B1 / direct ...
