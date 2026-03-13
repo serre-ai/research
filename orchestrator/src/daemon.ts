@@ -37,6 +37,7 @@ interface SessionTracker {
   promise: Promise<unknown>;
   projectName: string;
   startedAt: number;
+  settled: boolean;
 }
 
 interface ScoredProject {
@@ -197,12 +198,16 @@ export class Daemon {
         data: { score: candidate.score, phase: project.phase },
       });
 
-      const promise = this.runSession(project.project, agentType);
-      this.activeSessions.set(project.project, {
-        promise,
+      const tracker: SessionTracker = {
+        promise: Promise.resolve(),
         projectName: project.project,
         startedAt: Date.now(),
+        settled: false,
+      };
+      tracker.promise = this.runSession(project.project, agentType).finally(() => {
+        tracker.settled = true;
       });
+      this.activeSessions.set(project.project, tracker);
     }
 
     // Tick eval job manager — check running jobs, start queued ones
@@ -219,8 +224,7 @@ export class Daemon {
 
   private async cleanupSessions(): Promise<void> {
     for (const [name, tracker] of this.activeSessions) {
-      const settled = await Promise.race([tracker.promise.then(() => true), Promise.resolve(false)]);
-      if (settled) {
+      if (tracker.settled) {
         this.activeSessions.delete(name);
         continue;
       }
