@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
+import { rm, access } from "node:fs/promises";
 
 const execAsync = promisify(execFile);
 
@@ -77,6 +78,16 @@ export class GitEngine {
     if (existing) {
       console.log(`Branch '${branch}' already checked out at ${existing.path}, reusing`);
       return existing.path;
+    }
+
+    // Clean up stale directory not tracked by git
+    try {
+      await access(path);
+      console.log(`Stale worktree directory at ${path}, removing`);
+      await rm(path, { recursive: true, force: true });
+      await this.git("worktree", "prune");
+    } catch {
+      // Directory doesn't exist — good
     }
 
     const exists = await this.branchExists(branch);
