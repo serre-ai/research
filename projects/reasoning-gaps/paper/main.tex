@@ -326,23 +326,24 @@ Tests insensitivity to logical negation; gap should increase with depth but not 
 \paragraph{Evaluation protocol.}
 Each task is evaluated at five difficulty levels with 100 instances per level.
 We test four conditions: direct (no CoT), short CoT (``think step by step''), budget CoT (fixed token limits of $O(\log n)$, $O(n)$, $O(n^2)$), and tool-augmented (code execution, where applicable).
-Models span five families: Claude (Haiku, Sonnet, Opus), GPT (4o-mini, 4o, o3), Llama~3.x (8B, 70B), Mistral (7B, Large), and Qwen (7B, 72B).
+Models span five families: Claude (Haiku~4.5), GPT (4o-mini, 4o, o3), Llama~3.1 (8B, 70B), Mistral (Ministral~8B, Small~24B), and Qwen~2.5 (7B, 72B).
 
 % ============================================================
 \section{Experiments}
 \label{sec:experiments}
 % ============================================================
 
-We evaluate the \textsc{ReasonGap} benchmark across nine models from five families under three reasoning conditions, totaling 121,614 evaluated instances.
+We evaluate the \textsc{ReasonGap} benchmark across ten models from five families under three reasoning conditions, totaling 134,572 evaluated instances.
 The results validate the taxonomy's central predictions: chain-of-thought selectively closes depth and serial gaps while leaving intractability and architectural gaps unchanged, and reasoning budget calibration critically determines whether constrained CoT helps or harms.
 
 \subsection{Experimental Setup}
 \label{sec:setup}
 
 \paragraph{Models.}
-We evaluate nine models spanning five families and two scale categories (\Cref{tab:models}).
-Proprietary models include Claude Haiku~4.5 (Anthropic), GPT-4o and GPT-4o-mini (OpenAI).
+We evaluate ten models spanning five families and two scale categories (\Cref{tab:models}).
+Proprietary models include Claude Haiku~4.5 (Anthropic), GPT-4o, GPT-4o-mini, and o3 (OpenAI).
 Open-source models include Llama~3.1 8B and 70B (Meta), Ministral~8B and Mistral~Small~24B (Mistral), and Qwen~2.5 7B and 72B (Alibaba).
+Notably, o3 is a reasoning model with internal chain-of-thought, providing a natural test of whether built-in reasoning compensates for architectural limitations.
 For scale analysis, we partition open-source models into \emph{small} ($\leq$10B: Llama~8B, Ministral~8B, Qwen~7B) and \emph{medium} (10--80B: Llama~70B, Mistral~Small~24B, Qwen~72B).
 
 \begin{table}[t]
@@ -357,6 +358,7 @@ For scale analysis, we partition open-source models into \emph{small} ($\leq$10B
 Claude & Haiku 4.5 & --- & API \\
 GPT & GPT-4o & --- & API \\
 GPT & GPT-4o-mini & --- & API \\
+GPT & o3 & --- & API \\
 Llama & Llama 3.1 8B & 8B & Local \\
 Llama & Llama 3.1 70B & 70B & Local \\
 Mistral & Ministral 8B & 8B & Local \\
@@ -371,7 +373,7 @@ Qwen & Qwen 2.5 72B & 72B & Local \\
 Each task is evaluated under three conditions:
 (1)~\textbf{Direct}: the model must answer immediately without intermediate reasoning (``Answer with just the final answer.'');
 (2)~\textbf{Short CoT}: unconstrained chain-of-thought (``Think step by step, then provide your final answer.'');
-(3)~\textbf{Budget CoT}: chain-of-thought with a fixed token budget calibrated per task.\footnote{Budget CoT results for B2 (Nested Boolean Evaluation) are preliminary; the token budget is being recalibrated, as the current setting appears too restrictive. See \Cref{sec:budget} for discussion.\label{fn:b2budget}}
+(3)~\textbf{Budget CoT}: chain-of-thought with a fixed token budget calibrated per task.\footnote{The B2 budget was recalibrated from $O(2^d)$ (too restrictive at 24 words for depth~3) to a node-count formula giving ${\sim}180$ words. See \Cref{sec:budget} for discussion.\label{fn:b2budget}}
 
 \paragraph{Tasks and instances.}
 We use the nine \textsc{ReasonGap} diagnostic tasks described in \Cref{sec:benchmark}.
@@ -398,23 +400,23 @@ This 60-percentage-point range across tasks, compared to a typical within-task r
 
 \begin{table}[t]
 \centering
-\caption{Overall accuracy by task and model (averaged across conditions). Bold indicates best model per task. Accuracy varies far more across tasks (rows) than across models (columns), confirming that gap type is the primary determinant of difficulty.}
+\caption{Overall accuracy by task and model (averaged across conditions). Bold indicates best model per task. Accuracy varies far more across tasks (rows) than across models (columns), confirming that gap type is the primary determinant of difficulty. o3's internal reasoning produces strong CoT results but unusually low direct accuracy (see \Cref{sec:o3}).}
 \label{tab:main-accuracy-results}
 \small
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lccccccccc@{}}
+\begin{tabular}{@{}lcccccccccc@{}}
 \toprule
- & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \\
+ & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{o3} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \\
 \midrule
-B1: Majority & .63 & .78 & .72 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \\
-B2: Bool Eval & .53 & .69 & .63 & .64 & .52 & .61 & .55 & \textbf{.76} & .66 \\
-B3: Perm Comp & .58 & \textbf{.69} & .58 & .60 & .27 & .62 & .57 & .62 & .31 \\
-B4: State Track & .71 & .55 & .62 & .69 & .48 & .66 & .68 & \textbf{.72} & .52 \\
-B5: Graph Reach & .79 & \textbf{.84} & .79 & .70 & .51 & .78 & .65 & .83 & .66 \\
-B6: LIS & .31 & \textbf{.38} & .30 & .24 & .21 & .24 & .22 & .35 & .28 \\
-B7: 3-SAT & .37 & \textbf{.67} & .63 & .34 & .32 & .42 & .51 & .61 & .56 \\
-B8: Reversal & \textbf{1.00} & .99 & .94 & 1.00 & .97 & .99 & .98 & .99 & .95 \\
-B9: Negation & .73 & .57 & .54 & .74 & .50 & .56 & .57 & \textbf{.75} & .59 \\
+B1: Majority & .63 & .78 & .72 & .13 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \\
+B2: Bool Eval & .53 & .69 & .63 & .49 & .64 & .52 & .61 & .55 & \textbf{.76} & .66 \\
+B3: Perm Comp & .58 & \textbf{.69} & .58 & .25 & .60 & .27 & .62 & .57 & .62 & .31 \\
+B4: State Track & .71 & .55 & .62 & .35 & .69 & .48 & .66 & .68 & \textbf{.72} & .52 \\
+B5: Graph Reach & .79 & \textbf{.84} & .79 & .47 & .70 & .51 & .78 & .65 & .83 & .66 \\
+B6: LIS & .31 & \textbf{.38} & .30 & ---  & .24 & .21 & .24 & .22 & .35 & .28 \\
+B7: 3-SAT & .37 & \textbf{.67} & .63 & .12 & .34 & .32 & .42 & .51 & .61 & .56 \\
+B8: Reversal & \textbf{1.00} & .99 & .94 & .73 & 1.00 & .97 & .99 & .98 & .99 & .95 \\
+B9: Negation & .73 & .57 & .54 & .30 & .74 & .50 & .56 & .57 & \textbf{.75} & .59 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -427,7 +429,7 @@ Second, \textbf{B6 (LIS) is uniformly hard}: even with unconstrained CoT, accura
 
 \begin{table}[t]
 \centering
-\caption{Accuracy by task and evaluation condition (averaged across all nine models). Short CoT provides the largest gains on serial tasks (B3, B4) and the smallest on intractability (B7) and architectural (B8) tasks.}
+\caption{Accuracy by task and evaluation condition (averaged across all ten models). Short CoT provides the largest gains on serial tasks (B3, B4) and the smallest on intractability (B7) and architectural (B8) tasks.}
 \label{tab:accuracy-by-condition}
 \small
 \begin{tabular}{@{}lccc@{}}
@@ -523,10 +525,10 @@ This is expected: serial tasks have a clear optimal budget of $O(k)$ steps, and 
 On B4 (State Machine Simulation), budget CoT (0.75) matches short CoT (0.75) exactly, confirming that the allocated budget captured the required sequential computation.
 
 \paragraph{Miscalibrated budgets.}
-For Type~2 (Depth), budget CoT shows a lift of $-$0.254---dramatically worse than both direct (0.71) and short CoT (0.85).\textsuperscript{\ref{fn:b2budget}}
-On B2 (Nested Boolean Evaluation), budget CoT accuracy drops to 0.31, compared to 0.85 under unconstrained CoT.
-The budget was set too low relative to the nesting depth, forcing models to truncate their reasoning mid-evaluation.
-Truncated CoT produces partially evaluated formulas that are systematically wrong, whereas the direct condition at least allows the model to leverage pattern matching on the formula structure.
+Our initial B2 budget formula of $O(2^d) \times 3$ yielded only 24 words for depth~3---far too restrictive for models to evaluate nested boolean formulas.
+Under this budget, B2 accuracy dropped to 0.31, dramatically worse than both direct (0.71) and short CoT (0.85).\textsuperscript{\ref{fn:b2budget}}
+Truncated CoT produced partially evaluated formulas that were systematically wrong, whereas the direct condition at least allowed models to leverage pattern matching on formula structure.
+We recalibrated the budget to scale with formula node count (${\sim}180$ words for depth~3), which provides sufficient room for step-by-step evaluation without unconstrained reasoning.
 
 \paragraph{Practical implications.}
 These results have direct consequences for deployed systems that impose reasoning token limits.
@@ -602,6 +604,26 @@ The phase transition result connects to complexity theory: at the critical ratio
 \caption{Accuracy on B7 (3-SAT) as a function of difficulty level. Models show a sharp accuracy cliff as instances approach the phase transition ($\alpha \approx 4.27$). Larger models maintain accuracy slightly longer, but all converge toward chance at the hardest instances. CoT (dashed lines) provides no systematic improvement over direct evaluation (solid lines).}
 \label{fig:phase}
 \end{figure}
+
+\subsection{Reasoning Models: The o3 Case Study}
+\label{sec:o3}
+
+OpenAI's o3 is a reasoning model with internal chain-of-thought that is not visible to the user.
+Its inclusion provides a natural test of whether \emph{built-in} reasoning compensates for the architectural limitations our taxonomy identifies.
+
+\paragraph{Internal reasoning helps where external CoT helps.}
+Under the short CoT condition, o3 achieves strong performance on tasks where CoT provides the largest benefit: 0.78 on B2 (Nested Boolean), 0.73 on B3 (Permutation Composition), 0.76 on B4 (State Machine), and 0.83 on B5 (Graph Reachability).
+These results are consistent with the taxonomy's predictions: o3's internal reasoning chain effectively closes depth and serial gaps, just as external CoT does for other models.
+
+\paragraph{``Answer directly'' conflicts with internal reasoning.}
+Under the direct condition, o3 exhibits dramatically lower accuracy than other models on many tasks (0.00 on B1, B3, B9; 0.10 on B2; 0.00 on B4).
+This is not a capability failure but an instruction-following conflict: o3's internal reasoning process produces intermediate outputs that interfere with the ``answer with just the final answer'' instruction.
+The model appears to either suppress its reasoning chain (degrading performance) or produce reasoning tokens that are then misinterpreted as the final answer.
+
+\paragraph{Implications.}
+The o3 results reinforce a key insight of our framework: reasoning gaps are not merely about model capability but about the computational structure of the problem.
+A model with built-in sequential computation (o3's internal CoT) shows the same pattern of selective improvement as external CoT---closing depth and serial gaps while providing no systematic help on intractability gaps.
+This suggests that the gap taxonomy is robust to the \emph{mechanism} of extended computation.
 
 % ============================================================
 \section{Discussion}

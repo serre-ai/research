@@ -44,9 +44,8 @@ export class SessionManager {
     options?: { maxTurns?: number; maxDurationMs?: number },
   ): Promise<Session> {
     const branch = `research/${projectName}`;
-    const worktreePath = join(this.rootDir, ".worktrees", projectName);
-
-    await this.gitEngine.createWorktree(worktreePath, branch);
+    const requestedPath = join(this.rootDir, ".worktrees", projectName);
+    const worktreePath = await this.gitEngine.createWorktree(requestedPath, branch);
 
     const session: Session = {
       projectName,
@@ -68,6 +67,7 @@ export class SessionManager {
         agentType,
         maxTurns: options?.maxTurns ?? 50,
         maxDurationMs: options?.maxDurationMs ?? 45 * 60 * 1000,
+        worktreePath,
       });
 
       session.sessionId = result.sessionId;

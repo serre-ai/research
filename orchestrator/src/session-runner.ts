@@ -24,6 +24,7 @@ export interface SessionConfig {
   maxTurns: number;
   maxDurationMs: number;
   thinkingLevel?: "standard" | "extended";
+  worktreePath?: string;
 }
 
 export interface SessionResult {
@@ -52,7 +53,7 @@ export class SessionRunner {
     const writer = new TranscriptWriter(this.rootDir, config.projectName, sessionId);
     const maxTurns = config.maxTurns || DEFAULT_MAX_TURNS;
     const maxDurationMs = config.maxDurationMs || DEFAULT_MAX_DURATION_MS;
-    const worktreePath = join(this.rootDir, ".worktrees", config.projectName);
+    const worktreePath = config.worktreePath ?? join(this.rootDir, ".worktrees", config.projectName);
     const startTime = Date.now();
     const prompt = await this.buildPrompt(config.projectName, config.agentType);
 

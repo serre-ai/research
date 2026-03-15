@@ -37,17 +37,21 @@ def _budget_b1(instance: dict[str, Any], multiplier: float) -> int:
 
 
 def _budget_b2(instance: dict[str, Any], multiplier: float) -> int:
-    """B2 Nested Boolean: O(2^depth) words for exponential formula evaluation.
+    """B2 Nested Boolean: Budget scales with formula size, not exponentially.
 
-    Nested boolean formulas have exponential structure with depth.
-    To properly evaluate them, we need reasoning budget that scales
-    exponentially with depth, not logarithmically.
+    The previous O(2^depth) budget was far too restrictive — for depth=3
+    it gave only 24 words with 3x multiplier, making budget_cot consistently
+    worse than direct. Instead, scale with the number of nodes in the formula
+    tree, giving models room to evaluate each leaf and operator.
     """
     metadata = instance.get("metadata", {})
     depth = metadata.get("depth", 3)
-    # Formula evaluation requires exponential reasoning space
-    # Base formula: 2^depth nodes × multiplier
-    return round((2 ** depth) * multiplier)
+    num_leaves = metadata.get("num_leaves", 2 ** depth)
+    # Each leaf needs ~3 words to evaluate, each operator ~2 words
+    # Total formula nodes ~ 2 * num_leaves - 1
+    total_nodes = 2 * num_leaves - 1
+    words_per_node = 4
+    return round(total_nodes * words_per_node * multiplier)
 
 
 def _budget_b3(instance: dict[str, Any], multiplier: float) -> int:

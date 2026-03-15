@@ -96,11 +96,24 @@ MODEL_FAMILIES: dict[str, str] = {
     "mistral-7b": "Mistral",
     "mistral-large": "Mistral",
     "mixtral-8x7b": "Mistral",
+    "ministral-8b-2512": "Mistral",
+    "mistral-small-24b-instruct-2501": "Mistral",
     # Qwen models
     "qwen-7b": "Qwen",
     "qwen-72b": "Qwen",
     "qwen-2.5-7b": "Qwen",
     "qwen-2.5-72b": "Qwen",
+    "qwen-2.5-7b-instruct": "Qwen",
+    "qwen-2.5-72b-instruct": "Qwen",
+    # Full-path model names (from OpenRouter)
+    "claude-haiku-4-5-20251001": "Claude",
+    "claude-sonnet-4-20250514": "Claude",
+    "meta-llama/llama-3.1-8b-instruct": "Llama",
+    "meta-llama/llama-3.1-70b-instruct": "Llama",
+    "mistralai/ministral-8b-2512": "Mistral",
+    "mistralai/mistral-small-24b-instruct-2501": "Mistral",
+    "qwen/qwen-2.5-7b-instruct": "Qwen",
+    "qwen/qwen-2.5-72b-instruct": "Qwen",
 }
 
 # Approximate parameter counts (billions) for scale analysis
@@ -132,6 +145,15 @@ MODEL_SIZES: dict[str, float | None] = {
     "qwen-72b": 72.0,
     "qwen-2.5-7b": 7.0,
     "qwen-2.5-72b": 72.0,
+    # Full-path model names (from OpenRouter/eval runner)
+    "claude-haiku-4-5-20251001": None,
+    "claude-sonnet-4-20250514": None,
+    "meta-llama/llama-3.1-8b-instruct": 8.0,
+    "meta-llama/llama-3.1-70b-instruct": 70.0,
+    "mistralai/ministral-8b-2512": 8.0,
+    "mistralai/mistral-small-24b-instruct-2501": 24.0,
+    "qwen/qwen-2.5-7b-instruct": 7.0,
+    "qwen/qwen-2.5-72b-instruct": 72.0,
 }
 
 

@@ -14,6 +14,8 @@
 5. **If actionable ticket exists and conditions met**:
    a. Dispatch `engineer` session via `session-dispatch` for `platform-engineering` project
    b. Update ticket status to `in_progress`
-   c. Post health report + dispatch action to `#engineering`
-6. **If no actionable tickets**: Post health-only report to `#engineering`
-7. **Monitor dispatch failures**: If an agent has 3+ failed dispatches today, flag in `#general` and consider pausing that agent's dispatch authority
+   c. Include dispatch action in your report
+6. **If no actionable tickets**: Write a health-only report
+7. **Monitor dispatch failures**: If an agent has 3+ failed dispatches today, flag it in your report
+
+**Important**: Write your report as your response. It will be posted automatically via announce mode. Do not use the send tool.

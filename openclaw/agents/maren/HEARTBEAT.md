@@ -13,5 +13,5 @@ Maren does not run on a fixed schedule. She is activated when:
 2. **Read paper content**: Use `paper-review` to read the relevant sections
 3. **Assess prose quality**: Evaluate clarity, flow, precision, and NeurIPS compliance
 4. **Generate feedback**: Create structured review with specific suggestions
-5. **Post to `#writing`**: Share feedback with the team
-6. **If major issues found**: Mention in `#general` that a daemon writing session may be needed
+5. **Write feedback**: Format your review as your response. It will be posted automatically via announce mode. Do not use the send tool.
+6. **If major issues found**: Include a note that a daemon writing session may be needed
