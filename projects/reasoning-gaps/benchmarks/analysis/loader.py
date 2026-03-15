@@ -234,6 +234,13 @@ def _parse_jsonl_file(path: Path) -> list[dict]:
     return results
 
 
+def _strip_provider_prefix(model_name: str) -> str:
+    """Strip provider prefix (e.g., 'openai:', 'anthropic:') from model name."""
+    if ":" in model_name:
+        return model_name.split(":", 1)[1]
+    return model_name
+
+
 def _normalize_record(record: dict) -> dict:
     """Normalize a single result record to canonical column names."""
     # Handle nested metadata
@@ -245,7 +252,7 @@ def _normalize_record(record: dict) -> dict:
         "task": record.get("task", ""),
         "difficulty": int(record.get("difficulty", 0)),
         "condition": record.get("condition", ""),
-        "model": record.get("model", ""),
+        "model": _strip_provider_prefix(record.get("model", "")),
         "extracted_answer": str(record.get("extracted_answer", "")),
         "ground_truth": str(record.get("ground_truth", "")),
         "correct": bool(record.get("correct", False)),

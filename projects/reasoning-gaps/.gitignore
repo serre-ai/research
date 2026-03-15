@@ -1,5 +1,7 @@
 benchmarks/data/
 benchmarks/results/
+!benchmarks/results/analysis/
+benchmarks/results/analysis/figures/*.pdf
 benchmarks/analysis_output/
 benchmarks/.venv/
 benchmarks/.pytest_cache/
