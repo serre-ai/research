@@ -50,6 +50,32 @@ jobs:
       - name: Check output size
         run: du -sh site/dist/
 
+  openclaw:
+    name: OpenClaw — validate config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate gateway.json
+        run: node -e "JSON.parse(require('fs').readFileSync('openclaw/gateway.json','utf-8')); console.log('gateway.json: valid')"
+      - name: Check SKILL.md files exist
+        run: |
+          for skill in deepwork-api arxiv-scout eval-monitor paper-review project-status budget-check; do
+            if [ ! -f "openclaw/skills/$skill/SKILL.md" ]; then
+              echo "Missing: openclaw/skills/$skill/SKILL.md" && exit 1
+            fi
+          done
+          echo "All SKILL.md files present"
+      - name: Check agent workspaces
+        run: |
+          for agent in sol noor vera kit maren; do
+            for file in SOUL.md HEARTBEAT.md; do
+              if [ ! -f "openclaw/agents/$agent/$file" ]; then
+                echo "Missing: openclaw/agents/$agent/$file" && exit 1
+              fi
+            done
+          done
+          echo "All agent workspaces complete"
+
   deploy:
     name: Deploy to VPS
     needs: [orchestrator, cli, site]

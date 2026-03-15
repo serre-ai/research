@@ -1,0 +1,101 @@
+{
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 18789
+  },
+  "slack": {
+    "bot_token_env": "SLACK_BOT_TOKEN",
+    "app_token_env": "SLACK_APP_TOKEN",
+    "signing_secret_env": "SLACK_SIGNING_SECRET"
+  },
+  "skills_dir": "./skills",
+  "agents": [
+    {
+      "name": "sol",
+      "display_name": "Sol",
+      "role": "Project Lead",
+      "icon": "compass",
+      "model": "claude-sonnet-4-6",
+      "workspace": "./agents/sol",
+      "channel": "#general",
+      "schedule": {
+        "type": "cron",
+        "expression": "0 7 * * *",
+        "timezone": "UTC"
+      },
+      "skills": ["deepwork-api", "project-status", "budget-check"],
+      "max_tokens": 4096,
+      "temperature": 0.3
+    },
+    {
+      "name": "noor",
+      "display_name": "Noor",
+      "role": "Research Scout",
+      "icon": "search",
+      "model": "claude-haiku-4-5-20251001",
+      "model_escalation": "claude-sonnet-4-6",
+      "escalation_threshold": 4,
+      "workspace": "./agents/noor",
+      "channel": "#discoveries",
+      "schedule": {
+        "type": "heartbeat",
+        "interval_hours": 6
+      },
+      "skills": ["arxiv-scout", "deepwork-api", "project-status"],
+      "max_tokens": 2048,
+      "temperature": 0.2
+    },
+    {
+      "name": "vera",
+      "display_name": "Vera",
+      "role": "Quality Critic",
+      "icon": "scale",
+      "model": "claude-sonnet-4-6",
+      "workspace": "./agents/vera",
+      "channel": "#reviews",
+      "schedule": {
+        "type": "cron",
+        "expression": "0 */2 * * *",
+        "timezone": "UTC"
+      },
+      "skills": ["deepwork-api", "paper-review", "project-status"],
+      "max_tokens": 8192,
+      "temperature": 0.2
+    },
+    {
+      "name": "kit",
+      "display_name": "Kit",
+      "role": "Experimenter",
+      "icon": "flask-conical",
+      "model": "claude-haiku-4-5-20251001",
+      "model_escalation": "claude-sonnet-4-6",
+      "escalation_threshold": "anomaly",
+      "workspace": "./agents/kit",
+      "channel": "#experiments",
+      "schedule": {
+        "type": "heartbeat",
+        "interval_hours": 12
+      },
+      "skills": ["deepwork-api", "eval-monitor", "budget-check", "project-status"],
+      "max_tokens": 4096,
+      "temperature": 0.1
+    },
+    {
+      "name": "maren",
+      "display_name": "Maren",
+      "role": "Paper Writer",
+      "icon": "pen-tool",
+      "model": "claude-opus-4-6",
+      "model_feedback": "claude-sonnet-4-6",
+      "workspace": "./agents/maren",
+      "channel": "#writing",
+      "schedule": {
+        "type": "triggered",
+        "triggers": ["sol:request", "vera:accept"]
+      },
+      "skills": ["paper-review", "project-status", "deepwork-api"],
+      "max_tokens": 16384,
+      "temperature": 0.4
+    }
+  ]
+}

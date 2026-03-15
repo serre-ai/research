@@ -18,6 +18,41 @@ apis:
     purpose: "Web scraping and content extraction for literature review"
     estimated_monthly_cost_usd: 50
 
+openclaw:
+  gateway:
+    host: "127.0.0.1"
+    port: 18789
+  budget_allocation_usd: 30
+  agents:
+    sol:
+      role: project_lead
+      model: claude-sonnet-4-6
+      schedule: "cron 0 7 * * * UTC"
+      channel: "#general"
+    noor:
+      role: research_scout
+      model: claude-haiku-4-5-20251001
+      model_escalation: claude-sonnet-4-6
+      schedule: "heartbeat 6h"
+      channel: "#discoveries"
+    vera:
+      role: quality_critic
+      model: claude-sonnet-4-6
+      schedule: "cron 0 */2 * * * UTC"
+      channel: "#reviews"
+    kit:
+      role: experimenter
+      model: claude-haiku-4-5-20251001
+      model_escalation: claude-sonnet-4-6
+      schedule: "heartbeat 12h"
+      channel: "#experiments"
+    maren:
+      role: paper_writer
+      model: claude-opus-4-6
+      model_feedback: claude-sonnet-4-6
+      schedule: triggered
+      channel: "#writing"
+
 decision_policy:
   mode: autonomous
   reasoning: extended_thinking
