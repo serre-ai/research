@@ -55,7 +55,6 @@ jobs:
     needs: [orchestrator, cli, site]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/research/')
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
