@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 export type EventType =
   | "session_start" | "session_end" | "session_error"
+  | "session_chain" | "session_quality"
   | "commit" | "push" | "pr_created" | "pr_merged"
   | "decision_created" | "decision_resolved"
   | "budget_spend" | "budget_alert"

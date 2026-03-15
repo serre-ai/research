@@ -1,8 +1,15 @@
 import { join } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
 import { ProjectManager } from "./project-manager.js";
 import { GitEngine } from "./git-engine.js";
-import { SessionRunner, type SessionResult } from "./session-runner.js";
+import { SessionRunner, type SessionResult, type AgentType } from "./session-runner.js";
 import { ActivityLogger } from "./logger.js";
+
+export interface SessionSignals {
+  criticVerdict?: "ACCEPT" | "REVISE" | "REJECT";
+  commitsCreated: number;
+  statusYamlChanged: boolean;
+}
 
 export interface Session {
   projectName: string;
@@ -12,6 +19,7 @@ export interface Session {
   status: "running" | "paused" | "completed" | "failed";
   startedAt: string;
   result?: SessionResult;
+  signals?: SessionSignals;
 }
 
 export class SessionManager {
@@ -32,7 +40,7 @@ export class SessionManager {
 
   async startProject(
     projectName: string,
-    agentType: "researcher" | "writer" | "reviewer" | "editor" | "strategist" = "researcher",
+    agentType: AgentType = "researcher",
     options?: { maxTurns?: number; maxDurationMs?: number },
   ): Promise<Session> {
     const branch = `research/${projectName}`;
@@ -105,9 +113,42 @@ export class SessionManager {
       }
     }
 
+    // Detect session signals before worktree cleanup
+    session.signals = await this.detectSignals(session.worktreePath, session.result);
+
     await this.stopProject(projectName);
 
     return session;
+  }
+
+  private async detectSignals(worktreePath: string, result?: SessionResult): Promise<SessionSignals> {
+    const signals: SessionSignals = {
+      commitsCreated: result?.commitsCreated.length ?? 0,
+      statusYamlChanged: false,
+    };
+
+    // Check for critic verdict in most recent review file
+    try {
+      const reviewsDir = join(worktreePath, "reviews");
+      const files = await readdir(reviewsDir);
+      const criticReviews = files.filter((f) => f.startsWith("critic-review-")).sort().reverse();
+      if (criticReviews.length > 0) {
+        const content = await readFile(join(reviewsDir, criticReviews[0]), "utf-8");
+        const match = content.match(/\*\*Verdict\*\*:\s*(ACCEPT|REVISE|REJECT)/i);
+        if (match) {
+          signals.criticVerdict = match[1].toUpperCase() as SessionSignals["criticVerdict"];
+        }
+      }
+    } catch {
+      // No reviews directory — expected for non-critic sessions
+    }
+
+    // Conservative: assume status.yaml changed if commits were made
+    if (result && result.commitsCreated.length > 0) {
+      signals.statusYamlChanged = true;
+    }
+
+    return signals;
   }
 
   async stopProject(projectName: string): Promise<void> {

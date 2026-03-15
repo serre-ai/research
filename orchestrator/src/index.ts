@@ -69,11 +69,12 @@ async function main() {
       const apiPort = Number(process.env.API_PORT) || 3001;
 
       if (apiKey && databaseUrl) {
-        const { broadcast } = createApi({
-          port: apiPort,
-          apiKey,
-          databaseUrl,
-        }, daemon.getEvalManager(), daemon.getLogger());
+        const { broadcast } = createApi(
+          { port: apiPort, apiKey, databaseUrl },
+          daemon.getEvalManager(),
+          daemon.getLogger(),
+          (project) => daemon.getQualityHistory(project),
+        );
 
         // Wire activity logger → WebSocket broadcast
         daemon.getLogger().setBroadcast((event) => broadcast("logs", event));

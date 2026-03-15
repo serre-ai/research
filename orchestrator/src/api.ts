@@ -525,6 +525,26 @@ function setupWebSocket(
 // Public API: create and mount the Express app
 // ============================================================
 
+function qualityRoutes(getQuality?: (project: string) => unknown[]): express.Router {
+  const router = express.Router();
+
+  // GET /api/quality/:project — session quality history
+  router.get("/:project", (req: Request, res: Response) => {
+    if (!getQuality) {
+      res.status(503).json({ error: "Quality tracking not available (daemon not running)" });
+      return;
+    }
+    const projectId = req.params.project as string;
+    const sessions = getQuality(projectId);
+    const avg = sessions.length > 0
+      ? sessions.reduce<number>((sum, s) => sum + ((s as Record<string, number>).score ?? 0), 0) / sessions.length
+      : null;
+    res.json({ project: projectId, averageQuality: avg, sessions });
+  });
+
+  return router;
+}
+
 function activityRoutes(logger?: ActivityLogger): express.Router {
   const router = express.Router();
 
@@ -551,7 +571,12 @@ function activityRoutes(logger?: ActivityLogger): express.Router {
   return router;
 }
 
-export function createApi(config: ApiConfig, evalManager?: EvalJobManager, logger?: ActivityLogger): {
+export function createApi(
+  config: ApiConfig,
+  evalManager?: EvalJobManager,
+  logger?: ActivityLogger,
+  qualityGetter?: (project: string) => unknown[],
+): {
   app: express.Application;
   server: HttpServer;
   broadcast: (channel: string, data: unknown) => void;
@@ -599,6 +624,7 @@ export function createApi(config: ApiConfig, evalManager?: EvalJobManager, logge
   app.use("/api/budget", budgetRoutes());
   app.use("/api/eval", evalControlRoutes(broadcast, evalManager));
   app.use("/api/activity", activityRoutes(logger));
+  app.use("/api/quality", qualityRoutes(qualityGetter));
 
   // Start listening
   server.listen(config.port, () => {

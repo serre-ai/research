@@ -6,8 +6,9 @@ import type {
 } from './mock';
 import { evalTasks } from './mock';
 
-const API_BASE = import.meta.env.DEEPWORK_API_URL ?? 'http://89.167.5.50';
-const API_KEY = import.meta.env.DEEPWORK_API_KEY ?? '85062f0e6a0c173d48f0a354731b84a79121474f150f98ee3190d55c61a9bcf8';
+// Same-origin: site and API served from the same domain, so empty base = relative URLs
+const API_BASE = import.meta.env.DEEPWORK_API_URL ?? '';
+const API_KEY = import.meta.env.DEEPWORK_API_KEY ?? '';
 
 async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

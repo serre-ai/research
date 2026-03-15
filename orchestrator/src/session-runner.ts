@@ -5,6 +5,10 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { GitEngine } from "./git-engine.js";
 import { TranscriptWriter } from "./transcript-writer.js";
 
+export type AgentType =
+  | "researcher" | "writer" | "reviewer" | "editor"
+  | "critic" | "experimenter" | "theorist" | "strategist" | "scout";
+
 const DEFAULT_MAX_TURNS = 50;
 const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;
 
@@ -15,7 +19,7 @@ const SONNET_PRICING = {
 
 export interface SessionConfig {
   projectName: string;
-  agentType: "researcher" | "writer" | "reviewer" | "editor" | "strategist";
+  agentType: AgentType;
   maxTurns: number;
   maxDurationMs: number;
   thinkingLevel?: "standard" | "extended";

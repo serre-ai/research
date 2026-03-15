@@ -1,7 +1,8 @@
 ---
 import Base from '../../layouts/Base.astro';
 
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://89.167.5.50';
+// Empty = same-origin (site and API on same domain)
+const API_BASE = import.meta.env.PUBLIC_API_URL || '';
 const API_KEY = import.meta.env.PUBLIC_API_KEY || '';
 ---
 
@@ -250,7 +251,8 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY || '';
   // ---- Load initial data ----
   async function loadRecent() {
     try {
-      const url = new URL('/api/activity/recent', API_BASE);
+      const base = API_BASE || window.location.origin;
+      const url = new URL('/api/activity/recent', base);
       url.searchParams.set('count', '50');
       if (API_KEY) url.searchParams.set('api_key', API_KEY);
 
@@ -275,8 +277,8 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY || '';
   function connectWs() {
     setStatus('connecting');
 
-    const wsProtocol = API_BASE.startsWith('https') ? 'wss' : 'ws';
-    const wsHost = API_BASE.replace(/^https?:\/\//, '');
+    const wsProtocol = (API_BASE.startsWith('https') || window.location.protocol === 'https:') ? 'wss' : 'ws';
+    const wsHost = API_BASE ? API_BASE.replace(/^https?:\/\//, '') : window.location.host;
     const wsUrl = `${wsProtocol}://${wsHost}/api/ws?api_key=${encodeURIComponent(API_KEY)}`;
 
     try {

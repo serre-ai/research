@@ -1,19 +1,31 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
-import { SessionManager } from "./session-manager.js";
+import { SessionManager, type Session, type SessionSignals } from "./session-manager.js";
+import { type AgentType } from "./session-runner.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
 import { Notifier } from "./notifier.js";
 import { EvalJobManager } from "./eval-manager.js";
 
-const PHASE_TO_AGENT: Record<string, string> = {
+const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
   "literature-review": "researcher",
+  "empirical-evaluation": "experimenter",
+  "analysis": "experimenter",
   "drafting": "writer",
-  "revision": "reviewer",
+  "revision": "writer",
+  "paper-finalization": "writer",
   "final": "editor",
+};
+
+/** Agent sequences for multi-step phases. After one agent finishes, the next in the sequence runs. */
+const PHASE_SEQUENCES: Record<string, string[]> = {
+  "paper-finalization": ["writer", "critic", "editor"],
+  "revision": ["writer", "critic"],
+  "analysis": ["experimenter", "writer"],
 };
 
 export interface DaemonConfig {
@@ -43,7 +55,26 @@ interface SessionTracker {
 interface ScoredProject {
   project: ProjectStatus;
   score: number;
+  agentType: AgentType;
+}
+
+interface FollowUp {
+  projectName: string;
+  agentType: AgentType;
+  chainId: string;
+  reason: string;
+  queuedAt: number;
+}
+
+export interface SessionQuality {
+  score: number; // 0-100
+  commitsCreated: number;
+  statusAdvanced: boolean;
+  criticVerdict?: string;
+  costUsd: number;
+  durationMs: number;
   agentType: string;
+  timestamp: string;
 }
 
 export class Daemon {
@@ -59,6 +90,9 @@ export class Daemon {
   private activeSessions = new Map<string, SessionTracker>();
   private abortController: AbortController | null = null;
   private failureCounts = new Map<string, number>();
+  private followUpQueue: FollowUp[] = [];
+  private qualityHistory = new Map<string, SessionQuality[]>();
+  private lastKnownPhases = new Map<string, string>();
   private cycleCount = 0;
   private startedAt = 0;
 
@@ -128,12 +162,21 @@ export class Daemon {
       project: t.projectName,
       runningMs: Date.now() - t.startedAt,
     }));
+    const qualitySummary: Record<string, { avg: number | undefined; recent: SessionQuality[] }> = {};
+    for (const [project, history] of this.qualityHistory) {
+      qualitySummary[project] = {
+        avg: this.getRecentQualityAvg(project),
+        recent: history.slice(-3),
+      };
+    }
     return {
       running: this.running,
       uptimeMs: Date.now() - this.startedAt,
       cyclesCompleted: this.cycleCount,
       activeSessions: sessions,
       failureCounts: Object.fromEntries(this.failureCounts),
+      pendingFollowUps: this.followUpQueue.length,
+      quality: qualitySummary,
     };
   }
 
@@ -165,11 +208,40 @@ export class Daemon {
     // Clean up finished sessions + detect stale ones
     await this.cleanupSessions();
 
-    const availableSlots = this.config.maxConcurrentSessions - this.activeSessions.size;
+    let availableSlots = this.config.maxConcurrentSessions - this.activeSessions.size;
     if (availableSlots <= 0) {
       console.log("All " + this.config.maxConcurrentSessions + " session slots occupied -- waiting");
       return;
     }
+
+    // Process follow-up queue first (chained sessions take priority)
+    while (this.followUpQueue.length > 0 && availableSlots > 0) {
+      const followUp = this.followUpQueue.shift()!;
+      if (this.activeSessions.has(followUp.projectName)) continue; // Skip if project already running
+
+      console.log("Launching chained " + followUp.agentType + " session for " + followUp.projectName + " (reason: " + followUp.reason + ")");
+
+      await this.logger.log({
+        type: "session_start",
+        project: followUp.projectName,
+        agent: followUp.agentType,
+        data: { chainId: followUp.chainId, reason: followUp.reason, chained: true },
+      });
+
+      const tracker: SessionTracker = {
+        promise: Promise.resolve(),
+        projectName: followUp.projectName,
+        startedAt: Date.now(),
+        settled: false,
+      };
+      tracker.promise = this.runSession(followUp.projectName, followUp.agentType, followUp.chainId).finally(() => {
+        tracker.settled = true;
+      });
+      this.activeSessions.set(followUp.projectName, tracker);
+      availableSlots--;
+    }
+
+    if (availableSlots <= 0) return;
 
     // Score and select projects
     const projects = await this.projectManager.listProjects();
@@ -181,7 +253,7 @@ export class Daemon {
       .filter((s) => s.score > 0)
       .slice(0, availableSlots);
 
-    if (candidates.length === 0) {
+    if (candidates.length === 0 && this.followUpQueue.length === 0) {
       console.log("No eligible projects this cycle");
       return;
     }
@@ -244,26 +316,49 @@ export class Daemon {
     }
   }
 
-  private async runSession(projectName: string, _agentType: string): Promise<void> {
-    const attempt = async () => {
-      // startProject sets up worktree and returns session info
-      const session = await this.sessionManager.startProject(projectName);
+  private async runSession(projectName: string, agentType: AgentType, chainId?: string): Promise<void> {
+    const currentChainId = chainId ?? randomUUID();
+
+    const attempt = async (): Promise<Session> => {
+      // startProject sets up worktree, runs agent, and returns session info
+      const session = await this.sessionManager.startProject(projectName, agentType);
+
+      const result = session.result;
+      const quality = this.assessQuality(session, agentType);
+      this.recordQuality(projectName, quality);
 
       await this.logger.log({
         type: "session_end",
         project: projectName,
-        agent: _agentType,
+        agent: agentType,
         data: {
           worktreePath: session.worktreePath,
           branch: session.branch,
           status: session.status,
+          chainId: currentChainId,
+          quality: quality.score,
+          commits: result?.commitsCreated.length ?? 0,
+          cost: result?.costUsd ?? 0,
+          signals: session.signals,
         },
       });
 
+      // Enriched notification with session details
+      const commitCount = result?.commitsCreated.length ?? 0;
+      const cost = result?.costUsd?.toFixed(2) ?? "0.00";
+      const verdictStr = session.signals?.criticVerdict ? " | verdict: " + session.signals.criticVerdict : "";
       await this.notifier.notify({
-        event: "Session Started",
+        event: "Session Completed",
         project: projectName,
-        summary: _agentType + " session: worktree ready at " + session.worktreePath,
+        summary: agentType + ": " + commitCount + " commits, $" + cost + verdictStr + " (quality: " + quality.score + "/100)",
+        details: {
+          agent: agentType,
+          commits: commitCount,
+          cost: "$" + cost,
+          duration: Math.round((result?.durationMs ?? 0) / 1000) + "s",
+          quality: quality.score,
+          chainId: currentChainId,
+        },
         level: "info",
       });
 
@@ -271,8 +366,9 @@ export class Daemon {
       return session;
     };
 
+    let session: Session | undefined;
     try {
-      await attempt();
+      session = await attempt();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       console.error("Session failed for " + projectName + ": " + errorMsg);
@@ -280,8 +376,8 @@ export class Daemon {
       await this.logger.log({
         type: "session_error",
         project: projectName,
-        agent: _agentType,
-        data: { error: errorMsg, willRetry: true },
+        agent: agentType,
+        data: { error: errorMsg, willRetry: true, chainId: currentChainId },
       });
 
       this.recordFailure(projectName);
@@ -289,7 +385,7 @@ export class Daemon {
       await this.notifier.notify({
         event: "Session Failed",
         project: projectName,
-        summary: errorMsg,
+        summary: agentType + ": " + errorMsg,
         level: "error",
       });
 
@@ -298,20 +394,147 @@ export class Daemon {
       await this.sleep(RETRY_DELAY_MS);
 
       try {
-        await attempt();
+        session = await attempt();
       } catch (retryErr) {
         const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
         console.error("Retry also failed for " + projectName + ": " + retryMsg);
         await this.logger.log({
           type: "session_error",
           project: projectName,
-          agent: _agentType,
-          data: { error: retryMsg, retryFailed: true },
+          agent: agentType,
+          data: { error: retryMsg, retryFailed: true, chainId: currentChainId },
         });
         this.recordFailure(projectName);
         throw retryErr;
       }
     }
+
+    // Session chaining: determine and queue follow-up based on signals
+    if (session?.signals && session.status === "completed") {
+      this.processSessionSignals(projectName, agentType, session.signals, currentChainId);
+    }
+  }
+
+  private processSessionSignals(
+    projectName: string,
+    agentType: AgentType,
+    signals: SessionSignals,
+    chainId: string,
+  ): void {
+    // Critic verdict drives follow-up
+    if (agentType === "critic" && signals.criticVerdict === "REVISE") {
+      this.followUpQueue.push({
+        projectName,
+        agentType: "writer",
+        chainId,
+        reason: "Critic verdict: REVISE — writer needed to address feedback",
+        queuedAt: Date.now(),
+      });
+      console.log("  Chaining: critic REVISE → queued writer follow-up for " + projectName);
+      return;
+    }
+
+    if (agentType === "critic" && signals.criticVerdict === "ACCEPT") {
+      this.followUpQueue.push({
+        projectName,
+        agentType: "editor",
+        chainId,
+        reason: "Critic verdict: ACCEPT — editor pass for final polish",
+        queuedAt: Date.now(),
+      });
+      console.log("  Chaining: critic ACCEPT → queued editor follow-up for " + projectName);
+      return;
+    }
+
+    // Phase-based sequence advancement
+    const project = this.getProjectPhase(projectName);
+    if (project) {
+      const sequence = PHASE_SEQUENCES[project];
+      if (sequence) {
+        const currentIdx = sequence.indexOf(agentType);
+        if (currentIdx >= 0 && currentIdx < sequence.length - 1) {
+          const nextAgent = sequence[currentIdx + 1] as AgentType;
+          this.followUpQueue.push({
+            projectName,
+            agentType: nextAgent,
+            chainId,
+            reason: "Phase sequence " + project + ": " + agentType + " → " + nextAgent,
+            queuedAt: Date.now(),
+          });
+          console.log("  Chaining: sequence " + agentType + " → " + nextAgent + " for " + projectName);
+        }
+      }
+    }
+  }
+
+  private getProjectPhase(projectName: string): string | undefined {
+    // Check cached phase from last scoring cycle
+    // This avoids async reads during signal processing
+    return this.lastKnownPhases.get(projectName);
+  }
+
+  private assessQuality(session: Session, agentType: string): SessionQuality {
+    const result = session.result;
+    let score = 0;
+
+    // Commits created (up to 30 points)
+    const commits = result?.commitsCreated.length ?? 0;
+    score += Math.min(commits * 10, 30);
+
+    // Session completed successfully (20 points)
+    if (session.status === "completed" && result?.status === "completed") {
+      score += 20;
+    }
+
+    // Status.yaml was updated (15 points)
+    if (session.signals?.statusYamlChanged) {
+      score += 15;
+    }
+
+    // Critic provided a verdict (15 points)
+    if (session.signals?.criticVerdict) {
+      score += 15;
+    }
+
+    // Reasonable cost efficiency (up to 20 points)
+    // Lower cost per commit is better
+    if (commits > 0 && result) {
+      const costPerCommit = result.costUsd / commits;
+      if (costPerCommit < 1) score += 20;
+      else if (costPerCommit < 3) score += 15;
+      else if (costPerCommit < 5) score += 10;
+      else score += 5;
+    }
+
+    return {
+      score: Math.min(score, 100),
+      commitsCreated: commits,
+      statusAdvanced: session.signals?.statusYamlChanged ?? false,
+      criticVerdict: session.signals?.criticVerdict,
+      costUsd: result?.costUsd ?? 0,
+      durationMs: result?.durationMs ?? 0,
+      agentType,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  private recordQuality(projectName: string, quality: SessionQuality): void {
+    const history = this.qualityHistory.get(projectName) ?? [];
+    history.push(quality);
+    // Keep last 10 quality records
+    if (history.length > 10) history.shift();
+    this.qualityHistory.set(projectName, history);
+  }
+
+  getQualityHistory(projectName: string): SessionQuality[] {
+    return this.qualityHistory.get(projectName) ?? [];
+  }
+
+  private getRecentQualityAvg(projectName: string, count: number = 3): number | undefined {
+    const history = this.qualityHistory.get(projectName);
+    if (!history || history.length === 0) return undefined;
+    const recent = history.slice(-count);
+    return recent.reduce((sum, q) => sum + q.score, 0) / recent.length;
   }
 
   private async scoreProjects(projects: ProjectStatus[]): Promise<ScoredProject[]> {
@@ -321,7 +544,10 @@ export class Daemon {
 
     for (const project of activeProjects) {
       let score = 0;
-      const agentType = PHASE_TO_AGENT[project.phase] ?? "researcher";
+      let agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
+
+      // Cache phase for signal processing
+      this.lastKnownPhases.set(project.project, project.phase);
 
       // +10: venue deadline within 4 weeks
       if (this.hasUpcomingDeadline(project, now, 28)) {
@@ -363,6 +589,21 @@ export class Daemon {
       const perProjectDailyLimit = this.config.dailyBudgetUsd / Math.max(activeProjects.length, 1);
       if (projectSpending > perProjectDailyLimit) {
         score -= 10;
+      }
+
+      // Quality-weighted scoring: if last 3 sessions were low-quality, try different agent
+      const avgQuality = this.getRecentQualityAvg(project.project);
+      if (avgQuality !== undefined && avgQuality < 25) {
+        // Recent sessions unproductive — try a different agent type
+        const sequence = PHASE_SEQUENCES[project.phase];
+        if (sequence) {
+          const currentIdx = sequence.indexOf(agentType);
+          const nextIdx = (currentIdx + 1) % sequence.length;
+          const altAgent = sequence[nextIdx] as AgentType;
+          console.log("  " + project.project + ": low quality avg (" + avgQuality.toFixed(0) + ") — switching " + agentType + " → " + altAgent);
+          agentType = altAgent;
+        }
+        score -= 3; // Slight penalty for low quality
       }
 
       // Base score: every active project gets a minimum viability
