@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'research/**', 'paper/**', 'feature/**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  orchestrator:
+    name: Orchestrator — typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=orchestrator
+
+  cli:
+    name: CLI — typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=cli
+
+  site:
+    name: Site — build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx astro build
+        working-directory: site
+      - name: Check output size
+        run: du -sh site/dist/
+
+  deploy:
+    name: Deploy to VPS
+    needs: [orchestrator, cli, site]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/research/')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/deepwork
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull
+            cd site
+            npm install
+            npx astro build
+            echo "Deployed $(git rev-parse --short HEAD) at $(date -u)"
