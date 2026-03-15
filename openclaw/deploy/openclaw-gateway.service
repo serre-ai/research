@@ -6,11 +6,12 @@ After=network.target deepwork-daemon.service
 Type=simple
 User=deepwork
 WorkingDirectory=/home/deepwork/deepwork/openclaw
-ExecStart=/usr/local/bin/openclaw gateway --config gateway.json
+ExecStart=/home/deepwork/.npm-global/bin/openclaw gateway run --port 18789
 Restart=always
 RestartSec=10
 EnvironmentFile=/home/deepwork/deepwork/.env
-Environment=NODE_OPTIONS=--max-old-space-size=256
+Environment=NODE_OPTIONS=--max-old-space-size=512
+Environment=PATH=/home/deepwork/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy=multi-user.target

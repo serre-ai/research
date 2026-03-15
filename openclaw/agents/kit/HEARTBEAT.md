@@ -10,6 +10,8 @@
    d. Format result tables
    e. Post to `#experiments`
    f. If anomalies detected, flag in `#general`
+   g. If eval pipeline issues detected, file a backlog ticket via `backlog-manager`
 3. **Check budget**: Call `budget-check` for experiment-related spend
 4. **If spend anomaly**: Alert `#general` if daily experiment cost exceeds $20
 5. **If no new results**: Do nothing — silence is expected
+6. **File backlog tickets**: If anomalies suggest platform issues (e.g., eval runner crashes, result corruption), use `backlog-manager create` with category `eval`

@@ -23,7 +23,7 @@
         "expression": "0 7 * * *",
         "timezone": "UTC"
       },
-      "skills": ["deepwork-api", "project-status", "budget-check"],
+      "skills": ["deepwork-api", "project-status", "budget-check", "session-dispatch", "backlog-manager", "memory-write"],
       "max_tokens": 4096,
       "temperature": 0.3
     },
@@ -58,7 +58,7 @@
         "expression": "0 */2 * * *",
         "timezone": "UTC"
       },
-      "skills": ["deepwork-api", "paper-review", "project-status"],
+      "skills": ["deepwork-api", "paper-review", "project-status", "session-dispatch", "backlog-manager"],
       "max_tokens": 8192,
       "temperature": 0.2
     },
@@ -76,7 +76,7 @@
         "type": "heartbeat",
         "interval_hours": 12
       },
-      "skills": ["deepwork-api", "eval-monitor", "budget-check", "project-status"],
+      "skills": ["deepwork-api", "eval-monitor", "budget-check", "project-status", "backlog-manager"],
       "max_tokens": 4096,
       "temperature": 0.1
     },
@@ -96,6 +96,41 @@
       "skills": ["paper-review", "project-status", "deepwork-api"],
       "max_tokens": 16384,
       "temperature": 0.4
+    },
+    {
+      "name": "dev",
+      "display_name": "Dev",
+      "role": "Platform Engineer",
+      "icon": "wrench",
+      "model": "claude-haiku-4-5-20251001",
+      "model_escalation": "claude-sonnet-4-6",
+      "escalation_threshold": "critical",
+      "workspace": "./agents/dev",
+      "channel": "#engineering",
+      "schedule": {
+        "type": "heartbeat",
+        "interval_hours": 24
+      },
+      "skills": ["deepwork-api", "backlog-manager", "session-dispatch", "budget-check"],
+      "max_tokens": 4096,
+      "temperature": 0.2
+    },
+    {
+      "name": "archivist",
+      "display_name": "Archivist",
+      "role": "Memory & Reporting",
+      "icon": "scroll",
+      "model": "claude-haiku-4-5-20251001",
+      "workspace": "./agents/archivist",
+      "channel": "#memory",
+      "schedule": {
+        "type": "cron",
+        "expression": "0 23 * * *",
+        "timezone": "UTC"
+      },
+      "skills": ["deepwork-api", "memory-write", "backlog-manager", "project-status"],
+      "max_tokens": 4096,
+      "temperature": 0.1
     }
   ]
 }

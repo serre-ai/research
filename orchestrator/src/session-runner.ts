@@ -7,7 +7,8 @@ import { TranscriptWriter } from "./transcript-writer.js";
 
 export type AgentType =
   | "researcher" | "writer" | "reviewer" | "editor"
-  | "critic" | "experimenter" | "theorist" | "strategist" | "scout";
+  | "critic" | "experimenter" | "theorist" | "strategist" | "scout"
+  | "engineer";
 
 const DEFAULT_MAX_TURNS = 50;
 const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;

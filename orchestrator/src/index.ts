@@ -74,6 +74,7 @@ async function main() {
           daemon.getEvalManager(),
           daemon.getLogger(),
           (project) => daemon.getQualityHistory(project),
+          daemon,
         );
 
         // Wire activity logger → WebSocket broadcast

@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
@@ -9,6 +9,8 @@ import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
 import { Notifier } from "./notifier.js";
 import { EvalJobManager } from "./eval-manager.js";
+import { BacklogManager, type BacklogTicket } from "./backlog.js";
+import { DigestStore, type DailyDigest } from "./digest-store.js";
 
 const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
@@ -19,6 +21,7 @@ const PHASE_TO_AGENT: Record<string, AgentType> = {
   "revision": "writer",
   "paper-finalization": "writer",
   "final": "editor",
+  "active": "engineer",
 };
 
 /** Agent sequences for multi-step phases. After one agent finishes, the next in the sequence runs. */
@@ -64,7 +67,24 @@ interface FollowUp {
   chainId: string;
   reason: string;
   queuedAt: number;
+  chainDepth?: number;
 }
+
+export interface ExternalDispatch {
+  id: string;
+  project: string;
+  agent_type: AgentType;
+  priority: "low" | "normal" | "high" | "critical";
+  reason: string;
+  triggered_by: string;
+  status: "queued" | "running" | "completed" | "rejected";
+  created_at: string;
+  chain_depth?: number;
+}
+
+const MAX_CHAIN_DEPTH = 3;
+const MAX_DISPATCHES_PER_HOUR_PER_AGENT = 5;
+const MAX_DISPATCHES_PER_DAY = 10;
 
 export interface SessionQuality {
   score: number; // 0-100
@@ -91,10 +111,14 @@ export class Daemon {
   private abortController: AbortController | null = null;
   private failureCounts = new Map<string, number>();
   private followUpQueue: FollowUp[] = [];
+  private externalQueue: ExternalDispatch[] = [];
+  private dispatchLog: ExternalDispatch[] = [];
   private qualityHistory = new Map<string, SessionQuality[]>();
   private lastKnownPhases = new Map<string, string>();
   private cycleCount = 0;
   private startedAt = 0;
+  private backlogManager: BacklogManager;
+  private digestStore: DigestStore;
 
   constructor(config: Partial<DaemonConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -106,6 +130,8 @@ export class Daemon {
     this.budgetTracker = new BudgetTracker(rootDir, this.logger);
     this.notifier = new Notifier(rootDir);
     this.evalManager = new EvalJobManager(rootDir, this.logger, this.notifier);
+    this.backlogManager = new BacklogManager(rootDir);
+    this.digestStore = new DigestStore(rootDir);
   }
 
   getEvalManager(): EvalJobManager {
@@ -114,6 +140,108 @@ export class Daemon {
 
   getLogger(): ActivityLogger {
     return this.logger;
+  }
+
+  getBacklogManager(): BacklogManager {
+    return this.backlogManager;
+  }
+
+  getDigestStore(): DigestStore {
+    return this.digestStore;
+  }
+
+  getBudgetTracker(): BudgetTracker {
+    return this.budgetTracker;
+  }
+
+  /**
+   * Queue an external dispatch from an OpenClaw agent.
+   * Returns the dispatch object or throws if rate-limited/rejected.
+   */
+  async queueSession(request: {
+    project: string;
+    agent_type: AgentType;
+    priority?: "low" | "normal" | "high" | "critical";
+    reason: string;
+    triggered_by: string;
+    chain_depth?: number;
+  }): Promise<ExternalDispatch> {
+    // Rate limit: per-agent per-hour
+    const hourAgo = Date.now() - 60 * 60 * 1000;
+    const recentByAgent = this.dispatchLog.filter(
+      (d) => d.triggered_by === request.triggered_by && new Date(d.created_at).getTime() > hourAgo,
+    );
+    if (recentByAgent.length >= MAX_DISPATCHES_PER_HOUR_PER_AGENT) {
+      throw new Error(`Rate limit: ${request.triggered_by} has ${recentByAgent.length} dispatches in the last hour (max ${MAX_DISPATCHES_PER_HOUR_PER_AGENT})`);
+    }
+
+    // Rate limit: daily total
+    const dayStart = new Date();
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const todayDispatches = this.dispatchLog.filter(
+      (d) => new Date(d.created_at).getTime() > dayStart.getTime(),
+    );
+    if (todayDispatches.length >= MAX_DISPATCHES_PER_DAY) {
+      throw new Error(`Rate limit: ${todayDispatches.length} dispatches today (max ${MAX_DISPATCHES_PER_DAY})`);
+    }
+
+    // Chain depth limit
+    const chainDepth = request.chain_depth ?? 0;
+    if (chainDepth >= MAX_CHAIN_DEPTH) {
+      throw new Error(`Chain depth limit: depth ${chainDepth} exceeds max ${MAX_CHAIN_DEPTH}`);
+    }
+
+    // Budget check
+    const budgetStatus = await this.budgetTracker.getStatus();
+    if (budgetStatus.alertLevel === "exceeded") {
+      throw new Error("Budget exceeded — dispatch rejected");
+    }
+    if (budgetStatus.monthlySpent > 900) {
+      throw new Error("Monthly spend exceeds $900 — dispatch rejected for safety");
+    }
+
+    // Don't dispatch to a project with an active session
+    if (this.activeSessions.has(request.project)) {
+      throw new Error(`Project ${request.project} already has an active session`);
+    }
+
+    const dispatch: ExternalDispatch = {
+      id: randomUUID().slice(0, 8),
+      project: request.project,
+      agent_type: request.agent_type,
+      priority: request.priority ?? "normal",
+      reason: request.reason,
+      triggered_by: request.triggered_by,
+      status: "queued",
+      created_at: new Date().toISOString(),
+      chain_depth: chainDepth,
+    };
+
+    this.externalQueue.push(dispatch);
+    this.dispatchLog.push(dispatch);
+
+    await this.logger.log({
+      type: "session_start",
+      project: request.project,
+      agent: request.agent_type,
+      data: {
+        dispatchId: dispatch.id,
+        triggeredBy: request.triggered_by,
+        priority: dispatch.priority,
+        reason: request.reason,
+        source: "external_dispatch",
+      },
+    });
+
+    return dispatch;
+  }
+
+  getDispatchQueue(): ExternalDispatch[] {
+    return [...this.externalQueue];
+  }
+
+  getDispatchLog(): ExternalDispatch[] {
+    return [...this.dispatchLog];
   }
 
   async start(): Promise<void> {
@@ -176,6 +304,9 @@ export class Daemon {
       activeSessions: sessions,
       failureCounts: Object.fromEntries(this.failureCounts),
       pendingFollowUps: this.followUpQueue.length,
+      pendingDispatches: this.externalQueue.length,
+      dispatchQueue: this.externalQueue,
+      recentDispatches: this.dispatchLog.slice(-10),
       quality: qualitySummary,
     };
   }
@@ -219,13 +350,20 @@ export class Daemon {
       const followUp = this.followUpQueue.shift()!;
       if (this.activeSessions.has(followUp.projectName)) continue; // Skip if project already running
 
+      // Chain depth check
+      const depth = followUp.chainDepth ?? 0;
+      if (depth >= MAX_CHAIN_DEPTH) {
+        console.log("Skipping chained session for " + followUp.projectName + " — chain depth " + depth + " exceeds max " + MAX_CHAIN_DEPTH);
+        continue;
+      }
+
       console.log("Launching chained " + followUp.agentType + " session for " + followUp.projectName + " (reason: " + followUp.reason + ")");
 
       await this.logger.log({
         type: "session_start",
         project: followUp.projectName,
         agent: followUp.agentType,
-        data: { chainId: followUp.chainId, reason: followUp.reason, chained: true },
+        data: { chainId: followUp.chainId, reason: followUp.reason, chained: true, chainDepth: depth },
       });
 
       const tracker: SessionTracker = {
@@ -234,10 +372,58 @@ export class Daemon {
         startedAt: Date.now(),
         settled: false,
       };
-      tracker.promise = this.runSession(followUp.projectName, followUp.agentType, followUp.chainId).finally(() => {
+      tracker.promise = this.runSession(followUp.projectName, followUp.agentType, followUp.chainId, depth + 1).finally(() => {
         tracker.settled = true;
       });
       this.activeSessions.set(followUp.projectName, tracker);
+      availableSlots--;
+    }
+
+    // Process external dispatch queue (from OpenClaw agents)
+    // Sort by priority: critical > high > normal > low
+    const priorityOrder: Record<string, number> = { critical: 0, high: 1, normal: 2, low: 3 };
+    this.externalQueue.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+    while (this.externalQueue.length > 0 && availableSlots > 0) {
+      const dispatch = this.externalQueue.shift()!;
+      if (this.activeSessions.has(dispatch.project)) {
+        dispatch.status = "rejected";
+        continue;
+      }
+
+      console.log("Launching externally dispatched " + dispatch.agent_type + " session for " + dispatch.project + " (by: " + dispatch.triggered_by + ", reason: " + dispatch.reason + ")");
+
+      dispatch.status = "running";
+      const chainId = randomUUID();
+      const chainDepth = dispatch.chain_depth ?? 0;
+
+      await this.logger.log({
+        type: "session_start",
+        project: dispatch.project,
+        agent: dispatch.agent_type,
+        data: {
+          dispatchId: dispatch.id,
+          triggeredBy: dispatch.triggered_by,
+          reason: dispatch.reason,
+          source: "external_dispatch",
+          chainDepth,
+        },
+      });
+
+      const tracker: SessionTracker = {
+        promise: Promise.resolve(),
+        projectName: dispatch.project,
+        startedAt: Date.now(),
+        settled: false,
+      };
+      tracker.promise = this.runSession(dispatch.project, dispatch.agent_type, chainId, chainDepth).then(() => {
+        dispatch.status = "completed";
+      }).catch(() => {
+        dispatch.status = "rejected";
+      }).finally(() => {
+        tracker.settled = true;
+      });
+      this.activeSessions.set(dispatch.project, tracker);
       availableSlots--;
     }
 
@@ -316,7 +502,7 @@ export class Daemon {
     }
   }
 
-  private async runSession(projectName: string, agentType: AgentType, chainId?: string): Promise<void> {
+  private async runSession(projectName: string, agentType: AgentType, chainId?: string, chainDepth: number = 0): Promise<void> {
     const currentChainId = chainId ?? randomUUID();
 
     const attempt = async (): Promise<Session> => {
@@ -411,7 +597,7 @@ export class Daemon {
 
     // Session chaining: determine and queue follow-up based on signals
     if (session?.signals && session.status === "completed") {
-      this.processSessionSignals(projectName, agentType, session.signals, currentChainId);
+      this.processSessionSignals(projectName, agentType, session.signals, currentChainId, chainDepth);
     }
   }
 
@@ -420,6 +606,7 @@ export class Daemon {
     agentType: AgentType,
     signals: SessionSignals,
     chainId: string,
+    chainDepth: number = 0,
   ): void {
     // Critic verdict drives follow-up
     if (agentType === "critic" && signals.criticVerdict === "REVISE") {
@@ -429,6 +616,7 @@ export class Daemon {
         chainId,
         reason: "Critic verdict: REVISE — writer needed to address feedback",
         queuedAt: Date.now(),
+        chainDepth: chainDepth + 1,
       });
       console.log("  Chaining: critic REVISE → queued writer follow-up for " + projectName);
       return;
@@ -441,6 +629,7 @@ export class Daemon {
         chainId,
         reason: "Critic verdict: ACCEPT — editor pass for final polish",
         queuedAt: Date.now(),
+        chainDepth: chainDepth + 1,
       });
       console.log("  Chaining: critic ACCEPT → queued editor follow-up for " + projectName);
       return;
@@ -460,6 +649,7 @@ export class Daemon {
             chainId,
             reason: "Phase sequence " + project + ": " + agentType + " → " + nextAgent,
             queuedAt: Date.now(),
+            chainDepth: chainDepth + 1,
           });
           console.log("  Chaining: sequence " + agentType + " → " + nextAgent + " for " + projectName);
         }

@@ -13,6 +13,7 @@ Requests require the `X-Api-Key` header with the value from `DEEPWORK_API_KEY` e
 ### Projects
 - `GET /api/projects` — List all projects with status
 - `GET /api/projects/:id` — Get project details
+- `PATCH /api/projects/:id/status` — Update project status.yaml (fields: phase, current_focus, current_activity, confidence, notes, status)
 
 ### Budget
 - `GET /api/budget` — Current budget status (daily/monthly spend, limits)
@@ -26,12 +27,27 @@ Requests require the `X-Api-Key` header with the value from `DEEPWORK_API_KEY` e
 ### Sessions
 - `GET /api/sessions` — List recent daemon sessions
 - `GET /api/sessions/:id` — Get session details and output
+- `POST /api/sessions/dispatch` — Dispatch a new daemon session (see session-dispatch skill)
+- `GET /api/sessions/dispatch/queue` — View dispatch queue and recent dispatches
 
 ### Health
 - `GET /api/health` — Platform health check
+- `GET /api/daemon/health` — Full daemon state (sessions, dispatch queue, failures, quality)
 
 ### Quality
 - `GET /api/quality` — Quality scores across projects
+
+### Backlog
+- `GET /api/backlog` — List engineering backlog tickets
+- `POST /api/backlog` — Create a backlog ticket
+- `PATCH /api/backlog/:id` — Update a ticket
+- `GET /api/backlog/:id` — Get a single ticket
+
+### Memory / Digests
+- `GET /api/memory/digest` — List available digest dates
+- `GET /api/memory/digest/latest` — Get the most recent daily digest
+- `GET /api/memory/digest/:date` — Get digest for a specific date
+- `POST /api/memory/digest` — Save a daily digest
 
 ## Script
 Use `scripts/api-client.sh` for convenient access. Example:
@@ -39,4 +55,8 @@ Use `scripts/api-client.sh` for convenient access. Example:
 ./scripts/api-client.sh GET /api/projects
 ./scripts/api-client.sh GET /api/budget
 ./scripts/api-client.sh GET /api/sessions
+./scripts/api-client.sh GET /api/daemon/health
+./scripts/api-client.sh GET /api/backlog
+./scripts/api-client.sh GET /api/memory/digest/latest
+./scripts/api-client.sh POST /api/sessions/dispatch '{"project":"reasoning-gaps","agent_type":"writer","priority":"high","reason":"test","triggered_by":"sol"}'
 ```

@@ -5,6 +5,9 @@ import { WebSocketServer, type WebSocket } from "ws";
 import pg from "pg";
 import { EvalJobManager, type EvalJobStatus } from "./eval-manager.js";
 import { ActivityLogger, type EventType } from "./logger.js";
+import type { Daemon } from "./daemon.js";
+import type { BacklogManager } from "./backlog.js";
+import type { DigestStore } from "./digest-store.js";
 
 const { Pool } = pg;
 
@@ -525,6 +528,311 @@ function setupWebSocket(
 // Public API: create and mount the Express app
 // ============================================================
 
+// ============================================================
+// Dispatch routes (POST /api/sessions/dispatch)
+// ============================================================
+
+function dispatchRoutes(daemon?: Daemon): express.Router {
+  const router = express.Router();
+
+  // POST /api/sessions/dispatch — queue an external session dispatch
+  router.post("/dispatch", async (req: Request, res: Response) => {
+    if (!daemon) {
+      res.status(503).json({ error: "Daemon not available" });
+      return;
+    }
+
+    const { project, agent_type, priority, reason, triggered_by, chain_depth } = req.body as {
+      project?: string;
+      agent_type?: string;
+      priority?: string;
+      reason?: string;
+      triggered_by?: string;
+      chain_depth?: number;
+    };
+
+    if (!project || !agent_type || !reason || !triggered_by) {
+      res.status(400).json({ error: "Required: project, agent_type, reason, triggered_by" });
+      return;
+    }
+
+    try {
+      const dispatch = await daemon.queueSession({
+        project,
+        agent_type: agent_type as any,
+        priority: (priority as any) ?? "normal",
+        reason,
+        triggered_by,
+        chain_depth,
+      });
+      res.json(dispatch);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("Rate limit") || msg.includes("Budget") || msg.includes("Chain depth") || msg.includes("active session")) {
+        res.status(429).json({ error: msg });
+      } else {
+        res.status(500).json({ error: msg });
+      }
+    }
+  });
+
+  // GET /api/sessions/dispatch/queue — view dispatch queue
+  router.get("/dispatch/queue", async (_req: Request, res: Response) => {
+    if (!daemon) {
+      res.status(503).json({ error: "Daemon not available" });
+      return;
+    }
+    res.json({
+      queue: daemon.getDispatchQueue(),
+      recent: daemon.getDispatchLog().slice(-20),
+    });
+  });
+
+  return router;
+}
+
+// ============================================================
+// Backlog routes (GET/POST/PATCH /api/backlog)
+// ============================================================
+
+function backlogRoutes(backlog?: BacklogManager): express.Router {
+  const router = express.Router();
+
+  // GET /api/backlog — list tickets
+  router.get("/", async (req: Request, res: Response) => {
+    if (!backlog) {
+      res.status(503).json({ error: "Backlog not available" });
+      return;
+    }
+    const status = req.query["status"] as string | undefined;
+    const priority = req.query["priority"] as string | undefined;
+    const category = req.query["category"] as string | undefined;
+    const tickets = await backlog.list({ status, priority, category });
+    res.json(tickets);
+  });
+
+  // POST /api/backlog — create a ticket
+  router.post("/", async (req: Request, res: Response) => {
+    if (!backlog) {
+      res.status(503).json({ error: "Backlog not available" });
+      return;
+    }
+
+    const { title, filed_by, priority, category, description } = req.body as {
+      title?: string;
+      filed_by?: string;
+      priority?: string;
+      category?: string;
+      description?: string;
+    };
+
+    if (!title || !filed_by || !priority || !category) {
+      res.status(400).json({ error: "Required: title, filed_by, priority, category" });
+      return;
+    }
+
+    const ticket = await backlog.create({
+      title,
+      filed_by,
+      priority: priority as any,
+      category: category as any,
+      description,
+    });
+    res.status(201).json(ticket);
+  });
+
+  // PATCH /api/backlog/:id — update a ticket
+  router.patch("/:id", async (req: Request, res: Response) => {
+    if (!backlog) {
+      res.status(503).json({ error: "Backlog not available" });
+      return;
+    }
+
+    const { status, priority, assigned_to, session_id } = req.body as {
+      status?: string;
+      priority?: string;
+      assigned_to?: string;
+      session_id?: string;
+    };
+
+    const ticket = await backlog.update(req.params.id as string, {
+      status: status as any,
+      priority: priority as any,
+      assigned_to,
+      session_id,
+    });
+
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    res.json(ticket);
+  });
+
+  // GET /api/backlog/:id — get a single ticket
+  router.get("/:id", async (req: Request, res: Response) => {
+    if (!backlog) {
+      res.status(503).json({ error: "Backlog not available" });
+      return;
+    }
+    const ticket = await backlog.get(req.params.id as string);
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    res.json(ticket);
+  });
+
+  return router;
+}
+
+// ============================================================
+// Digest routes (POST/GET /api/memory/digest)
+// ============================================================
+
+function digestRoutes(digestStore?: DigestStore): express.Router {
+  const router = express.Router();
+
+  // POST /api/memory/digest — save a daily digest
+  router.post("/", async (req: Request, res: Response) => {
+    if (!digestStore) {
+      res.status(503).json({ error: "Digest store not available" });
+      return;
+    }
+
+    const { date, digest, key_events, filed_by } = req.body as {
+      date?: string;
+      digest?: string;
+      key_events?: string[];
+      filed_by?: string;
+    };
+
+    if (!date || !digest || !filed_by) {
+      res.status(400).json({ error: "Required: date, digest, filed_by" });
+      return;
+    }
+
+    const entry = await digestStore.save({
+      date,
+      digest,
+      key_events: key_events ?? [],
+      filed_by,
+    });
+    res.status(201).json(entry);
+  });
+
+  // GET /api/memory/digest/latest — get the most recent digest
+  router.get("/latest", async (_req: Request, res: Response) => {
+    if (!digestStore) {
+      res.status(503).json({ error: "Digest store not available" });
+      return;
+    }
+    const latest = await digestStore.getLatest();
+    if (!latest) {
+      res.status(404).json({ error: "No digests found" });
+      return;
+    }
+    res.json(latest);
+  });
+
+  // GET /api/memory/digest/:date — get a digest by date
+  router.get("/:date", async (req: Request, res: Response) => {
+    if (!digestStore) {
+      res.status(503).json({ error: "Digest store not available" });
+      return;
+    }
+    const dateParam = req.params.date as string;
+    const entry = await digestStore.getByDate(dateParam);
+    if (!entry) {
+      res.status(404).json({ error: "No digest for " + dateParam });
+      return;
+    }
+    res.json(entry);
+  });
+
+  // GET /api/memory/digest — list available dates
+  router.get("/", async (_req: Request, res: Response) => {
+    if (!digestStore) {
+      res.status(503).json({ error: "Digest store not available" });
+      return;
+    }
+    const dates = await digestStore.listDates();
+    res.json(dates);
+  });
+
+  return router;
+}
+
+// ============================================================
+// Enhanced daemon health routes
+// ============================================================
+
+function daemonHealthRoutes(daemon?: Daemon): express.Router {
+  const router = express.Router();
+
+  // GET /api/daemon/health — full daemon state
+  router.get("/", async (_req: Request, res: Response) => {
+    if (!daemon) {
+      res.status(503).json({ error: "Daemon not available" });
+      return;
+    }
+    const health = await daemon.getHealth();
+    res.json(health);
+  });
+
+  return router;
+}
+
+// ============================================================
+// Project status update routes
+// ============================================================
+
+function projectStatusRoutes(): express.Router {
+  const router = express.Router();
+
+  // PATCH /api/projects/:id/status — update project status.yaml
+  router.patch("/:id/status", async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+    const updates = req.body as Record<string, unknown>;
+
+    if (!updates || Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Request body must contain fields to update" });
+      return;
+    }
+
+    try {
+      const { readFile, writeFile } = await import("node:fs/promises");
+      const { join } = await import("node:path");
+      const { parse, stringify } = await import("yaml");
+
+      const statusPath = join(process.cwd(), "projects", projectId, "status.yaml");
+      const content = await readFile(statusPath, "utf-8");
+      const status = parse(content) as Record<string, unknown>;
+
+      // Apply allowed updates
+      const allowedFields = ["phase", "current_focus", "current_activity", "confidence", "notes", "status"];
+      for (const field of allowedFields) {
+        if (field in updates) {
+          status[field] = updates[field];
+        }
+      }
+      status.updated = new Date().toISOString().split("T")[0];
+
+      await writeFile(statusPath, stringify(status), "utf-8");
+      res.json({ updated: true, project: projectId, fields: Object.keys(updates).filter((k) => allowedFields.includes(k)) });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("ENOENT")) {
+        res.status(404).json({ error: "Project not found: " + projectId });
+      } else {
+        res.status(500).json({ error: "Failed to update status: " + msg });
+      }
+    }
+  });
+
+  return router;
+}
+
 function qualityRoutes(getQuality?: (project: string) => unknown[]): express.Router {
   const router = express.Router();
 
@@ -576,6 +884,7 @@ export function createApi(
   evalManager?: EvalJobManager,
   logger?: ActivityLogger,
   qualityGetter?: (project: string) => unknown[],
+  daemon?: Daemon,
 ): {
   app: express.Application;
   server: HttpServer;
@@ -600,7 +909,7 @@ export function createApi(
   app.use((_req: Request, res: Response, next: NextFunction) => {
     const origin = config.corsOrigin ?? "*";
     res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Api-Key");
     if (_req.method === "OPTIONS") {
       res.sendStatus(204);
@@ -621,10 +930,15 @@ export function createApi(
   // Mount routes
   app.use("/api/health", healthRoute(startedAt));
   app.use("/api/projects", projectRoutes());
+  app.use("/api/projects", projectStatusRoutes());
   app.use("/api/budget", budgetRoutes());
   app.use("/api/eval", evalControlRoutes(broadcast, evalManager));
   app.use("/api/activity", activityRoutes(logger));
   app.use("/api/quality", qualityRoutes(qualityGetter));
+  app.use("/api/sessions", dispatchRoutes(daemon));
+  app.use("/api/backlog", backlogRoutes(daemon?.getBacklogManager()));
+  app.use("/api/memory/digest", digestRoutes(daemon?.getDigestStore()));
+  app.use("/api/daemon/health", daemonHealthRoutes(daemon));
 
   // Start listening
   server.listen(config.port, () => {
