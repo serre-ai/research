@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Logo from '../components/Logo.astro';
 
 interface Props {
   title: string;
@@ -22,9 +23,7 @@ const { title, description = 'AI-driven research by Oddur Sigurdsson' } = Astro.
   <body class="min-h-screen flex flex-col">
     <nav class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-sm">
       <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <a href="/" class="font-mono font-bold text-[var(--color-text-bright)] tracking-tight hover:no-underline">
-          DEEPWORK
-        </a>
+        <Logo />
         <div class="flex gap-8">
           <a href="/dashboard" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Dashboard</a>
           <a href="/dashboard/live" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Live</a>

@@ -1,0 +1,19 @@
+---
+interface Props {
+  text: string;
+  variant?: 'default' | 'outline';
+  class?: string;
+}
+
+const { text, variant = 'default', class: className = '' } = Astro.props;
+---
+
+<span class:list={[
+  'font-mono text-xs font-medium px-2 py-0.5 uppercase tracking-wider',
+  variant === 'outline'
+    ? 'border border-[var(--color-border-strong)] text-[var(--color-text-muted)]'
+    : 'bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)]',
+  className,
+]}>
+  {text}
+</span>

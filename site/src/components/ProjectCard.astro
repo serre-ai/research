@@ -1,0 +1,59 @@
+---
+import StatusBadge from './StatusBadge.astro';
+import ProgressBar from './ProgressBar.astro';
+import { timeAgo } from '../utils/helpers';
+
+interface Props {
+  name: string;
+  title: string;
+  venue: string;
+  status: string;
+  phase: string;
+  completionPct: number;
+  modelsCompleted?: number;
+  modelsTotal?: number;
+  tasksCompleted?: number;
+  tasksTotal?: number;
+  lastActivity: string;
+  href?: string;
+}
+
+const {
+  name, title, venue, status, phase,
+  completionPct, modelsCompleted, modelsTotal,
+  tasksCompleted, tasksTotal, lastActivity, href,
+} = Astro.props;
+
+const linkHref = href || `/dashboard/project/${name}`;
+---
+
+<a href={linkHref} class="block hover:no-underline group">
+  <article class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] relative overflow-hidden transition-colors group-hover:border-[var(--color-border-strong)]">
+    <div class="absolute top-0 left-0 right-0 h-[2px]" style={`background: ${status === 'running' ? 'var(--color-status-ok)' : 'var(--color-status-warn)'}`}></div>
+    <div class="p-5">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <p class="stat-label mb-1">{venue}</p>
+          <h3 class="font-mono text-base font-semibold text-[var(--color-text-bright)] leading-snug">{title}</h3>
+        </div>
+        <StatusBadge status={status} />
+      </div>
+      <p class="font-mono text-xs text-[var(--color-text-secondary)] mb-4">{phase}</p>
+      {completionPct > 0 ? (
+        <div>
+          <ProgressBar value={completionPct} label="Eval progress" showPct />
+          <div class="flex gap-6 mt-3 stat-label">
+            <span><span class="text-[var(--color-text-secondary)] tabular-nums">{modelsCompleted}</span>/{modelsTotal} models</span>
+            <span><span class="text-[var(--color-text-secondary)] tabular-nums">{tasksCompleted}</span>/{tasksTotal} combos</span>
+          </div>
+        </div>
+      ) : (
+        <p class="stat-label">No active evaluations</p>
+      )}
+      <div class="mt-4 pt-3 border-t border-[var(--color-border)] flex justify-between items-center">
+        <span class="stat-label">Last activity: {timeAgo(lastActivity)}</span>
+        <span class="stat-label">{name}</span>
+      </div>
+    </div>
+  </article>
+</a>

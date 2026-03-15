@@ -1,0 +1,34 @@
+---
+interface Props {
+  items: { key: string; label: string }[];
+  id?: string;
+}
+
+const { items, id = 'filters' } = Astro.props;
+---
+
+<div class="flex gap-2 flex-wrap" id={id}>
+  {items.map((item, i) => (
+    <button
+      data-filter={item.key}
+      class:list={[
+        'filter-btn font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors',
+        i === 0 && 'active',
+      ]}
+    >
+      {item.label}
+    </button>
+  ))}
+</div>
+
+<style>
+  .filter-btn.active {
+    background-color: var(--color-bg-surface);
+    color: var(--color-text-bright);
+    border-color: var(--color-border-strong);
+  }
+  .filter-btn:hover:not(.active) {
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-strong);
+  }
+</style>

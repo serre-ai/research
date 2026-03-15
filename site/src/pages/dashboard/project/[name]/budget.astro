@@ -1,6 +1,11 @@
 ---
 import Base from '../../../../layouts/Base.astro';
-import ProjectSubnav from '../../../../components/ProjectSubnav.astro';
+import Container from '../../../../components/Container.astro';
+import PageHeader from '../../../../components/PageHeader.astro';
+import TabNav from '../../../../components/TabNav.astro';
+import MetricCard from '../../../../components/MetricCard.astro';
+import Card from '../../../../components/Card.astro';
+import EmptyState from '../../../../components/EmptyState.astro';
 import { getProjects, getBudgetData } from '../../../../data';
 import { barWidth, spendColor, spendTextColor } from '../../../../utils/helpers';
 
@@ -26,66 +31,79 @@ const dailyBurnRate = dayOfMonth > 0 ? totalSpent / dayOfMonth : 0;
 const projectedMonthly = dailyBurnRate * daysInMonth;
 const onTrack = projectedMonthly <= (budget?.monthlyLimit ?? 1000);
 const maxDailySpend = hasData ? Math.max(...budget.dailySpend.map(d => d.amount), 1) : 1;
+
+const base = `/dashboard/project/${name}`;
+const tabItems = [
+  { href: base, key: 'overview', label: 'Overview' },
+  { href: `${base}/eval`, key: 'eval', label: 'Eval' },
+  { href: `${base}/budget`, key: 'budget', label: 'Budget' },
+  { href: `${base}/decisions`, key: 'decisions', label: 'Decisions' },
+];
+
+const breadcrumbs = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: project.name, href: `/dashboard/project/${name}` },
+  { label: 'Budget' },
+];
 ---
 
 <Base title={`${project.title} — Budget`}>
 
-  <ProjectSubnav projectName={name} activeTab="budget" />
+  <TabNav items={tabItems} active="budget" />
 
-  <section class="max-w-6xl mx-auto px-6 pt-10 pb-6">
-    <div class="flex items-center gap-2 mb-4">
-      <a href="/dashboard" class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">Dashboard</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <a href={`/dashboard/project/${name}`} class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">{project.name}</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">Budget</span>
-    </div>
-    <h1 class="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
-      BUDGET TRACKER
-    </h1>
-    <p class="text-sm text-[var(--color-text-muted)] mt-2">
-      March 2026 &mdash; Day {dayOfMonth} of {daysInMonth}
-    </p>
-  </section>
+  <PageHeader
+    title="BUDGET TRACKER"
+    subtitle={`March 2026 — Day ${dayOfMonth} of ${daysInMonth}`}
+    breadcrumbs={breadcrumbs}
+  />
 
   <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
 
   {!hasData ? (
-    <section class="max-w-6xl mx-auto px-6 py-20 text-center">
-      <p class="font-mono text-sm text-[var(--color-text-muted)]">No budget data available.</p>
-      <p class="text-xs text-[var(--color-text-muted)] mt-2">This project hasn't incurred any costs yet.</p>
-    </section>
+    <Container class="py-20">
+      <EmptyState
+        message="No budget data available."
+        detail="This project hasn't incurred any costs yet."
+        icon="dollar-sign"
+      />
+    </Container>
   ) : (
     <>
       {/* KPIs */}
-      <section class="max-w-6xl mx-auto px-6 pt-10 pb-8">
+      <Container class="section-gap">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Total Spent</p>
-            <p class="font-mono text-3xl font-bold text-[var(--color-text-bright)] tabular-nums">${totalSpent.toFixed(2)}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1 tabular-nums">of ${budget.monthlyLimit} limit</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Remaining</p>
-            <p class="font-mono text-3xl font-bold text-emerald-400 tabular-nums">${remaining.toFixed(2)}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1 tabular-nums">{daysRemaining} days left</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Daily Burn Rate</p>
-            <p class="font-mono text-3xl font-bold text-[var(--color-text-bright)] tabular-nums">${dailyBurnRate.toFixed(2)}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1 tabular-nums">avg/day (limit: ${budget.dailyLimit})</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Projected Monthly</p>
-            <p class={`font-mono text-3xl font-bold tabular-nums ${onTrack ? 'text-emerald-400' : 'text-red-400'}`}>${projectedMonthly.toFixed(0)}</p>
-            <p class={`font-mono text-[10px] mt-1 ${onTrack ? 'text-emerald-400' : 'text-red-400'}`}>{onTrack ? 'ON TRACK' : 'OVER BUDGET'}</p>
-          </div>
+          <MetricCard
+            label="Total Spent"
+            value={`$${totalSpent.toFixed(2)}`}
+            sublabel={`of $${budget.monthlyLimit} limit`}
+            icon="dollar-sign"
+          />
+          <MetricCard
+            label="Remaining"
+            value={`$${remaining.toFixed(2)}`}
+            sublabel={`${daysRemaining} days left`}
+            color="text-emerald-400"
+            icon="clock"
+          />
+          <MetricCard
+            label="Daily Burn Rate"
+            value={`$${dailyBurnRate.toFixed(2)}`}
+            sublabel={`avg/day (limit: $${budget.dailyLimit})`}
+            icon="activity"
+          />
+          <MetricCard
+            label="Projected Monthly"
+            value={`$${projectedMonthly.toFixed(0)}`}
+            sublabel={onTrack ? 'ON TRACK' : 'OVER BUDGET'}
+            color={onTrack ? 'text-emerald-400' : 'text-red-400'}
+            icon="bar-chart-3"
+          />
         </div>
-      </section>
+      </Container>
 
       {/* Monthly Progress */}
-      <section class="max-w-6xl mx-auto px-6 pb-8">
-        <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+      <Container class="pb-8">
+        <Card>
           <div class="flex justify-between items-center mb-3">
             <p class="label">Monthly Budget Usage</p>
             <span class="font-mono text-xs text-[var(--color-text-secondary)] tabular-nums">
@@ -100,13 +118,13 @@ const maxDailySpend = hasData ? Math.max(...budget.dailySpend.map(d => d.amount)
             <span>$0</span>
             <span class="tabular-nums">${budget.monthlyLimit.toLocaleString()}</span>
           </div>
-        </div>
-      </section>
+        </Card>
+      </Container>
 
       {/* Provider Breakdown + Daily Spend */}
-      <section class="max-w-6xl mx-auto px-6 pb-8">
+      <Container class="pb-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div class="lg:col-span-2 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+          <Card class="lg:col-span-2">
             <p class="label mb-5">Spend by Provider</p>
             <div class="space-y-5">
               {budget.providers.map((provider) => (
@@ -115,7 +133,7 @@ const maxDailySpend = hasData ? Math.max(...budget.dailySpend.map(d => d.amount)
                     <span class="font-mono text-sm font-semibold text-[var(--color-text-bright)]">{provider.name}</span>
                     <div class="flex items-center gap-3">
                       <span class={`font-mono text-sm font-semibold tabular-nums ${spendTextColor(provider.spent, provider.limit)}`}>${provider.spent.toFixed(2)}</span>
-                      <span class="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">/ ${provider.limit}</span>
+                      <span class="stat-label tabular-nums">/ ${provider.limit}</span>
                     </div>
                   </div>
                   <div class="h-2 bg-[var(--color-bg-surface)] border border-[var(--color-border)] overflow-hidden">
@@ -124,8 +142,8 @@ const maxDailySpend = hasData ? Math.max(...budget.dailySpend.map(d => d.amount)
                 </div>
               ))}
             </div>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+          </Card>
+          <Card>
             <p class="label mb-5">Daily Spend (Last 7d)</p>
             <div class="flex items-end gap-1.5 h-32">
               {budget.dailySpend.map((day) => {
@@ -146,12 +164,12 @@ const maxDailySpend = hasData ? Math.max(...budget.dailySpend.map(d => d.amount)
               <div class="flex-1 h-px" style="border-top: 1px dashed rgba(245, 158, 11, 0.4);"></div>
               <span class="font-mono text-[9px] text-amber-400 tabular-nums">${budget.dailyLimit}/day limit</span>
             </div>
-          </div>
+          </Card>
         </div>
-      </section>
+      </Container>
 
       {/* Per-Model Cost Breakdown */}
-      <section class="max-w-6xl mx-auto px-6 pb-20">
+      <Container class="pb-20">
         <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-x-auto">
           <div class="p-5 pb-0">
             <p class="label mb-5">Per-Model Cost Breakdown</p>
@@ -200,7 +218,7 @@ const maxDailySpend = hasData ? Math.max(...budget.dailySpend.map(d => d.amount)
             </tfoot>
           </table>
         </div>
-      </section>
+      </Container>
     </>
   )}
 

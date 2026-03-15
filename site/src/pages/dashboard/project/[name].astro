@@ -1,7 +1,12 @@
 ---
 import Base from '../../../layouts/Base.astro';
-import ProjectSubnav from '../../../components/ProjectSubnav.astro';
+import Container from '../../../components/Container.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import TabNav from '../../../components/TabNav.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
+import MetricCard from '../../../components/MetricCard.astro';
+import Card from '../../../components/Card.astro';
+import EmptyState from '../../../components/EmptyState.astro';
 import { getProjects, getEvalData, getDecisions } from '../../../data';
 import { timeAgo } from '../../../utils/helpers';
 
@@ -17,39 +22,40 @@ const allProjects = await getProjects();
 const project = allProjects.find(p => p.name === name)!;
 const projectEval = await getEvalData(name);
 const projectDecisions = await getDecisions(name);
+
+const base = `/dashboard/project/${name}`;
+const tabItems = [
+  { href: base, key: 'overview', label: 'Overview' },
+  { href: `${base}/eval`, key: 'eval', label: 'Eval' },
+  { href: `${base}/budget`, key: 'budget', label: 'Budget' },
+  { href: `${base}/decisions`, key: 'decisions', label: 'Decisions' },
+];
+
+const breadcrumbs = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: project.name },
+];
 ---
 
 <Base title={project.title}>
 
-  <ProjectSubnav projectName={name} activeTab="overview" />
+  <TabNav items={tabItems} active="overview" />
 
   <!-- Project Header -->
-  <section class="max-w-6xl mx-auto px-6 pt-10 pb-6">
-    <div class="flex items-center gap-2 mb-4">
-      <a href="/dashboard" class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">Dashboard</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">{project.name}</span>
+  <PageHeader title={project.title} breadcrumbs={breadcrumbs}>
+    <p class="text-sm text-[var(--color-text-muted)] mt-2 max-w-2xl">{project.description}</p>
+    <div class="flex items-center gap-3 absolute top-10 right-6 shrink-0">
+      <span class="stat-label">{project.venue}</span>
+      <StatusBadge status={project.status} />
     </div>
-    <div class="flex items-start justify-between">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
-          {project.title}
-        </h1>
-        <p class="text-sm text-[var(--color-text-muted)] mt-2 max-w-2xl">{project.description}</p>
-      </div>
-      <div class="flex items-center gap-3 shrink-0 ml-4">
-        <span class="font-mono text-[10px] text-[var(--color-text-muted)] tracking-wider uppercase">{project.venue}</span>
-        <StatusBadge status={project.status} />
-      </div>
-    </div>
-  </section>
+  </PageHeader>
 
   <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
 
   <!-- Phase Timeline -->
-  <section class="max-w-6xl mx-auto px-6 pt-10 pb-8">
+  <Container class="section-gap">
     <p class="label mb-6">Phase Progress</p>
-    <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+    <Card>
       <div class="flex items-center gap-2">
         {project.phases.map((phase, i) => (
           <>
@@ -72,75 +78,52 @@ const projectDecisions = await getDecisions(name);
           </>
         ))}
       </div>
-    </div>
-  </section>
+    </Card>
+  </Container>
 
   <!-- Key Metrics -->
-  <section class="max-w-6xl mx-auto px-6 pb-8">
+  <Container class="pb-8">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
       {projectEval ? (
         <>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Models</p>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">
+          <MetricCard label="Models" icon="cpu">
+            <span slot="value">
               {project.modelsCompleted}<span class="text-[var(--color-text-muted)] text-base font-normal">/{project.modelsTotal}</span>
-            </p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">evaluated</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Combinations</p>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">
+            </span>
+          </MetricCard>
+          <MetricCard label="Combinations" icon="bar-chart-3">
+            <span slot="value">
               {project.tasksCompleted}<span class="text-[var(--color-text-muted)] text-base font-normal">/{project.tasksTotal}</span>
-            </p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">task × model × cond</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Instances</p>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">
-              {projectEval.totalInstances.toLocaleString()}
-            </p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">evaluated</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Completion</p>
-            <p class="font-mono text-2xl font-bold text-emerald-400 tabular-nums">
+            </span>
+          </MetricCard>
+          <MetricCard label="Instances" value={projectEval.totalInstances.toLocaleString()} sublabel="evaluated" icon="activity" />
+          <MetricCard label="Completion" color="text-emerald-400" icon="check-circle">
+            <span slot="value">
               {project.completionPct}<span class="text-[var(--color-text-muted)] text-lg font-normal">%</span>
-            </p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">of eval matrix</p>
-          </div>
+            </span>
+          </MetricCard>
         </>
       ) : (
         <>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Phase</p>
-            <p class="font-mono text-lg font-bold text-[var(--color-text-bright)]">{project.phaseNumber}<span class="text-[var(--color-text-muted)] text-sm font-normal">/{project.totalPhases}</span></p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">{project.phases.find(p => p.status === 'active')?.name}</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Venue</p>
-            <p class="font-mono text-lg font-bold text-[var(--color-text-bright)]">{project.venue}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">target</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Decisions</p>
-            <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">{projectDecisions.length}</p>
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">logged</p>
-          </div>
-          <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Last Activity</p>
-            <p class="font-mono text-lg font-bold text-[var(--color-text-bright)]">{timeAgo(project.lastActivity)}</p>
-          </div>
+          <MetricCard label="Phase" icon="git-commit">
+            <span slot="value">
+              {project.phaseNumber}<span class="text-[var(--color-text-muted)] text-sm font-normal">/{project.totalPhases}</span>
+            </span>
+          </MetricCard>
+          <MetricCard label="Venue" value={project.venue} sublabel="target" icon="file-text" />
+          <MetricCard label="Decisions" value={projectDecisions.length} sublabel="logged" icon="brain" />
+          <MetricCard label="Last Activity" value={timeAgo(project.lastActivity)} icon="clock" />
         </>
       )}
     </div>
-  </section>
+  </Container>
 
   <!-- Active Evals + Recent Decisions -->
-  <section class="max-w-6xl mx-auto px-6 pb-20">
+  <Container class="pb-20">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
       {/* Eval Summary or Empty State */}
-      <div class="md:col-span-2 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+      <Card class="md:col-span-2">
         {projectEval ? (
           <>
             <div class="flex items-center justify-between mb-5">
@@ -152,24 +135,24 @@ const projectDecisions = await getDecisions(name);
                 <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">
                   {project.modelsCompleted}<span class="text-[var(--color-text-muted)] text-base font-normal">/{project.modelsTotal}</span>
                 </p>
-                <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Models Complete</p>
+                <p class="stat-label mt-1">Models Complete</p>
               </div>
               <div>
                 <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">{projectEval.totalInstances.toLocaleString()}</p>
-                <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Instances Run</p>
+                <p class="stat-label mt-1">Instances Run</p>
               </div>
               <div>
                 <p class="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">{project.completionPct}<span class="text-[var(--color-text-muted)] text-lg font-normal">%</span></p>
-                <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Overall Progress</p>
+                <p class="stat-label mt-1">Overall Progress</p>
               </div>
               <div>
                 <p class="font-mono text-2xl font-bold text-emerald-400 tabular-nums">{projectEval.runningNow.length}</p>
-                <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">Running Now</p>
+                <p class="stat-label mt-1">Running Now</p>
               </div>
             </div>
             {projectEval.runningNow.length > 0 && (
               <div class="pt-4 border-t border-[var(--color-border)]">
-                <p class="font-mono text-[10px] text-[var(--color-text-muted)] mb-2">ACTIVE RUNS</p>
+                <p class="stat-label mb-2">ACTIVE RUNS</p>
                 <div class="flex flex-wrap gap-2">
                   {projectEval.runningNow.map((model) => (
                     <span class="font-mono text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -181,15 +164,12 @@ const projectDecisions = await getDecisions(name);
             )}
           </>
         ) : (
-          <div class="text-center py-12">
-            <p class="font-mono text-sm text-[var(--color-text-muted)]">No evaluation data yet</p>
-            <p class="text-xs text-[var(--color-text-muted)] mt-2">This project is in the {project.phases.find(p => p.status === 'active')?.name} phase.</p>
-          </div>
+          <EmptyState message="No evaluation data yet" detail={`This project is in the ${project.phases.find(p => p.status === 'active')?.name} phase.`} icon="beaker" />
         )}
-      </div>
+      </Card>
 
       {/* Recent Decisions */}
-      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+      <Card>
         <div class="flex items-center justify-between mb-5">
           <p class="label">Decisions</p>
           <a href={`/dashboard/project/${name}/decisions`} class="font-mono text-[10px] text-[var(--color-primary)] hover:no-underline">All &rarr;</a>
@@ -206,9 +186,9 @@ const projectDecisions = await getDecisions(name);
         ) : (
           <p class="font-mono text-xs text-[var(--color-text-muted)]">No decisions logged yet.</p>
         )}
-      </div>
+      </Card>
 
     </div>
-  </section>
+  </Container>
 
 </Base>

@@ -1,0 +1,16 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+---
+
+<a href="/" class:list={['flex items-center gap-2 hover:no-underline', className]}>
+  <Icon name="cpu" size={16} class="text-[var(--color-text-bright)]" />
+  <span class="font-mono font-bold text-[var(--color-text-bright)] text-xs uppercase tracking-widest">
+    DEEPWORK
+  </span>
+</a>

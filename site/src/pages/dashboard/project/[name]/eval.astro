@@ -1,6 +1,9 @@
 ---
 import Base from '../../../../layouts/Base.astro';
-import ProjectSubnav from '../../../../components/ProjectSubnav.astro';
+import Container from '../../../../components/Container.astro';
+import PageHeader from '../../../../components/PageHeader.astro';
+import TabNav from '../../../../components/TabNav.astro';
+import EmptyState from '../../../../components/EmptyState.astro';
 import { getProjects, getEvalData, evalTasks } from '../../../../data';
 import { cellBg, cellText, liftColor, liftBg } from '../../../../utils/helpers';
 
@@ -21,39 +24,46 @@ const tasks = projectEval?.tasks ?? evalTasks;
 const modelsWithData = models.filter(m =>
   Object.values(m.results).some(r => r.direct !== null || r.cot !== null)
 );
+
+const basePath = `/dashboard/project/${name}`;
+const tabItems = [
+  { href: basePath, key: 'overview', label: 'Overview' },
+  { href: `${basePath}/eval`, key: 'eval', label: 'Eval' },
+  { href: `${basePath}/budget`, key: 'budget', label: 'Budget' },
+  { href: `${basePath}/decisions`, key: 'decisions', label: 'Decisions' },
+];
+
+const breadcrumbs = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: project.name, href: `/dashboard/project/${name}` },
+  { label: 'Eval' },
+];
 ---
 
 <Base title={`${project.title} — Eval`}>
 
-  <ProjectSubnav projectName={name} activeTab="eval" />
+  <TabNav items={tabItems} active="eval" />
 
-  <section class="max-w-6xl mx-auto px-6 pt-10 pb-6">
-    <div class="flex items-center gap-2 mb-4">
-      <a href="/dashboard" class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">Dashboard</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <a href={`/dashboard/project/${name}`} class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">{project.name}</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">Eval</span>
-    </div>
-    <h1 class="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
-      EVAL MONITOR
-    </h1>
-    <p class="text-sm text-[var(--color-text-muted)] mt-2">
-      {project.name} benchmark evaluation across models and prompting strategies
-    </p>
-  </section>
+  <PageHeader
+    title="EVAL MONITOR"
+    subtitle={`${project.name} benchmark evaluation across models and prompting strategies`}
+    breadcrumbs={breadcrumbs}
+  />
 
   <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
 
   {!projectEval ? (
-    <section class="max-w-6xl mx-auto px-6 py-20 text-center">
-      <p class="font-mono text-sm text-[var(--color-text-muted)]">No evaluation data available.</p>
-      <p class="text-xs text-[var(--color-text-muted)] mt-2">This project is in the {project.phases.find(p => p.status === 'active')?.name} phase.</p>
-    </section>
+    <Container class="py-20">
+      <EmptyState
+        message="No evaluation data available."
+        detail={`This project is in the ${project.phases.find(ph => ph.status === 'active')?.name} phase.`}
+        icon="bar-chart-3"
+      />
+    </Container>
   ) : (
     <>
-      {/* Accuracy Heatmap */}
-      <section class="max-w-6xl mx-auto px-6 pt-10 pb-8">
+      <!-- Accuracy Heatmap -->
+      <Container class="section-gap">
         <p class="label mb-6">Accuracy Heatmap &mdash; Direct Prompting</p>
         <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-x-auto">
           <table class="w-full border-collapse">
@@ -81,8 +91,7 @@ const modelsWithData = models.filter(m =>
                     </div>
                   </td>
                   {models.map((m) => {
-                    const r = m.results[task.id];
-                    const val = r?.direct;
+                    const val = m.results[task.id]?.direct;
                     return (
                       <td class={`text-center p-2 ${cellBg(val)}`}>
                         <span class={`font-mono text-sm font-semibold tabular-nums ${cellText(val)}`}>
@@ -104,10 +113,10 @@ const modelsWithData = models.filter(m =>
           <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-emerald-500/25 border border-emerald-500/30 inline-block"></span>90%+</span>
           <span class="flex items-center gap-1.5"><span class="w-3 h-2 bg-[var(--color-bg-surface)] border border-[var(--color-border)] inline-block"></span>Pending</span>
         </div>
-      </section>
+      </Container>
 
-      {/* CoT Lift Analysis */}
-      <section class="max-w-6xl mx-auto px-6 pb-8">
+      <!-- CoT Lift Analysis -->
+      <Container class="pb-8">
         <p class="label mb-6">Chain-of-Thought Lift Analysis</p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {modelsWithData.map((model) => (
@@ -115,7 +124,7 @@ const modelsWithData = models.filter(m =>
               <div class="flex items-center justify-between mb-4">
                 <div>
                   <h3 class="font-mono text-sm font-semibold text-[var(--color-text-bright)]">{model.name}</h3>
-                  <p class="font-mono text-[10px] text-[var(--color-text-muted)]">{model.provider} / {model.scale}</p>
+                  <p class="stat-label">{model.provider} / {model.scale}</p>
                 </div>
               </div>
               <div class="space-y-2">
@@ -160,10 +169,10 @@ const modelsWithData = models.filter(m =>
             </div>
           ))}
         </div>
-      </section>
+      </Container>
 
-      {/* Scale Comparison */}
-      <section class="max-w-6xl mx-auto px-6 pb-20">
+      <!-- Scale Comparison -->
+      <Container class="pb-20">
         <p class="label mb-6">Scale Analysis &mdash; Small vs Large (Within Family)</p>
         <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-x-auto">
           <table class="w-full border-collapse">
@@ -228,7 +237,7 @@ const modelsWithData = models.filter(m =>
         <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-3">
           Values shown are Direct prompting accuracy. Scale effect = Large - Small accuracy.
         </p>
-      </section>
+      </Container>
     </>
   )}
 

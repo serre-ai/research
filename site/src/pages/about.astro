@@ -1,9 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
+import Container from '../components/Container.astro';
+import Icon from '../components/Icon.astro';
 ---
 
 <Base title="About">
-  <div class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+  <Container class="pt-20 pb-16 !max-w-3xl">
 
     <!-- Page heading -->
     <h1 class="text-5xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] mb-20">ABOUT</h1>
@@ -81,19 +83,22 @@ import Base from '../layouts/Base.astro';
 
       <div class="flex flex-col gap-4">
         <a href="#" class="group flex items-center gap-3 hover:no-underline">
+          <Icon name="github" size={14} class="text-[var(--color-text-muted)] group-hover:text-[var(--color-text-bright)] transition-colors" />
           <span class="label group-hover:text-[var(--color-text-bright)] transition-colors">GitHub</span>
           <span class="text-[var(--color-text-muted)] text-sm">&mdash; Code, experiments, and platform source</span>
         </a>
         <a href="#" class="group flex items-center gap-3 hover:no-underline">
+          <Icon name="graduation-cap" size={14} class="text-[var(--color-text-muted)] group-hover:text-[var(--color-text-bright)] transition-colors" />
           <span class="label group-hover:text-[var(--color-text-bright)] transition-colors">Google Scholar</span>
           <span class="text-[var(--color-text-muted)] text-sm">&mdash; Publications and citations</span>
         </a>
         <a href="#" class="group flex items-center gap-3 hover:no-underline">
+          <Icon name="external-link" size={14} class="text-[var(--color-text-muted)] group-hover:text-[var(--color-text-bright)] transition-colors" />
           <span class="label group-hover:text-[var(--color-text-bright)] transition-colors">ORCID</span>
           <span class="text-[var(--color-text-muted)] text-sm">&mdash; Researcher identifier</span>
         </a>
       </div>
     </section>
 
-  </div>
+  </Container>
 </Base>

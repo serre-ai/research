@@ -1,10 +1,13 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Container from '../../components/Container.astro';
+import DataTable from '../../components/DataTable.astro';
+import Icon from '../../components/Icon.astro';
 ---
 
 <Base title="Reasoning Gaps" description="Why LLMs fail at certain reasoning tasks — and which failures are fixable.">
 
-  <article class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+  <Container class="pt-16 pb-24 !max-w-3xl">
 
     <!-- Header -->
     <div class="mb-12">
@@ -15,7 +18,7 @@ import Base from '../../layouts/Base.astro';
       <p class="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
         A formal characterization of why LLMs fail at specific reasoning tasks, which failures chain-of-thought can fix, and which are fundamentally beyond reach.
       </p>
-      <div class="flex gap-4 mt-5 font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
+      <div class="flex gap-4 mt-5 stat-label">
         <span>NeurIPS 2026</span>
         <span>&middot;</span>
         <span>Oddur Sigurdsson</span>
@@ -46,14 +49,14 @@ import Base from '../../layouts/Base.astro';
     </section>
 
     <!-- Taxonomy Table -->
-    <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] mb-16 overflow-x-auto">
-      <table class="w-full font-mono text-sm">
+    <div class="mb-16">
+      <DataTable>
         <thead>
-          <tr class="border-b border-[var(--color-border)]">
-            <th class="text-left text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] px-5 py-3 font-medium">Type</th>
-            <th class="text-left text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] px-5 py-3 font-medium">Name</th>
-            <th class="text-left text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] px-5 py-3 font-medium">Boundary</th>
-            <th class="text-left text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] px-5 py-3 font-medium">CoT Helps?</th>
+          <tr>
+            <th class="px-5">Type</th>
+            <th class="px-5">Name</th>
+            <th class="px-5">Boundary</th>
+            <th class="px-5">CoT Helps?</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[var(--color-border)]">
@@ -94,7 +97,7 @@ import Base from '../../layouts/Base.astro';
             <td class="px-5 py-3 text-red-400">No</td>
           </tr>
         </tbody>
-      </table>
+      </DataTable>
     </div>
 
     <!-- Prediction + Result -->
@@ -116,15 +119,15 @@ import Base from '../../layouts/Base.astro';
     <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 mb-16">
       <div class="flex flex-col sm:flex-row gap-8 items-center justify-center">
         <div class="text-center">
-          <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">CoT Lift &mdash; Types 1&ndash;3</p>
+          <p class="stat-label mb-2">CoT Lift &mdash; Types 1&ndash;3</p>
           <p class="font-mono text-4xl font-bold text-emerald-400 tabular-nums">+0.271</p>
-          <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">depth &amp; serial gaps</p>
+          <p class="stat-label mt-1">depth &amp; serial gaps</p>
         </div>
         <div class="hidden sm:block w-px h-16 bg-[var(--color-border)]"></div>
         <div class="text-center">
-          <p class="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">CoT Lift &mdash; Types 5&ndash;6</p>
+          <p class="stat-label mb-2">CoT Lift &mdash; Types 5&ndash;6</p>
           <p class="font-mono text-4xl font-bold text-red-400 tabular-nums">+0.037</p>
-          <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">intractability &amp; architectural gaps</p>
+          <p class="stat-label mt-1">intractability &amp; architectural gaps</p>
         </div>
       </div>
       <p class="font-mono text-xs text-[var(--color-text-muted)] text-center mt-6">
@@ -219,10 +222,16 @@ import Base from '../../layouts/Base.astro';
     <!-- Footer links -->
     <hr class="border-[var(--color-border)] mb-8" />
     <div class="flex gap-6">
-      <a href="/dashboard/project/reasoning-gaps" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Dashboard</a>
-      <a href="/papers" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline">Papers</a>
+      <a href="/dashboard/project/reasoning-gaps" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline flex items-center gap-1.5">
+        <Icon name="bar-chart-3" size={12} />
+        Dashboard
+      </a>
+      <a href="/papers" class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline flex items-center gap-1.5">
+        <Icon name="file-text" size={12} />
+        Papers
+      </a>
     </div>
 
-  </article>
+  </Container>
 
 </Base>

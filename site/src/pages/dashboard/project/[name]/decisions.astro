@@ -1,6 +1,11 @@
 ---
 import Base from '../../../../layouts/Base.astro';
-import ProjectSubnav from '../../../../components/ProjectSubnav.astro';
+import Container from '../../../../components/Container.astro';
+import PageHeader from '../../../../components/PageHeader.astro';
+import TabNav from '../../../../components/TabNav.astro';
+import Card from '../../../../components/Card.astro';
+import DecisionItem from '../../../../components/DecisionItem.astro';
+import EmptyState from '../../../../components/EmptyState.astro';
 import { getProjects, getDecisions } from '../../../../data';
 
 export function getStaticPaths() {
@@ -14,54 +19,50 @@ const allProjects = await getProjects();
 const { name } = Astro.params;
 const project = allProjects.find(p => p.name === name)!;
 const projectDecisions = await getDecisions(name);
+
+const base = `/dashboard/project/${name}`;
+const tabItems = [
+  { href: base, key: 'overview', label: 'Overview' },
+  { href: `${base}/eval`, key: 'eval', label: 'Eval' },
+  { href: `${base}/budget`, key: 'budget', label: 'Budget' },
+  { href: `${base}/decisions`, key: 'decisions', label: 'Decisions' },
+];
+
+const breadcrumbs = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: project.name, href: `/dashboard/project/${name}` },
+  { label: 'Decisions' },
+];
 ---
 
 <Base title={`${project.title} — Decisions`}>
 
-  <ProjectSubnav projectName={name} activeTab="decisions" />
+  <TabNav items={tabItems} active="decisions" />
 
-  <section class="max-w-6xl mx-auto px-6 pt-10 pb-6">
-    <div class="flex items-center gap-2 mb-4">
-      <a href="/dashboard" class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">Dashboard</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <a href={`/dashboard/project/${name}`} class="font-mono text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors hover:no-underline">{project.name}</a>
-      <span class="font-mono text-[10px] text-[var(--color-text-muted)]">/</span>
-      <span class="font-mono text-[10px] text-[var(--color-text-secondary)]">Decisions</span>
-    </div>
-    <h1 class="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
-      DECISION LOG
-    </h1>
-    <p class="text-sm text-[var(--color-text-muted)] mt-2">
-      {projectDecisions.length} autonomous decisions logged for {project.name}
-    </p>
-  </section>
+  <PageHeader
+    title="DECISION LOG"
+    subtitle={`${projectDecisions.length} autonomous decisions logged for ${project.name}`}
+    breadcrumbs={breadcrumbs}
+  />
 
   <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
 
-  <section class="max-w-6xl mx-auto px-6 pt-10 pb-20">
+  <Container class="section-gap pb-20">
     {projectDecisions.length === 0 ? (
-      <div class="text-center py-20">
-        <p class="font-mono text-sm text-[var(--color-text-muted)]">No decisions logged yet.</p>
-      </div>
+      <EmptyState message="No decisions logged yet." icon="brain" />
     ) : (
-      <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+      <Card>
         <div class="space-y-0 divide-y divide-[var(--color-border)]">
           {projectDecisions.map((d) => (
-            <div class="py-4 first:pt-0 last:pb-0">
-              <div class="flex items-start gap-4">
-                <div class="shrink-0 pt-0.5">
-                  <span class="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">{d.date}</span>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="font-mono text-sm text-[var(--color-text-bright)] leading-snug">{d.decision}</p>
-                  <p class="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">{d.rationale}</p>
-                </div>
-              </div>
-            </div>
+            <DecisionItem
+              date={d.date}
+              decision={d.decision}
+              rationale={d.rationale}
+            />
           ))}
         </div>
-      </div>
+      </Card>
     )}
-  </section>
+  </Container>
 
 </Base>

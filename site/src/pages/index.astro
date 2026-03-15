@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Container from '../components/Container.astro';
 
 const projects = [
   {
@@ -27,7 +28,7 @@ const posts = [
 <Base title="Home">
 
   <!-- Hero -->
-  <section class="max-w-6xl mx-auto px-6 pt-24 pb-20">
+  <Container class="pt-24 pb-20">
     <h1 class="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
       DEEPWORK<br />RESEARCH
     </h1>
@@ -38,18 +39,16 @@ const posts = [
       An independent research platform using Claude Code to autonomously investigate, write, and iterate on papers targeting top-tier venues. Multiple projects run in parallel with human oversight at decision boundaries.
     </p>
     <hr class="mt-16 border-[var(--color-border)]" />
-  </section>
+  </Container>
 
   <!-- Current Projects -->
-  <section class="max-w-6xl mx-auto px-6 pb-20">
+  <Container class="pb-20">
     <p class="label mb-10">Current Projects</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       {projects.map((project) => (
         <article class="border-t-[3px] border-[var(--color-text-bright)] bg-[var(--color-bg-elevated)] p-6">
           <div class="flex items-center justify-between mb-4">
-            <span class="font-mono text-xs font-medium tracking-wider uppercase text-[var(--color-text-muted)]">
-              {project.venue}
-            </span>
+            <span class="stat-label">{project.venue}</span>
             <span class="font-mono text-xs px-2 py-1 bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)]">
               {project.status}
             </span>
@@ -68,10 +67,10 @@ const posts = [
         </article>
       ))}
     </div>
-  </section>
+  </Container>
 
   <!-- Recent Posts -->
-  <section class="max-w-6xl mx-auto px-6 pb-24">
+  <Container class="pb-24">
     <div class="border-t-[3px] border-[var(--color-border-strong)] pt-10">
       <p class="label mb-8">Recent Posts</p>
       <div class="space-y-6">
@@ -93,6 +92,6 @@ const posts = [
         ))}
       </div>
     </div>
-  </section>
+  </Container>
 
 </Base>

@@ -1,44 +1,41 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Container from '../../components/Container.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import FilterBar from '../../components/FilterBar.astro';
 
 // Empty = same-origin (site and API on same domain)
 const API_BASE = import.meta.env.PUBLIC_API_URL || '';
 const API_KEY = import.meta.env.PUBLIC_API_KEY || '';
+
+const filters = [
+  { key: 'all', label: 'All' },
+  { key: 'sessions', label: 'Sessions' },
+  { key: 'eval', label: 'Eval' },
+  { key: 'git', label: 'Git' },
+  { key: 'budget', label: 'Budget' },
+  { key: 'system', label: 'System' },
+];
 ---
 
 <Base title="Live Feed">
 
-  <section class="max-w-6xl mx-auto px-6 pt-16 pb-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="label mb-2">Dashboard</p>
-        <h1 class="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
-          LIVE FEED
-        </h1>
-      </div>
-      <div class="flex items-center gap-2" id="conn-status">
-        <div class="w-2 h-2 rounded-full bg-[var(--color-text-muted)]" id="conn-dot"></div>
-        <span class="font-mono text-xs text-[var(--color-text-muted)]" id="conn-label">Connecting…</span>
-      </div>
+  <PageHeader title="LIVE FEED">
+    <div class="flex items-center gap-2 absolute top-10 right-6" id="conn-status">
+      <div class="w-2 h-2 rounded-full bg-[var(--color-text-muted)]" id="conn-dot"></div>
+      <span class="font-mono text-xs text-[var(--color-text-muted)]" id="conn-label">Connecting…</span>
     </div>
-  </section>
+  </PageHeader>
 
   <hr class="max-w-6xl mx-auto border-[var(--color-border)]" />
 
   <!-- Filters -->
-  <section class="max-w-6xl mx-auto px-6 pt-6 pb-4">
-    <div class="flex gap-2 flex-wrap" id="filters">
-      <button data-filter="all" class="filter-btn active font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors">All</button>
-      <button data-filter="sessions" class="filter-btn font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors">Sessions</button>
-      <button data-filter="eval" class="filter-btn font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors">Eval</button>
-      <button data-filter="git" class="filter-btn font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors">Git</button>
-      <button data-filter="budget" class="filter-btn font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors">Budget</button>
-      <button data-filter="system" class="filter-btn font-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] transition-colors">System</button>
-    </div>
-  </section>
+  <Container class="pt-6 pb-4">
+    <FilterBar items={filters} />
+  </Container>
 
   <!-- Event Feed -->
-  <section class="max-w-6xl mx-auto px-6 pb-20">
+  <Container class="pb-20">
     <div class="border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       <div id="feed" class="divide-y divide-[var(--color-border)] max-h-[70vh] overflow-y-auto">
         <div id="empty-state" class="p-8 text-center">
@@ -47,21 +44,11 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY || '';
       </div>
     </div>
     <p class="font-mono text-[10px] text-[var(--color-text-muted)] mt-3 tabular-nums" id="event-count"></p>
-  </section>
+  </Container>
 
 </Base>
 
 <style>
-  .filter-btn.active {
-    background-color: var(--color-bg-surface);
-    color: var(--color-text-bright);
-    border-color: var(--color-border-strong);
-  }
-  .filter-btn:hover:not(.active) {
-    color: var(--color-text-secondary);
-    border-color: var(--color-border-strong);
-  }
-
   .event-row {
     animation: fadeSlide 0.2s ease-out;
   }

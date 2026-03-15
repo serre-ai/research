@@ -1,0 +1,19 @@
+---
+import { cellBg, cellText } from '../utils/helpers';
+
+interface Props {
+  value: number | null;
+  suffix?: string;
+}
+
+const { value, suffix = '%' } = Astro.props;
+---
+
+<td class={`text-center p-2 ${cellBg(value)}`}>
+  <span class={`font-mono text-sm font-semibold tabular-nums ${cellText(value)}`}>
+    {value !== null && value !== undefined ? `${value}` : '\u2014'}
+  </span>
+  {value !== null && value !== undefined && suffix && (
+    <span class={`font-mono text-[9px] ${cellText(value)} opacity-60`}>{suffix}</span>
+  )}
+</td>
