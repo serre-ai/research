@@ -56,7 +56,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate gateway.json
-        run: node -e "JSON.parse(require('fs').readFileSync('openclaw/gateway.json','utf-8')); console.log('gateway.json: valid')"
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('openclaw/gateway.json','utf-8')); console.log('gateway.json: valid')"
       - name: Check SKILL.md files exist
         run: |
           for skill in deepwork-api arxiv-scout eval-monitor paper-review project-status budget-check; do
