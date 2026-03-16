@@ -104,20 +104,20 @@ HuggingFace answers "what to run." Modal answers "how to run it."
 
 ## Roadmap
 
-### Phase 1: TypeScript Client + Skill (Sprint 10)
+### Phase 1: TypeScript Client + Skill (INT-1)
 - [ ] Add `@huggingface/hub` to orchestrator package.json
 - [ ] Create `orchestrator/src/huggingface.ts` — model search, dataset search, model info
 - [ ] Create `openclaw/skills/huggingface/` — skill wrapper
 - [ ] Add `HF_TOKEN` to VPS `.env`
 - [ ] Manual test: search for reasoning benchmark models and datasets
 
-### Phase 2: Model Registry (Sprint 11)
+### Phase 2: Model Registry (INT-2)
 - [ ] Create `model_registry` DB table tracking evaluated + candidate models
 - [ ] Populate with current 9 models from reasoning-gaps evals
 - [ ] Build "candidate discovery" query: models similar to evaluated ones but not yet tested
 - [ ] Wire into Kit's heartbeat: suggest new models to evaluate
 
-### Phase 3: Leaderboard Integration (Sprint 12)
+### Phase 3: Leaderboard Integration (INT-3)
 - [ ] Pull Open LLM Leaderboard data via HF API
 - [ ] Cross-reference our reasoning-gaps results with general leaderboard rankings
 - [ ] Auto-generate comparison table for the paper

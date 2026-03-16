@@ -111,14 +111,14 @@ Create these W&B dashboards:
 
 ## Roadmap
 
-### Phase 1: Eval Run Logging (Sprint 12)
+### Phase 1: Eval Run Logging (INT-3)
 - [ ] Create `deepwork-research` team on wandb.ai
 - [ ] Add `wandb` to orchestrator dependencies (or Python venv on VPS)
 - [ ] Create `orchestrator/src/wandb-logger.ts` — core logging module
 - [ ] Backfill: log existing 121k eval results as historical runs
 - [ ] Create Eval Overview dashboard
 
-### Phase 2: Live Integration (Sprint 13)
+### Phase 2: Live Integration (INT-4)
 - [ ] Wire wandb-logger into session-runner.ts — auto-log on eval completion
 - [ ] Wire wandb-logger into modal-runner.ts — auto-log Modal evals
 - [ ] Wire into budget-tracker.ts — log cost events

@@ -17,6 +17,9 @@ import { governanceRoutes } from "./routes/governance.js";
 import { collectiveContextRoutes } from "./routes/collective-context.js";
 import { triggerRoutes } from "./routes/triggers.js";
 import { CollectiveSlack } from "./collective-slack.js";
+import { knowledgeRoutes } from "./routes/knowledge.js";
+import { KnowledgeGraph } from "./knowledge-graph.js";
+import { createEmbedFn } from "./embeddings.js";
 
 const { Pool } = pg;
 
@@ -1099,6 +1102,10 @@ export function createApi(
   // Collective integration routes (Sprint 9)
   app.use("/api/collective", collectiveContextRoutes(pool));
   app.use("/api/triggers", triggerRoutes(pool));
+
+  // Knowledge graph routes
+  const kg = new KnowledgeGraph(pool, createEmbedFn());
+  app.use("/api/knowledge", knowledgeRoutes(kg));
 
   // Start listening
   server.listen(config.port, () => {

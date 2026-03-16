@@ -1,6 +1,29 @@
 # Integration Roadmap — APIs & Services
 
-Master plan for integrating external APIs and services into the Deepwork autonomous research platform. Goal: maximize the agents' ability to autonomously discover, evaluate, analyze, and publish research.
+External API and service integrations for the Deepwork autonomous research platform. This is a **parallel workstream** to the [Intelligence Stack Master Roadmap](../MASTER-ROADMAP.md) — that roadmap covers internal capabilities (knowledge graph, event bus, research planner), this one covers external service integrations.
+
+Sprint labels use the `INT-` prefix to distinguish from OpenClaw sprints (1-9) and Intelligence Stack sprints (1-10).
+
+## Relationship to Other Roadmaps
+
+| Roadmap | Scope | Location |
+|---------|-------|----------|
+| [Master Roadmap](../MASTER-ROADMAP.md) | Intelligence Stack — internal capabilities (KG, events, planner, verification) | `docs/MASTER-ROADMAP.md` |
+| [OpenClaw Roadmap](../../openclaw/ROADMAP.md) | Collective agent framework — forum, governance, heartbeats, triggers | `openclaw/ROADMAP.md` |
+| **This Roadmap** | External APIs/services — literature, compute, search, observability | `docs/integrations/ROADMAP.md` |
+
+### Synergies with Intelligence Stack
+
+| Master Sprint | Integration Sprint | Synergy |
+|---------------|-------------------|---------|
+| Sprint 6: Literature Intelligence | INT-1: Semantic Scholar | S6 builds the monitor; INT-1 provides the data source. Build INT-1 first. |
+| Sprint 7: Closed-Loop Experiments | INT-2: Modal multi-model | S7 designs experiment loops; INT-2 provides cheap compute to run them. |
+| Sprint 5: Verification Layer | INT-3: Serper | S5 verifies claims; INT-3 lets it search for external evidence. |
+| Sprint 10: Meta-Learning | INT-4: W&B | S10 analyzes effectiveness; INT-4 provides the experiment tracking data. |
+
+**Recommended execution:** Run INT-1 and INT-2 before or in parallel with Intelligence Stack Phase 2 (Sprints 4-8). The external services provide data and compute that the intelligence modules consume.
+
+---
 
 ## Integration Index
 
@@ -35,9 +58,10 @@ Serper is fully independent.
 
 ## Sprint Plan
 
-### Sprint 10: Foundations — Literature + Model Discovery
+### INT-1: Foundations — Literature + Model Discovery
 **Timeline:** Week of 2026-03-17
 **Theme:** Free APIs, zero risk, immediate value
+**Prerequisite:** None (can start immediately)
 
 #### Team A: Literature Pipeline (Noor + Eli)
 - [ ] Request Semantic Scholar API key
@@ -59,7 +83,7 @@ Serper is fully independent.
 
 **Kit drives model selection and eval testing. Eli builds Modal infra.**
 
-#### Deploy checklist (Sprint 10)
+#### Deploy checklist
 - [ ] Add env vars to VPS: `SEMANTIC_SCHOLAR_API_KEY`, `HF_TOKEN`
 - [ ] Deploy new skills to `openclaw/skills/`
 - [ ] `npm run build --workspace=orchestrator` passes
@@ -69,9 +93,10 @@ Serper is fully independent.
 
 ---
 
-### Sprint 11: Compute + Search — Expand Reach
+### INT-2: Compute + Search — Expand Reach
 **Timeline:** Week of 2026-03-24
 **Theme:** Open-model evals + web search
+**Prerequisite:** INT-1 (Modal bootstrap, HuggingFace client)
 
 #### Team A: Modal Multi-Model (Kit + Eli)
 - [ ] Add model configs: Llama 3.1 70B, Qwen3-72B, DeepSeek-V3, Mistral Large 2
@@ -97,7 +122,7 @@ Serper is fully independent.
 - [ ] Build weekly citation sweep cron job
 - [ ] Add citation velocity to Sol's standup and Lev's digest
 
-#### Deploy checklist (Sprint 11)
+#### Deploy checklist
 - [ ] Add env vars to VPS: `SERPER_API_KEY`
 - [ ] Deploy Modal multi-model configs
 - [ ] Deploy Serper skill
@@ -107,9 +132,10 @@ Serper is fully independent.
 
 ---
 
-### Sprint 12: Observability + Full Coverage
+### INT-3: Observability + Full Coverage
 **Timeline:** Week of 2026-03-31
 **Theme:** W&B dashboards + open model eval sweep
+**Prerequisite:** INT-2 (Modal multi-model, eval pipeline proven)
 
 #### Team A: W&B Integration (Kit + Eli)
 - [ ] Create `deepwork-research` W&B team
@@ -131,7 +157,7 @@ Serper is fully independent.
 - [ ] Serper Google Scholar as complement to Semantic Scholar
 - [ ] Auto-generate comparison tables for the paper
 
-#### Deploy checklist (Sprint 12)
+#### Deploy checklist
 - [ ] W&B dashboards accessible at wandb.ai/deepwork-research
 - [ ] 4 new open models fully evaluated
 - [ ] Model coverage: 9 API + 4 open = 13 models
@@ -140,9 +166,10 @@ Serper is fully independent.
 
 ---
 
-### Sprint 13: Polish + Paper Integration
+### INT-4: Polish + Paper Integration
 **Timeline:** Week of 2026-04-07
 **Theme:** Wire everything into the paper
+**Prerequisite:** INT-3 (all integrations live, eval data collected)
 
 #### All Teams
 - [ ] Wire W&B into budget-tracker.ts for live cost dashboards
@@ -151,15 +178,15 @@ Serper is fully independent.
 - [ ] Update paper's "Models" section with expanded model coverage
 - [ ] Update paper's "Results" section with 13-model analysis
 - [ ] Ablation studies on Modal: temperature sweeps, prompt variants
-- [ ] Final citation check: any new competing work since Sprint 10?
+- [ ] Final citation check: any new competing work since INT-1?
 - [ ] Paper Progress dashboard on W&B
 
 ---
 
 ## Agent Assignments Summary
 
-| Agent | Sprint 10 | Sprint 11 | Sprint 12 | Sprint 13 |
-|-------|-----------|-----------|-----------|-----------|
+| Agent | INT-1 | INT-2 | INT-3 | INT-4 |
+|-------|-------|-------|-------|-------|
 | **Eli** | S2 client + HF client + Modal bootstrap | Modal multi-model + Serper client | W&B logger | Bug fixes |
 | **Kit** | HF model discovery + Modal test | Modal validation eval + model registry | Open model eval sweep + W&B | Ablation studies |
 | **Noor** | S2 skill testing | Web search testing + citation tracking | Competitor scanner | Final lit review |
@@ -169,6 +196,23 @@ Serper is fully independent.
 | **Maren** | — | — | — | Paper integration |
 | **Rho** | — | — | Challenge open-model results | Challenge paper claims |
 | **Sage** | — | — | — | Pre-submission retrospective |
+
+## Execution Timeline
+
+```
+Week of 03/17:  INT-1 (S2 + HF + Modal bootstrap)
+Week of 03/24:  INT-2 (Modal multi-model + Serper + citations)
+Week of 03/31:  INT-3 (W&B + open model sweep + cross-reference)
+Week of 04/07:  INT-4 (Paper integration + ablations + polish)
+```
+
+Can run in parallel with Intelligence Stack sprints:
+```
+INT-1 ─── INT-2 ─── INT-3 ─── INT-4
+  │         │         │
+  │    IS Sprint 1+3  │    IS Sprint 4+5+6
+  └─ feeds into ──────┘─── feeds into ───→ IS Sprint 7 (Closed-Loop)
+```
 
 ## Budget Impact
 
@@ -185,7 +229,7 @@ Current monthly budget: $1,000. This adds ~$50-65/month while roughly doubling t
 
 ## Success Criteria
 
-By end of Sprint 13:
+By end of INT-4:
 - [ ] 13+ models evaluated on B1-B9 × 3 conditions
 - [ ] Live W&B dashboards accessible from browser
 - [ ] Weekly citation tracking on 30+ reference papers

@@ -105,21 +105,21 @@ A cron job (or Lev's nightly digest) runs `paper/batch` on all tracked papers, l
 
 ## Roadmap
 
-### Phase 1: Core Client + Skill (Sprint 10)
+### Phase 1: Core Client + Skill (INT-1)
 - [ ] Create `orchestrator/src/semantic-scholar.ts` — HTTP client with rate limiting
 - [ ] Create `openclaw/skills/semantic-scholar/` — skill wrapper
 - [ ] Add `SEMANTIC_SCHOLAR_API_KEY` to VPS `.env`
 - [ ] Wire into Noor's heartbeat: after arxiv scan, run recommendations on top findings
 - [ ] Manual test: search for "chain-of-thought reasoning" and verify results
 
-### Phase 2: Citation Tracking (Sprint 11)
+### Phase 2: Citation Tracking (INT-2)
 - [ ] Create `paper_tracking` and `citation_snapshots` tables
 - [ ] Seed with reasoning-gaps reference list (~30 papers)
 - [ ] Build weekly citation sweep cron job
 - [ ] Add citation velocity alerts to Sol's standup
 - [ ] Add citation data to Lev's nightly digest
 
-### Phase 3: Competing Work Detection (Sprint 12)
+### Phase 3: Competing Work Detection (INT-3)
 - [ ] Build recommendation-based competitor scanner
 - [ ] Track authors of key competing groups
 - [ ] Auto-file forum signal threads when competing work detected

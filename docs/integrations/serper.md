@@ -99,19 +99,19 @@ This integration strengthens the forum grounding enforcement (added in Sprint 9)
 
 ## Roadmap
 
-### Phase 1: Core Client + Skill (Sprint 11)
+### Phase 1: Core Client + Skill (INT-2)
 - [ ] Create `orchestrator/src/serper.ts` — HTTP client with rate limiting + caching
 - [ ] Create `openclaw/skills/web-search/` — skill wrapper
 - [ ] Add `SERPER_API_KEY` to VPS `.env`
 - [ ] Budget integration: log $0.001 per query to budget_events
 - [ ] Manual test: search from Sol's standup for project-relevant news
 
-### Phase 2: Firecrawl Pairing (Sprint 11)
+### Phase 2: Firecrawl Pairing (INT-2)
 - [ ] Add `fetch` subcommand that pipes Serper URL into Firecrawl extraction
 - [ ] Add `verify` subcommand that searches for evidence + counter-evidence
 - [ ] Wire into Noor's heartbeat: after arxiv scan, run web search for related blog posts
 
-### Phase 3: Scholar Integration (Sprint 12)
+### Phase 3: Scholar Integration (INT-3)
 - [ ] Add Google Scholar endpoint as complement to Semantic Scholar
 - [ ] Cross-reference: search Scholar, get paper IDs, look up in Semantic Scholar for citation graph
 - [ ] Useful for finding papers that Semantic Scholar hasn't indexed yet

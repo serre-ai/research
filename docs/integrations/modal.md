@@ -103,7 +103,7 @@ Kit → modal-runner.ts → HTTP POST to Modal endpoint
 
 ## Roadmap
 
-### Phase 1: Eval Runner MVP (Sprint 10)
+### Phase 1: Eval Runner MVP (INT-1)
 - [ ] Create `modal/` directory with eval_runner.py
 - [ ] Implement vLLM inference for one model (Qwen3-8B-FP8 as test)
 - [ ] Create Modal volume for model weight caching
@@ -111,20 +111,20 @@ Kit → modal-runner.ts → HTTP POST to Modal endpoint
 - [ ] Create `orchestrator/src/modal-runner.ts` — HTTP client for Modal endpoint
 - [ ] Wire into Kit's eval dispatch logic as alternative backend
 
-### Phase 2: Multi-Model Support (Sprint 11)
+### Phase 2: Multi-Model Support (INT-2)
 - [ ] Add model configs for Llama 3.1 70B, Qwen3-72B, DeepSeek-V3, Mistral Large 2
 - [ ] Create separate Modal apps per model family (different GPU requirements)
 - [ ] Build model selection logic in modal-runner.ts
 - [ ] Run full B1-B9 eval on Qwen3-8B-FP8 as validation
 - [ ] Cost tracking: log GPU-seconds and compute cost to budget_events
 
-### Phase 3: Full Eval Coverage (Sprint 12)
+### Phase 3: Full Eval Coverage (INT-3)
 - [ ] Run B1-B9 × 3 conditions on all target open models
 - [ ] Compare results with API-based evals for consistency
 - [ ] Integrate with W&B for experiment tracking (if available)
 - [ ] Add open-model results to reasoning-gaps paper
 
-### Phase 4: Advanced (Sprint 13+)
+### Phase 4: Advanced (INT-4+)
 - [ ] Ablation studies: temperature sweeps, system prompt variants
 - [ ] GPU-accelerated statistical analysis (bootstrap CIs on full dataset)
 - [ ] Explore fine-tuning experiments if research direction warrants
