@@ -10,6 +10,10 @@ import type { BacklogManager } from "./backlog.js";
 import type { DigestStore } from "./digest-store.js";
 import { forumRoutes } from "./routes/forum.js";
 import { messageRoutes } from "./routes/messages.js";
+import { predictionRoutes } from "./routes/predictions.js";
+import { agentStateRoutes } from "./routes/agent-state.js";
+import { ritualRoutes } from "./routes/rituals.js";
+import { governanceRoutes } from "./routes/governance.js";
 
 const { Pool } = pg;
 
@@ -942,9 +946,13 @@ export function createApi(
   app.use("/api/memory/digest", digestRoutes(daemon?.getDigestStore()));
   app.use("/api/daemon/health", daemonHealthRoutes(daemon));
 
-  // Collective routes (Sprint 2)
+  // Collective routes (Sprints 2-3)
   app.use("/api/forum", forumRoutes(pool));
   app.use("/api/messages", messageRoutes(pool));
+  app.use("/api/predictions", predictionRoutes(pool));
+  app.use("/api/agents", agentStateRoutes(pool));
+  app.use("/api/rituals", ritualRoutes(pool));
+  app.use("/api/governance", governanceRoutes(pool));
 
   // Start listening
   server.listen(config.port, () => {
