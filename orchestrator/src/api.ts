@@ -8,6 +8,8 @@ import { ActivityLogger, type EventType } from "./logger.js";
 import type { Daemon } from "./daemon.js";
 import type { BacklogManager } from "./backlog.js";
 import type { DigestStore } from "./digest-store.js";
+import { forumRoutes } from "./routes/forum.js";
+import { messageRoutes } from "./routes/messages.js";
 
 const { Pool } = pg;
 
@@ -939,6 +941,10 @@ export function createApi(
   app.use("/api/backlog", backlogRoutes(daemon?.getBacklogManager()));
   app.use("/api/memory/digest", digestRoutes(daemon?.getDigestStore()));
   app.use("/api/daemon/health", daemonHealthRoutes(daemon));
+
+  // Collective routes (Sprint 2)
+  app.use("/api/forum", forumRoutes(pool));
+  app.use("/api/messages", messageRoutes(pool));
 
   // Start listening
   server.listen(config.port, () => {
