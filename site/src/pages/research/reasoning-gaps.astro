@@ -109,7 +109,7 @@ import Icon from '../../components/Icon.astro';
 
       <h2>The Experiment</h2>
       <p>
-        9 diagnostic benchmarks (one per gap type), each with procedurally generated instances at controlled difficulty levels. Tested across 10 model families &mdash; GPT-4o, Claude Haiku, o3, Llama, Qwen, Mistral &mdash; under three conditions: direct answer, chain-of-thought, and budget-limited CoT. ~135,000 total evaluations.
+        9 diagnostic benchmarks (one per gap type), each with procedurally generated instances at controlled difficulty levels. Tested across 11 models &mdash; GPT-4o, GPT-4o-mini, Claude Haiku 4.5, Claude Sonnet 4.6, o3, Llama 3.1 8B &amp; 70B, Qwen 2.5 7B &amp; 72B, Ministral 8B, Mistral Small 24B &mdash; under three conditions: direct answer, chain-of-thought, and budget-limited CoT. 148,068 total evaluations.
       </p>
 
       <h2>The Result</h2>
@@ -120,13 +120,13 @@ import Icon from '../../components/Icon.astro';
       <div class="flex flex-col sm:flex-row gap-8 items-center justify-center">
         <div class="text-center">
           <p class="stat-label mb-2">CoT Lift &mdash; Types 1&ndash;3</p>
-          <p class="font-mono text-4xl font-bold text-emerald-400 tabular-nums">+0.271</p>
+          <p class="font-mono text-4xl font-bold text-emerald-400 tabular-nums">+0.340</p>
           <p class="stat-label mt-1">depth &amp; serial gaps</p>
         </div>
         <div class="hidden sm:block w-px h-16 bg-[var(--color-border)]"></div>
         <div class="text-center">
           <p class="stat-label mb-2">CoT Lift &mdash; Types 5&ndash;6</p>
-          <p class="font-mono text-4xl font-bold text-red-400 tabular-nums">+0.037</p>
+          <p class="font-mono text-4xl font-bold text-red-400 tabular-nums">+0.086</p>
           <p class="stat-label mt-1">intractability &amp; architectural gaps</p>
         </div>
       </div>

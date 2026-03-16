@@ -123,7 +123,7 @@
       "model": "anthropic/claude-haiku-4-5-20251001",
       "model_escalation": "anthropic/claude-sonnet-4-6",
       "escalation_threshold": "critical",
-      "workspace": "./agents/dev",
+      "workspace": "./agents/eli",
       "channel": "#engineering",
       "schedule": {
         "type": "heartbeat",
@@ -140,7 +140,7 @@
       "role": "Institutional Memory",
       "icon": "scroll",
       "model": "anthropic/claude-haiku-4-5-20251001",
-      "workspace": "./agents/archivist",
+      "workspace": "./agents/lev",
       "channel": "#memory",
       "schedule": {
         "type": "cron",

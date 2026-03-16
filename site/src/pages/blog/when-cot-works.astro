@@ -1,0 +1,113 @@
+---
+import Base from '../../layouts/Base.astro';
+import Container from '../../components/Container.astro';
+---
+
+<Base title="When Chain-of-Thought Works (and When It's Theater)">
+  <Container class="pt-24 pb-24">
+    <header class="mb-16">
+      <div class="flex items-center gap-4 mb-6">
+        <span class="stat-label">2026-03-13</span>
+        <span class="text-[var(--color-text-muted)]">&middot;</span>
+        <span class="stat-label">8 min read</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-mono font-bold tracking-tight text-[var(--color-text-bright)] leading-[1.1]">
+        When Chain-of-Thought Works (and When It's Theater)
+      </h1>
+    </header>
+
+    <div class="prose max-w-3xl">
+      <p>
+        "Let's think step by step." Four words that reliably boost LLM accuracy on math, logic, and coding problems. Chain-of-thought prompting is one of the most useful techniques in the LLM toolbox. But it does not always work &mdash; and we now have a formal framework for predicting exactly when it will help and when it won't.
+      </p>
+      <p>
+        The central finding from our reasoning-gaps evaluation: CoT lifts accuracy by <strong>+0.34</strong> on problems where the model needs more sequential computation steps, and only <strong>+0.086</strong> on problems that are fundamentally hard or architecturally mismatched. This is not a vague trend &mdash; it is a clean, theory-predicted split that held across 11 models and 148,000 evaluated instances.
+      </p>
+
+      <h2>The Theory in 30 Seconds</h2>
+      <p>
+        A transformer's forward pass is a constant-depth computation. No matter how many parameters the model has, processing one token goes through the same fixed number of layers. This puts a hard ceiling on what the model can compute in a single step &mdash; formally, it is limited to the complexity class TC<sup>0</sup>.
+      </p>
+      <p>
+        Some problems need more sequential depth than TC<sup>0</sup> provides. Evaluating a nested boolean formula requires resolving inner brackets before outer ones. Composing permutations requires applying each operation in order. These problems sit in NC<sup>1</sup> or higher &mdash; they need logarithmic or linear depth.
+      </p>
+      <p>
+        Chain-of-thought gives the model that depth. Each generated token is an additional compute step. A model that generates 50 reasoning tokens before answering has effectively done 50&times; more sequential computation than one that answers directly. For problems where the bottleneck is sequential depth, this is exactly the fix.
+      </p>
+      <p>
+        But some problems are not bottlenecked on depth. 3-SAT is NP-hard &mdash; no amount of sequential steps will reliably solve it in polynomial time. String reversal fails because the autoregressive generation order is wrong, and CoT does not change the generation order. For these problems, chain-of-thought is theater: the model generates reasoning-like text that does not actually solve the problem.
+      </p>
+
+      <h2>The Numbers</h2>
+      <p>
+        The paper defines six types of reasoning gaps and maps each to a complexity-theoretic boundary. The prediction: Types 1&ndash;3 (sensitivity, depth, serial composition) should benefit substantially from CoT because the bottleneck is sequential depth. Types 5&ndash;6 (intractability, architectural mismatch) should not benefit because the problem is fundamentally beyond what more steps can solve.
+      </p>
+      <p>
+        Here is what we measured across 11 models:
+      </p>
+      <p>
+        <strong>B3 &mdash; Permutation Composition (Type 3, serial):</strong> Direct accuracy 17.4%. With CoT: 76.9%. A lift of nearly +0.60. This is the clearest win. Composing permutations requires applying each mapping in sequence &mdash; exactly the kind of serial computation that CoT enables. Without CoT, models try to do it all in one mental step and fail catastrophically. With a scratchpad, they can track intermediate states.
+      </p>
+      <p>
+        <strong>B2 &mdash; Boolean Formula Evaluation (Type 2, depth):</strong> Direct accuracy 61.8%. With CoT: 84.9%. These are nested expressions like <code>AND(OR(T, F), NOT(AND(T, T)))</code> where evaluation requires resolving inner subexpressions first. CoT gives the model the logarithmic depth it needs.
+      </p>
+      <p>
+        <strong>B4 &mdash; State Tracking (Type 3, serial):</strong> Direct accuracy 35.7%. With CoT: 75.8%. Following a sequence of variable assignments and modifications. Each step depends on the previous state &mdash; irreducibly sequential. CoT handles it.
+      </p>
+      <p>
+        Now compare:
+      </p>
+      <p>
+        <strong>B7 &mdash; 3-SAT (Type 5, intractable):</strong> Direct accuracy 45.2%. With CoT: 49.0%. A lift of +0.038. The model generates plausible-looking reasoning &mdash; "Let me try setting x1=T, x2=F..." &mdash; but it is not systematically searching the space. It is guessing with extra words. The problem is NP-hard; more sequential steps do not help unless you have an exponential number of them.
+      </p>
+      <p>
+        <strong>B6 &mdash; Longest Increasing Subsequence (Type 4, algorithmic):</strong> Direct accuracy 21.8%. With CoT: 37.9%. Modest improvement. The model can do better with reasoning steps, but the problem requires a specific algorithm (patience sorting or dynamic programming) that CoT alone does not reliably elicit. This is where tool use would be the right intervention.
+      </p>
+
+      <h2>The Budget-CoT Experiment</h2>
+      <p>
+        If CoT works because it provides extra compute steps, how many steps do you actually need? We tested a "budget CoT" condition that limits reasoning tokens.
+      </p>
+      <p>
+        The results were revealing. For B4 (state tracking), budget CoT scored 0.719 versus unlimited CoT at 0.758 &mdash; models retained 95% of the benefit with substantially fewer tokens. They do not need a verbose internal monologue. They need a scratchpad with enough room to track the intermediate state.
+      </p>
+      <p>
+        For B3 (permutation composition), budget CoT dropped more significantly &mdash; 0.572 versus 0.769 &mdash; because composing long permutation chains genuinely requires space proportional to the input length. You cannot compress O(n) steps into O(1) tokens.
+      </p>
+      <p>
+        The practical takeaway: if you are adding CoT to your production pipeline, the optimal token budget depends on the structure of your reasoning task. Serial composition needs space proportional to the input. Depth-limited problems need logarithmic space. And intractable problems do not benefit regardless of budget &mdash; you are paying for tokens that produce nothing.
+      </p>
+
+      <h2>The o3 Anomaly</h2>
+      <p>
+        One model behaved differently from all others: OpenAI's o3, a "reasoning-specialized" model that uses internal chain-of-thought before producing its output.
+      </p>
+      <p>
+        On B2 (boolean formula evaluation), o3 scored 10.5% accuracy in the direct condition. For context, random guessing on this binary task gives you 50%. o3 was <em>actively worse than random</em>. Every other model scored between 40% and 80% on direct.
+      </p>
+      <p>
+        The likely explanation: o3's internal reasoning process conflicts with "answer directly" instructions. When told not to reason step-by-step, a model that is architecturally designed to always reason step-by-step may produce incoherent outputs. Its internal chain-of-thought might be generating intermediate reasoning that the final output layer then misinterprets.
+      </p>
+      <p>
+        With explicit CoT, o3 recovered to competitive accuracy. The issue is not capability but instruction-following &mdash; o3 may not be able to turn off its reasoning in the way that standard models can. This is worth noting for anyone benchmarking reasoning models: the "direct answer" baseline may not be a fair comparison for architectures with mandatory internal reasoning.
+      </p>
+
+      <h2>What This Means in Practice</h2>
+      <p>
+        Before adding chain-of-thought to your LLM pipeline, ask which type of reasoning the task requires:
+      </p>
+      <p>
+        <strong>Does the task need more sequential steps?</strong> (Evaluating nested expressions, tracking state through a sequence, composing operations.) Add CoT. It will help substantially. Budget your tokens proportionally to the input complexity.
+      </p>
+      <p>
+        <strong>Is the task computationally intractable?</strong> (Constraint satisfaction, combinatorial optimization, problems that require exponential search.) CoT will not help. Use tool augmentation &mdash; let the model write and execute code, call a SAT solver, or delegate to a specialized algorithm.
+      </p>
+      <p>
+        <strong>Is the architecture itself the bottleneck?</strong> (Tasks requiring non-left-to-right generation, bidirectional dependencies.) Neither CoT nor tools will fix this cleanly. Consider whether the task can be reformulated to align with autoregressive generation.
+      </p>
+      <p>
+        The framework is not just academic. It is a decision tool. The difference between a +0.34 accuracy gain and a +0.086 gain is the difference between a technique that transforms your system's capability and one that wastes tokens. Knowing which category your problem falls into before you invest in prompt engineering is worth the five minutes it takes to think about it.
+      </p>
+    </div>
+  </Container>
+</Base>

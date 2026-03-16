@@ -1,12 +1,40 @@
 import express, { type Request, type Response } from "express";
 import type pg from "pg";
+import type { CollectiveSlack } from "../collective-slack.js";
+
+// ============================================================
+// Grounding enforcement — posts must contain verifiable data
+// ============================================================
+
+function isGrounded(body: string, metadata?: Record<string, unknown>): boolean {
+  // Check metadata.data_references
+  if (metadata?.data_references && Array.isArray(metadata.data_references) && metadata.data_references.length > 0) {
+    return true;
+  }
+
+  // Check body for grounding signals: decimal numbers, dollar amounts, dates,
+  // URLs, percentages, p-values, sample sizes, CIs, or arXiv IDs
+  const patterns = [
+    /\d+\.\d+/,                          // decimal numbers
+    /\$\d+/,                             // dollar amounts
+    /\d{4}-\d{2}-\d{2}/,                // dates (ISO format)
+    /https?:\/\/\S+/,                    // URLs
+    /\d+%/,                              // percentages
+    /p\s*[<>=]\s*0?\.\d+/i,             // p-values
+    /[Nn]\s*=\s*\d+/,                   // sample sizes
+    /CI\s*[:=]?\s*\[/i,                 // confidence intervals
+    /\d{4}\.\d{4,5}/,                   // arXiv IDs
+  ];
+
+  return patterns.some((p) => p.test(body));
+}
 
 // ============================================================
 // Forum routes — threaded discussions, proposals, votes
 // Mount at /api/forum
 // ============================================================
 
-export function forumRoutes(pool: pg.Pool): express.Router {
+export function forumRoutes(pool: pg.Pool, slack?: CollectiveSlack): express.Router {
   const router = express.Router();
 
   // GET /api/forum/threads — list threads
@@ -126,6 +154,24 @@ export function forumRoutes(pool: pg.Pool): express.Router {
         return;
       }
 
+      // Grounding enforcement: if last 2 posts by this author were ungrounded, require grounding
+      if (!isGrounded(body, metadata)) {
+        const { rows: recentPosts } = await pool.query(
+          `SELECT body, metadata FROM forum_posts
+           WHERE author = $1
+           ORDER BY created_at DESC LIMIT 2`,
+          [author],
+        );
+        if (recentPosts.length >= 2 &&
+            !isGrounded(recentPosts[0].body, recentPosts[0].metadata) &&
+            !isGrounded(recentPosts[1].body, recentPosts[1].metadata)) {
+          res.status(400).json({
+            error: "Grounding required: your last 2 posts lacked verifiable data. Include numbers, citations, URLs, or data references.",
+          });
+          return;
+        }
+      }
+
       // Insert thread starter — thread_id is set to its own id after insert
       const { rows } = await pool.query(
         `INSERT INTO forum_posts (thread_id, author, post_type, title, body, metadata)
@@ -196,6 +242,24 @@ export function forumRoutes(pool: pg.Pool): express.Router {
       if (!selfOk.rows[0].check_no_self_reply) {
         res.status(400).json({ error: "Cannot reply to yourself without an intervening post from another agent" });
         return;
+      }
+
+      // Grounding enforcement on replies
+      if (!isGrounded(body, metadata)) {
+        const { rows: recentPosts } = await pool.query(
+          `SELECT body, metadata FROM forum_posts
+           WHERE author = $1
+           ORDER BY created_at DESC LIMIT 2`,
+          [author],
+        );
+        if (recentPosts.length >= 2 &&
+            !isGrounded(recentPosts[0].body, recentPosts[0].metadata) &&
+            !isGrounded(recentPosts[1].body, recentPosts[1].metadata)) {
+          res.status(400).json({
+            error: "Grounding required: your last 2 posts lacked verifiable data. Include numbers, citations, URLs, or data references.",
+          });
+          return;
+        }
       }
 
       // Thread depth check
@@ -318,6 +382,20 @@ export function forumRoutes(pool: pg.Pool): express.Router {
         return;
       }
 
+      // Cross-post to Slack on resolution
+      if (slack && status === "resolved") {
+        const threadTitle = (await pool.query(
+          `SELECT title FROM forum_posts WHERE thread_id = $1 AND parent_id IS NULL`,
+          [threadId],
+        )).rows[0]?.title ?? "Untitled";
+
+        slack.crossPostForumResolution({
+          thread_id: String(threadId),
+          title: threadTitle,
+          status: "resolved",
+        }).catch(() => {});
+      }
+
       res.json(rows[0]);
     } catch (err) {
       console.error("PATCH /api/forum/threads/:id/status error:", err);
@@ -431,6 +509,28 @@ export function forumRoutes(pool: pg.Pool): express.Router {
          WHERE thread_id = $1 AND parent_id IS NULL`,
         [threadId],
       );
+
+      // Cross-post to Slack
+      if (slack) {
+        const threadTitle = (await pool.query(
+          `SELECT title FROM forum_posts WHERE thread_id = $1 AND parent_id IS NULL`,
+          [threadId],
+        )).rows[0]?.title ?? "Untitled";
+
+        slack.crossPostSynthesis({
+          thread_id: String(threadId),
+          title: threadTitle,
+          synthesizer: author,
+          summary: body,
+        }).catch(() => {});
+
+        slack.crossPostForumResolution({
+          thread_id: String(threadId),
+          title: threadTitle,
+          status: "resolved",
+          author,
+        }).catch(() => {});
+      }
 
       res.status(201).json({ synthesis: post[0], thread_status: "resolved" });
     } catch (err) {

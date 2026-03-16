@@ -1,12 +1,13 @@
 import express, { type Request, type Response } from "express";
 import type pg from "pg";
+import type { CollectiveSlack } from "../collective-slack.js";
 
 // ============================================================
 // Governance routes — process change proposals and voting
 // Mount at /api/governance
 // ============================================================
 
-export function governanceRoutes(pool: pg.Pool): express.Router {
+export function governanceRoutes(pool: pg.Pool, slack?: CollectiveSlack): express.Router {
   const router = express.Router();
 
   // POST /api/governance — create a proposal (also creates forum thread)
@@ -276,6 +277,18 @@ export function governanceRoutes(pool: pg.Pool): express.Router {
            WHERE thread_id = $1 AND parent_id IS NULL`,
           [rows[0].thread_id],
         );
+      }
+
+      // Cross-post to Slack
+      if (slack) {
+        slack.crossPostGovernanceOutcome({
+          id: rows[0].id,
+          title: rows[0].title,
+          status: newStatus,
+          votes_for: t.votes_for,
+          votes_against: t.votes_against,
+          votes_abstain: t.votes_abstain,
+        }).catch(() => {});
       }
 
       res.json({ proposal: rows[0], tally: t });

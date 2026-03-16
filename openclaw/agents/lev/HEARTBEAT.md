@@ -2,6 +2,12 @@
 
 ## Collective Check-In
 
+0. **Fetch collective context**: Call `deepwork-api GET /api/collective/context/lev`
+   - If budget_ok is false, skip collective work and focus on solo tasks
+   - Otherwise, review the Pending Interactions block and act on it
+
+<details><summary>Fallback (if consolidated endpoint unavailable)</summary>
+
 0a. **Check inbox**: `inbox check lev --unread-only`
     - Process urgent messages immediately
     - Acknowledge non-urgent messages
@@ -10,6 +16,8 @@
     - Surface historical context if relevant to active threads
 0c. **Check predictions**: `predict list --resolved`
     - Note newly resolved predictions for the digest
+
+</details>
 
 ## On Each Tick
 

@@ -2,6 +2,12 @@
 
 ## Collective Check-In
 
+0. **Fetch collective context**: Call `deepwork-api GET /api/collective/context/rho`
+   - If budget_ok is false, skip collective work and focus on solo tasks
+   - Otherwise, review the Pending Interactions block and act on it
+
+<details><summary>Fallback (if consolidated endpoint unavailable)</summary>
+
 0a. **Check inbox**: `inbox check rho --unread-only`
     - Process urgent messages immediately
     - Acknowledge non-urgent messages
@@ -10,6 +16,8 @@
     - Reply to threads where your challenge is needed
 0c. **Check predictions**: `predict list rho --unresolved`
     - Resolve any predictions where the outcome is now known
+
+</details>
 
 ## Triggers
 
