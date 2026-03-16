@@ -13,6 +13,8 @@ import { EvalJobManager } from "./eval-manager.js";
 import { BacklogManager, type BacklogTicket } from "./backlog.js";
 import { DigestStore, type DailyDigest } from "./digest-store.js";
 import { CostPoller } from "./cost-poller.js";
+import { KnowledgeGraph } from "./knowledge-graph.js";
+import { createEmbedFn } from "./embeddings.js";
 
 const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
@@ -123,14 +125,21 @@ export class Daemon {
   private digestStore: DigestStore;
   private costPoller: CostPoller | null = null;
   private dbPool: pg.Pool | null = null;
+  private knowledgeGraph: KnowledgeGraph | null = null;
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     const rootDir = this.config.rootDir;
     this.dbPool = dbPool ?? null;
+
+    // Knowledge graph (requires DB)
+    if (this.dbPool) {
+      this.knowledgeGraph = new KnowledgeGraph(this.dbPool, createEmbedFn());
+    }
+
     this.projectManager = new ProjectManager(rootDir);
     this.gitEngine = new GitEngine(rootDir);
-    this.sessionManager = new SessionManager(this.projectManager, this.gitEngine);
+    this.sessionManager = new SessionManager(this.projectManager, this.gitEngine, rootDir, this.knowledgeGraph);
     this.logger = new ActivityLogger(rootDir);
     this.notifier = new Notifier(rootDir);
     this.budgetTracker = new BudgetTracker(rootDir, this.logger, this.notifier, this.dbPool ?? undefined);
@@ -498,6 +507,43 @@ export class Daemon {
           type: "daemon_error",
           data: { error: "Cost poller failed: " + (err instanceof Error ? err.message : String(err)) },
         });
+      }
+    }
+
+    // Knowledge graph maintenance — snapshots and contradiction checks
+    if (this.knowledgeGraph) {
+      try {
+        await this.knowledgeGraphMaintenance();
+      } catch (err) {
+        console.error("Knowledge graph maintenance error:", err);
+      }
+    }
+  }
+
+  /** Periodic knowledge graph tasks: daily snapshots, contradiction logging. */
+  private async knowledgeGraphMaintenance(): Promise<void> {
+    if (!this.knowledgeGraph) return;
+
+    // Run once per day (every ~24 cycles at 60-min interval)
+    if (this.cycleCount % 24 !== 0) return;
+
+    const projects = await this.projectManager.listProjects();
+    for (const project of projects) {
+      try {
+        // Create daily snapshot
+        await this.knowledgeGraph.createSnapshot(project.project);
+
+        // Check for contradictions and log new ones
+        const contradictions = await this.knowledgeGraph.findContradictions(project.project);
+        if (contradictions.length > 0) {
+          await this.logger.log({
+            type: "knowledge_contradictions",
+            project: project.project,
+            data: { count: contradictions.length },
+          });
+        }
+      } catch {
+        // Individual project failure shouldn't stop others
       }
     }
   }

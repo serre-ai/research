@@ -570,7 +570,7 @@ function evalControlRoutes(
 // Health endpoint
 // ============================================================
 
-function healthRoute(startedAt: number): express.Router {
+function healthRoute(startedAt: number, kg?: KnowledgeGraph): express.Router {
   const router = express.Router();
 
   router.get("/", async (_req: Request, res: Response) => {
@@ -589,6 +589,16 @@ function healthRoute(startedAt: number): express.Router {
       // db unavailable
     }
 
+    // Knowledge graph stats
+    let knowledgeGraph = null;
+    if (kg) {
+      try {
+        knowledgeGraph = await kg.getStats();
+      } catch {
+        // knowledge graph not ready
+      }
+    }
+
     res.json({
       status: "ok",
       uptime_s: Math.round((Date.now() - startedAt) / 1000),
@@ -596,6 +606,7 @@ function healthRoute(startedAt: number): express.Router {
       memory: mem,
       cpus: cpus().length,
       database: dbOk ? "connected" : "unavailable",
+      knowledge_graph: knowledgeGraph,
       timestamp: new Date().toISOString(),
     });
   });
@@ -1078,7 +1089,9 @@ export function createApi(
   const { wss, broadcast } = setupWebSocket(server, config.apiKey);
 
   // Mount routes
-  app.use("/api/health", healthRoute(startedAt));
+  const kg = new KnowledgeGraph(pool, createEmbedFn());
+  app.use("/api/health", healthRoute(startedAt, kg));
+  app.use("/api/knowledge", knowledgeRoutes(kg));
   app.use("/api/projects", projectRoutes());
   app.use("/api/projects", projectStatusRoutes());
   app.use("/api/budget", budgetRoutes(daemon?.getBudgetTracker()));
@@ -1102,10 +1115,6 @@ export function createApi(
   // Collective integration routes (Sprint 9)
   app.use("/api/collective", collectiveContextRoutes(pool));
   app.use("/api/triggers", triggerRoutes(pool));
-
-  // Knowledge graph routes
-  const kg = new KnowledgeGraph(pool, createEmbedFn());
-  app.use("/api/knowledge", knowledgeRoutes(kg));
 
   // Start listening
   server.listen(config.port, () => {

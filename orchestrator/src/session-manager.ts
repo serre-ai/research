@@ -4,6 +4,7 @@ import { ProjectManager } from "./project-manager.js";
 import { GitEngine } from "./git-engine.js";
 import { SessionRunner, type SessionResult, type AgentType } from "./session-runner.js";
 import { ActivityLogger } from "./logger.js";
+import type { KnowledgeGraph } from "./knowledge-graph.js";
 
 export interface SessionSignals {
   criticVerdict?: "ACCEPT" | "REVISE" | "REJECT";
@@ -30,11 +31,16 @@ export class SessionManager {
   private logger: ActivityLogger;
   private rootDir: string;
 
-  constructor(projectManager: ProjectManager, gitEngine: GitEngine, rootDir: string = process.cwd()) {
+  constructor(
+    projectManager: ProjectManager,
+    gitEngine: GitEngine,
+    rootDir: string = process.cwd(),
+    knowledgeGraph?: KnowledgeGraph | null,
+  ) {
     this.projectManager = projectManager;
     this.gitEngine = gitEngine;
     this.rootDir = rootDir;
-    this.sessionRunner = new SessionRunner(rootDir);
+    this.sessionRunner = new SessionRunner(rootDir, knowledgeGraph);
     this.logger = new ActivityLogger(rootDir);
   }
 

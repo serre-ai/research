@@ -10,7 +10,8 @@ export type EventType =
   | "experiment_start" | "experiment_end"
   | "eval_job_queued" | "eval_job_started" | "eval_job_completed" | "eval_job_failed"
   | "phase_transition"
-  | "daemon_start" | "daemon_stop" | "daemon_error";
+  | "daemon_start" | "daemon_stop" | "daemon_error"
+  | "knowledge_contradictions" | "knowledge_snapshot";
 
 export interface ActivityEvent {
   timestamp: string;

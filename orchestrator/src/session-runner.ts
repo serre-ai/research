@@ -5,6 +5,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { GitEngine } from "./git-engine.js";
 import { TranscriptWriter } from "./transcript-writer.js";
 import { calculateCost as calcModelCost } from "./pricing.js";
+import type { KnowledgeGraph, ClaimRow } from "./knowledge-graph.js";
 
 export type AgentType =
   | "researcher" | "writer" | "reviewer" | "editor"
@@ -37,11 +38,27 @@ export interface SessionResult {
   error?: string;
 }
 
+/** Max claims to inject per agent type. Writers need broad context; engineers less. */
+const KNOWLEDGE_LIMITS: Record<string, number> = {
+  writer: 25,
+  critic: 20,
+  reviewer: 20,
+  researcher: 15,
+  strategist: 15,
+  experimenter: 10,
+  editor: 10,
+  scout: 10,
+  theorist: 15,
+  engineer: 8,
+};
+
 export class SessionRunner {
   private rootDir: string;
+  private knowledgeGraph: KnowledgeGraph | null;
 
-  constructor(rootDir: string = process.cwd()) {
+  constructor(rootDir: string = process.cwd(), knowledgeGraph?: KnowledgeGraph | null) {
     this.rootDir = rootDir;
+    this.knowledgeGraph = knowledgeGraph ?? null;
   }
 
   async run(config: SessionConfig): Promise<SessionResult> {
@@ -177,6 +194,12 @@ export class SessionRunner {
       );
     }
 
+    // Inject relevant knowledge from the knowledge graph
+    const knowledgeContext = await this.getKnowledgeContext(projectName, agentType, statusYaml);
+    if (knowledgeContext) {
+      sections.push("# Existing Knowledge (from Knowledge Graph)\n\n" + knowledgeContext);
+    }
+
     sections.push(
       "# Session Workflow\n\n" +
       `You are working autonomously on the "${projectName}" project as a ${agentType} agent.\n\n` +
@@ -200,6 +223,93 @@ export class SessionRunner {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Query the knowledge graph for claims relevant to the current session.
+   * Uses the project's current_focus/current_activity from status.yaml as
+   * the search query, supplemented by contradictions and unsupported claims.
+   */
+  private async getKnowledgeContext(
+    projectName: string,
+    agentType: string,
+    statusYaml: string | null,
+  ): Promise<string | null> {
+    if (!this.knowledgeGraph) return null;
+
+    const limit = KNOWLEDGE_LIMITS[agentType] ?? 10;
+
+    try {
+      // Extract current focus from status.yaml for semantic query
+      const focus = this.extractFocus(statusYaml);
+      const parts: string[] = [];
+
+      // 1. Semantic search based on current focus
+      if (focus) {
+        const relevant = await this.knowledgeGraph.query(focus, {
+          project: projectName,
+          limit,
+          threshold: 0.30,
+        });
+        if (relevant.length > 0) {
+          parts.push("## Relevant Claims\n");
+          parts.push(this.formatClaims(relevant));
+        }
+      }
+
+      // 2. Contradictions (always useful for critics/reviewers)
+      if (["critic", "reviewer", "writer", "strategist"].includes(agentType)) {
+        const contradictions = await this.knowledgeGraph.findContradictions(projectName);
+        if (contradictions.length > 0) {
+          parts.push(`\n## Known Contradictions (${contradictions.length})\n`);
+          for (const c of contradictions.slice(0, 5)) {
+            parts.push(`- **${c.sourceId}** contradicts **${c.targetId}** (strength: ${c.strength})`);
+            if (c.evidence) parts.push(`  Evidence: ${c.evidence}`);
+          }
+        }
+      }
+
+      // 3. Unsupported claims (useful for researchers/experimenters)
+      if (["researcher", "experimenter", "critic"].includes(agentType)) {
+        const unsupported = await this.knowledgeGraph.getUnsupportedClaims(projectName);
+        if (unsupported.length > 0) {
+          parts.push(`\n## Unsupported Claims (${unsupported.length} total, showing top 5)\n`);
+          for (const c of unsupported.slice(0, 5)) {
+            parts.push(`- [${c.claimType}] "${c.statement}" (confidence: ${c.confidence})`);
+          }
+        }
+      }
+
+      if (parts.length === 0) return null;
+
+      parts.push(
+        "\n---\n*Use the knowledge skill to query for more claims or record new findings.*",
+      );
+      return parts.join("\n");
+    } catch (err) {
+      console.error("[SessionRunner] Knowledge context failed (continuing without):", err);
+      return null;
+    }
+  }
+
+  /** Extract a focus query from status.yaml text. */
+  private extractFocus(statusYaml: string | null): string | null {
+    if (!statusYaml) return null;
+    // Try current_activity first, then current_focus, then phase
+    for (const field of ["current_activity", "current_focus", "phase"]) {
+      const match = statusYaml.match(new RegExp(`${field}:\\s*["']?(.+?)["']?\\s*$`, "m"));
+      if (match?.[1]) return match[1].slice(0, 200);
+    }
+    return null;
+  }
+
+  /** Format claims as a concise list. */
+  private formatClaims(claims: ClaimRow[]): string {
+    return claims.map((c) => {
+      const dist = c.distance !== undefined ? ` (relevance: ${(1 - c.distance).toFixed(2)})` : "";
+      const src = c.source ? ` [source: ${c.source}]` : "";
+      return `- **[${c.claimType}]** ${c.statement} — confidence: ${c.confidence}${dist}${src}`;
+    }).join("\n");
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
