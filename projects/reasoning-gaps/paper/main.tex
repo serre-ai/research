@@ -1,11 +1,9 @@
-% TODO: Switch to \documentclass{article} with neurips_2026.sty when available.
-% For now, using standard article class. Replace with:
-%   \documentclass{article}
-%   \usepackage[preprint]{neurips_2026}
-\documentclass[11pt]{article}
+\documentclass{article}
+
+% --- NeurIPS 2026 style ---
+\usepackage[preprint,nonatbib]{neurips_2026}
 
 % --- Packages ---
-\usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{graphicx}
@@ -79,7 +77,7 @@ Our contributions are:
     \item \textbf{Formal definition} of \emph{reasoning gap} as a problem class outside the model's complexity-theoretic capability class (\Cref{sec:framework}).
     \item \textbf{Six-type taxonomy} of reasoning gaps, each grounded in a specific complexity boundary, with formal propositions characterizing existence and closure conditions (\Cref{sec:taxonomy}).
     \item \textbf{\textsc{ReasonGap} benchmark suite} of nine diagnostic tasks, each isolating a specific gap type with testable predictions about CoT, scaling, and tool-use effects (\Cref{sec:benchmark}).
-    \item \textbf{Empirical validation} across ten models from five families, confirming the taxonomy's predictions (\Cref{sec:experiments}).
+    \item \textbf{Empirical validation} across eleven models from five families, confirming the taxonomy's predictions (\Cref{sec:experiments}).
 \end{enumerate}
 
 Our central thesis is that reasoning gaps are \emph{predictable}: given the complexity class of a problem and the computational class of a model, one can determine \emph{a priori} whether the model will exhibit a gap, what type of gap it will be, and which mitigation strategies (if any) will close it.
@@ -655,7 +653,7 @@ Just as humans struggle with problems requiring sustained working memory~\citep{
 This parallel is suggestive but should not be over-interpreted: the computational mechanisms are fundamentally different.
 
 \paragraph{The B8 ceiling effect.}
-All ten models score above 92\% on B8 (reversal inference), with most exceeding 97\%.
+All eleven models score above 92\% on B8 (reversal inference), with most exceeding 97\%.
 This admits two interpretations.
 First, the task may be too easy for current models: our formulation presents facts and queries within a single context window, which may not faithfully capture the reversal curse as originally described by \citet{reversal}, where the asymmetry arises from the \emph{training} distribution.
 Second, the architectural gap for in-context reversal may genuinely be closing, perhaps because models learn bidirectional associations during pre-training on diverse corpora.
@@ -692,7 +690,7 @@ First, our taxonomy's complexity-theoretic grounding is conditional: the existen
 If this separation does not hold, Types~1 and~2 would collapse.
 Second, benchmark tasks are synthetic by design---they isolate individual gap types, but real-world reasoning involves combinations of multiple gap types simultaneously.
 The ecological validity of synthetic benchmarks remains an open question.
-Third, our evaluation covers a snapshot of ten models from five families as of early 2026; the landscape evolves rapidly, and future architectures may shift the boundaries.
+Third, our evaluation covers a snapshot of eleven models from five families as of early 2026; the landscape evolves rapidly, and future architectures may shift the boundaries.
 Fourth, the B8 ceiling effect (discussed above) weakens the evidence for Type~6 (architectural) gaps from reversal inference specifically.
 Fifth, our current evaluation does not include a tool-augmented condition, which our taxonomy predicts would be most effective for Type~4 (algorithmic) gaps.
 Adding code execution as an intervention would strengthen the empirical validation.
@@ -758,8 +756,8 @@ We have shown that reasoning failures in large language models are systematic, p
 Our six-type taxonomy of reasoning gaps connects each failure pattern to a specific complexity-theoretic boundary, yielding testable predictions about when chain-of-thought, scaling, and tool augmentation will close or fail to close each gap.
 The \textsc{ReasonGap} benchmark suite provides a diagnostic tool for evaluating models against these predictions.
 
-Evaluation across ten models from five families on 134,572 instances validates the taxonomy's core prediction: chain-of-thought closes depth and serial gaps with mean lifts of $+8.7\%$ and $+45.6\%$ respectively, while intractability and architectural gaps show negligible aggregate response ($+3.7\%$ combined).
-The sharpest confirmation comes from the serial composition tasks (B3, B4), where direct accuracy averages 29.5\% but rises to 75.1\% with short CoT---a pattern predicted by the $\Omega(n)$ CoT lower bound for iterated composition.
+Evaluation across eleven models from five families on 148,068 instances validates the taxonomy's core prediction: chain-of-thought closes depth and serial gaps with mean lifts of $+34.0\%$ (Types~2,3 combined under short CoT) and budget CoT lift of $+49.8\%$ for serial tasks, while intractability and architectural gaps show negligible aggregate response ($+8.6\%$ combined under short CoT).
+The sharpest confirmation comes from the serial composition tasks (B3, B4), where direct accuracy averages 26.5\% but rises to 76.5\% with short CoT---a pattern predicted by the $\Omega(n)$ CoT lower bound for iterated composition.
 
 Our framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform, and what augmentations extend its reach?''
 The answer, grounded in decades of circuit complexity theory, is precise: without augmentation, transformers compute within $\TC$; with chain-of-thought, they reach $\PTIME$; and beyond $\PTIME$, no known augmentation helps.
@@ -1386,11 +1384,11 @@ Accuracy degrades with negation depth $d$. CoT may help with explicit negation t
 \section{Per-Model Detailed Results}
 \label{app:results}
 
-\Cref{tab:full_results} reports accuracy with 95\% Wilson confidence intervals for each (model, task, condition) combination across all evaluated groups (10 models $\times$ 9 tasks $\times$ 3 conditions), totalling 134,572 instances. Note that o3 was not evaluated on B6 (LIS) due to budget constraints.
+\Cref{tab:full_results} reports accuracy with 95\% Wilson confidence intervals for each (model, task, condition) combination across all evaluated groups (11 models $\times$ 9 tasks $\times$ 3 conditions), totalling 148,068 instances. Note that o3 was not evaluated on B6 (LIS) due to budget constraints.
 
 {\small
 \begin{longtable}{llccc}
-\caption{Full accuracy results with 95\% confidence intervals. Each cell reports point accuracy and [lower, upper] CI bounds. Models: H = Claude Haiku~4.5, G4o = GPT-4o, G4m = GPT-4o-mini, L70 = Llama~3.1~70B, L8 = Llama~3.1~8B, Mi8 = Ministral~8B, Ms24 = Mistral~Small~24B, Q72 = Qwen~2.5~72B, Q7 = Qwen~2.5~7B.}
+\caption{Full accuracy results with 95\% confidence intervals. Each cell reports point accuracy and [lower, upper] CI bounds. Models: H = Claude Haiku~4.5, S = Claude Sonnet~4.6, G4o = GPT-4o, G4m = GPT-4o-mini, o3 = o3, L70 = Llama~3.1~70B, L8 = Llama~3.1~8B, Mi8 = Ministral~8B, Ms24 = Mistral~Small~24B, Q72 = Qwen~2.5~72B, Q7 = Qwen~2.5~7B.}
 \label{tab:full_results} \\
 \toprule
 \textbf{Task} & \textbf{Model} & \textbf{Direct} & \textbf{Short CoT} & \textbf{Budget CoT} \\

@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-15T14:00:00
+updated: 2026-03-16
 
 phase: paper-finalization
 status: active
@@ -22,10 +22,10 @@ progress:
     notes: "Full analysis pipeline implemented in experiments/. Includes: statistical tests (stats_utils.py), 6 primary analyses (primary.py), visualization functions (viz_utils.py, figures.py), main pipeline script (run_full_analysis.py), and test suite. Ready to process evaluation results once data available."
   empirical_evaluation:
     status: complete
-    notes: "10 models evaluated: Haiku 4.5, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. 134,568 instances in PostgreSQL. B2 budget_cot recalibrated 2026-03-15: node-count formula (180 words vs 24), all 10 models re-evaluated. Results: Haiku 95%, GPT-4o 92%, o3 82%, all models 69-95%. Analysis pipeline re-run: 4 tables, 5 figures, 280 CIs. Key: Types 2,3 CoT lift = +0.316 vs Types 5,6 = +0.085. Deferred: Sonnet 4.6 (~$55), Opus 4.6 (~$272)."
+    notes: "11 models evaluated: Haiku 4.5, Sonnet 4.6, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. 148,068 instances in PostgreSQL. B2 budget_cot recalibrated 2026-03-15: node-count formula (180 words vs 24), all 11 models re-evaluated. Results: Haiku 95%, GPT-4o 92%, o3 82%, all models 69-95%. Analysis pipeline re-run: 4 tables, 5 figures, 280 CIs. Key: Types 2,3 CoT lift = +0.340 vs Types 5,6 = +0.086. Deferred: Opus 4.6 (~$272)."
   paper_writing:
-    status: near-complete
-    notes: "All sections complete with 10-model data including o3. Section 5 updated with recalibrated B2 budget_cot results, CoT lift table, scale analysis, and o3 case study (Section 5.7). Analysis outputs (tables, figures) committed to repo. Remaining: NeurIPS format conversion, final polish."
+    status: complete
+    notes: "All sections complete with 11-model data including Sonnet 4.6 and o3. Converted to NeurIPS 2026 format (neurips_2026.sty, preprint mode). PaTH attention citation integrated in Related Work and Discussion. All cross-references and citations verified. Consistency pass complete: eleven models, five families, 148,068 instances throughout."
 
 decisions_pending: []
 
@@ -95,12 +95,9 @@ key_references:
   - "Yang et al., PaTH Attention: Position Encoding via Accumulating Householder Transformations, NeurIPS 2025"
 
 next_steps:
-  - "Integrate PaTH attention citation (Yang et al., NeurIPS 2025) into Related Work and Discussion"
-  - "Final paper polish: check LaTeX compilation, verify all references, consistency pass"
-  - "Convert to NeurIPS format with neurips_2026.sty"
   - "Internal review and final revision pass"
   - "Submit to NeurIPS 2026"
 
-notes: "10 models evaluated with 134,568 instances. B2 budget_cot recalibrated 2026-03-15 ($23 API cost). Platform bugs fixed: worktree path, agent announce mode, CI YAML. VPS operational. Deferred: Sonnet 4.6 (~$55), Opus 4.6 (~$272)."
+notes: "11 models evaluated with 148,068 instances. B2 budget_cot recalibrated 2026-03-15 ($23 API cost). Platform bugs fixed: worktree path, agent announce mode, CI YAML. VPS operational. Deferred: Opus 4.6 (~$272)."
 
-current_activity: "Session 2026-03-15: Fixed worktree bug, agent announce mode, CI YAML. Recalibrated B2 budget_cot (node-count formula), re-evaluated all 10 models (2h 12min). Ingested results, re-exported, re-ran analysis pipeline. Updated paper Section 5 with final 10-model results. Committed and pushed all changes. CI green."
+current_activity: "Session 2026-03-16: NeurIPS 2026 format conversion (neurips_2026.sty, preprint mode). Updated all model counts (ten->eleven) and instance counts (134,572->148,068). Updated conclusion with 11-model CoT lift numbers (+34.0% Types 2,3; +49.8% budget CoT serial; +8.6% Types 5,6). PaTH attention citation already integrated. Full consistency pass: all cross-references, citations, and counts verified. Paper compiles cleanly with tectonic."
