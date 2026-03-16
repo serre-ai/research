@@ -2,69 +2,69 @@
 
 ## Dataset Overview
 
-- **Instances**: 139,573
-- **Tasks**: 10
-- **Models**: 10
+- **Instances**: 148,068
+- **Tasks**: 9
+- **Models**: 11
 - **Conditions**: 3
-- **Models evaluated**: claude-haiku-4-5-20251001, gpt-4o, gpt-4o-mini, meta-llama/llama-3.1-70b-instruct, meta-llama/llama-3.1-8b-instruct, mistralai/ministral-8b-2512, mistralai/mistral-small-24b-instruct-2501, o3, qwen/qwen-2.5-72b-instruct, qwen/qwen-2.5-7b-instruct
+- **Models evaluated**: claude-haiku-4-5-20251001, claude-sonnet-4-20250514, gpt-4o, gpt-4o-mini, meta-llama/llama-3.1-70b-instruct, meta-llama/llama-3.1-8b-instruct, mistralai/ministral-8b-2512, mistralai/mistral-small-24b-instruct-2501, o3, qwen/qwen-2.5-72b-instruct, qwen/qwen-2.5-7b-instruct
 
 ## Overall Accuracy by Condition
 
-- **budget_cot**: 0.640
-- **direct**: 0.510
-- **short_cot**: 0.707
+- **budget_cot**: 0.618
+- **direct**: 0.503
+- **short_cot**: 0.720
 
 ## Results by Gap Type
 
 ### Type 1: Sensitivity
 
-- budget_cot: 0.612
-- direct: 0.602
-- short_cot: 0.715
-- CoT lift (budget_cot): +0.010
-- CoT lift (short_cot): +0.114
+- budget_cot: 0.603
+- direct: 0.603
+- short_cot: 0.726
+- CoT lift (budget_cot): +0.000
+- CoT lift (short_cot): +0.123
 
 ### Type 2: Depth
 
-- budget_cot: 0.777
-- direct: 0.667
-- short_cot: 0.814
-- CoT lift (budget_cot): +0.110
-- CoT lift (short_cot): +0.147
+- budget_cot: 0.733
+- direct: 0.644
+- short_cot: 0.826
+- CoT lift (budget_cot): +0.089
+- CoT lift (short_cot): +0.182
 
 ### Type 3: Serial
 
 - budget_cot: 0.645
-- direct: 0.266
-- short_cot: 0.750
+- direct: 0.265
+- short_cot: 0.763
 - CoT lift (budget_cot): +0.380
-- CoT lift (short_cot): +0.484
+- CoT lift (short_cot): +0.498
 
 ### Type 4: Algorithmic
 
-- budget_cot: 0.245
-- direct: 0.227
-- short_cot: 0.364
-- CoT lift (budget_cot): +0.017
-- CoT lift (short_cot): +0.137
+- budget_cot: 0.254
+- direct: 0.218
+- short_cot: 0.379
+- CoT lift (budget_cot): +0.036
+- CoT lift (short_cot): +0.161
 
 ### Type 5: Intractability
 
-- budget_cot: 0.407
-- direct: 0.477
-- short_cot: 0.474
-- CoT lift (budget_cot): -0.070
-- CoT lift (short_cot): -0.004
+- budget_cot: 0.401
+- direct: 0.452
+- short_cot: 0.490
+- CoT lift (budget_cot): -0.051
+- CoT lift (short_cot): +0.038
 
 ### Type 6: Architectural
 
-- budget_cot: 0.758
-- direct: 0.712
-- short_cot: 0.840
-- CoT lift (budget_cot): +0.047
-- CoT lift (short_cot): +0.129
+- budget_cot: 0.770
+- direct: 0.720
+- short_cot: 0.854
+- CoT lift (budget_cot): +0.050
+- CoT lift (short_cot): +0.134
 
 ## Key Predictions Check
 
-- **Types 2,3 (should benefit from CoT)**: CoT lift = +0.316
-- **Types 5,6 (should NOT benefit from CoT)**: CoT lift = +0.085
+- **Types 2,3 (should benefit from CoT)**: CoT lift = +0.340
+- **Types 5,6 (should NOT benefit from CoT)**: CoT lift = +0.102

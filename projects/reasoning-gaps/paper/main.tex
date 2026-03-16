@@ -55,7 +55,7 @@ Large language models demonstrate remarkable reasoning abilities yet fail system
 We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
 Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
 We introduce \textsc{ReasonGap}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
-Evaluation across ten models from five families (134,572 instances) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
+Evaluation across eleven models from five families (148,068 instances) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
 Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
 \end{abstract}
 
@@ -326,22 +326,22 @@ Tests insensitivity to logical negation; gap should increase with depth but not 
 \paragraph{Evaluation protocol.}
 Each task is evaluated at five difficulty levels with 100 instances per level.
 We test four conditions: direct (no CoT), short CoT (``think step by step''), budget CoT (fixed token limits of $O(\log n)$, $O(n)$, $O(n^2)$), and tool-augmented (code execution, where applicable).
-Models span five families: Claude (Haiku~4.5), GPT (4o-mini, 4o, o3), Llama~3.1 (8B, 70B), Mistral (Ministral~8B, Small~24B), and Qwen~2.5 (7B, 72B).
+Models span five families: Claude (Haiku~4.5, Sonnet~4.6), GPT (4o-mini, 4o, o3), Llama~3.1 (8B, 70B), Mistral (Ministral~8B, Small~24B), and Qwen~2.5 (7B, 72B).
 
 % ============================================================
 \section{Experiments}
 \label{sec:experiments}
 % ============================================================
 
-We evaluate the \textsc{ReasonGap} benchmark across ten models from five families under three reasoning conditions, totaling 134,572 evaluated instances.
+We evaluate the \textsc{ReasonGap} benchmark across eleven models from five families under three reasoning conditions, totaling 148,068 evaluated instances.
 The results validate the taxonomy's central predictions: chain-of-thought selectively closes depth and serial gaps while leaving intractability and architectural gaps unchanged, and reasoning budget calibration critically determines whether constrained CoT helps or harms.
 
 \subsection{Experimental Setup}
 \label{sec:setup}
 
 \paragraph{Models.}
-We evaluate ten models spanning five families and two scale categories (\Cref{tab:models}).
-Proprietary models include Claude Haiku~4.5 (Anthropic), GPT-4o, GPT-4o-mini, and o3 (OpenAI).
+We evaluate eleven models spanning five families and two scale categories (\Cref{tab:models}).
+Proprietary models include Claude Haiku~4.5 and Sonnet~4.6 (Anthropic), GPT-4o, GPT-4o-mini, and o3 (OpenAI).
 Open-source models include Llama~3.1 8B and 70B (Meta), Ministral~8B and Mistral~Small~24B (Mistral), and Qwen~2.5 7B and 72B (Alibaba).
 Notably, o3 is a reasoning model with internal chain-of-thought, providing a natural test of whether built-in reasoning compensates for architectural limitations.
 For scale analysis, we partition open-source models into \emph{small} ($\leq$10B: Llama~8B, Ministral~8B, Qwen~7B) and \emph{medium} (10--80B: Llama~70B, Mistral~Small~24B, Qwen~72B).
@@ -356,6 +356,7 @@ For scale analysis, we partition open-source models into \emph{small} ($\leq$10B
 \textbf{Family} & \textbf{Model} & \textbf{Size} & \textbf{Access} \\
 \midrule
 Claude & Haiku 4.5 & --- & API \\
+Claude & Sonnet 4.6 & --- & API \\
 GPT & GPT-4o & --- & API \\
 GPT & GPT-4o-mini & --- & API \\
 GPT & o3 & --- & API \\
@@ -403,48 +404,48 @@ This 60-percentage-point range across tasks, compared to a typical within-task r
 \caption{Overall accuracy by task and model (averaged across conditions). Bold indicates best model per task. Accuracy varies far more across tasks (rows) than across models (columns), confirming that gap type is the primary determinant of difficulty. o3's internal reasoning produces strong CoT results but unusually low direct accuracy (see \Cref{sec:o3}).}
 \label{tab:main-accuracy-results}
 \small
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lcccccccccc@{}}
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lccccccccccc@{}}
 \toprule
- & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{o3} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \\
+ & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{Sonnet 4.6} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{o3} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \\
 \midrule
-B1: Majority & .63 & .78 & .72 & .13 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \\
-B2: Bool Eval & .53 & .69 & .63 & .49 & .64 & .52 & .61 & .55 & \textbf{.76} & .66 \\
-B3: Perm Comp & .58 & \textbf{.69} & .58 & .25 & .60 & .27 & .62 & .57 & .62 & .31 \\
-B4: State Track & .71 & .55 & .62 & .35 & .69 & .48 & .66 & .68 & \textbf{.72} & .52 \\
-B5: Graph Reach & .79 & \textbf{.84} & .79 & .47 & .70 & .51 & .78 & .65 & .83 & .66 \\
-B6: LIS & .31 & \textbf{.38} & .30 & ---  & .24 & .21 & .24 & .22 & .35 & .28 \\
-B7: 3-SAT & .37 & \textbf{.67} & .63 & .12 & .34 & .32 & .42 & .51 & .61 & .56 \\
-B8: Reversal & \textbf{1.00} & .99 & .94 & .73 & 1.00 & .97 & .99 & .98 & .99 & .95 \\
-B9: Negation & .73 & .57 & .54 & .30 & .74 & .50 & .56 & .57 & \textbf{.75} & .59 \\
+B1: Majority & .63 & .66 & .78 & .72 & .13 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \\
+B2: Bool Eval & .81 & .72 & \textbf{.88} & .83 & .57 & .85 & .68 & .82 & .81 & .86 & .76 \\
+B3: Perm Comp & .58 & .46 & \textbf{.69} & .58 & .25 & .60 & .27 & .62 & .57 & .62 & .31 \\
+B4: State Track & .71 & \textbf{.74} & .55 & .62 & .35 & .69 & .48 & .66 & .68 & .72 & .52 \\
+B5: Graph Reach & .79 & .68 & \textbf{.84} & .79 & .35 & .70 & .51 & .78 & .65 & .83 & .66 \\
+B6: LIS & .31 & .34 & \textbf{.38} & .30 & .25 & .24 & .21 & .24 & .22 & .35 & .28 \\
+B7: 3-SAT & .37 & .40 & \textbf{.67} & .63 & .11 & .34 & .32 & .42 & .51 & .61 & .56 \\
+B8: Reversal & 1.00 & \textbf{1.00} & .99 & .94 & .73 & 1.00 & .97 & .99 & .98 & .99 & .95 \\
+B9: Negation & .73 & \textbf{.79} & .57 & .54 & .31 & .74 & .50 & .56 & .57 & .75 & .59 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \Cref{tab:accuracy-by-condition} reports accuracy by task and condition, averaged across models.
-Overall accuracy is 0.510 for direct, 0.707 for short CoT, and 0.640 for budget CoT.
+Overall accuracy is 0.503 for direct, 0.720 for short CoT, and 0.618 for budget CoT.
 Two results stand out.
 First, \textbf{B8 (Reversal Inference) exhibits a ceiling effect}: accuracy exceeds 0.97 across all conditions, suggesting our instantiation does not isolate the reversal curse as strongly as expected (see \Cref{sec:discussion}).
 Second, \textbf{B6 (LIS) is uniformly hard}: even with unconstrained CoT, accuracy reaches only 0.35---consistent with the prediction that algorithmic gaps require tool use, not more reasoning tokens.
 
 \begin{table}[t]
 \centering
-\caption{Accuracy by task and evaluation condition (averaged across all ten models). Short CoT provides the largest gains on serial tasks (B3, B4) and the smallest on intractability (B7) and architectural (B8) tasks.}
+\caption{Accuracy by task and evaluation condition (averaged across all eleven models). Short CoT provides the largest gains on serial tasks (B3, B4) and the smallest on intractability (B7) and architectural (B8) tasks.}
 \label{tab:accuracy-by-condition}
 \small
 \begin{tabular}{@{}lccc@{}}
 \toprule
  & \textbf{Direct} & \textbf{Short CoT} & \textbf{Budget CoT} \\
 \midrule
-B1: Majority & 0.60 & 0.72 & 0.61 \\
-B2: Bool Eval & 0.65 & 0.84 & 0.87 \\
-B3: Perm Comp & 0.18 & 0.75 & 0.59 \\
-B4: State Track & 0.35 & 0.75 & 0.70 \\
-B5: Graph Reach & 0.69 & 0.78 & 0.59 \\
-B6: LIS & 0.23 & 0.36 & 0.24 \\
-B7: 3-SAT & 0.48 & 0.47 & 0.41 \\
-B8: Reversal & 0.92 & 0.99 & 0.96 \\
-B9: Negation & 0.51 & 0.69 & 0.55 \\
+B1: Majority & 0.60 & 0.73 & 0.60 \\
+B2: Bool Eval & 0.62 & 0.85 & 0.87 \\
+B3: Perm Comp & 0.17 & 0.77 & 0.57 \\
+B4: State Track & 0.36 & 0.76 & 0.72 \\
+B5: Graph Reach & 0.67 & 0.80 & 0.59 \\
+B6: LIS & 0.22 & 0.38 & 0.25 \\
+B7: 3-SAT & 0.45 & 0.49 & 0.40 \\
+B8: Reversal & 0.92 & 0.99 & 0.97 \\
+B9: Negation & 0.52 & 0.72 & 0.57 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -475,28 +476,28 @@ The central empirical finding of this paper is that \textbf{chain-of-thought eff
 \toprule
 \textbf{Gap Type} & \textbf{Short CoT Lift} & \textbf{Budget CoT Lift} \\
 \midrule
-Type 1: Sensitivity & $+$0.114 & $+$0.010 \\
-Type 2: Depth & $+$0.147 & $+$0.110 \\
-Type 3: Serial & \textbf{$+$0.484} & $+$0.380 \\
-Type 4: Algorithmic & $+$0.137 & $+$0.017 \\
-Type 5: Intractability & $-$0.004 & $-$0.070 \\
-Type 6: Architectural & $+$0.129 & $+$0.047 \\
+Type 1: Sensitivity & $+$0.123 & $+$0.000 \\
+Type 2: Depth & $+$0.182 & $+$0.089 \\
+Type 3: Serial & \textbf{$+$0.498} & $+$0.380 \\
+Type 4: Algorithmic & $+$0.161 & $+$0.036 \\
+Type 5: Intractability & $+$0.038 & $-$0.051 \\
+Type 6: Architectural & $+$0.134 & $+$0.050 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Depth and serial gaps benefit most from CoT.}
-Averaging across Types~2 and~3, short CoT produces a mean lift of $+$0.316, compared to $+$0.063 for Types~5 and~6.
-This five-fold difference confirms \Cref{prop:depth,prop:serial}: tasks requiring sequential computation that exceeds the transformer's effective depth are precisely the tasks where step-by-step reasoning provides the most benefit.
-Type~3 (Serial) shows the single largest lift at $+$0.484---on B3 (Permutation Composition), direct accuracy is only 0.18, but unconstrained CoT raises it to 0.75.
+Averaging across Types~2 and~3, short CoT produces a mean lift of $+$0.340, compared to $+$0.086 for Types~5 and~6.
+This four-fold difference confirms \Cref{prop:depth,prop:serial}: tasks requiring sequential computation that exceeds the transformer's effective depth are precisely the tasks where step-by-step reasoning provides the most benefit.
+Type~3 (Serial) shows the single largest lift at $+$0.498---on B3 (Permutation Composition), direct accuracy is only 0.17, but unconstrained CoT raises it to 0.77.
 This is consistent with the prediction that iterated permutation composition requires $O(k)$ sequential steps that the forward pass cannot parallelize.
 
 \paragraph{Intractability and architectural gaps are CoT-resistant.}
-Type~5 (Intractability) shows a negligible lift of $-$0.004 under short CoT, confirming \Cref{prop:intractable}: chain-of-thought does not help with $\NP$-hard problems because the computational bottleneck is not parallelism but problem hardness itself.
-Type~6 (Architectural) shows a moderate positive lift ($+$0.129), primarily reflecting improvements on B9 (Negation Sensitivity) rather than B8 (Reversal), which is already near ceiling.
+Type~5 (Intractability) shows a small lift of $+$0.038 under short CoT, confirming \Cref{prop:intractable}: chain-of-thought provides negligible benefit for $\NP$-hard problems because the computational bottleneck is not parallelism but problem hardness itself.
+Type~6 (Architectural) shows a moderate positive lift ($+$0.134), primarily reflecting improvements on B9 (Negation Sensitivity) rather than B8 (Reversal), which is already near ceiling.
 
 \paragraph{Sensitivity and algorithmic gaps show moderate lift.}
-Types~1 and~4 show intermediate CoT lifts ($+$0.114 and $+$0.137, respectively).
+Types~1 and~4 show intermediate CoT lifts ($+$0.123 and $+$0.161, respectively).
 For Type~1, CoT helps by enabling explicit counting, but the lift is modest because MAJORITY-type problems admit partial solutions without full sequential enumeration.
 For Type~4, CoT lift is limited because the bottleneck is algorithmic knowledge, not computation depth---the model must discover the dynamic programming recurrence, which CoT alone does not reliably enable.
 
@@ -520,16 +521,16 @@ For Type~4, CoT lift is limited because the bottleneck is algorithmic knowledge,
 Budget CoT reveals that \textbf{reasoning budget calibration is critical}: a well-calibrated budget can approach unconstrained CoT performance, but a miscalibrated budget can perform \emph{worse} than no reasoning at all.
 
 \paragraph{Well-calibrated budgets.}
-For Type~3 (Serial) tasks, budget CoT achieves a lift of $+$0.380, close to the $+$0.484 achieved by unconstrained CoT.
+For Type~3 (Serial) tasks, budget CoT achieves a lift of $+$0.380, close to the $+$0.498 achieved by unconstrained CoT.
 This is expected: serial tasks have a clear optimal budget of $O(k)$ steps, and the budget was set to approximately match the number of composition steps.
-On B4 (State Machine Simulation), budget CoT (0.70) nearly matches short CoT (0.75), confirming that the allocated budget captured most of the required sequential computation.
+On B4 (State Machine Simulation), budget CoT (0.72) nearly matches short CoT (0.76), confirming that the allocated budget captured most of the required sequential computation.
 
 \paragraph{Budget recalibration.}
 Our initial B2 budget formula of $O(2^d) \times 3$ yielded only 24 words for depth~3---far too restrictive for models to evaluate nested boolean formulas.
-Under this budget, B2 accuracy dropped to 0.31, dramatically worse than both direct (0.65) and short CoT (0.84).\textsuperscript{\ref{fn:b2budget}}
+Under this budget, B2 accuracy dropped to 0.31, dramatically worse than both direct (0.62) and short CoT (0.85).\textsuperscript{\ref{fn:b2budget}}
 Truncated CoT produced partially evaluated formulas that were systematically wrong, whereas the direct condition at least allowed models to leverage pattern matching on formula structure.
 We recalibrated the budget to scale with formula node count (${\sim}180$ words for depth~3), which provides sufficient room for step-by-step evaluation without unconstrained reasoning.
-After recalibration, B2 budget CoT accuracy rose to 0.87---\emph{exceeding} both the direct (0.65) and short CoT (0.84) conditions, demonstrating that a well-calibrated budget can match or surpass unconstrained reasoning when the budget aligns with the task's computational structure.
+After recalibration, B2 budget CoT accuracy rose to 0.87---\emph{exceeding} both the direct (0.62) and short CoT (0.85) conditions, demonstrating that a well-calibrated budget can match or surpass unconstrained reasoning when the budget aligns with the task's computational structure.
 
 \paragraph{Practical implications.}
 These results have direct consequences for deployed systems that impose reasoning token limits.
@@ -553,7 +554,7 @@ We partition models into small ($\leq$10B) and medium (10--80B) categories.
 \textbf{Gap Type} & \textbf{Small ($\leq$10B)} & \textbf{Medium (10--80B)} & \textbf{$\Delta$} \\
 \midrule
 Type 1: Sensitivity & 0.65 & 0.74 & $+$0.09 \\
-Type 2: Depth & 0.71 & 0.80 & $+$0.09 \\
+Type 2: Depth & 0.70 & 0.78 & $+$0.08 \\
 Type 3: Serial & 0.48 & 0.64 & $+$0.17 \\
 Type 4: Algorithmic & 0.24 & 0.27 & $+$0.03 \\
 Type 5: Intractability & 0.43 & 0.49 & $+$0.05 \\
