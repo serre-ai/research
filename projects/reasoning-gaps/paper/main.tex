@@ -55,7 +55,7 @@ Large language models demonstrate remarkable reasoning abilities yet fail system
 We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
 Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
 We introduce \textsc{ReasonGap}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
-Evaluation across 12 model configurations from five families validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
+Evaluation across ten models from five families (134,572 instances) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
 Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
 \end{abstract}
 
@@ -79,7 +79,7 @@ Our contributions are:
     \item \textbf{Formal definition} of \emph{reasoning gap} as a problem class outside the model's complexity-theoretic capability class (\Cref{sec:framework}).
     \item \textbf{Six-type taxonomy} of reasoning gaps, each grounded in a specific complexity boundary, with formal propositions characterizing existence and closure conditions (\Cref{sec:taxonomy}).
     \item \textbf{\textsc{ReasonGap} benchmark suite} of nine diagnostic tasks, each isolating a specific gap type with testable predictions about CoT, scaling, and tool-use effects (\Cref{sec:benchmark}).
-    \item \textbf{Empirical validation} across 12 model configurations from five families, confirming the taxonomy's predictions (\Cref{sec:experiments}).
+    \item \textbf{Empirical validation} across ten models from five families, confirming the taxonomy's predictions (\Cref{sec:experiments}).
 \end{enumerate}
 
 Our central thesis is that reasoning gaps are \emph{predictable}: given the complexity class of a problem and the computational class of a model, one can determine \emph{a priori} whether the model will exhibit a gap, what type of gap it will be, and which mitigation strategies (if any) will close it.
@@ -654,7 +654,7 @@ Just as humans struggle with problems requiring sustained working memory~\citep{
 This parallel is suggestive but should not be over-interpreted: the computational mechanisms are fundamentally different.
 
 \paragraph{The B8 ceiling effect.}
-All nine models score above 92\% on B8 (reversal inference), with most exceeding 97\%.
+All ten models score above 92\% on B8 (reversal inference), with most exceeding 97\%.
 This admits two interpretations.
 First, the task may be too easy for current models: our formulation presents facts and queries within a single context window, which may not faithfully capture the reversal curse as originally described by \citet{reversal}, where the asymmetry arises from the \emph{training} distribution.
 Second, the architectural gap for in-context reversal may genuinely be closing, perhaps because models learn bidirectional associations during pre-training on diverse corpora.
@@ -691,7 +691,7 @@ First, our taxonomy's complexity-theoretic grounding is conditional: the existen
 If this separation does not hold, Types~1 and~2 would collapse.
 Second, benchmark tasks are synthetic by design---they isolate individual gap types, but real-world reasoning involves combinations of multiple gap types simultaneously.
 The ecological validity of synthetic benchmarks remains an open question.
-Third, our evaluation covers a snapshot of nine models from five families as of early 2026; the landscape evolves rapidly, and future architectures may shift the boundaries.
+Third, our evaluation covers a snapshot of ten models from five families as of early 2026; the landscape evolves rapidly, and future architectures may shift the boundaries.
 Fourth, the B8 ceiling effect (discussed above) weakens the evidence for Type~6 (architectural) gaps from reversal inference specifically.
 Fifth, our current evaluation does not include a tool-augmented condition, which our taxonomy predicts would be most effective for Type~4 (algorithmic) gaps.
 Adding code execution as an intervention would strengthen the empirical validation.
@@ -757,7 +757,7 @@ We have shown that reasoning failures in large language models are systematic, p
 Our six-type taxonomy of reasoning gaps connects each failure pattern to a specific complexity-theoretic boundary, yielding testable predictions about when chain-of-thought, scaling, and tool augmentation will close or fail to close each gap.
 The \textsc{ReasonGap} benchmark suite provides a diagnostic tool for evaluating models against these predictions.
 
-Evaluation across nine models from five families on 121,614 instances validates the taxonomy's core prediction: chain-of-thought closes depth and serial gaps with mean lifts of $+8.7\%$ and $+45.6\%$ respectively, while intractability and architectural gaps show negligible aggregate response ($+3.7\%$ combined).
+Evaluation across ten models from five families on 134,572 instances validates the taxonomy's core prediction: chain-of-thought closes depth and serial gaps with mean lifts of $+8.7\%$ and $+45.6\%$ respectively, while intractability and architectural gaps show negligible aggregate response ($+3.7\%$ combined).
 The sharpest confirmation comes from the serial composition tasks (B3, B4), where direct accuracy averages 29.5\% but rises to 75.1\% with short CoT---a pattern predicted by the $\Omega(n)$ CoT lower bound for iterated composition.
 
 Our framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform, and what augmentations extend its reach?''
@@ -1385,7 +1385,7 @@ Accuracy degrades with negation depth $d$. CoT may help with explicit negation t
 \section{Per-Model Detailed Results}
 \label{app:results}
 
-\Cref{tab:full_results} reports accuracy with 95\% Wilson confidence intervals for each (model, task, condition) combination across all 243 evaluated groups (9 models $\times$ 9 tasks $\times$ 3 conditions), totalling 121,614 instances.
+\Cref{tab:full_results} reports accuracy with 95\% Wilson confidence intervals for each (model, task, condition) combination across all evaluated groups (10 models $\times$ 9 tasks $\times$ 3 conditions), totalling 134,572 instances. Note that o3 was not evaluated on B6 (LIS) due to budget constraints.
 
 {\small
 \begin{longtable}{llccc}
