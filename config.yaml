@@ -4,7 +4,34 @@ budget:
     - api_calls
     - compute
     - data_services
+    - subscriptions
   alert_threshold_pct: 80
+  providers:
+    anthropic:
+      type: api_variable
+      key_env: ANTHROPIC_API_KEY
+      usage_api: "/v1/organizations/{org}/usage"
+    openai:
+      type: api_variable
+      key_env: OPENAI_API_KEY
+      note: "No usage API — cost calculated from token counts"
+    openrouter:
+      type: api_variable
+      key_env: OPENROUTER_API_KEY
+      usage_api: "/api/v1/auth/key"
+    firecrawl:
+      type: api_subscription
+      key_env: FIRECRAWL_API_KEY
+      monthly_usd: 50
+      usage_api: "/v2/team/credit-usage"
+    claude_code_max:
+      type: fixed_subscription
+      monthly_usd: 400
+      note: "2x Claude Code Max ($200/account)"
+    hetzner:
+      type: fixed_subscription
+      monthly_usd: 5.50
+      note: "CPX21 VPS"
 
 resources:
   claude_code_max:

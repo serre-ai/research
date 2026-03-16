@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { GitEngine } from "./git-engine.js";
 import { TranscriptWriter } from "./transcript-writer.js";
+import { calculateCost as calcModelCost } from "./pricing.js";
 
 export type AgentType =
   | "researcher" | "writer" | "reviewer" | "editor"
@@ -12,11 +13,6 @@ export type AgentType =
 
 const DEFAULT_MAX_TURNS = 50;
 const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;
-
-const SONNET_PRICING = {
-  inputPer1MTokens: 3,
-  outputPer1MTokens: 15,
-};
 
 export interface SessionConfig {
   projectName: string;
@@ -215,10 +211,7 @@ export class SessionRunner {
     };
   }
 
-  private calculateCost(tokens: { input: number; output: number }): number {
-    return (
-      (tokens.input / 1_000_000) * SONNET_PRICING.inputPer1MTokens +
-      (tokens.output / 1_000_000) * SONNET_PRICING.outputPer1MTokens
-    );
+  private calculateCost(tokens: { input: number; output: number }, model: string = "claude-sonnet-4-6"): number {
+    return calcModelCost(model, tokens.input, tokens.output);
   }
 }

@@ -14,6 +14,9 @@ import { predictionRoutes } from "./routes/predictions.js";
 import { agentStateRoutes } from "./routes/agent-state.js";
 import { ritualRoutes } from "./routes/rituals.js";
 import { governanceRoutes } from "./routes/governance.js";
+import { collectiveContextRoutes } from "./routes/collective-context.js";
+import { triggerRoutes } from "./routes/triggers.js";
+import { CollectiveSlack } from "./collective-slack.js";
 
 const { Pool } = pg;
 
@@ -168,33 +171,83 @@ function projectRoutes(): express.Router {
   return router;
 }
 
-function budgetRoutes(): express.Router {
+function budgetRoutes(budgetTracker?: import("./budget-tracker.js").BudgetTracker): express.Router {
   const router = express.Router();
 
-  // GET /api/budget — current spend, daily/monthly totals
+  // GET /api/budget — comprehensive monthly budget with fixed + variable costs
   router.get("/", async (_req: Request, res: Response) => {
     try {
-      // Today's spend
-      const { rows: dailyRows } = await pool.query(
-        `SELECT
-           COALESCE(SUM(cost_usd), 0) AS daily_total,
-           COALESCE(SUM(tokens_input), 0) AS daily_tokens_in,
-           COALESCE(SUM(tokens_output), 0) AS daily_tokens_out,
-           COUNT(*) AS daily_events
-         FROM budget_events
-         WHERE DATE(timestamp) = CURRENT_DATE`,
-      );
-
-      // This month's spend
+      // Variable API costs this month
       const { rows: monthlyRows } = await pool.query(
         `SELECT
-           COALESCE(SUM(cost_usd), 0) AS monthly_total,
-           COALESCE(SUM(tokens_input), 0) AS monthly_tokens_in,
-           COALESCE(SUM(tokens_output), 0) AS monthly_tokens_out,
-           COUNT(*) AS monthly_events
+           COALESCE(SUM(cost_usd), 0) AS variable_usd,
+           COALESCE(SUM(tokens_input), 0) AS tokens_in,
+           COALESCE(SUM(tokens_output), 0) AS tokens_out,
+           COUNT(*) AS events
          FROM budget_events
          WHERE DATE_TRUNC('month', timestamp) = DATE_TRUNC('month', CURRENT_DATE)`,
       );
+      const variableUsd = parseFloat(monthlyRows[0].variable_usd);
+
+      // Fixed costs this month
+      const { rows: fixedRows } = await pool.query(
+        `SELECT COALESCE(SUM(amount_usd), 0) AS fixed_usd
+         FROM fixed_cost_entries
+         WHERE month = DATE_TRUNC('month', CURRENT_DATE)::date`,
+      );
+      const fixedUsd = parseFloat(fixedRows[0].fixed_usd);
+      const totalUsd = variableUsd + fixedUsd;
+
+      // By provider (variable + fixed combined)
+      const { rows: byProviderVariable } = await pool.query(
+        `SELECT
+           COALESCE(be.provider, 'unknown') AS provider,
+           COALESCE(cp.display_name, be.provider, 'Unknown') AS display_name,
+           COALESCE(cp.provider_type, 'api_variable') AS provider_type,
+           SUM(be.cost_usd) AS cost_usd
+         FROM budget_events be
+         LEFT JOIN cost_providers cp ON cp.id = be.provider
+         WHERE DATE_TRUNC('month', be.timestamp) = DATE_TRUNC('month', CURRENT_DATE)
+         GROUP BY be.provider, cp.display_name, cp.provider_type
+         ORDER BY cost_usd DESC`,
+      );
+
+      const { rows: byProviderFixed } = await pool.query(
+        `SELECT
+           f.provider,
+           cp.display_name,
+           cp.provider_type,
+           SUM(f.amount_usd) AS cost_usd
+         FROM fixed_cost_entries f
+         JOIN cost_providers cp ON cp.id = f.provider
+         WHERE f.month = DATE_TRUNC('month', CURRENT_DATE)::date
+         GROUP BY f.provider, cp.display_name, cp.provider_type`,
+      );
+
+      // Merge variable and fixed into single provider list
+      const providerMap = new Map<string, { provider: string; display_name: string; provider_type: string; cost_usd: number }>();
+      for (const r of byProviderVariable) {
+        providerMap.set(r.provider, {
+          provider: r.provider,
+          display_name: r.display_name,
+          provider_type: r.provider_type,
+          cost_usd: parseFloat(r.cost_usd),
+        });
+      }
+      for (const r of byProviderFixed) {
+        const existing = providerMap.get(r.provider);
+        if (existing) {
+          existing.cost_usd += parseFloat(r.cost_usd);
+        } else {
+          providerMap.set(r.provider, {
+            provider: r.provider,
+            display_name: r.display_name,
+            provider_type: r.provider_type,
+            cost_usd: parseFloat(r.cost_usd),
+          });
+        }
+      }
+      const byProvider = Array.from(providerMap.values()).sort((a, b) => b.cost_usd - a.cost_usd);
 
       // By project this month
       const { rows: byProject } = await pool.query(
@@ -214,8 +267,34 @@ function budgetRoutes(): express.Router {
          ORDER BY cost_usd DESC`,
       );
 
-      // Daily burn rate (last 7 days)
-      const { rows: burnRate } = await pool.query(
+      // Burn rate (7-day daily average)
+      const { rows: burnRows } = await pool.query(
+        `SELECT
+           COUNT(DISTINCT DATE(timestamp)) AS days,
+           COALESCE(SUM(cost_usd), 0) AS total
+         FROM budget_events
+         WHERE timestamp >= CURRENT_DATE - INTERVAL '7 days'`,
+      );
+      const burnDays = Math.max(parseInt(burnRows[0].days) || 1, 1);
+      const burnTotal = parseFloat(burnRows[0].total);
+      const daily7dAvg = burnTotal / burnDays;
+
+      const now = new Date();
+      const daysRemaining = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+      const projectedMonthEnd = totalUsd + (daily7dAvg * daysRemaining);
+
+      // Reconciliation status
+      const { rows: reconRows } = await pool.query(
+        `SELECT provider, delta, polled_at
+         FROM cost_snapshots
+         WHERE polled_at >= CURRENT_DATE - INTERVAL '24 hours'
+         ORDER BY polled_at DESC
+         LIMIT 10`,
+      );
+      const maxDelta = reconRows.reduce((max, r) => Math.max(max, Math.abs(parseFloat(r.delta ?? "0"))), 0);
+
+      // Daily spend history (last 7 days)
+      const { rows: dailyHistory } = await pool.query(
         `SELECT DATE(timestamp) AS day, SUM(cost_usd) AS total
          FROM budget_events
          WHERE timestamp >= CURRENT_DATE - INTERVAL '7 days'
@@ -223,20 +302,82 @@ function budgetRoutes(): express.Router {
          ORDER BY day`,
       );
 
+      const monthlyLimit = parseFloat(process.env.MONTHLY_BUDGET_USD ?? "1000");
+      const dailyLimit = parseFloat(process.env.DAILY_BUDGET_USD ?? "40");
+
       res.json({
-        daily: dailyRows[0],
-        monthly: monthlyRows[0],
+        monthly: {
+          total_usd: totalUsd,
+          variable_usd: variableUsd,
+          fixed_usd: fixedUsd,
+          tokens_in: parseInt(monthlyRows[0].tokens_in),
+          tokens_out: parseInt(monthlyRows[0].tokens_out),
+          events: parseInt(monthlyRows[0].events),
+        },
+        byProvider,
         byProject,
         byModel,
-        burnRate,
+        burnRate: {
+          daily_7d_avg: daily7dAvg,
+          projected_month_end: projectedMonthEnd,
+          daily_history: dailyHistory,
+        },
+        reconciliation: {
+          last_check: reconRows[0]?.polled_at ?? null,
+          max_delta: maxDelta,
+          recent: reconRows,
+        },
         limits: {
-          daily_usd: parseFloat(process.env.DAILY_BUDGET_USD ?? "40"),
-          monthly_usd: parseFloat(process.env.MONTHLY_BUDGET_USD ?? "1000"),
+          daily_usd: dailyLimit,
+          monthly_usd: monthlyLimit,
         },
       });
     } catch (err) {
       console.error("GET /api/budget error:", err);
       res.status(500).json({ error: "Failed to fetch budget data" });
+    }
+  });
+
+  // POST /api/budget/manual — record a manual cost entry
+  router.post("/manual", async (req: Request, res: Response) => {
+    if (!budgetTracker) {
+      res.status(503).json({ error: "Budget tracker not available" });
+      return;
+    }
+
+    const { provider, cost_usd, description, category } = req.body as {
+      provider?: string;
+      cost_usd?: number;
+      description?: string;
+      category?: string;
+    };
+
+    if (!provider || cost_usd == null || !description) {
+      res.status(400).json({ error: "Required: provider, cost_usd, description" });
+      return;
+    }
+
+    try {
+      await budgetTracker.recordManual({ provider, costUsd: cost_usd, description, category });
+      res.json({ recorded: true, provider, cost_usd, description });
+    } catch (err) {
+      console.error("POST /api/budget/manual error:", err);
+      res.status(500).json({ error: "Failed to record manual entry" });
+    }
+  });
+
+  // GET /api/budget/providers — list all registered cost providers
+  router.get("/providers", async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, display_name, provider_type, monthly_fixed, pricing_config, enabled, last_polled_at
+         FROM cost_providers
+         ORDER BY provider_type, display_name`,
+      );
+      res.json(rows);
+    } catch (err) {
+      console.error("GET /api/budget/providers error:", err);
+      res.status(500).json({ error: "Failed to fetch providers" });
     }
   });
 
@@ -937,7 +1078,7 @@ export function createApi(
   app.use("/api/health", healthRoute(startedAt));
   app.use("/api/projects", projectRoutes());
   app.use("/api/projects", projectStatusRoutes());
-  app.use("/api/budget", budgetRoutes());
+  app.use("/api/budget", budgetRoutes(daemon?.getBudgetTracker()));
   app.use("/api/eval", evalControlRoutes(broadcast, evalManager));
   app.use("/api/activity", activityRoutes(logger));
   app.use("/api/quality", qualityRoutes(qualityGetter));
@@ -947,12 +1088,17 @@ export function createApi(
   app.use("/api/daemon/health", daemonHealthRoutes(daemon));
 
   // Collective routes (Sprints 2-3)
-  app.use("/api/forum", forumRoutes(pool));
+  const collectiveSlack = new CollectiveSlack();
+  app.use("/api/forum", forumRoutes(pool, collectiveSlack));
   app.use("/api/messages", messageRoutes(pool));
   app.use("/api/predictions", predictionRoutes(pool));
   app.use("/api/agents", agentStateRoutes(pool));
   app.use("/api/rituals", ritualRoutes(pool));
-  app.use("/api/governance", governanceRoutes(pool));
+  app.use("/api/governance", governanceRoutes(pool, collectiveSlack));
+
+  // Collective integration routes (Sprint 9)
+  app.use("/api/collective", collectiveContextRoutes(pool));
+  app.use("/api/triggers", triggerRoutes(pool));
 
   // Start listening
   server.listen(config.port, () => {

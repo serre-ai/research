@@ -1,6 +1,7 @@
 import { writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
+import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
 import { SessionManager, type Session, type SessionSignals } from "./session-manager.js";
 import { type AgentType } from "./session-runner.js";
@@ -11,6 +12,7 @@ import { Notifier } from "./notifier.js";
 import { EvalJobManager } from "./eval-manager.js";
 import { BacklogManager, type BacklogTicket } from "./backlog.js";
 import { DigestStore, type DailyDigest } from "./digest-store.js";
+import { CostPoller } from "./cost-poller.js";
 
 const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
@@ -119,19 +121,26 @@ export class Daemon {
   private startedAt = 0;
   private backlogManager: BacklogManager;
   private digestStore: DigestStore;
+  private costPoller: CostPoller | null = null;
+  private dbPool: pg.Pool | null = null;
 
-  constructor(config: Partial<DaemonConfig> = {}) {
+  constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     const rootDir = this.config.rootDir;
+    this.dbPool = dbPool ?? null;
     this.projectManager = new ProjectManager(rootDir);
     this.gitEngine = new GitEngine(rootDir);
     this.sessionManager = new SessionManager(this.projectManager, this.gitEngine);
     this.logger = new ActivityLogger(rootDir);
-    this.budgetTracker = new BudgetTracker(rootDir, this.logger);
     this.notifier = new Notifier(rootDir);
+    this.budgetTracker = new BudgetTracker(rootDir, this.logger, this.notifier, this.dbPool ?? undefined);
     this.evalManager = new EvalJobManager(rootDir, this.logger, this.notifier);
     this.backlogManager = new BacklogManager(rootDir);
     this.digestStore = new DigestStore(rootDir);
+
+    if (this.dbPool) {
+      this.costPoller = new CostPoller(this.dbPool);
+    }
   }
 
   getEvalManager(): EvalJobManager {
@@ -477,6 +486,19 @@ export class Daemon {
         type: "daemon_error",
         data: { error: "Eval manager tick failed: " + (err instanceof Error ? err.message : String(err)) },
       });
+    }
+
+    // Poll cost providers for usage data and reconciliation
+    if (this.costPoller) {
+      try {
+        await this.costPoller.pollAll();
+      } catch (err) {
+        console.error("Cost poller error:", err);
+        await this.logger.log({
+          type: "daemon_error",
+          data: { error: "Cost poller failed: " + (err instanceof Error ? err.message : String(err)) },
+        });
+      }
     }
   }
 
