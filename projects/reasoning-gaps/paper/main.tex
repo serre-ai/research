@@ -453,7 +453,7 @@ Serial tasks (B3, B4) show the steepest decline with difficulty, consistent with
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/accuracy_vs_difficulty.pdf}
+\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/accuracy_vs_difficulty.png}
 \caption{Accuracy versus difficulty level for all nine tasks, shown for each evaluation condition. Tasks are arranged by gap type. Serial tasks (B3, B4) degrade most steeply with difficulty; architectural tasks (B8) remain near ceiling. Error bars show 95\% bootstrap CIs.}
 \label{fig:accuracy-difficulty}
 \end{figure}
@@ -501,14 +501,14 @@ For Type~4, CoT lift is limited because the bottleneck is algorithmic knowledge,
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/cot_lift_heatmap.pdf}
+\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/cot_lift_heatmap.png}
 \caption{CoT lift heatmap by gap type and condition. Dark cells indicate large improvements from CoT; light cells indicate no change or degradation. The taxonomy's predictions are clearly visible: serial gaps (Type~3) benefit most, while intractability gaps (Type~5) show no benefit.}
 \label{fig:cot-heatmap}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../benchmarks/results/analysis/figures/intervention_comparison.pdf}
+\includegraphics[width=0.9\textwidth]{../benchmarks/results/analysis/figures/intervention_comparison.png}
 \caption{Accuracy under each evaluation condition, grouped by gap type. The divergence between conditions is largest for serial tasks and smallest for intractability and architectural tasks.}
 \label{fig:intervention}
 \end{figure}
@@ -578,7 +578,7 @@ The moderate scaling for Type~5 likely reflects improved heuristic pattern match
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/scale_sensitivity.pdf}
+\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/scale_sensitivity.png}
 \caption{Accuracy by model scale (open-source models) for each gap type. Algorithmic gaps (Type~4) show nearly flat scaling---a 10$\times$ increase in parameters yields only 3 percentage points of improvement. Serial gaps (Type~3) show the steepest scaling curve.}
 \label{fig:scale}
 \end{figure}
@@ -600,7 +600,7 @@ The phase transition result connects to complexity theory: at the critical ratio
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.75\textwidth]{../benchmarks/results/analysis/figures/phase_transition.pdf}
+\includegraphics[width=0.75\textwidth]{../benchmarks/results/analysis/figures/phase_transition.png}
 \caption{Accuracy on B7 (3-SAT) as a function of difficulty level. Models show a sharp accuracy cliff as instances approach the phase transition ($\alpha \approx 4.27$). Larger models maintain accuracy slightly longer, but all converge toward chance at the hardest instances. CoT (dashed lines) provides no systematic improvement over direct evaluation (solid lines).}
 \label{fig:phase}
 \end{figure}
