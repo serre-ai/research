@@ -4,15 +4,17 @@ This document defines the agent team structure, coordination protocols, and oper
 
 ## Agent Roles
 
-### Researcher
+### Core Research Agents
+
+#### Researcher
 
 Primary agent during the **research phase**. Conducts literature review, identifies gaps in existing work, designs experiments, and performs data analysis. The Researcher produces the raw intellectual material that all downstream agents depend on.
 
 - **Scope**: Literature search and synthesis, gap identification, hypothesis formation, experiment design, data analysis and interpretation.
-- **Key outputs**: Literature notes, gap analyses, experiment designs, analysis reports.
+- **Key outputs**: Literature notes, gap analyses, experiment designs, analysis reports, knowledge graph claims.
 - **Quality bar**: Every literature review covers a minimum of 20 papers. Every gap claim is supported by explicit evidence of absence in the surveyed work.
 
-### Writer
+#### Writer
 
 Primary agent during the **drafting** and **revision** phases. Transforms research artifacts into publication-ready papers. The Writer owns the paper structure, prose quality, and LaTeX formatting.
 
@@ -20,106 +22,196 @@ Primary agent during the **drafting** and **revision** phases. Transforms resear
 - **Key outputs**: LaTeX source files, figure specifications, notation tables.
 - **Quality bar**: Every draft must be structurally complete (no placeholder sections) before handoff to Reviewer. Prose must be clear enough that a graduate student in the field can follow every argument.
 
-### Reviewer
+#### Experimenter
 
-Quality gate agent used at **phase transitions** and **before submission**. Provides honest, constructive, venue-calibrated review. The Reviewer's job is to find problems before external reviewers do.
+Designs and runs empirical evaluations. Works closely with the closed-loop experiment system to test hypotheses autonomously.
+
+- **Scope**: Benchmark design, eval script development, experiment execution, result analysis, statistical testing.
+- **Key outputs**: Experiment specs, eval scripts, result datasets, analysis reports, knowledge graph findings.
+- **Quality bar**: Every experiment has a pre-registered hypothesis, defined success criteria, and proper statistical analysis (effect sizes, confidence intervals, not just p-values).
+
+#### Theorist
+
+Develops formal frameworks, proofs, and theoretical foundations. Uses extended thinking for complex mathematical reasoning.
+
+- **Scope**: Formal definitions, theorem statements and proofs, complexity-theoretic analysis, framework development.
+- **Key outputs**: Formal frameworks, proofs, theoretical notes, knowledge graph definitions and proof claims.
+- **Quality bar**: Every proof is rigorous enough to withstand scrutiny from a theory reviewer. No hand-waving.
+
+### Quality Agents
+
+#### Reviewer
+
+Quality gate agent used at **phase transitions** and **before submission**. Provides honest, constructive, venue-calibrated review.
 
 - **Scope**: Critical evaluation of papers, scoring against venue standards, identifying logical gaps, verifying experimental claims, checking completeness.
 - **Key outputs**: Structured reviews with scores, severity-tagged weaknesses, specific improvement suggestions.
-- **Quality bar**: Reviews must be at least as thorough as a conscientious NeurIPS/ICML reviewer. Every weakness must include a concrete suggestion for how to fix it.
+- **Quality bar**: Reviews must be at least as thorough as a conscientious NeurIPS/ICML reviewer.
 
-### Strategist
+#### Critic
 
-Portfolio management agent that runs **monthly** or **on-demand**. The Strategist looks across all projects simultaneously and makes resource allocation and prioritization decisions.
+Adversarial review agent. Harder than Reviewer — actively tries to break arguments. Produces ACCEPT/REVISE/REJECT verdicts that drive session chaining.
 
-- **Scope**: Portfolio health assessment, idea generation and scoring, venue targeting and deadline tracking, project continuation/pivot/kill decisions, budget oversight.
-- **Key outputs**: Monthly portfolio reports, project recommendations, idea backlog updates.
-- **Quality bar**: Portfolio recommendations must be justified with specific evidence from project status files and venue timelines.
+- **Scope**: Adversarial analysis, finding hidden assumptions, stress-testing claims, challenging methodology.
+- **Key outputs**: Verdicts (ACCEPT/REVISE/REJECT) with detailed reasoning.
+- **Quality bar**: If the Critic accepts, the paper should survive real peer review.
 
-### Editor
+#### Editor
 
-Consistency and polish agent used during the **revision phase** and **before submission**. The Editor ensures that a paper meets professional standards for formatting, notation, citations, and style.
+Consistency and polish agent used during **revision** and **before submission**.
 
-- **Scope**: Notation standardization, citation completeness and BibTeX validation, cross-reference verification, style enforcement, accessibility checks.
+- **Scope**: Notation standardization, citation completeness, cross-reference verification, style enforcement, accessibility checks.
 - **Key outputs**: Edit reports with specific, located, actionable fixes.
 - **Quality bar**: After an Editor pass, the paper should have zero broken references, zero undefined notation, and zero uncited claims.
+
+### Intelligence Agents
+
+#### Planner (new)
+
+The **Research Planner** replaces phase-based scheduling. Runs at the start of each daemon cycle to produce specific, high-value session briefs.
+
+- **Scope**: Knowledge graph analysis, gap identification, contradiction detection, risk assessment, session brief composition, post-session evaluation.
+- **Key outputs**: `SessionBrief` objects with specific objectives, context composition, model selection, and deliverables.
+- **Quality bar**: Every brief must specify a concrete intellectual objective — not "run a writer" but "resolve the B2 anomaly by testing revised token budget formula."
+- **See**: [Research Planner Roadmap](roadmaps/research-planner.md)
+
+#### Verifier (new)
+
+Ensures every paper claim is traceable to supporting evidence. Runs automatically after paper edits.
+
+- **Scope**: Claim extraction from LaTeX, evidence linking (data, figures, proofs, citations), consistency checking, gap flagging.
+- **Key outputs**: Verification reports with claim-evidence links and status (verified/stale/missing/contradicted).
+- **Quality bar**: Every numerical claim in the paper has a verified evidence link. Zero stale claims at submission time.
+- **See**: [Verification Layer Roadmap](roadmaps/verification-layer.md)
+
+### Strategic Agents
+
+#### Strategist
+
+Portfolio management and cross-project coordination agent. Runs monthly or on-demand.
+
+- **Scope**: Portfolio health assessment, cross-project insight transfer, idea generation, venue targeting, budget oversight.
+- **Key outputs**: Monthly portfolio reports, cross-project insights, project recommendations.
+- **Quality bar**: Recommendations must be justified with specific evidence from project status files and knowledge graph.
+- **See**: [Cross-Project Intelligence Roadmap](roadmaps/cross-project-intelligence.md)
+
+#### Scout
+
+Continuous literature monitoring agent. Feeds the literature intelligence system.
+
+- **Scope**: arXiv monitoring, Semantic Scholar queries, citation tracking, relevance assessment, literature alerts.
+- **Key outputs**: Literature alerts with relevance scores and implications for active claims.
+- **Quality bar**: 80%+ of alerts rated as genuinely relevant. Concurrent work detected before submission.
+- **See**: [Literature Intelligence Roadmap](roadmaps/literature-intelligence.md)
+
+#### Engineer
+
+Platform maintenance and infrastructure agent.
+
+- **Scope**: Bug fixes, feature implementation, deployment, monitoring, database migrations.
+- **Key outputs**: Code changes, infrastructure updates, backlog ticket resolution.
+- **Quality bar**: All changes pass TypeScript compilation and don't break existing functionality.
 
 ---
 
 ## Agent Assignment by Phase
 
-| Phase | Primary Agent | Secondary Agents | Activities |
-|-------|--------------|-----------------|------------|
-| **Research** | Researcher | Strategist (at start) | Literature review, gap identification, hypothesis formation, experiment design, data collection and analysis |
-| **Drafting** | Writer | Researcher (on call) | Paper structure, section drafting, figure creation, notation table, initial references |
-| **Revision** | Writer | Reviewer, Editor | Respond to review comments, rewrite sections, add experiments, polish prose and formatting |
-| **Final** | Editor | Reviewer, Writer | Final consistency pass, citation audit, cross-reference check, formatting verification, submission preparation |
+| Phase | Primary Agent | Secondary Agents | Intelligence Layer |
+|-------|--------------|-----------------|-------------------|
+| **Research** | Researcher | Theorist, Scout | Planner composes briefs; Knowledge graph captures claims |
+| **Empirical Evaluation** | Experimenter | Researcher | Closed-loop experiment system; Planner identifies hypotheses to test |
+| **Analysis** | Experimenter | Writer | Knowledge graph updated with findings; Verifier links data to claims |
+| **Drafting** | Writer | Researcher (on call) | Planner selects sections; Verifier runs after each edit |
+| **Revision** | Writer | Critic, Reviewer | Review simulation before submission; Verifier ensures evidence links |
+| **Final** | Editor | Reviewer, Verifier | Full verification pass; Review simulation for acceptance prediction |
 
-Within each phase, the primary agent runs sessions regularly. Secondary agents are invoked for specific tasks (e.g., Researcher answers a factual question during drafting, Reviewer provides a mid-phase check).
+---
+
+## Adaptive Session Composition
+
+The Planner doesn't just pick an agent — it composes a full session configuration. See [Adaptive Sessions Roadmap](roadmaps/adaptive-sessions.md).
+
+| Task Type | Model | Thinking | Turns | Context Strategy |
+|-----------|-------|----------|-------|-----------------|
+| Deep theoretical proof | Opus 4.6 | Extended | 100 | Narrow: proof + prerequisites |
+| Literature sweep | Haiku 4.5 | Standard | 30 | Broad: project state + queries |
+| Data analysis | Sonnet 4.6 | Standard | 40 | Medium: data + claims |
+| Paper writing (new section) | Opus 4.6 | Extended | 80 | Medium: section + knowledge subgraph |
+| Paper editing (polish) | Sonnet 4.6 | Standard | 30 | Narrow: section being edited |
+| Experiment design | Sonnet 4.6 | Extended | 40 | Medium: hypothesis + benchmarks |
+| Strategic planning | Opus 4.6 | Extended | 20 | Broad: all projects + budget |
+| Quick fix | Haiku 4.5 | Standard | 5 | Narrow: specific file |
+| Review response | Opus 4.6 | Extended | 60 | Full: paper + reviews + knowledge graph |
+| LaTeX debugging | Haiku 4.5 | Standard | 10 | Narrow: build errors only |
+
+### Context Composition
+
+Each session's prompt is assembled from layers, with the Planner selecting which to include:
+
+```
+Always:
+  1. Global CLAUDE.md
+  2. Agent definition (.claude/agents/<role>.md)
+  3. Project CLAUDE.md
+  4. Status.yaml
+
+Selectively (Planner decides):
+  5. Knowledge subgraph — relevant claims, filtered by type and similarity
+  6. Specific files — exact files the task requires
+  7. Recent decisions — last N decisions for continuity
+  8. Verification report — current claim-evidence status
+  9. Literature alerts — unprocessed alerts relevant to task
+  10. Forum context — recent discussions (for OpenClaw agents)
+  11. Session brief — the Planner's specific objective and deliverables
+```
 
 ---
 
 ## Agent Handoff Protocol
 
-Handoffs occur at phase transitions. The sending agent must ensure all required artifacts exist before the receiving agent starts work. The orchestrator validates artifact presence before launching the next agent.
+Handoffs occur at phase transitions. The sending agent must ensure all required artifacts exist before the receiving agent starts work.
 
-### Researcher to Writer
+### Researcher → Writer
 
 **Trigger**: Research phase complete, status.yaml phase set to `drafting`.
 
 Required artifacts:
-- `notes/literature-review.md` — structured notes on all surveyed papers with per-paper summaries
+- `notes/literature-review.md` — structured notes on all surveyed papers
 - `notes/gap-analysis.md` — identified gaps with supporting evidence
-- `notes/framework.md` — formal framework definition (definitions, theorems, key notation)
-- `notes/key-results.md` — summary of main findings, experimental results, or theoretical contributions
-- `notes/experiment-design.md` (if empirical) — hypothesis, variables, controls, metrics, analysis plan
-- `status.yaml` updated with `decisions_made` entries covering all critical research direction choices
+- `notes/framework.md` — formal framework definition
+- `notes/key-results.md` — summary of main findings
+- `notes/experiment-design.md` (if empirical)
+- Knowledge graph populated with key claims, hypotheses, and citations
+- `status.yaml` updated with decisions_made entries
 
-### Writer to Reviewer
+### Writer → Reviewer/Critic
 
-**Trigger**: Draft complete, status.yaml phase set to `revision` or submission review requested.
-
-Required artifacts:
-- `paper/main.tex` — complete paper with all sections drafted (no TODOs or placeholders)
-- `paper/references.bib` — BibTeX file with all cited references
-- `paper/figures/` — all figures referenced in the paper
-- `paper/notation.md` — notation table mapping symbols to definitions
-- `status.yaml` updated with drafting progress and any deviations from the research plan
-
-### Reviewer to Writer
-
-**Trigger**: Review complete, revision needed.
+**Trigger**: Draft complete, status.yaml phase set to `revision`.
 
 Required artifacts:
-- `reviews/review-YYYY-MM-DD.md` — structured review with scores, strengths, weaknesses (severity-tagged), questions, and specific suggestions
-- `reviews/action-items.md` — prioritized list of changes extracted from the review
-- `status.yaml` updated with review scores and recommended next steps
+- `paper/main.tex` — complete paper (no placeholders)
+- `paper/references.bib` — all cited references
+- `paper/figures/` — all figures
+- Verification report showing claim-evidence status
+- Knowledge graph updated with paper claims
 
-### Strategist to Researcher
+### Critic → Writer (via session chaining)
 
-**Trigger**: New project approved or existing project direction changed.
-
-Required artifacts:
-- `BRIEF.md` — approved project brief with goals, scope, venue target, and timeline
-- `status.yaml` — initialized with phase `research`, allocated resources, and deadline
-- Portfolio report entry documenting why this project was approved/prioritized
-
-### Writer to Editor
-
-**Trigger**: Revision phase nearing completion, pre-submission polish needed.
+**Trigger**: Critic verdict is REVISE.
 
 Required artifacts:
-- `paper/main.tex` — revised paper incorporating reviewer feedback
-- `paper/references.bib` — updated bibliography
-- `paper/notation.md` — current notation table
+- Structured verdict with specific issues
+- Action items prioritized by severity
+- Knowledge graph updated with identified weaknesses
 
-### Editor to Writer
+### Writer → Editor
 
-**Trigger**: Edit pass complete, fixes needed that require rewriting.
+**Trigger**: Revision phase nearing completion.
 
 Required artifacts:
-- `reviews/edit-report-YYYY-MM-DD.md` — structured list of issues with locations, types, severities, and suggested fixes
-- Issues tagged as `auto-fixed` (Editor applied the fix directly) vs `needs-rewrite` (Writer must address)
+- Revised paper incorporating reviewer feedback
+- Updated bibliography and notation table
+- Clean verification report (no missing evidence)
 
 ---
 
@@ -127,98 +219,82 @@ Required artifacts:
 
 ### Concurrency Rules
 
-1. **One agent per project at a time.** This prevents merge conflicts and ensures a coherent work stream. The orchestrator enforces this via worktree locks.
-2. **Cross-project parallelism is allowed.** Reviewer can work on Project A while Writer works on Project B simultaneously, since they operate in separate worktrees on separate branches.
-3. **Strategist is the exception.** The Strategist reads all project status files in read-only mode from the main branch. It does not modify project worktrees. Its outputs go to `docs/reports/`.
+1. **One agent per project at a time.** Prevents merge conflicts. Enforced via worktree locks.
+2. **Cross-project parallelism is allowed.** Different projects run in separate worktrees.
+3. **Strategist and Planner read across projects.** They don't modify project worktrees.
+4. **Session chaining is sequential.** Critic → Writer → Editor runs in order, not parallel.
 
-### Conflict Prevention
+### Communication Channels
 
-- Each project session runs in `.worktrees/<project>/` on its own branch.
-- Agents commit and push frequently. No long-lived uncommitted changes.
-- Handoff artifacts are committed before phase transition.
-- The orchestrator checks for uncommitted changes before launching a new agent session.
+Agents communicate through multiple channels:
 
-### Communication Between Agents
+| Channel | Purpose | Agents |
+|---------|---------|--------|
+| `status.yaml` | Project state | All agents |
+| Knowledge graph | Claims, findings, hypotheses | All agents (read/write) |
+| `notes/`, `reviews/`, `paper/` | Artifacts | Research/quality agents |
+| OpenClaw forum | Discussions, proposals | All OpenClaw agents |
+| OpenClaw inbox | Direct messages | All OpenClaw agents |
+| Event bus | Real-time notifications | System-level |
+| Session briefs | Task assignments | Planner → all agents |
 
-Agents do not communicate directly. All inter-agent communication happens through artifacts in the repository:
-- `status.yaml` is the primary state channel.
-- `notes/` directory contains research artifacts.
-- `reviews/` directory contains review artifacts.
-- `paper/` directory contains the paper itself.
+### Event-Driven Coordination
 
-If an agent needs input from another agent's domain, it records the question in `status.yaml` under `pending_questions`, and the orchestrator routes it to the appropriate agent in the next session.
+With the event architecture, agents react to events rather than waiting for scheduled cycles:
 
----
+- `session.completed` → Planner evaluates and plans next
+- `claim.contradicted` → Planner prioritizes resolution
+- `literature.alert` → Scout assesses, Planner may trigger session
+- `critic.verdict` → Chain to Writer or Editor
+- `verification.failed` → Writer notified of stale claims
+- `experiment.completed` → Knowledge graph updated, Planner reassesses
 
-## Session Configuration
-
-| Agent | maxTurns | Thinking Level | Typical Duration | Key Tools |
-|-------|----------|---------------|-----------------|-----------|
-| **Researcher** | 50 | Extended (for research direction, methodology) | 30-60 min | WebSearch, WebFetch, Read, Write, Grep, Bash |
-| **Writer** | 40 | Standard (extended for framing decisions) | 30-45 min | Read, Write, Edit, Bash (LaTeX compilation) |
-| **Reviewer** | 30 | Extended (for evaluation judgments) | 20-30 min | Read, Grep, Write |
-| **Strategist** | 30 | Extended (all decisions are critical) | 15-30 min | Read, Grep, Write, WebSearch |
-| **Editor** | 25 | Standard | 15-25 min | Read, Write, Edit, Grep, Bash (LaTeX checks) |
-
-### Tool Restrictions
-
-- **Reviewer** has no Write access to `paper/` — it writes only to `reviews/`. This separation ensures the Reviewer does not silently fix issues instead of reporting them.
-- **Strategist** has no Write access to project worktrees — it writes only to `docs/reports/` and can update idea backlog files.
-- **Editor** has Write access to `paper/` for auto-fixable issues (broken references, BibTeX formatting) but must report substantive changes rather than making them silently.
+See [Event Architecture Roadmap](roadmaps/event-architecture.md).
 
 ---
 
-## Prompt Composition
+## OpenClaw Collective Integration
 
-Each agent session's system prompt is assembled from multiple layers, with later layers taking precedence:
+The OpenClaw collective (9 named agents) overlays onto the core agent roles:
 
-```
-1. Global CLAUDE.md          — Repository conventions, git workflow, decision protocol
-2. Agent definition           — .claude/agents/<role>.md — role-specific instructions
-3. Project CLAUDE.md          — projects/<name>/CLAUDE.md — project-specific context
-4. Phase instructions         — Injected based on status.yaml phase field
-5. Current status context     — Serialized status.yaml for immediate situational awareness
-```
+| OpenClaw Agent | Core Role | Special Capabilities |
+|---------------|-----------|---------------------|
+| **Sol Morrow** | Strategist + Planner | Morning standups, cross-project coordination |
+| **Noor Karim** | Scout | Literature monitoring, arXiv alerts |
+| **Vera Lindström** | Critic | Adversarial review, quality gates |
+| **Kit Dao** | Experimenter | Experiment design and execution |
+| **Maren Holt** | Writer | Paper drafting with Opus-level depth |
+| **Eli Okafor** | Engineer | Platform maintenance |
+| **Lev Novik** | Verifier + Archivist | Verification reports, weekly meta-learning insights |
+| **Rho Vasquez** | Reviewer | Governance, process oversight |
+| **Sage Osei** | — | Ritual facilitation, collective ceremonies |
 
-The orchestrator reads these files and composes them into the session's system prompt before launching the agent. This layered approach means:
-- Global standards are always present.
-- Agent-specific behavior overrides global defaults where appropriate.
-- Project-specific instructions can further specialize the agent.
-- Phase instructions focus the agent on the current task.
-- Status context gives the agent immediate awareness of where things stand.
+Each collective agent has access to:
+- Core role tools (Read, Write, Edit, Bash, etc.)
+- OpenClaw skills (forum, inbox, predict, governance, ritual-manager)
+- Knowledge graph skill (read/write claims)
+- Platform skills (budget-check, project-status, session-dispatch)
 
 ---
 
 ## Agent Performance Metrics
 
-Metrics are tracked per session and aggregated monthly in the Strategist's portfolio report.
+### Research Quality Metrics
+- **Knowledge graph growth**: claims added per session, with type distribution
+- **Contradiction detection rate**: contradictions identified before they reach the paper
+- **Evidence coverage**: % of paper claims with verified evidence links
+- **Literature freshness**: days between paper publication and detection by Scout
 
-### Researcher
-- **Papers surveyed per session**: target 10-20 in a focused literature review session
-- **Gaps identified**: number of novel, actionable gaps found per review
-- **Synthesis quality**: assessed by Reviewer — does the literature review accurately represent the field?
-- **Experiment design completeness**: does the design cover hypothesis, variables, controls, metrics, and analysis plan?
+### Session Effectiveness Metrics
+- **Quality per dollar**: quality_score / cost_usd per agent type and model
+- **Deliverable completion**: % of Planner-specified deliverables actually achieved
+- **Optimal turn count**: point of diminishing returns per task type
+- **Escalation rate**: % of Haiku sessions that needed Sonnet escalation
 
-### Writer
-- **Pages drafted per session**: target 3-5 pages of polished prose per session
-- **Revision turnaround time**: sessions between receiving review and completing revision
-- **Structural completeness**: percentage of sections in complete (non-placeholder) state
-- **Notation consistency**: zero undefined or reused symbols (checked by Editor)
+### Platform Intelligence Metrics
+- **Planner accuracy**: does the Planner's priority ranking match actual value delivered?
+- **Review simulation calibration**: predicted vs actual acceptance rates
+- **Cross-project transfer rate**: insights surfaced and acted on across projects
+- **Meta-learning impact**: quality-per-dollar trend over time
 
-### Reviewer
-- **Issues found per page**: target 2-5 substantive issues per page (too few suggests shallow review, too many suggests premature review)
-- **False positive rate**: fraction of raised issues that Writer reasonably rejects as non-issues
-- **Suggestion specificity**: percentage of weaknesses that include a concrete fix suggestion (target: 100%)
-- **Score calibration**: do scores predict eventual venue acceptance? Tracked over time.
-
-### Strategist
-- **Portfolio health score**: aggregate metric based on project phases, timelines, and quality indicators
-- **Idea quality**: fraction of generated ideas that become active projects
-- **Decision accuracy**: do continue/pivot/kill recommendations prove correct in hindsight?
-- **Budget utilization**: actual spend vs. allocated budget, with variance analysis
-
-### Editor
-- **Consistency improvements per pass**: number of notation, style, and reference issues fixed
-- **Citation completeness**: percentage of claims with citations before vs. after edit pass
-- **Zero-defect rate**: fraction of edit passes that achieve zero broken references and zero undefined notation
-- **Turnaround time**: sessions required to complete an edit pass
+See [Meta-Learning Roadmap](roadmaps/meta-learning.md) for how these metrics feed back into the platform.

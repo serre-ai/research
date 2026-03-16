@@ -1,23 +1,24 @@
-# Deepwork: AI-Driven Research Platform
+# Deepwork: Architecture
 
 ## Vision
 
-A platform that uses Claude Code to autonomously research, write, and iterate on Turing Award-caliber work — papers, lectures, code, and experiments. Multiple research projects run simultaneously, each with its own Claude Code agent, coordinated through automated git workflows with human oversight.
+A platform that uses Claude Code to autonomously research, write, and iterate on Turing Award-caliber work -- papers, lectures, code, and experiments. Multiple research projects run simultaneously, each coordinated through an intelligence stack that combines persistent knowledge, intelligent planning, and autonomous execution.
 
 ## Documentation Index
 
 | Document | Purpose |
 |----------|---------|
-| [EXECUTION-PLAN.md](docs/EXECUTION-PLAN.md) | **Start here** — sprint-by-sprint plan to first running research |
-| [BUILD-PLAN.md](docs/BUILD-PLAN.md) | Service architecture — interfaces, dependencies, technical specs |
-| [OPERATIONS.md](docs/OPERATIONS.md) | How the platform runs day-to-day — lifecycle, cadences, failure recovery |
+| [VISION.md](VISION.md) | Mission, principles, philosophy, success metrics |
+| [EXECUTION-PLAN.md](docs/EXECUTION-PLAN.md) | Sprint-by-sprint plan to first running research |
+| [BUILD-PLAN.md](docs/BUILD-PLAN.md) | Service architecture -- interfaces, dependencies, technical specs |
+| [OPERATIONS.md](docs/OPERATIONS.md) | Day-to-day operations -- lifecycle, cadences, failure recovery |
 | [INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md) | Servers, daemon setup, GPU compute, environment configuration |
 | [SCALING.md](docs/SCALING.md) | Budget tiers, concurrent capacity, cost-per-paper estimates |
 | [AGENT-TEAM.md](docs/AGENT-TEAM.md) | Agent roles, handoff protocols, session configuration |
 | [PORTFOLIO.md](docs/PORTFOLIO.md) | Project mix, venue targeting, staggering strategy |
 | [QUALITY-STANDARDS.md](docs/QUALITY-STANDARDS.md) | Publication standards, review rubrics, quality gates |
 | [PUBLISHING.md](docs/PUBLISHING.md) | arXiv, conference submissions, website, social media |
-| [IDEA-PIPELINE.md](docs/IDEA-PIPELINE.md) | How research ideas are captured, scored, and promoted to projects |
+| [IDEA-PIPELINE.md](docs/IDEA-PIPELINE.md) | Research idea capture, scoring, and promotion |
 | [CREDIBILITY.md](docs/CREDIBILITY.md) | Building recognition as an independent researcher |
 | [ROADMAP.md](docs/ROADMAP.md) | 12-month plan with milestones and budget projections |
 
@@ -26,33 +27,50 @@ A platform that uses Claude Code to autonomously research, write, and iterate on
 ## Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         Human Layer                              │
-│  CLI Dashboard (deepwork)  ·  Research Website  ·  GitHub        │
-│  Decision Queue  ·  Notifications  ·  Paper Preview              │
-└──────────────────────────┬───────────────────────────────────────┘
-                           │
-┌──────────────────────────▼───────────────────────────────────────┐
-│                    Deepwork Daemon (Node.js)                      │
-│                                                                   │
-│  ┌────────────┐  ┌────────────────┐  ┌──────────────┐           │
-│  │ Scheduler  │→ │ Session Runner │→ │ Budget       │           │
-│  │            │  │ (Agent SDK)    │  │ Tracker      │           │
-│  └────────────┘  └───────┬────────┘  └──────────────┘           │
-│                          │                                       │
-│  ┌───────────────┐  ┌────▼───────┐  ┌──────────────┐           │
-│  │ Decision      │  │ Activity   │  │ Experiment   │           │
-│  │ Router        │  │ Logger     │  │ Runner       │           │
-│  └───────┬───────┘  └────────────┘  └──────┬───────┘           │
-│          │                                  │                    │
-│  ┌───────▼──────────────────────────────────▼───────────────┐   │
-│  │  Project Manager  ·  Git Engine  ·  Monitor              │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└──────┬───────────────┬───────────────┬───────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          Human Layer                                │
+│  CLI Dashboard  ·  Research Website  ·  GitHub  ·  Notifications    │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│                     Event Bus (PostgreSQL LISTEN/NOTIFY)             │
+│  session.complete · knowledge.updated · review.requested            │
+│  literature.match · experiment.result · planner.task_ready          │
+└──┬──────────────┬──────────────┬──────────────┬─────────────────────┘
+   │              │              │              │
+   ▼              ▼              ▼              ▼
+┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐
+│Research│  │Literature│  │ Review   │  │  Meta-Learning   │
+│Planner │  │ Monitor  │  │Simulator │  │  (session quality │
+│        │  │          │  │          │  │   → improvements) │
+└───┬────┘  └────┬─────┘  └────┬─────┘  └──────────────────┘
+    │            │              │
+    │   ┌────────▼──────────────▼──────────────────────────┐
+    │   │           Knowledge Graph (PostgreSQL + pgvector) │
+    │   │  Claims · Findings · Hypotheses · Citations       │
+    │   │  Evidence chains · Confidence weights · Embeddings│
+    │   │  Cross-project queries · Semantic retrieval       │
+    │   └──────────────────────┬───────────────────────────┘
+    │                          │
+    ▼                          ▼
+┌───────────────────────────────────────────────────────────┐
+│                    Execution Engine                        │
+│                                                           │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐  │
+│  │Session Runner│  │ Experiment   │  │  Verification   │  │
+│  │(Claude SDK) │  │ Runner       │  │  Layer          │  │
+│  │             │  │ (hyp→eval→   │  │  (claim↔evidence│  │
+│  │ adaptive    │  │  belief      │  │   traceability) │  │
+│  │ composition │  │  update)     │  │                 │  │
+│  └──────┬──────┘  └──────┬───────┘  └────────┬────────┘  │
+│         │                │                    │           │
+│  ┌──────▼────────────────▼────────────────────▼────────┐  │
+│  │  Git Engine · Budget Tracker · Activity Logger      │  │
+│  └─────────────────────────────────────────────────────┘  │
+└──────┬───────────────┬───────────────┬────────────────────┘
        │               │               │
 ┌──────▼─────┐  ┌──────▼─────┐  ┌──────▼─────┐
 │  Project A  │  │  Project B  │  │  Project C  │
-│  Claude SDK │  │  Claude SDK │  │  Claude SDK │
 │  Worktree A │  │  Worktree B │  │  Worktree C │
 │  Branch A   │  │  Branch B   │  │  Branch C   │
 └─────────────┘  └─────────────┘  └─────────────┘
@@ -60,49 +78,184 @@ A platform that uses Claude Code to autonomously research, write, and iterate on
 ┌──────▼───────────────▼───────────────▼──────────────┐
 │                  Git Monorepo                         │
 │  main ← PRs ← research/project-* branches           │
-│  Automated commits · Conventional format · CI/CD     │
-└──────────┬───────────────────────────┬──────────────┘
-           │                           │
-    ┌──────▼──────┐             ┌──────▼──────┐
-    │   GitHub    │             │ Modal (GPUs) │
-    │  Issues/PRs │             │ scale-to-zero│
-    └──────┬──────┘             └──────────────┘
-           │
-    ┌──────▼──────┐
-    │  Research   │
-    │  Website    │
-    └─────────────┘
+└──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Key Design Decisions
+## Knowledge Graph
 
-### 1. Claude Code SDK (API Keys, not Max subscription)
+### Purpose
 
-The Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) is the programmatic interface. It spawns Claude Code as a subprocess with full tool access.
+The knowledge graph is the platform's long-term memory. Every meaningful artifact -- claims, findings, hypotheses, citations, experimental results, failed approaches -- is stored as a node with pgvector embeddings for semantic retrieval. Relationships encode provenance: which experiment supports which claim, which paper inspired which hypothesis.
 
-**Authentication**: Requires `ANTHROPIC_API_KEY` (pay-per-token). Claude Max subscription OAuth cannot be used for SDK-built products (Anthropic policy). However, each collaborator can use their own Claude Max subscription for **interactive** Claude Code sessions alongside the automated platform.
+### Schema Design
 
-**Practical approach**:
-- **Automated agents**: Use API key (shared team key from Anthropic Console)
-- **Interactive work**: Each person uses their Claude Max subscription directly via `claude` CLI
-- Both work in the same monorepo; automated agents create PRs that humans review
+```
+knowledge_nodes
+  id            UUID PRIMARY KEY
+  project_id    UUID REFERENCES projects(id)  -- NULL for cross-project
+  node_type     ENUM('claim', 'finding', 'hypothesis', 'citation',
+                     'experiment', 'method', 'dataset', 'decision')
+  content       TEXT
+  embedding     VECTOR(1536)                  -- pgvector, text-embedding-3-small
+  confidence    FLOAT                         -- 0.0 to 1.0
+  metadata      JSONB
+  created_at    TIMESTAMPTZ
+  updated_at    TIMESTAMPTZ
 
-### 2. Monorepo with Git Worktrees
+knowledge_edges
+  id            UUID PRIMARY KEY
+  source_id     UUID REFERENCES knowledge_nodes(id)
+  target_id     UUID REFERENCES knowledge_nodes(id)
+  edge_type     ENUM('supports', 'contradicts', 'derives_from',
+                     'cites', 'refines', 'supersedes', 'related_to')
+  weight        FLOAT
+  metadata      JSONB
+  created_at    TIMESTAMPTZ
+```
 
-Single repository, multiple projects isolated via:
-- **Branches**: `research/<project-name>` for each active project
-- **Worktrees**: Each Claude SDK session operates in its own worktree, preventing conflicts
-- **PRs**: All work merges to `main` via pull requests for review
+### Key Operations
 
-### 3. Structured Status Files as Data Layer
+- **Semantic search**: Find nodes nearest to an embedding query, filtered by type or project
+- **Evidence chains**: Traverse edges from a claim to all supporting/contradicting evidence
+- **Cross-project queries**: Find related findings across all projects, enabling automatic insight transfer
+- **Belief updates**: When new evidence arrives, propagate confidence changes through connected claims
+- **Gap detection**: Identify claims with low confidence or thin evidence chains
 
-Each project maintains a `status.yaml` file — the universal data layer consumed by CLI, dashboards, and the orchestrator. Agents write status; everything else reads it.
+### Why PostgreSQL + pgvector (not Neo4j)
 
-### 4. GitHub as Initial UI
+- Already running PostgreSQL for eval results, sessions, and project state
+- pgvector provides production-quality vector similarity search without a separate service
+- Graph traversal needs are bounded (evidence chains are shallow, typically 2-4 hops)
+- Single database simplifies operations, backups, and transactions
+- Neo4j adds operational complexity and a learning curve with marginal benefit for our graph patterns
 
-MVP uses GitHub Issues (decision queue), Projects board (kanban), and PR reviews (approval workflow). Custom CLI tool for developer convenience. Web dashboard comes later.
+---
+
+## Research Planner
+
+### Purpose
+
+The planner replaces rigid phase-based scheduling (research → drafting → revision → final) with intelligent task composition. It is a dedicated agent that reasons about what work would most advance each active project, then composes concrete session specifications.
+
+### How It Works
+
+1. **State assessment**: Reads the knowledge graph, status files, recent session outcomes, and project briefs
+2. **Task generation**: Produces a ranked list of candidate tasks with expected value estimates
+3. **Session specification**: For each selected task, specifies:
+   - Model (Sonnet for literature review, Opus for theoretical reasoning, etc.)
+   - Max turns and timeout
+   - Tools to enable
+   - Context to inject (relevant knowledge graph nodes, prior session summaries)
+   - Success criteria (what constitutes a useful outcome)
+4. **Scheduling**: Respects budget constraints, parallelism limits, and priority ordering
+5. **Evaluation**: After session completion, compares actual outcome to expected value and logs the delta
+
+### Adaptive Session Composition
+
+Different task types require different configurations. The planner learns which configurations work:
+
+| Task Type | Typical Model | Turns | Key Tools | Context |
+|-----------|--------------|-------|-----------|---------|
+| Literature review | Sonnet 4.6 | 30 | WebSearch, WebFetch, Read | Related graph nodes, search queries |
+| Formal reasoning | Opus 4.6 | 50 | Read, Write, Edit | Full theoretical framework, prior proofs |
+| Benchmark design | Sonnet 4.6 | 40 | Bash, Read, Write | Task specifications, ground truths |
+| Statistical analysis | Sonnet 4.6 | 25 | Bash, Read, Write | Raw data paths, analysis pipeline |
+| Paper drafting | Opus 4.6 | 60 | Read, Write, Edit | Full paper state, reviewer feedback |
+| Adversarial review | Opus 4.6 | 30 | Read | Full draft, venue rubric, evidence chains |
+
+### Planner vs. Daemon Scheduler
+
+The current daemon scheduler polls on a fixed interval, checks which projects need work, and runs a generic session. The planner replaces this with value-driven task selection: it asks "what is the single most valuable thing to do right now?" and produces a precise specification for doing it. The daemon becomes a thin event loop that executes planner decisions.
+
+---
+
+## Verification Layer
+
+### Purpose
+
+Every claim in a paper draft must trace to specific evidence in the knowledge graph. The verification layer enforces this traceability and flags unsupported claims before they reach adversarial review.
+
+### Workflow
+
+1. **Claim extraction**: Parse the paper draft to identify all empirical claims, theoretical assertions, and comparative statements
+2. **Evidence linking**: For each claim, query the knowledge graph for supporting evidence nodes
+3. **Gap report**: Produce a structured report of:
+   - Well-supported claims (evidence chain depth >= 2, confidence >= 0.8)
+   - Weakly supported claims (evidence exists but is thin)
+   - Unsupported claims (no evidence chain found)
+   - Contradicted claims (evidence chain points against the claim)
+4. **Resolution**: Unsupported claims are either removed, weakened to hedged language, or queued as tasks for the planner to gather evidence
+
+### Integration with Review Simulation
+
+The verification report feeds directly into review simulation. Synthetic reviewers are given the evidence chains and gap report alongside the draft, enabling them to raise specific, grounded objections rather than generic complaints.
+
+---
+
+## Event-Driven Architecture
+
+### Purpose
+
+Replace the polling daemon with an event-driven system built on PostgreSQL LISTEN/NOTIFY. Events trigger handlers immediately instead of waiting for the next poll cycle.
+
+### Event Types
+
+```
+session.started      — agent session begins
+session.complete     — agent session ends, results available
+session.failed       — agent session errored or timed out
+
+knowledge.updated    — new node or edge added to knowledge graph
+knowledge.conflict   — contradictory evidence detected
+
+planner.task_ready   — planner has composed a new task
+planner.replan       — conditions changed, replanning needed
+
+literature.new_paper — relevant paper detected on arXiv/Semantic Scholar
+literature.match     — new paper semantically matches existing knowledge
+
+experiment.started   — experiment execution begins
+experiment.result    — experiment completed with results
+
+review.requested     — paper ready for adversarial review
+review.complete      — review finished, objections filed
+
+decision.needed      — human input required
+decision.resolved    — human provided decision
+```
+
+### Why Event-Driven (not Polling)
+
+- Eliminates wasted cycles: the system only acts when something meaningful happens
+- Lower latency: a completed session triggers follow-up immediately, not at next poll interval
+- Cleaner composition: handlers are independent, testable, and composable
+- PostgreSQL LISTEN/NOTIFY is zero-cost infrastructure (already running Postgres)
+- Polling required tuning interval trade-offs (fast polling = wasted resources, slow polling = high latency)
+
+### Migration Path
+
+The current daemon loop (`setInterval` polling every 60 minutes) will be refactored into:
+1. An event emitter that publishes to PostgreSQL channels
+2. A listener process that subscribes to relevant channels and dispatches to handlers
+3. Handlers for each event type (most existing daemon logic maps 1:1 to handlers)
+
+---
+
+## Continuous Literature Intelligence
+
+### Purpose
+
+Monitor arXiv and Semantic Scholar for papers relevant to active projects. New papers are embedded and matched against the knowledge graph. High-relevance matches are surfaced to the planner as potential tasks (read and integrate, update related work, check if findings affect our claims).
+
+### Pipeline
+
+1. **Ingestion**: Daily fetch of new arXiv papers in target categories (cs.CL, cs.AI, cs.LG)
+2. **Embedding**: Title + abstract embedded via text-embedding-3-small
+3. **Matching**: Cosine similarity against knowledge graph nodes, thresholded at 0.75
+4. **Triage**: Matches above threshold emit `literature.match` events
+5. **Integration**: Planner decides whether to schedule a review session
 
 ---
 
@@ -111,18 +264,30 @@ MVP uses GitHub Issues (decision queue), Projects board (kanban), and PR reviews
 ```
 deepwork/
 ├── ARCHITECTURE.md              # This file
+├── VISION.md                    # Mission, principles, philosophy
 ├── CLAUDE.md                    # Instructions for Claude Code sessions
 ├── package.json                 # Monorepo root
-├── turbo.json                   # (future) Task orchestration
 │
 ├── orchestrator/                # Core platform engine
 │   ├── src/
 │   │   ├── index.ts             # Entry point
-│   │   ├── project-manager.ts   # Create, configure, monitor projects
-│   │   ├── session-manager.ts   # Claude SDK session lifecycle
+│   │   ├── daemon.ts            # Event loop and handler dispatch
+│   │   ├── session-runner.ts    # Claude SDK session lifecycle
+│   │   ├── planner.ts           # Research planner agent
+│   │   ├── knowledge-graph.ts   # Knowledge graph CRUD and queries
+│   │   ├── verification.ts      # Claim-evidence traceability
+│   │   ├── literature.ts        # arXiv/Semantic Scholar monitoring
+│   │   ├── review-simulator.ts  # Synthetic reviewer personas
+│   │   ├── events.ts            # Event bus (LISTEN/NOTIFY)
 │   │   ├── git-engine.ts        # Automated git operations
-│   │   ├── decision-router.ts   # Route decisions to humans
-│   │   └── status-writer.ts     # Update status.yaml files
+│   │   ├── project-manager.ts   # Project state management
+│   │   ├── budget-tracker.ts    # Per-session cost tracking
+│   │   ├── activity-logger.ts   # Centralized event logging
+│   │   └── api.ts               # REST + WebSocket API
+│   ├── sql/
+│   │   ├── 001_initial_schema.sql
+│   │   ├── 002_knowledge_graph.sql
+│   │   └── 003_events.sql
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -130,98 +295,75 @@ deepwork/
 │   ├── src/
 │   │   ├── index.tsx            # Ink-based CLI entry
 │   │   ├── commands/
-│   │   │   ├── status.tsx       # deepwork status
-│   │   │   ├── start.tsx        # deepwork start <project>
-│   │   │   ├── decide.tsx       # deepwork decide (review queue)
-│   │   │   └── new.tsx          # deepwork new <project>
 │   │   └── components/
-│   │       ├── ProjectList.tsx
-│   │       ├── StatusBar.tsx
-│   │       └── DecisionPrompt.tsx
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── projects/                    # Research projects live here
+├── projects/                    # Research projects
 │   └── <project-name>/
 │       ├── status.yaml          # Machine-readable project state
 │       ├── BRIEF.md             # Research brief / goals
 │       ├── CLAUDE.md            # Project-specific Claude instructions
-│       ├── paper/               # Paper drafts (LaTeX or Markdown)
-│       │   ├── main.tex
-│       │   └── figures/
-│       ├── src/                 # Code / experiments
-│       ├── data/                # Small datasets (large → Git LFS)
-│       └── notes/               # Research notes, lecture drafts
+│       ├── paper/               # Paper drafts (LaTeX)
+│       ├── benchmarks/          # Benchmark code and results
+│       ├── data/                # Datasets (large → Git LFS)
+│       └── notes/               # Research notes
 │
 ├── shared/                      # Shared across projects
 │   ├── templates/               # Paper templates, project scaffolds
-│   ├── prompts/                 # Reusable Claude prompt fragments
+│   ├── prompts/                 # Reusable prompt fragments
 │   └── utils/                   # Shared utilities
 │
+├── site/                        # Research website (Astro + Tailwind)
+│   └── src/
+│
 ├── .github/
-│   ├── workflows/
-│   │   ├── paper-build.yml      # Compile LaTeX → PDF on push
-│   │   ├── lint-prose.yml       # Vale prose linting
-│   │   └── ci.yml               # Test orchestrator/CLI code
-│   ├── PULL_REQUEST_TEMPLATE.md
-│   └── ISSUE_TEMPLATE/
-│       └── decision.yml         # Decision request template
+│   └── workflows/
+│       ├── paper-build.yml      # Compile LaTeX → PDF on push
+│       ├── lint-prose.yml       # Vale prose linting
+│       └── ci.yml               # Test orchestrator/CLI code
 │
 └── .claude/
-    ├── settings.json            # Claude Code project settings
+    ├── settings.json
     ├── commands/                 # Custom slash commands
-    │   ├── research.md          # /research command
-    │   ├── write-paper.md       # /write-paper command
-    │   └── review.md            # /review command
-    └── agents/                  # Custom agent definitions
-        ├── researcher.md        # Deep research agent
-        ├── writer.md            # Paper/lecture writing agent
-        └── reviewer.md          # Critical review agent
+    └── agents/                  # Agent definitions
 ```
 
 ---
 
-## Status File Format
+## Key Design Decisions
 
-```yaml
-# projects/<name>/status.yaml
-project: quantum-error-correction
-title: "Topological Quantum Error Correction via Machine Learning"
-status: active          # active | paused | review | completed
-phase: research         # research | drafting | revision | final
-confidence: 0.7         # agent's confidence in current direction
+### 1. Claude Code SDK (API Keys)
 
-created: 2026-03-07
-updated: 2026-03-07T21:30:00Z
+The Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) is the programmatic interface. It spawns Claude Code as a subprocess with full tool access. Automated agents use `ANTHROPIC_API_KEY` (pay-per-token). Interactive work uses Claude Max subscriptions. Both coexist in the same monorepo.
 
-collaborators:
-  - oddurs
-  - colleague
+### 2. Monorepo with Git Worktrees
 
-current_focus: "Surveying recent advances in surface code decoders"
-next_steps:
-  - "Analyze 2025 papers on ML-assisted decoding"
-  - "Draft methodology section"
-  - "Implement baseline decoder"
+Single repository, multiple projects isolated via branches (`research/<project-name>`) and worktrees. All work merges to `main` via pull requests.
 
-decisions_pending:
-  - id: d001
-    question: "Should we focus on surface codes or color codes?"
-    context: "Surface codes have more literature but color codes may yield novel results"
-    options: ["Surface codes", "Color codes", "Both (comparative study)"]
-    priority: high
-    created: 2026-03-07
+### 3. PostgreSQL + pgvector for Knowledge Graph
 
-git:
-  branch: research/quantum-error-correction
-  latest_commit: "abc123"
-  open_prs: []
+Single database for everything: eval results, session state, knowledge graph with vector embeddings. No separate graph database. PostgreSQL's JSONB handles semi-structured metadata. pgvector handles similarity search. Graph traversals are bounded (2-4 hops) so SQL with recursive CTEs is sufficient.
 
-metrics:
-  papers_reviewed: 12
-  sections_drafted: 1
-  experiments_run: 0
-```
+### 4. Event-Driven over Polling
+
+PostgreSQL LISTEN/NOTIFY replaces the fixed-interval daemon loop. Zero additional infrastructure. Events trigger handlers immediately. The daemon becomes a thin event dispatcher rather than a polling scheduler.
+
+### 5. Planner Agent over Phase Machine
+
+Research does not proceed in fixed phases. The planner agent reasons about task value dynamically, composes sessions with task-appropriate configurations, and adapts to what the system has learned. This replaces the rigid research→drafting→revision→final state machine.
+
+### 6. Verification Before Review
+
+Claims are checked against the knowledge graph before adversarial review, not after. This prevents the common failure mode of generating a fluent paper with unsupported claims. The reviewer receives evidence chains alongside the draft.
+
+### 7. Structured Status Files as Operational State
+
+Each project maintains `status.yaml` as the operational source of truth, consumed by CLI, dashboards, and the orchestrator. The knowledge graph stores long-term research memory. Status files store current state. These are complementary, not redundant.
+
+### 8. GitHub as Collaboration Surface
+
+GitHub Issues (decision queue), PR reviews (approval workflow), and Actions (CI/CD). Custom CLI for developer convenience. The research website serves the public-facing output.
 
 ---
 
@@ -230,135 +372,115 @@ metrics:
 ### Branch Strategy
 ```
 main                                    # Reviewed, stable
-├── research/quantum-error-correction   # Active research project
-├── research/neural-scaling-laws        # Another project
-├── paper/qec/draft-v1                  # Paper draft branch
-└── feature/orchestrator-session-mgmt   # Platform infrastructure
+├── research/reasoning-gaps             # Active research project
+├── research/agent-failure-taxonomy     # Another project
+├── paper/reasoning-gaps/draft-v1       # Paper draft branch
+└── feature/knowledge-graph             # Platform infrastructure
 ```
 
 ### Automated Agent Workflow
 1. Agent works in a git worktree on `research/<project>` branch
-2. Makes conventional commits: `paper(qec): add methodology section`
-3. When a milestone is reached, agent creates a PR to `main`
+2. Makes conventional commits: `paper(reasoning-gaps): add methodology section`
+3. At milestones, agent creates a PR to `main`
 4. PR triggers CI: compile paper, lint prose, run tests
-5. Human reviews PR in GitHub (or via `deepwork decide`)
-6. Merge to main on approval
+5. Human reviews and merges
 
 ### Commit Convention
 ```
 type(project): description
 
-Types:
-  paper    - Paper content changes
-  research - Research notes, literature review
-  code     - Code/experiment changes
-  data     - Dataset additions or changes
-  feat     - Platform feature
-  fix      - Bug fix
-  docs     - Documentation
-  chore    - Maintenance
+Types: paper, research, code, data, feat, fix, docs, chore
 ```
 
 ---
 
-## Orchestrator Design
+## Status File Format
 
-### Session Manager
-```typescript
-// Simplified session lifecycle
-import { query, ClaudeAgentOptions } from "@anthropic-ai/claude-agent-sdk";
+```yaml
+# projects/<name>/status.yaml
+project: reasoning-gaps
+title: "Reasoning Gaps: A Diagnostic Framework"
+status: active          # active | paused | review | completed
+phase: research         # research | drafting | revision | final
+confidence: 0.85
 
-interface ProjectSession {
-  projectName: string;
-  sessionId?: string;
-  worktreePath: string;
-  branch: string;
-  status: "running" | "paused" | "waiting_decision" | "completed";
-}
+created: 2026-03-01
+updated: 2026-03-16T10:00:00Z
 
-async function runProjectSession(project: ProjectSession) {
-  const brief = readFileSync(`projects/${project.projectName}/BRIEF.md`);
-  const status = readYaml(`projects/${project.projectName}/status.yaml`);
+current_focus: "Running model evaluations across 9 benchmark tasks"
+next_steps:
+  - "Complete evaluation of remaining 3 model families"
+  - "Run analysis pipeline on full results"
+  - "Draft results section"
 
-  for await (const msg of query({
-    prompt: buildPrompt(brief, status),
-    options: {
-      allowedTools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep", "WebSearch", "WebFetch"],
-      cwd: project.worktreePath,
-      permissionMode: "acceptEdits",  // auto-approve file edits
-      maxTurns: 50,
-    }
-  })) {
-    handleMessage(msg, project);
-  }
-}
+decisions_made:
+  - date: 2026-03-05
+    decision: "Use TC^0/NC^1 separation as theoretical foundation"
+    rationale: "Well-established conjecture, testable predictions"
+
+git:
+  branch: research/reasoning-gaps
+  latest_commit: "989f91a"
+  open_prs: []
+
+metrics:
+  papers_reviewed: 47
+  experiments_run: 243
+  eval_instances: 121614
 ```
-
-### Decision Router
-When an agent encounters a decision point (low confidence, multiple approaches, needs domain expertise):
-1. Agent writes to `decisions_pending` in `status.yaml`
-2. Decision router creates a GitHub Issue with the `decision-needed` label
-3. Human is notified (GitHub notification / Slack webhook)
-4. Human responds on the Issue or via `deepwork decide`
-5. Decision router updates `status.yaml` and resumes agent
 
 ---
 
 ## Implementation Status
 
-### Phase 1: Foundation — COMPLETE
-- [x] Research and architecture design
-- [x] Git repo with monorepo structure (orchestrator + cli workspaces)
-- [x] CLAUDE.md with project conventions
-- [x] Git engine: full worktree/branch/commit/PR operations
-- [x] Project manager: status.yaml CRUD, project scaffolding
-- [x] Session manager: worktree setup, prompt building (SDK integration TODO)
-- [x] CLI dashboard: projects, budget, activity, resources display
-- [x] First research project (reasoning-gaps, NeurIPS 2026)
+### Deployed and Running
+- [x] Git monorepo with orchestrator + cli + site workspaces
+- [x] TypeScript orchestrator: daemon, session runner, budget tracker, activity logger, API
+- [x] PostgreSQL database: 6 tables, materialized view, 121K+ eval results
+- [x] Express REST API + WebSocket on port 3001
+- [x] Hetzner VPS: Ubuntu 24.04, Node.js 22, systemd daemon, nginx reverse proxy
+- [x] CLI dashboard: projects, budget, activity display
 - [x] Agent definitions: researcher, writer, reviewer, strategist, editor
+- [x] First research project (reasoning-gaps): 9 benchmarks, 9 models, full analysis pipeline
+- [x] Research website (Astro + Tailwind)
 - [x] Shared templates, prompts, and standards library
-- [x] Comprehensive documentation suite (12 docs)
 
-### Phase 2: Core Autonomy — NEXT (see [BUILD-PLAN.md](docs/BUILD-PLAN.md))
-- [ ] **Session Runner**: Claude Agent SDK integration (the critical missing piece)
-- [ ] **Activity Logger**: centralized event logging
-- [ ] **Budget Tracker**: per-session cost tracking, daily/monthly limits
-- [ ] **Daemon Scheduler**: `deepwork run` — the always-on loop
-- [ ] First fully autonomous research session
+### In Progress — Intelligence Stack
+- [ ] **Knowledge graph schema** (SQL migration, pgvector extension)
+- [ ] **Knowledge graph API** (CRUD, semantic search, evidence chain traversal)
+- [ ] **Event bus** (LISTEN/NOTIFY wrapper, handler registration)
+- [ ] **Daemon refactor** (polling → event-driven dispatch)
+- [ ] **Research planner** (agent-based task composition)
+- [ ] **Adaptive session composition** (model/turns/tools per task type)
 
-### Phase 3: Human Interface
-- [ ] Enhanced CLI: `new`, `decide`, `status`, `health`, `logs`, `budget` commands
-- [ ] Decision Router: status.yaml ↔ GitHub Issues bridge
-- [ ] Monitor: health checks, stale detection, disk/budget alerts
+### Next — Verification and Intelligence
+- [ ] **Verification layer** (claim extraction, evidence linking, gap reports)
+- [ ] **Review simulation** (synthetic personas, acceptance probability prediction)
+- [ ] **Literature monitor** (arXiv/Semantic Scholar ingestion, embedding, matching)
+- [ ] **Cross-project intelligence** (graph queries across projects)
+- [ ] **Closed-loop experimentation** (hypothesis → experiment → analysis → belief update)
 
-### Phase 4: Research Output
-- [ ] Research website (Astro static site, GitHub Pages)
-- [ ] arXiv submission packager
-- [ ] Blog post auto-generation from papers
-- [ ] GitHub Actions: paper compilation, site deployment, status validation
-
-### Phase 5: Compute
-- [ ] Experiment Runner: GPU provisioning (Lambda Labs API)
-- [ ] Experiment lifecycle: spec → provision → execute → collect → terminate
-- [ ] Cost tracking for GPU compute
+### Future — Meta-Learning and Maturity
+- [ ] **Meta-learning** (session quality tracking, planner improvement from outcomes)
+- [ ] **Artifact release pipeline** (HuggingFace, GitHub, blog automation)
+- [ ] **Project proposal generation** (literature gaps → research questions)
+- [ ] **Community feedback integration** (citation tracking, benchmark adoption)
 
 ---
 
 ## Authentication & Collaboration Model
 
-### For Automated Agents (Orchestrator)
-- Single `ANTHROPIC_API_KEY` from Anthropic Console
-- Pay-per-token billing
-- Shared across all automated sessions
+### Automated Agents (Orchestrator)
+- Single `ANTHROPIC_API_KEY` from Anthropic Console (pay-per-token)
+- Additional keys: `OPENAI_API_KEY`, `OPENROUTER_API_KEY` for multi-model evaluation
 - Stored in `.env` (gitignored)
 
-### For Interactive Work (You & Colleague)
-- Each person uses their own Claude Max subscription
-- Run `claude` CLI directly in the repo
+### Interactive Work
+- Each collaborator uses their own Claude Max subscription via `claude` CLI
 - Work on any branch, create PRs normally
-- The automated system and humans coexist in the same repo
+- Automated system and humans coexist in the same repo
 
 ### Access Control
-- GitHub repository with collaborator access for both users
+- GitHub repository with collaborator access
 - Branch protection on `main` requiring PR review
-- CODEOWNERS file routing reviews by project directory
+- API key: `DEEPWORK_API_KEY` for REST/WebSocket access
