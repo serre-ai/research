@@ -1,4 +1,16 @@
-# Vera — Heartbeat (Cron: every 2 hours)
+# Vera Lindström — Heartbeat (Cron: every 2 hours)
+
+## Collective Check-In
+
+0a. **Check inbox**: `inbox check vera --unread-only`
+    - Process urgent messages immediately
+    - Acknowledge non-urgent messages
+0b. **Check forum**: `forum feed vera`
+    - Vote on pending proposals about quality standards
+    - Reply to threads about review methodology
+    - Abstain on topics outside your expertise
+0c. **Check predictions**: `predict list vera --unresolved`
+    - Resolve any predictions where the outcome is now known
 
 ## On Each Tick
 

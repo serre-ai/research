@@ -9,10 +9,22 @@
     "signing_secret_env": "SLACK_SIGNING_SECRET"
   },
   "skills_dir": "./skills",
+  "collective": {
+    "daily_budget_usd": 5,
+    "context_injection": true,
+    "anti_loop": {
+      "forum_posts_per_hour": 3,
+      "forum_posts_per_day": 10,
+      "messages_per_hour": 5,
+      "broadcasts_per_day": 2,
+      "thread_depth_limit": 10,
+      "cooldown_minutes": 120
+    }
+  },
   "agents": [
     {
       "name": "sol",
-      "display_name": "Sol",
+      "display_name": "Sol Morrow",
       "role": "Project Lead",
       "icon": "compass",
       "model": "anthropic/claude-sonnet-4-6",
@@ -23,13 +35,15 @@
         "expression": "0 7 * * *",
         "timezone": "UTC"
       },
-      "skills": ["deepwork-api", "project-status", "budget-check", "session-dispatch", "backlog-manager", "memory-write"],
+      "skills": ["deepwork-api", "project-status", "budget-check", "session-dispatch", "backlog-manager", "memory-write", "forum", "inbox", "predict", "ritual-manager", "governance"],
+      "capabilities": ["propose", "vote", "predict", "dispatch", "schedule_rituals", "resolve_governance"],
+      "triggers": ["ritual:scheduled"],
       "max_tokens": 4096,
       "temperature": 0.3
     },
     {
       "name": "noor",
-      "display_name": "Noor",
+      "display_name": "Noor Karim",
       "role": "Research Scout",
       "icon": "search",
       "model": "anthropic/claude-haiku-4-5-20251001",
@@ -41,13 +55,14 @@
         "type": "heartbeat",
         "interval_hours": 6
       },
-      "skills": ["arxiv-scout", "deepwork-api", "project-status"],
+      "skills": ["arxiv-scout", "deepwork-api", "project-status", "forum", "inbox", "predict"],
+      "capabilities": ["propose", "vote", "predict"],
       "max_tokens": 2048,
       "temperature": 0.2
     },
     {
       "name": "vera",
-      "display_name": "Vera",
+      "display_name": "Vera Lindström",
       "role": "Quality Critic",
       "icon": "scale",
       "model": "anthropic/claude-sonnet-4-6",
@@ -58,13 +73,14 @@
         "expression": "0 */2 * * *",
         "timezone": "UTC"
       },
-      "skills": ["deepwork-api", "paper-review", "project-status", "session-dispatch", "backlog-manager"],
+      "skills": ["deepwork-api", "paper-review", "project-status", "session-dispatch", "backlog-manager", "forum", "inbox", "predict"],
+      "capabilities": ["propose", "vote", "predict", "dispatch"],
       "max_tokens": 8192,
       "temperature": 0.2
     },
     {
       "name": "kit",
-      "display_name": "Kit",
+      "display_name": "Kit Dao",
       "role": "Experimenter",
       "icon": "flask-conical",
       "model": "anthropic/claude-haiku-4-5-20251001",
@@ -76,13 +92,14 @@
         "type": "heartbeat",
         "interval_hours": 12
       },
-      "skills": ["deepwork-api", "eval-monitor", "budget-check", "project-status", "backlog-manager"],
+      "skills": ["deepwork-api", "eval-monitor", "budget-check", "project-status", "backlog-manager", "forum", "inbox", "predict"],
+      "capabilities": ["propose", "vote", "predict"],
       "max_tokens": 4096,
       "temperature": 0.1
     },
     {
       "name": "maren",
-      "display_name": "Maren",
+      "display_name": "Maren Holt",
       "role": "Paper Writer",
       "icon": "pen-tool",
       "model": "anthropic/claude-opus-4-6",
@@ -93,13 +110,14 @@
         "type": "triggered",
         "triggers": ["sol:request", "vera:accept"]
       },
-      "skills": ["paper-review", "project-status", "deepwork-api"],
+      "skills": ["paper-review", "project-status", "deepwork-api", "forum", "inbox", "predict"],
+      "capabilities": ["propose", "vote", "predict"],
       "max_tokens": 16384,
       "temperature": 0.4
     },
     {
-      "name": "dev",
-      "display_name": "Dev",
+      "name": "eli",
+      "display_name": "Eli Okafor",
       "role": "Platform Engineer",
       "icon": "wrench",
       "model": "anthropic/claude-haiku-4-5-20251001",
@@ -111,14 +129,15 @@
         "type": "heartbeat",
         "interval_hours": 24
       },
-      "skills": ["deepwork-api", "backlog-manager", "session-dispatch", "budget-check"],
+      "skills": ["deepwork-api", "backlog-manager", "session-dispatch", "budget-check", "forum", "inbox", "predict"],
+      "capabilities": ["propose", "vote", "predict", "dispatch"],
       "max_tokens": 4096,
       "temperature": 0.2
     },
     {
-      "name": "archivist",
-      "display_name": "Archivist",
-      "role": "Memory & Reporting",
+      "name": "lev",
+      "display_name": "Lev Novik",
+      "role": "Institutional Memory",
       "icon": "scroll",
       "model": "anthropic/claude-haiku-4-5-20251001",
       "workspace": "./agents/archivist",
@@ -128,9 +147,44 @@
         "expression": "0 23 * * *",
         "timezone": "UTC"
       },
-      "skills": ["deepwork-api", "memory-write", "backlog-manager", "project-status"],
+      "skills": ["deepwork-api", "memory-write", "backlog-manager", "project-status", "forum", "inbox", "predict"],
+      "capabilities": ["synthesize"],
       "max_tokens": 4096,
       "temperature": 0.1
+    },
+    {
+      "name": "rho",
+      "display_name": "Rho Vasquez",
+      "role": "Dialectician",
+      "icon": "swords",
+      "model": "anthropic/claude-sonnet-4-6",
+      "workspace": "./agents/rho",
+      "channel": "#debate",
+      "schedule": {
+        "type": "triggered",
+        "triggers": ["forum:unanimous_support", "governance:proposed", "forum:mention"]
+      },
+      "skills": ["forum", "inbox", "predict", "deepwork-api", "project-status"],
+      "capabilities": ["propose", "vote", "predict"],
+      "max_tokens": 4096,
+      "temperature": 0.3
+    },
+    {
+      "name": "sage",
+      "display_name": "Sage Osei",
+      "role": "Facilitator",
+      "icon": "users",
+      "model": "anthropic/claude-sonnet-4-6",
+      "workspace": "./agents/sage",
+      "channel": "#deliberation",
+      "schedule": {
+        "type": "triggered",
+        "triggers": ["ritual:scheduled", "forum:stalled", "sol:request_facilitation"]
+      },
+      "skills": ["forum", "inbox", "ritual-manager", "deepwork-api", "project-status", "predict", "governance"],
+      "capabilities": ["propose", "vote", "predict", "schedule_rituals", "synthesize"],
+      "max_tokens": 8192,
+      "temperature": 0.3
     }
   ]
 }
