@@ -76,6 +76,16 @@ export class SessionRunner {
     let error: string | undefined;
     let sessionStatus: SessionResult["status"] = "completed";
 
+    // Record commit count before session to count only new commits
+    const preSessionEngine = new GitEngine(worktreePath);
+    let preSessionCommitCount = 0;
+    try {
+      const preLogs = await preSessionEngine.logBetween("main");
+      preSessionCommitCount = preLogs.length;
+    } catch {
+      // New branch with no commits yet
+    }
+
     const abortController = new AbortController();
     const timeout = setTimeout(() => abortController.abort(), maxDurationMs);
 
@@ -137,8 +147,10 @@ export class SessionRunner {
     const durationMs = Date.now() - startTime;
     const worktreeEngine = new GitEngine(worktreePath);
     try {
-      const logs = await worktreeEngine.logBetween("main");
-      commitsCreated.push(...logs.map((l: string) => l.split(" ")[0]));
+      // Count only commits made during THIS session, not all branch commits
+      const allLogs = await worktreeEngine.logBetween("main");
+      const sessionLogs = allLogs.slice(0, allLogs.length - preSessionCommitCount);
+      commitsCreated.push(...sessionLogs.map((l: string) => l.split(" ")[0]));
     } catch {
       // No commits yet
     }

@@ -1,6 +1,6 @@
 project: agent-failure-taxonomy
 title: "A Taxonomy of Failure Modes in LLM-Based Autonomous Agents"
-status: active
+status: paused
 phase: research
 confidence: 0.5
 created: "2026-03-10"

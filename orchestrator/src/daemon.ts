@@ -15,6 +15,8 @@ import { DigestStore, type DailyDigest } from "./digest-store.js";
 import { CostPoller } from "./cost-poller.js";
 import { KnowledgeGraph } from "./knowledge-graph.js";
 import { createEmbedFn } from "./embeddings.js";
+import { EventBus } from "./event-bus.js";
+import { registerHandlers } from "./event-handlers.js";
 
 const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
@@ -126,6 +128,7 @@ export class Daemon {
   private costPoller: CostPoller | null = null;
   private dbPool: pg.Pool | null = null;
   private knowledgeGraph: KnowledgeGraph | null = null;
+  private eventBus: EventBus | null = null;
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -149,6 +152,12 @@ export class Daemon {
 
     if (this.dbPool) {
       this.costPoller = new CostPoller(this.dbPool);
+      this.eventBus = new EventBus(this.dbPool);
+      registerHandlers(this.eventBus, {
+        knowledgeGraph: this.knowledgeGraph,
+        notifier: this.notifier,
+        logger: this.logger,
+      });
     }
   }
 
@@ -170,6 +179,10 @@ export class Daemon {
 
   getBudgetTracker(): BudgetTracker {
     return this.budgetTracker;
+  }
+
+  getEventBus(): EventBus | null {
+    return this.eventBus;
   }
 
   /**
@@ -276,6 +289,11 @@ export class Daemon {
       },
     });
 
+    // Start event bus listening
+    if (this.eventBus) {
+      await this.eventBus.start();
+    }
+
     console.log("Deepwork daemon started");
     console.log("  Poll interval: " + Math.round(this.config.pollIntervalMs / 60000) + "m");
     console.log("  Max concurrent: " + this.config.maxConcurrentSessions);
@@ -297,6 +315,11 @@ export class Daemon {
       }
       if (!this.running) break;
       await this.sleep(this.config.pollIntervalMs);
+    }
+
+    // Stop event bus
+    if (this.eventBus) {
+      await this.eventBus.stop();
     }
 
     await this.logger.log({ type: "daemon_stop", data: { cyclesCompleted: this.cycleCount } });
@@ -629,6 +652,19 @@ export class Daemon {
         level: "info",
       });
 
+      // Emit domain event
+      if (this.eventBus) {
+        await this.eventBus.emit("session.completed", {
+          sessionId: result?.sessionId,
+          project: projectName,
+          agentType,
+          commits: result?.commitsCreated.length ?? 0,
+          costUsd: result?.costUsd ?? 0,
+          quality: quality.score,
+          chainId: currentChainId,
+        }).catch(() => { /* best effort */ });
+      }
+
       this.clearFailure(projectName);
       return session;
     };
@@ -648,6 +684,16 @@ export class Daemon {
       });
 
       this.recordFailure(projectName);
+
+      // Emit failure event
+      if (this.eventBus) {
+        await this.eventBus.emit("session.failed", {
+          project: projectName,
+          agentType,
+          error: errorMsg,
+          chainId: currentChainId,
+        }).catch(() => { /* best effort */ });
+      }
 
       await this.notifier.notify({
         event: "Session Failed",
@@ -802,14 +848,29 @@ export class Daemon {
   }
 
   /**
-   * Detect stuck loops: returns true if the last 3 sessions for this project
-   * all used the same agent type and all scored below 70.
+   * Detect stuck loops. Two conditions (either triggers):
+   * 1. Last 3 sessions: same agent type AND all quality < 70
+   * 2. Last 5 sessions: same agent type (hard cap — no agent should run 5x consecutively)
    */
   private isStuckLoop(projectName: string, agentType: string): boolean {
     const history = this.qualityHistory.get(projectName);
     if (!history || history.length < 3) return false;
-    const recent = history.slice(-3);
-    return recent.every((q) => q.score < 70 && q.agentType === agentType);
+
+    // Check 1: 3 consecutive low-quality sessions with same agent
+    const last3 = history.slice(-3);
+    if (last3.every((q) => q.score < 70 && q.agentType === agentType)) {
+      return true;
+    }
+
+    // Check 2: 5 consecutive sessions with same agent (regardless of quality)
+    if (history.length >= 5) {
+      const last5 = history.slice(-5);
+      if (last5.every((q) => q.agentType === agentType)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private getRecentQualityAvg(projectName: string, count: number = 3): number | undefined {

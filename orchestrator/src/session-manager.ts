@@ -149,8 +149,9 @@ export class SessionManager {
       // No reviews directory — expected for non-critic sessions
     }
 
-    // Conservative: assume status.yaml changed if commits were made
-    if (result && result.commitsCreated.length > 0) {
+    // Only mark status as advanced if session produced substantive commits
+    // (commitsCreated now tracks per-session commits, not all branch commits)
+    if (result && result.commitsCreated.length > 1) {
       signals.statusYamlChanged = true;
     }
 
