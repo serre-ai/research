@@ -18,8 +18,10 @@ import { collectiveContextRoutes } from "./routes/collective-context.js";
 import { triggerRoutes } from "./routes/triggers.js";
 import { CollectiveSlack } from "./collective-slack.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
+import { eventRoutes } from "./routes/events.js";
 import { KnowledgeGraph } from "./knowledge-graph.js";
 import { createEmbedFn } from "./embeddings.js";
+import { EventBus } from "./event-bus.js";
 
 const { Pool } = pg;
 
@@ -1090,8 +1092,14 @@ export function createApi(
 
   // Mount routes
   const kg = new KnowledgeGraph(pool, createEmbedFn());
+
+  // EventBus: use daemon's if available, otherwise create standalone
+  const eventBus = daemon?.getEventBus() ?? new EventBus(pool);
+  eventBus.setBroadcast(broadcast);
+
   app.use("/api/health", healthRoute(startedAt, kg));
   app.use("/api/knowledge", knowledgeRoutes(kg));
+  app.use("/api/events", eventRoutes(eventBus));
   app.use("/api/projects", projectRoutes());
   app.use("/api/projects", projectStatusRoutes());
   app.use("/api/budget", budgetRoutes(daemon?.getBudgetTracker()));
