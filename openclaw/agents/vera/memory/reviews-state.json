@@ -1,0 +1,16 @@
+{
+  "reviewedPRs": [1, 2, 3],
+  "lastReviewedAt": "2026-03-17T00:04:00Z",
+  "verificationLoopAlert": {
+    "project": "agent-failure-taxonomy",
+    "sessionsAtLastAlert": 88,
+    "sessionsNow": 89,
+    "lastEscalation": "2026-03-16T10:04:00Z",
+    "note": "Loop continues at session 89 (42 verification-loop sessions total). Anti-loop: no re-escalation tonight. Human action required to break loop."
+  },
+  "notes": {
+    "1": "REVISE — agent-failure-taxonomy. LaTeX compilation unverified (human action required). Verification loop at session 89 (42 loop sessions total). ESCALATED previously. Anti-loop: no further escalation tonight.",
+    "2": "REVISE (CRITICAL — stale numbers persist) — reasoning-gaps. Commit 376166c1 (eleven models, 148,068 instances, updated lifts) IS merged into research/reasoning-gaps branch. However main.tex still contains THREE stale passages: (a) line 336: 'ten models...134,572 evaluated instances' in abstract-level experiments intro, (b) line 343: 'ten models spanning five families' in setup paragraph, (c) line 432: 'averaged across all ten models' in figure caption, (d) line 759: conclusion paragraph uses 'nine models...121,614 instances' with stale lift figures (+8.7%/+45.6%/+3.7%). The 376166c1 commit only partially applied fixes — conclusion section was NOT updated. Dispatch writer session to fix remaining stale passages.",
+    "3": "ACCEPT — platform-engineering. No new commits since last check (22:04 UTC Mar 16). All routine health checks. No research quality concerns."
+  }
+}

@@ -1,57 +1,53 @@
 project: agent-failure-taxonomy
-title: "A Taxonomy of Failure Modes in LLM-Based Autonomous Agents"
-status: active
+title: A Taxonomy of Failure Modes in LLM-Based Autonomous Agents
+status: paused
 phase: research
 confidence: 0.5
-created: "2026-03-10"
-updated: "2026-03-10T00:00:00Z"
-venue: "ACL 2027"
-
+created: '2026-03-10'
+updated: '2026-03-10T00:00:00Z'
+venue: ACL 2027
 collaborators: []
-
-current_focus: "Literature survey — collect agent failure reports from papers, blogs, and demonstrations"
-
+current_focus: "PAUSED \u2014 blocked on Overleaf compilation (human task). Do not\
+  \ run autonomous sessions."
 next_steps:
-  - "Survey agent papers from 2023-2026 for documented failures"
-  - "Collect failure reports from GitHub issues and blog posts"
-  - "Begin open coding of failure instances"
-  - "Identify candidate taxonomy categories"
-
+- Survey agent papers from 2023-2026 for documented failures
+- Collect failure reports from GitHub issues and blog posts
+- Begin open coding of failure instances
+- Identify candidate taxonomy categories
 progress:
   literature_review:
     status: not_started
-    notes: "Target 100+ failure instances from published work and public demonstrations"
+    notes: Target 100+ failure instances from published work and public demonstrations
   taxonomy_development:
     status: not_started
-    notes: "Grounded theory methodology — open coding, then axial coding"
+    notes: "Grounded theory methodology \u2014 open coding, then axial coding"
   controlled_experiments:
     status: not_started
-    notes: "Reproduce key failures across 3+ agent frameworks"
+    notes: Reproduce key failures across 3+ agent frameworks
   paper_writing:
     status: not_started
-    notes: "ACL 2027 format"
-
+    notes: ACL 2027 format
 decisions_pending: []
-
 decisions_made:
-  - date: 2026-03-10
-    decision: "Target ACL 2027 as venue"
-    rationale: "Strong fit for survey-style work on language agents. February 2027 deadline gives ~11 months. ACL has a track record of accepting impactful survey/taxonomy papers in NLP."
-  - date: 2026-03-10
-    decision: "Use grounded theory methodology for taxonomy development"
-    rationale: "Avoids imposing categories prematurely. Iterative coding from data produces more natural and comprehensive taxonomies than top-down approaches."
-
+- date: 2026-03-10
+  decision: Target ACL 2027 as venue
+  rationale: Strong fit for survey-style work on language agents. February 2027 deadline
+    gives ~11 months. ACL has a track record of accepting impactful survey/taxonomy
+    papers in NLP.
+- date: 2026-03-10
+  decision: Use grounded theory methodology for taxonomy development
+  rationale: Avoids imposing categories prematurely. Iterative coding from data produces
+    more natural and comprehensive taxonomies than top-down approaches.
 key_references: []
-
 git:
-  branch: "research/agent-failure-taxonomy"
-  latest_commit: ""
+  branch: research/agent-failure-taxonomy
+  latest_commit: ''
   open_prs: []
-
 metrics:
   papers_reviewed: 0
   failures_collected: 0
   taxonomy_categories: 0
   experiments_run: 0
-
-notes: "Project initialized. Begin with systematic literature survey of LLM agent papers from 2023-2026. Focus on collecting concrete, documented failure instances with enough detail to categorize."
+notes: Paused 2026-03-16. Runaway verification loop wasted ~$0.85 across 58+ sessions
+  with zero new content. Resume only after Overleaf compilation fix or January 2027
+  review.

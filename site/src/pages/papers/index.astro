@@ -1,0 +1,73 @@
+---
+import Base from '../../layouts/Base.astro';
+import Container from '../../components/Container.astro';
+import Badge from '../../components/Badge.astro';
+import Icon from '../../components/Icon.astro';
+
+const papers = [
+  {
+    title: 'On the Reasoning Gaps of Large Language Models: A Formal Characterization',
+    authors: 'Oddur Sigurdsson',
+    venue: 'NeurIPS 2026',
+    status: 'Pre-print',
+    href: '/papers/reasoning-gaps',
+    description: 'A formal framework connecting LLM reasoning failures to computational complexity boundaries, with a diagnostic benchmark suite of 121,000+ evaluations across 9 models.',
+  },
+  {
+    title: 'A Taxonomy of Failure Modes in LLM-Based Autonomous Agents',
+    authors: 'Oddur Sigurdsson',
+    venue: 'ACL 2027',
+    status: 'In Progress',
+    href: null,
+    description: 'Comprehensive survey categorizing 100+ documented agent failures into a rigorous, hierarchical taxonomy grounded in controlled experiments.',
+  },
+];
+---
+
+<Base title="Papers">
+  <Container class="pt-24 pb-16">
+    <h1 class="font-mono text-[var(--color-text-bright)]">PAPERS</h1>
+    <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-2xl">
+      Publications and preprints from Deepwork Research
+    </p>
+  </Container>
+
+  <Container class="pb-24">
+    <div class="flex flex-col gap-6">
+      {papers.map((paper) => (
+        <article class="border-t-[3px] border-t-[var(--color-text)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6">
+          <div class="flex flex-wrap items-center gap-4 mb-3">
+            <span class="label text-[var(--color-text-secondary)]">{paper.venue}</span>
+            <Badge
+              text={paper.status}
+              variant={paper.status === 'Pre-print' ? 'default' : 'outline'}
+            />
+          </div>
+          {paper.href ? (
+            <a href={paper.href} class="hover:no-underline group">
+              <h3 class="font-mono font-semibold text-[var(--color-text-bright)] leading-snug group-hover:underline">
+                {paper.title}
+              </h3>
+            </a>
+          ) : (
+            <h3 class="font-mono font-semibold text-[var(--color-text-bright)] leading-snug">
+              {paper.title}
+            </h3>
+          )}
+          <p class="mt-1 font-mono text-xs text-[var(--color-text-muted)]">{paper.authors}</p>
+          <p class="mt-2 text-[var(--color-text-secondary)] text-sm">
+            {paper.description}
+          </p>
+          {paper.href && (
+            <div class="mt-4">
+              <a href={paper.href} class="label hover:text-[var(--color-text-bright)] transition-colors hover:no-underline flex items-center gap-1.5 w-fit">
+                <Icon name="arrow-right" size={12} />
+                View paper
+              </a>
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  </Container>
+</Base>
