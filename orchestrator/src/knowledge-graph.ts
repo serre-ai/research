@@ -314,14 +314,17 @@ export class KnowledgeGraph {
   }
 
   /** All claims for a project, optionally filtered by type. */
-  async getProjectClaims(project: string, type?: ClaimType): Promise<ClaimRow[]> {
+  async getProjectClaims(project: string, type?: ClaimType, limit: number = 100, offset: number = 0): Promise<ClaimRow[]> {
     let sql = "SELECT * FROM claims WHERE project = $1";
     const params: unknown[] = [project];
+    let idx = 2;
     if (type) {
-      sql += " AND claim_type = $2";
+      sql += ` AND claim_type = $${idx}`;
       params.push(type);
+      idx++;
     }
-    sql += " ORDER BY confidence DESC, created_at DESC";
+    sql += ` ORDER BY confidence DESC, created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`;
+    params.push(limit, offset);
     const { rows } = await this.pool.query(sql, params);
     return rows.map((r: Record<string, unknown>) => this.rowToClaim(r));
   }

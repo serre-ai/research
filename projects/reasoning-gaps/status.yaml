@@ -4,8 +4,8 @@ venue: NeurIPS 2026
 created: 2026-03-07
 updated: 2026-03-16
 
-phase: paper-finalization
-status: active
+phase: paper-complete
+status: complete
 
 progress:
   literature_review:
@@ -95,9 +95,8 @@ key_references:
   - "Yang et al., PaTH Attention: Position Encoding via Accumulating Householder Transformations, NeurIPS 2025"
 
 next_steps:
-  - "Internal review and final revision pass"
-  - "Submit to NeurIPS 2026"
+  - "Human review and NeurIPS 2026 submission prep"
 
 notes: "11 models evaluated with 148,068 instances. B2 budget_cot recalibrated 2026-03-15 ($23 API cost). Platform bugs fixed: worktree path, agent announce mode, CI YAML. VPS operational. Deferred: Opus 4.6 (~$272)."
 
-current_activity: "Session 2026-03-16: NeurIPS 2026 format conversion (neurips_2026.sty, preprint mode). Updated all model counts (ten->eleven) and instance counts (134,572->148,068). Updated conclusion with 11-model CoT lift numbers (+34.0% Types 2,3; +49.8% budget CoT serial; +8.6% Types 5,6). PaTH attention citation already integrated. Full consistency pass: all cross-references, citations, and counts verified. Paper compiles cleanly with tectonic."
+current_activity: "Paper complete. Awaiting human review and NeurIPS 2026 submission."

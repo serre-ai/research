@@ -6,7 +6,7 @@ confidence: 1.0
 updated: "2026-03-15"
 
 current_focus: Infrastructure maintenance and backlog processing
-current_activity: Awaiting backlog tickets from agent team
+current_activity: "Idle — no open backlog tickets. Daemon will skip sessions until tickets filed."
 
 metrics:
   tickets_resolved: 0

@@ -244,7 +244,7 @@ export class SessionRunner {
       const focus = this.extractFocus(statusYaml);
       const parts: string[] = [];
 
-      // 1. Semantic search based on current focus
+      // 1. Semantic search based on current focus, or top claims by confidence
       if (focus) {
         const relevant = await this.knowledgeGraph.query(focus, {
           project: projectName,
@@ -254,6 +254,13 @@ export class SessionRunner {
         if (relevant.length > 0) {
           parts.push("## Relevant Claims\n");
           parts.push(this.formatClaims(relevant));
+        }
+      } else {
+        // No focus extracted — fall back to highest-confidence claims
+        const topClaims = await this.knowledgeGraph.getProjectClaims(projectName, undefined, limit);
+        if (topClaims.length > 0) {
+          parts.push("## Project Knowledge (top claims by confidence)\n");
+          parts.push(this.formatClaims(topClaims));
         }
       }
 

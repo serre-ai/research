@@ -11,6 +11,7 @@ export type EventType =
   | "eval_job_queued" | "eval_job_started" | "eval_job_completed" | "eval_job_failed"
   | "phase_transition"
   | "daemon_start" | "daemon_stop" | "daemon_error"
+  | "loop_detected"
   | "knowledge_contradictions" | "knowledge_snapshot";
 
 export interface ActivityEvent {

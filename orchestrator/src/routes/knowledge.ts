@@ -6,6 +6,21 @@ import type { KnowledgeGraph, ClaimType, RelationType, SourceType } from "../kno
 // Mount at /api/knowledge
 // ============================================================
 
+const VALID_CLAIM_TYPES = new Set<string>([
+  "hypothesis", "finding", "definition", "proof",
+  "citation", "method", "result", "observation",
+  "decision", "question",
+]);
+
+const VALID_RELATION_TYPES = new Set<string>([
+  "supports", "contradicts", "derives_from", "cited_in",
+  "supersedes", "refines", "depends_on", "related_to",
+]);
+
+const VALID_SOURCE_TYPES = new Set<string>([
+  "paper", "eval", "status_yaml", "manual", "agent_session",
+]);
+
 export function knowledgeRoutes(kg: KnowledgeGraph): express.Router {
   const router = express.Router();
 
@@ -23,6 +38,18 @@ export function knowledgeRoutes(kg: KnowledgeGraph): express.Router {
 
     if (!project || !claim_type || !statement) {
       res.status(400).json({ error: "Required: project, claim_type, statement" });
+      return;
+    }
+    if (!VALID_CLAIM_TYPES.has(claim_type)) {
+      res.status(400).json({ error: `Invalid claim_type: ${claim_type}` });
+      return;
+    }
+    if (source_type && !VALID_SOURCE_TYPES.has(source_type)) {
+      res.status(400).json({ error: `Invalid source_type: ${source_type}` });
+      return;
+    }
+    if (confidence !== undefined && (confidence < 0 || confidence > 1)) {
+      res.status(400).json({ error: "confidence must be between 0 and 1" });
       return;
     }
 
@@ -46,15 +73,21 @@ export function knowledgeRoutes(kg: KnowledgeGraph): express.Router {
   // GET /api/knowledge/claims — list claims (filtered)
   router.get("/claims", async (req: Request, res: Response) => {
     const project = req.query["project"] as string | undefined;
-    const type = req.query["type"] as ClaimType | undefined;
+    const type = req.query["type"] as string | undefined;
+    const limit = Math.min(parseInt(req.query["limit"] as string) || 100, 500);
+    const offset = Math.max(parseInt(req.query["offset"] as string) || 0, 0);
 
     if (!project) {
       res.status(400).json({ error: "Required query param: project" });
       return;
     }
+    if (type && !VALID_CLAIM_TYPES.has(type)) {
+      res.status(400).json({ error: `Invalid type: ${type}` });
+      return;
+    }
 
     try {
-      const claims = await kg.getProjectClaims(project, type);
+      const claims = await kg.getProjectClaims(project, type as ClaimType | undefined, limit, offset);
       res.json(claims);
     } catch (err) {
       console.error("GET /api/knowledge/claims error:", err);
@@ -143,6 +176,10 @@ export function knowledgeRoutes(kg: KnowledgeGraph): express.Router {
       res.status(400).json({ error: "Required: source_id, target_id, relation" });
       return;
     }
+    if (!VALID_RELATION_TYPES.has(relation)) {
+      res.status(400).json({ error: `Invalid relation: ${relation}` });
+      return;
+    }
 
     try {
       await kg.addRelation({
@@ -161,7 +198,7 @@ export function knowledgeRoutes(kg: KnowledgeGraph): express.Router {
 
   // GET /api/knowledge/subgraph/:id — get connected subgraph
   router.get("/subgraph/:id", async (req: Request<{ id: string }>, res: Response) => {
-    const depth = parseInt(req.query["depth"] as string) || 2;
+    const depth = Math.min(Math.max(parseInt(req.query["depth"] as string) || 2, 1), 5);
 
     try {
       const subgraph = await kg.getSubgraph(req.params.id, depth);
@@ -237,6 +274,10 @@ export function knowledgeRoutes(kg: KnowledgeGraph): express.Router {
 
     if (confidence == null || !reason) {
       res.status(400).json({ error: "Required: confidence, reason" });
+      return;
+    }
+    if (confidence < 0 || confidence > 1) {
+      res.status(400).json({ error: "confidence must be between 0 and 1" });
       return;
     }
 

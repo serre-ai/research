@@ -465,6 +465,19 @@ export class Daemon {
     // Launch sessions for selected projects
     for (const candidate of candidates) {
       const { project, agentType } = candidate;
+
+      // Loop detection: skip if last 3 sessions were all low-quality with same agent
+      if (this.isStuckLoop(project.project, agentType)) {
+        console.log("⚠ Loop detected: " + project.project + " has 3+ consecutive low-quality " + agentType + " sessions — skipping this cycle");
+        await this.logger.log({
+          type: "loop_detected",
+          project: project.project,
+          agent: agentType,
+          data: { reason: "3+ consecutive sessions with quality < 70, same agent type" },
+        });
+        continue;
+      }
+
       console.log("Launching " + agentType + " session for " + project.project + " (score: " + candidate.score + ")");
 
       await this.logger.log({
@@ -542,8 +555,8 @@ export class Daemon {
             data: { count: contradictions.length },
           });
         }
-      } catch {
-        // Individual project failure shouldn't stop others
+      } catch (err) {
+        console.error(`Knowledge maintenance failed for ${project.project}:`, err);
       }
     }
   }
@@ -788,6 +801,17 @@ export class Daemon {
     return this.qualityHistory.get(projectName) ?? [];
   }
 
+  /**
+   * Detect stuck loops: returns true if the last 3 sessions for this project
+   * all used the same agent type and all scored below 70.
+   */
+  private isStuckLoop(projectName: string, agentType: string): boolean {
+    const history = this.qualityHistory.get(projectName);
+    if (!history || history.length < 3) return false;
+    const recent = history.slice(-3);
+    return recent.every((q) => q.score < 70 && q.agentType === agentType);
+  }
+
   private getRecentQualityAvg(projectName: string, count: number = 3): number | undefined {
     const history = this.qualityHistory.get(projectName);
     if (!history || history.length === 0) return undefined;
@@ -847,6 +871,20 @@ export class Daemon {
       const perProjectDailyLimit = this.config.dailyBudgetUsd / Math.max(activeProjects.length, 1);
       if (projectSpending > perProjectDailyLimit) {
         score -= 10;
+      }
+
+      // Empty backlog guard: engineer agents with no open tickets get score 0
+      if (agentType === "engineer") {
+        try {
+          const openTickets = await this.backlogManager.list({ status: "open" });
+          if (openTickets.length === 0) {
+            console.log("  " + project.project + ": no open backlog tickets — skipping");
+            scored.push({ project, score: 0, agentType });
+            continue;
+          }
+        } catch {
+          // Backlog read failed — allow session to proceed
+        }
       }
 
       // Quality-weighted scoring: if last 3 sessions were low-quality, try different agent

@@ -132,8 +132,13 @@ async function backfillEvalResults(pool: pg.Pool, kg: KnowledgeGraph, stats: Bac
       });
       stats.evalResults++;
     } catch (err) {
-      // Near-duplicate detected by addClaim — skip
-      stats.skippedDuplicates++;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("duplicate") || msg.includes("unique")) {
+        stats.skippedDuplicates++;
+      } else {
+        console.error(`  ERROR inserting eval result: ${msg}`);
+        stats.skippedDuplicates++; // count but log the error
+      }
     }
 
     // Rate limit embedding API calls
@@ -170,7 +175,11 @@ async function backfillDecisions(kg: KnowledgeGraph, stats: BackfillStats): Prom
         metadata: { date: dec.date, rationale: dec.rationale },
       });
       stats.decisions++;
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("duplicate") && !msg.includes("unique") && !msg.includes("Near-duplicate")) {
+        console.error(`  ERROR: ${msg}`);
+      }
       stats.skippedDuplicates++;
     }
     await sleep(200);
@@ -296,7 +305,11 @@ async function backfillAnalysisFindings(kg: KnowledgeGraph, stats: BackfillStats
       if (f.statement.includes("Framework predictions confirmed")) {
         predictionClaimId = claim.id;
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("duplicate") && !msg.includes("unique") && !msg.includes("Near-duplicate")) {
+        console.error(`  ERROR: ${msg}`);
+      }
       stats.skippedDuplicates++;
     }
     await sleep(200);
@@ -367,7 +380,11 @@ async function backfillCitations(kg: KnowledgeGraph, stats: BackfillStats): Prom
         metadata: { type: "key_reference" },
       });
       stats.citations++;
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("duplicate") && !msg.includes("unique") && !msg.includes("Near-duplicate")) {
+        console.error(`  ERROR: ${msg}`);
+      }
       stats.skippedDuplicates++;
     }
     await sleep(200);
