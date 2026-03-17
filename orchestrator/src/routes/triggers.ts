@@ -79,11 +79,11 @@ export function triggerRoutes(pool: pg.Pool): express.Router {
 
           // 4. ritual:scheduled — rituals within 1 hour
           pool.query(
-            `SELECT r.id, r.name, r.ritual_type, r.scheduled_at
+            `SELECT r.id, r.ritual_type, r.scheduled_for
              FROM rituals r
              WHERE r.status = 'scheduled'
-               AND r.scheduled_at <= NOW() + INTERVAL '1 hour'
-               AND r.scheduled_at > NOW() - INTERVAL '1 hour'
+               AND r.scheduled_for <= NOW() + INTERVAL '1 hour'
+               AND r.scheduled_for > NOW() - INTERVAL '1 hour'
                AND NOT EXISTS (
                  SELECT 1 FROM trigger_log tl
                  WHERE tl.trigger_type = 'ritual:scheduled'
@@ -161,13 +161,13 @@ export function triggerRoutes(pool: pg.Pool): express.Router {
           `INSERT INTO trigger_log (agent, trigger_type, context)
            VALUES ('sage', 'ritual:scheduled', $1)
            RETURNING id`,
-          [JSON.stringify({ ritual_id: row.id, name: row.name, ritual_type: row.ritual_type, scheduled_at: row.scheduled_at })],
+          [JSON.stringify({ ritual_id: row.id, ritual_type: row.ritual_type, scheduled_for: row.scheduled_for })],
         );
         triggers.push({
           id: inserted.id,
           agent: "sage",
           trigger_type: "ritual:scheduled",
-          context: { ritual_id: row.id, name: row.name, ritual_type: row.ritual_type, scheduled_at: row.scheduled_at },
+          context: { ritual_id: row.id, ritual_type: row.ritual_type, scheduled_for: row.scheduled_for },
         });
       }
 

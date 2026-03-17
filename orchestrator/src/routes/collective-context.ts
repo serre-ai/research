@@ -43,9 +43,9 @@ export function collectiveContextRoutes(pool: pg.Pool): express.Router {
         await Promise.all([
           // 1. Unread messages
           pool.query(
-            `SELECT id, sender, subject, body, priority, created_at
+            `SELECT id, from_agent AS sender, subject, body, priority, created_at
              FROM messages
-             WHERE recipient = $1 AND read_at IS NULL
+             WHERE to_agent = $1 AND read_at IS NULL
              ORDER BY priority DESC, created_at DESC
              LIMIT 10`,
             [agent],
@@ -77,11 +77,11 @@ export function collectiveContextRoutes(pool: pg.Pool): express.Router {
 
           // 3. Upcoming rituals (scheduled, within 48h)
           pool.query(
-            `SELECT id, name, ritual_type, scheduled_at, participants
+            `SELECT id, ritual_type, scheduled_for, participants
              FROM rituals
              WHERE status = 'scheduled'
-               AND scheduled_at <= NOW() + INTERVAL '48 hours'
-             ORDER BY scheduled_at ASC
+               AND scheduled_for <= NOW() + INTERVAL '48 hours'
+             ORDER BY scheduled_for ASC
              LIMIT 5`,
           ),
 
@@ -149,8 +149,8 @@ export function collectiveContextRoutes(pool: pg.Pool): express.Router {
       if (upcomingRituals.rows.length > 0) {
         sections.push(`### Upcoming Rituals (${upcomingRituals.rows.length})`);
         for (const r of upcomingRituals.rows) {
-          const when = new Date(r.scheduled_at).toISOString();
-          sections.push(`- **${r.name}** (${r.ritual_type}) at ${when}`);
+          const when = new Date(r.scheduled_for).toISOString();
+          sections.push(`- **${r.ritual_type}** at ${when}`);
         }
         sections.push("");
       }
