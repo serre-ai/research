@@ -3,6 +3,7 @@ import type pg from "pg";
 import type { ProjectManager, ProjectStatus } from "./project-manager.js";
 import type { KnowledgeGraph, ClaimRow, ClaimRelationRow } from "./knowledge-graph.js";
 import type { BudgetTracker } from "./budget-tracker.js";
+import type { BacklogManager } from "./backlog.js";
 import type { AgentType } from "./session-runner.js";
 import type { SessionResult } from "./session-runner.js";
 import type { SessionSignals } from "./session-manager.js";
@@ -127,6 +128,7 @@ export class ResearchPlanner {
   private projectManager: ProjectManager;
   private kg: KnowledgeGraph | null;
   private budgetTracker: BudgetTracker;
+  private backlogManager: BacklogManager | null;
   private strategyWeights: Map<PlanningStrategy, number>;
   private evaluationHistory: SessionEvaluation[] = [];
   private lastPlanCycleAt: string | null = null;
@@ -137,11 +139,13 @@ export class ResearchPlanner {
     projectManager: ProjectManager,
     kg: KnowledgeGraph | null,
     budgetTracker: BudgetTracker,
+    backlogManager?: BacklogManager | null,
   ) {
     this.pool = pool;
     this.projectManager = projectManager;
     this.kg = kg;
     this.budgetTracker = budgetTracker;
+    this.backlogManager = backlogManager ?? null;
     this.strategyWeights = new Map(
       Object.entries(DEFAULT_STRATEGY_WEIGHTS) as [PlanningStrategy, number][],
     );
@@ -225,6 +229,21 @@ export class ResearchPlanner {
     budgetUsd: number,
   ): Promise<SessionBrief[]> {
     const briefs: SessionBrief[] = [];
+
+    // Engineer agents with empty backlog: skip entirely
+    const agentForPhase = PHASE_TO_AGENT[project.phase];
+    if (agentForPhase === "engineer" && this.backlogManager) {
+      try {
+        const openTickets = await this.backlogManager.list({ status: "open" });
+        if (openTickets.length === 0) {
+          console.log("  Planner: " + project.project + " — no open backlog tickets, skipping");
+          return [];
+        }
+      } catch {
+        // Backlog read failed — skip engineer projects to be safe
+        return [];
+      }
+    }
 
     // Load KG data if available
     let claims: ClaimRow[] = [];

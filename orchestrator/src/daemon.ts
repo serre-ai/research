@@ -169,6 +169,7 @@ export class Daemon {
         this.projectManager,
         this.knowledgeGraph,
         this.budgetTracker,
+        this.backlogManager,
       );
       console.log("Research planner enabled");
     }
