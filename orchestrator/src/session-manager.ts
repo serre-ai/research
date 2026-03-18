@@ -11,6 +11,7 @@ export interface SessionSignals {
   criticVerdict?: "ACCEPT" | "REVISE" | "REJECT";
   commitsCreated: number;
   statusYamlChanged: boolean;
+  paperFilesChanged: boolean;
 }
 
 export interface Session {
@@ -200,6 +201,7 @@ export class SessionManager {
     const signals: SessionSignals = {
       commitsCreated: result?.commitsCreated.length ?? 0,
       statusYamlChanged: false,
+      paperFilesChanged: false,
     };
 
     // Check for critic verdict in most recent review file
@@ -218,17 +220,17 @@ export class SessionManager {
       // No reviews directory — expected for non-critic sessions
     }
 
-    // Check if status.yaml was actually modified by this session
+    // Check which files were modified by this session
     if (result && result.commitsCreated.length > 0) {
       try {
         const { execSync } = await import("node:child_process");
         const diff = execSync(
-          `git diff --name-only HEAD~${result.commitsCreated.length} HEAD -- '*/status.yaml'`,
+          `git diff --name-only HEAD~${result.commitsCreated.length} HEAD`,
           { cwd: worktreePath, encoding: "utf-8", timeout: 5000 },
         ).trim();
         signals.statusYamlChanged = diff.includes("status.yaml");
+        signals.paperFilesChanged = /\.tex$/m.test(diff);
       } catch {
-        // Fallback: assume changed if 2+ commits (conservative)
         signals.statusYamlChanged = result.commitsCreated.length > 1;
       }
     }

@@ -85,6 +85,7 @@ MODEL_FAMILIES: dict[str, str] = {
     "claude-3.5-haiku": "Claude",
     "claude-4-opus": "Claude",
     "claude-4-sonnet": "Claude",
+    "claude-opus-4-6": "Claude",
     # Meta models
     "llama-3-8b": "Llama",
     "llama-3-70b": "Llama",
@@ -108,6 +109,7 @@ MODEL_FAMILIES: dict[str, str] = {
     # Full-path model names (from OpenRouter)
     "claude-haiku-4-5-20251001": "Claude",
     "claude-sonnet-4-20250514": "Claude",
+    "claude-opus-4-6": "Claude",
     "meta-llama/llama-3.1-8b-instruct": "Llama",
     "meta-llama/llama-3.1-70b-instruct": "Llama",
     "mistralai/ministral-8b-2512": "Mistral",
@@ -132,6 +134,7 @@ MODEL_SIZES: dict[str, float | None] = {
     "claude-3.5-haiku": None,
     "claude-4-opus": None,
     "claude-4-sonnet": None,
+    "claude-opus-4-6": None,
     "llama-3-8b": 8.0,
     "llama-3-70b": 70.0,
     "llama-3.1-8b": 8.0,

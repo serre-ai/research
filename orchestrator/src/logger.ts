@@ -12,6 +12,7 @@ export type EventType =
   | "phase_transition"
   | "daemon_start" | "daemon_stop" | "daemon_error"
   | "loop_detected"
+  | "verification_completed"
   | "knowledge_contradictions" | "knowledge_snapshot";
 
 export interface ActivityEvent {

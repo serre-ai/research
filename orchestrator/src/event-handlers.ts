@@ -10,6 +10,7 @@ import type { EventBus, DomainEvent } from "./event-bus.js";
 import type { KnowledgeGraph } from "./knowledge-graph.js";
 import type { Notifier } from "./notifier.js";
 import type { ActivityLogger } from "./logger.js";
+import type { ClaimVerifier } from "./verification.js";
 
 // ============================================================
 // Handler registration
@@ -19,6 +20,7 @@ export interface HandlerDeps {
   knowledgeGraph?: KnowledgeGraph | null;
   notifier?: Notifier | null;
   logger?: ActivityLogger | null;
+  verifier?: ClaimVerifier | null;
 }
 
 /**
@@ -26,7 +28,7 @@ export interface HandlerDeps {
  * Call once at startup after constructing the bus and its dependencies.
  */
 export function registerHandlers(bus: EventBus, deps: HandlerDeps): void {
-  const { knowledgeGraph, notifier, logger } = deps;
+  const { knowledgeGraph, notifier, logger, verifier } = deps;
 
   // --- Session lifecycle ---
 
@@ -112,6 +114,38 @@ export function registerHandlers(bus: EventBus, deps: HandlerDeps): void {
           source: "event_bus",
         },
       });
+    }
+  });
+
+  // --- Paper verification ---
+
+  bus.on("paper.edited", "auto-verify-paper", async (event) => {
+    if (!verifier) return;
+    const project = event.payload.project as string;
+    try {
+      const report = await verifier.verifyAll(project);
+      if (logger) {
+        await logger.log({
+          type: "verification_completed",
+          project,
+          data: {
+            totalClaims: report.totalClaims,
+            verified: report.verifiedClaims,
+            inconsistencies: report.inconsistencies,
+            triggeredBy: event.payload.sessionId,
+          },
+        });
+      }
+      if (report.inconsistencies > 0 && notifier) {
+        await notifier.notify({
+          event: "Verification Issues",
+          project,
+          summary: `${report.inconsistencies} inconsistency(ies) in paper after edit (${report.verifiedClaims}/${report.totalClaims} verified)`,
+          level: "warning",
+        });
+      }
+    } catch (err) {
+      console.error("[Verification] Auto-verify failed:", err);
     }
   });
 

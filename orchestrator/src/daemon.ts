@@ -18,6 +18,7 @@ import { createEmbedFn } from "./embeddings.js";
 import { EventBus } from "./event-bus.js";
 import { registerHandlers } from "./event-handlers.js";
 import { ResearchPlanner, type SessionBrief } from "./research-planner.js";
+import { ClaimVerifier } from "./verification.js";
 
 /** Agent sequences for multi-step phases. After one agent finishes, the next in the sequence runs. */
 const PHASE_SEQUENCES: Record<string, string[]> = {
@@ -119,6 +120,7 @@ export class Daemon {
   private knowledgeGraph: KnowledgeGraph | null = null;
   private eventBus: EventBus | null = null;
   private planner: ResearchPlanner | null = null;
+  private verifier: ClaimVerifier | null = null;
   private lastMaintenanceAt = 0;
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
@@ -143,11 +145,13 @@ export class Daemon {
 
     if (this.dbPool) {
       this.costPoller = new CostPoller(this.dbPool);
+      this.verifier = new ClaimVerifier(this.dbPool, this.knowledgeGraph, rootDir);
       this.eventBus = new EventBus(this.dbPool);
       registerHandlers(this.eventBus, {
         knowledgeGraph: this.knowledgeGraph,
         notifier: this.notifier,
         logger: this.logger,
+        verifier: this.verifier,
       });
     }
 
@@ -194,6 +198,10 @@ export class Daemon {
 
   getKnowledgeGraph(): KnowledgeGraph | null {
     return this.knowledgeGraph;
+  }
+
+  getVerifier(): ClaimVerifier | null {
+    return this.verifier;
   }
 
   /**
@@ -800,6 +808,15 @@ export class Daemon {
     // Session chaining: determine and queue follow-up based on signals
     if (session?.signals && session.status === "completed") {
       this.processSessionSignals(projectName, agentType, session.signals, currentChainId, chainDepth);
+
+      // Emit paper.edited if paper files changed
+      if (session.signals.paperFilesChanged && this.eventBus) {
+        await this.eventBus.emit("paper.edited", {
+          project: projectName,
+          agentType,
+          sessionId: session.result?.sessionId,
+        }).catch(() => {});
+      }
     }
   }
 
@@ -845,6 +862,14 @@ export class Daemon {
       // Session chaining
       if (session.signals && session.status === "completed") {
         this.processSessionSignals(brief.projectName, brief.agentType, session.signals, chainId, 0);
+
+        if (session.signals.paperFilesChanged && this.eventBus) {
+          await this.eventBus.emit("paper.edited", {
+            project: brief.projectName,
+            agentType: brief.agentType,
+            sessionId: session.result?.sessionId,
+          }).catch(() => {});
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

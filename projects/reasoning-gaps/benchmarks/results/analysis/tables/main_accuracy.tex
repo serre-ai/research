@@ -3,19 +3,19 @@
 \caption{Overall accuracy by task and model.}
 \label{tab:main-accuracy}
 \small
-\begin{tabular}{lccccccccccc}
+\begin{tabular}{lcccccccccccc}
 \toprule
- & claude-haiku-4-5-20251001 & claude-sonnet-4-20250514 & gpt-4o & gpt-4o-mini & meta-llama/llama-3.1-70b-instruct & meta-llama/llama-3.1-8b-instruct & mistralai/ministral-8b-2512 & mistralai/mistral-small-24b-instruct-2501 & o3 & qwen/qwen-2.5-72b-instruct & qwen/qwen-2.5-7b-instruct \\
+ & claude-haiku-4-5-20251001 & claude-opus-4-6 & claude-sonnet-4-20250514 & gpt-4o & gpt-4o-mini & meta-llama/llama-3.1-70b-instruct & meta-llama/llama-3.1-8b-instruct & mistralai/ministral-8b-2512 & mistralai/mistral-small-24b-instruct-2501 & o3 & qwen/qwen-2.5-72b-instruct & qwen/qwen-2.5-7b-instruct \\
 \midrule
-B1: Majority & 0.63 & 0.66 & 0.78 & 0.72 & 0.68 & 0.55 & 0.72 & 0.72 & 0.13 & \textbf{0.81} & 0.67 \\
-B2: Bool Eval & 0.81 & 0.72 & \textbf{0.88} & 0.83 & 0.85 & 0.68 & 0.82 & 0.81 & 0.57 & 0.86 & 0.76 \\
-B3: Perm Comp & 0.58 & 0.46 & \textbf{0.69} & 0.58 & 0.60 & 0.27 & 0.62 & 0.57 & 0.25 & 0.62 & 0.31 \\
-B4: State Track & 0.71 & \textbf{0.74} & 0.55 & 0.62 & 0.69 & 0.48 & 0.66 & 0.68 & 0.35 & 0.72 & 0.52 \\
-B5: Graph Reach & 0.79 & 0.68 & \textbf{0.84} & 0.79 & 0.70 & 0.51 & 0.78 & 0.65 & 0.35 & 0.83 & 0.66 \\
-B6: LIS & 0.31 & 0.34 & \textbf{0.38} & 0.30 & 0.24 & 0.21 & 0.24 & 0.22 & 0.25 & 0.35 & 0.28 \\
-B7: 3-SAT & 0.37 & 0.40 & \textbf{0.67} & 0.63 & 0.34 & 0.32 & 0.42 & 0.51 & 0.11 & 0.61 & 0.56 \\
-B8: Reversal & 1.00 & \textbf{1.00} & 0.99 & 0.94 & 1.00 & 0.97 & 0.99 & 0.98 & 0.73 & 0.99 & 0.95 \\
-B9: Negation & 0.73 & \textbf{0.79} & 0.57 & 0.54 & 0.74 & 0.50 & 0.56 & 0.57 & 0.31 & 0.75 & 0.59 \\
+B1: Majority & 0.63 & 0.70 & 0.68 & 0.78 & 0.72 & 0.68 & 0.55 & 0.72 & 0.72 & 0.13 & \textbf{0.81} & 0.67 \\
+B2: Bool Eval & 0.80 & 0.83 & 0.72 & \textbf{0.88} & 0.83 & 0.84 & 0.67 & 0.81 & 0.80 & 0.50 & 0.84 & 0.74 \\
+B3: Perm Comp & 0.58 & \textbf{0.81} & 0.47 & 0.69 & 0.58 & 0.60 & 0.27 & 0.62 & 0.57 & 0.25 & 0.62 & 0.31 \\
+B4: State Track & 0.71 & \textbf{0.79} & 0.74 & 0.55 & 0.62 & 0.69 & 0.48 & 0.66 & 0.68 & 0.35 & 0.72 & 0.52 \\
+B5: Graph Reach & 0.79 & 0.79 & 0.69 & \textbf{0.84} & 0.79 & 0.70 & 0.51 & 0.78 & 0.65 & 0.46 & 0.83 & 0.66 \\
+B6: LIS & 0.31 & \textbf{0.62} & 0.33 & 0.38 & 0.30 & 0.24 & 0.21 & 0.24 & 0.22 & -- & 0.35 & 0.28 \\
+B7: 3-SAT & 0.37 & 0.56 & 0.41 & \textbf{0.67} & 0.63 & 0.34 & 0.32 & 0.42 & 0.51 & 0.12 & 0.61 & 0.56 \\
+B8: Reversal & 1.00 & \textbf{1.00} & \textbf{1.00} & 0.99 & 0.94 & 1.00 & 0.97 & 0.99 & 0.98 & 0.74 & 0.99 & 0.95 \\
+B9: Negation & 0.73 & \textbf{0.79} & 0.78 & 0.57 & 0.54 & 0.74 & 0.50 & 0.56 & 0.57 & 0.31 & 0.75 & 0.59 \\
 \bottomrule
 \end{tabular}
 \end{table}

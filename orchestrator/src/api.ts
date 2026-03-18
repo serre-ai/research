@@ -23,6 +23,7 @@ import { KnowledgeGraph } from "./knowledge-graph.js";
 import { createEmbedFn } from "./embeddings.js";
 import { EventBus } from "./event-bus.js";
 import { plannerRoutes } from "./routes/planner.js";
+import { verificationRoutes } from "./routes/verification.js";
 
 const { Pool } = pg;
 
@@ -1127,6 +1128,9 @@ export function createApi(
 
   // Research planner (Sprint 4)
   app.use("/api/planner", plannerRoutes(daemon?.getPlanner() ?? null));
+
+  // Verification layer (Sprint 5)
+  app.use("/api/projects", verificationRoutes(daemon?.getVerifier() ?? null));
 
   // Start listening
   server.listen(config.port, () => {
