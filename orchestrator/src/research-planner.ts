@@ -214,27 +214,27 @@ export class ResearchPlanner {
     const active = projects.filter((p) => p.status === "active");
     const budgetStatus = await this.budgetTracker.getStatus();
 
-    // Per-project daily budget
-    const perProjectBudget = active.length > 0
-      ? budgetStatus.dailyRemaining / active.length
-      : 0;
-
-    if (budgetStatus.alertLevel === "exceeded" || perProjectBudget < 0.5) {
-      console.log("Planner: budget insufficient — no actions");
+    if (budgetStatus.alertLevel === "exceeded") {
+      console.log("Planner: budget exceeded — no actions");
       this.lastPlanDurationMs = Date.now() - start;
       this.lastPlanCycleAt = new Date().toISOString();
       return [];
     }
 
-    for (const project of active) {
-      // Skip projects with active sessions
-      if (activeProjects?.has(project.project)) continue;
+    // Per-project daily budget (only for project-level planning)
+    const perProjectBudget = active.length > 0
+      ? budgetStatus.dailyRemaining / active.length
+      : 0;
 
-      try {
-        const briefs = await this.generateBriefsForProject(project, perProjectBudget);
-        candidates.push(...briefs);
-      } catch (err) {
-        console.error(`Planner: failed to plan for ${project.project}:`, err);
+    if (perProjectBudget >= 0.5) {
+      for (const project of active) {
+        if (activeProjects?.has(project.project)) continue;
+        try {
+          const briefs = await this.generateBriefsForProject(project, perProjectBudget);
+          candidates.push(...briefs);
+        } catch (err) {
+          console.error(`Planner: failed to plan for ${project.project}:`, err);
+        }
       }
     }
 
