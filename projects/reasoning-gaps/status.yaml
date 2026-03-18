@@ -4,8 +4,8 @@ venue: NeurIPS 2026
 created: 2026-03-07
 updated: 2026-03-16
 
-phase: paper-complete
-status: complete
+phase: submission-prep
+status: in-progress
 
 progress:
   literature_review:
@@ -22,10 +22,16 @@ progress:
     notes: "Full analysis pipeline implemented in experiments/. Includes: statistical tests (stats_utils.py), 6 primary analyses (primary.py), visualization functions (viz_utils.py, figures.py), main pipeline script (run_full_analysis.py), and test suite. Ready to process evaluation results once data available."
   empirical_evaluation:
     status: complete
-    notes: "11 models evaluated: Haiku 4.5, Sonnet 4.6, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. 148,068 instances in PostgreSQL. B2 budget_cot recalibrated 2026-03-15: node-count formula (180 words vs 24), all 11 models re-evaluated. Results: Haiku 95%, GPT-4o 92%, o3 82%, all models 69-95%. Analysis pipeline re-run: 4 tables, 5 figures, 280 CIs. Key: Types 2,3 CoT lift = +0.340 vs Types 5,6 = +0.086. Deferred: Opus 4.6 (~$272)."
+    notes: "12 models evaluated: Haiku 4.5, Sonnet 4.6, Opus 4.6, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. 159,162 instances. Opus 4.6 evaluated 2026-03-18 (~$272). Analysis pipeline re-run: 4 tables, 5 figures, 319 CIs. Key: Types 2,3 CoT lift = +0.351 vs Types 5,6 = +0.094. Opus achieves 100% on B3 CoT, 75% on B6 CoT (2x next best)."
+  tool_use_eval:
+    status: in-progress
+    notes: "Launched 2026-03-18 on VPS. B5+B6, 3 models (Sonnet, GPT-4o, Haiku), tool_use condition. 6 combos, 3K instances, ~$27. ETA: 2-4h."
+  budget_sweep_eval:
+    status: in-progress
+    notes: "Launched 2026-03-18 on VPS. B2+B3, 3 models × 5 multipliers (0.25x-4.0x), budget_cot condition. 30 combos, 3K instances, ~$8. ETA: 4-8h."
   paper_writing:
-    status: complete
-    notes: "All sections complete with 11-model data including Sonnet 4.6 and o3. Converted to NeurIPS 2026 format (neurips_2026.sty, preprint mode). PaTH attention citation integrated in Related Work and Discussion. All cross-references and citations verified. Consistency pass complete: eleven models, five families, 148,068 instances throughout."
+    status: in-progress
+    notes: "Updated to 12-model data with Opus 4.6. NeurIPS 2026 format. All tables/figures regenerated. B8 reframed as calibration. Real-world mapping section added. Song et al. differentiation strengthened. Opus within-family scaling subsection added. Counts updated: twelve models, 159,162 instances. Pending: tool-use results integration, budget sweep integration, submission polish."
 
 decisions_pending: []
 
@@ -95,8 +101,10 @@ key_references:
   - "Yang et al., PaTH Attention: Position Encoding via Accumulating Householder Transformations, NeurIPS 2025"
 
 next_steps:
-  - "Human review and NeurIPS 2026 submission prep"
+  - "Download and integrate tool-use eval results (when complete)"
+  - "Download and integrate budget sweep results (when complete)"
+  - "NeurIPS submission polish: checklist, anonymization, page check"
 
-notes: "11 models evaluated with 148,068 instances. B2 budget_cot recalibrated 2026-03-15 ($23 API cost). Platform bugs fixed: worktree path, agent announce mode, CI YAML. VPS operational. Deferred: Opus 4.6 (~$272)."
+notes: "12 models evaluated with 159,162 instances. Opus 4.6 added 2026-03-18 (~$272). Tool-use and budget sweep evals running on VPS (~$35). Paper revised: B8 reframing, real-world mapping, Song et al. differentiation, Opus subsection."
 
-current_activity: "Paper complete. Awaiting human review and NeurIPS 2026 submission."
+current_activity: "NeurIPS final sprint. Streams 1-2 complete (Opus integrated, evals launched, paper revised). Awaiting VPS eval results for Streams 3-4."
