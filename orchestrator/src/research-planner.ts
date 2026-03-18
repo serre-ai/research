@@ -243,14 +243,12 @@ export class ResearchPlanner {
       try {
         const collectiveBriefs = await this.collectiveActionBriefs(budgetStatus.dailyRemaining);
         if (collectiveBriefs.length > 0) {
-          console.log("  Planner: " + collectiveBriefs.length + " collective action(s) found");
+          console.log("  Planner: " + collectiveBriefs.length + " collective action(s)");
         }
         candidates.push(...collectiveBriefs);
       } catch (err) {
         console.error("Planner: collective action planning failed:", err);
       }
-    } else {
-      console.log("  Planner: no DB pool — collective actions skipped");
     }
 
     // Apply strategy weights to priority
@@ -631,7 +629,6 @@ export class ResearchPlanner {
 
     // 1. Un-acked triggers
     try {
-      console.log("  Planner: checking collective state...");
       const { rows: triggers } = await this.pool.query(
         `SELECT tl.id, tl.agent, tl.trigger_type, tl.context
          FROM trigger_log tl WHERE tl.acked_at IS NULL
