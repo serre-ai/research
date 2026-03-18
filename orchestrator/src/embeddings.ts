@@ -7,7 +7,7 @@ export type EmbedFn = (text: string) => Promise<number[]>;
 
 /**
  * Create an embedding function using the best available provider.
- * Tries Voyage first (1024-dim), then OpenAI (1536-dim).
+ * Tries Voyage first (1024-dim), then OpenAI (1024-dim, truncated).
  * Returns null if no API key is available.
  */
 export function createEmbedFn(): EmbedFn | null {
@@ -24,9 +24,7 @@ export function createEmbedFn(): EmbedFn | null {
  * Returns the embedding dimension for the current provider.
  */
 export function getEmbeddingDimension(): number {
-  if (process.env.VOYAGE_API_KEY) return 1024;
-  if (process.env.OPENAI_API_KEY) return 1536;
-  return 1024; // default to Voyage dimensions
+  return 1024; // Both providers now use 1024 dimensions
 }
 
 function createVoyageEmbedFn(apiKey: string): EmbedFn {
@@ -65,6 +63,7 @@ function createOpenAIEmbedFn(apiKey: string): EmbedFn {
       body: JSON.stringify({
         model: "text-embedding-3-small",
         input: text,
+        dimensions: 1024, // Match Voyage/pgvector column size
       }),
     });
 

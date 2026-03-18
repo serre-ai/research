@@ -31,7 +31,8 @@ export type BroadcastFn = (channel: string, data: unknown) => void;
 // ============================================================
 
 const MAX_HANDLER_ATTEMPTS = 3;
-const RECONNECT_DELAY_MS = 5_000;
+const RECONNECT_BASE_MS = 5_000;
+const RECONNECT_MAX_MS = 5 * 60_000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
 export class EventBus {
@@ -42,6 +43,7 @@ export class EventBus {
   private running = false;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private broadcastFn: BroadcastFn | null = null;
+  private reconnectAttempts = 0;
 
   constructor(pool: pg.Pool) {
     this.pool = pool;
@@ -174,10 +176,10 @@ export class EventBus {
     }));
   }
 
-  /** Retry a dead-letter entry. */
+  /** Retry a dead-letter entry — only re-runs the specific failed handler. */
   async retryDeadLetter(deadLetterId: number): Promise<boolean> {
     const { rows } = await this.pool.query(
-      `SELECT dl.event_id, de.type, de.payload
+      `SELECT dl.handler_name, dl.event_id, de.type, de.payload
        FROM domain_events_dead_letter dl
        JOIN domain_events de ON de.id = dl.event_id
        WHERE dl.id = $1 AND dl.resolved = FALSE`,
@@ -185,18 +187,56 @@ export class EventBus {
     );
     if (rows.length === 0) return false;
 
+    const handlerName = rows[0].handler_name as string;
     const event: DomainEvent = {
       id: rows[0].event_id as number,
       type: rows[0].type as string,
       payload: rows[0].payload as Record<string, unknown>,
     };
 
-    await this.dispatch(event);
+    // Find the specific handler that failed
+    const typeHandlers = this.handlers.get(event.type) ?? [];
+    const allHandlers = [...typeHandlers, ...this.wildcardHandlers];
+    const handler = allHandlers.find((h) => h.name === handlerName);
+
+    if (handler) {
+      const ok = await this.runHandler(handler, event);
+      if (!ok) return false;
+    }
+
     await this.pool.query(
       "UPDATE domain_events_dead_letter SET resolved = TRUE WHERE id = $1",
       [deadLetterId],
     );
+
+    // Check if all dead letters for this event are now resolved
+    const { rows: remaining } = await this.pool.query(
+      "SELECT COUNT(*) AS cnt FROM domain_events_dead_letter WHERE event_id = $1 AND resolved = FALSE",
+      [event.id],
+    );
+    if (parseInt(remaining[0].cnt) === 0) {
+      await this.pool.query(
+        "UPDATE domain_events SET processed = TRUE WHERE id = $1",
+        [event.id],
+      ).catch(() => {});
+    }
+
     return true;
+  }
+
+  /** Retry all unresolved dead letters. Returns count of successfully retried. */
+  async retryAllDeadLetters(): Promise<number> {
+    const deadLetters = await this.getDeadLetters(false);
+    let retried = 0;
+    for (const dl of deadLetters) {
+      try {
+        const ok = await this.retryDeadLetter(dl.id);
+        if (ok) retried++;
+      } catch {
+        // Individual retry failed — continue with others
+      }
+    }
+    return retried;
   }
 
   // --------------------------------------------------------
@@ -225,6 +265,7 @@ export class EventBus {
         this.reconnect();
       });
 
+      this.reconnectAttempts = 0;
       console.log("[EventBus] Connected and listening for events");
     } catch (err) {
       console.error("[EventBus] Failed to connect:", err);
@@ -238,9 +279,12 @@ export class EventBus {
       try { this.listenClient.release(); } catch { /* already released */ }
       this.listenClient = null;
     }
+    const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, this.reconnectAttempts), RECONNECT_MAX_MS);
+    this.reconnectAttempts++;
+    console.log(`[EventBus] Reconnecting in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts})`);
     setTimeout(() => {
       if (this.running) this.connect();
-    }, RECONNECT_DELAY_MS);
+    }, delay);
   }
 
   /** Replay events that weren't processed (e.g., missed during downtime). */
@@ -267,15 +311,19 @@ export class EventBus {
     const typeHandlers = this.handlers.get(event.type) ?? [];
     const allHandlers = [...typeHandlers, ...this.wildcardHandlers];
 
+    let allSucceeded = true;
     for (const handler of allHandlers) {
-      await this.runHandler(handler, event);
+      const ok = await this.runHandler(handler, event);
+      if (!ok) allSucceeded = false;
     }
 
-    // Mark as processed
-    await this.pool.query(
-      "UPDATE domain_events SET processed = TRUE WHERE id = $1",
-      [event.id],
-    ).catch(() => { /* best effort */ });
+    // Only mark processed if ALL handlers succeeded
+    if (allSucceeded) {
+      await this.pool.query(
+        "UPDATE domain_events SET processed = TRUE WHERE id = $1",
+        [event.id],
+      ).catch(() => { /* best effort */ });
+    }
 
     // Broadcast to WebSocket clients
     if (this.broadcastFn) {
@@ -283,23 +331,26 @@ export class EventBus {
     }
   }
 
-  private async runHandler(handler: EventHandler, event: DomainEvent): Promise<void> {
+  /** Returns true if handler succeeded, false if it exhausted retries. */
+  private async runHandler(handler: EventHandler, event: DomainEvent): Promise<boolean> {
     let attempts = 0;
     while (attempts < MAX_HANDLER_ATTEMPTS) {
       try {
         await handler.fn(event);
-        return;
+        return true;
       } catch (err) {
         attempts++;
         if (attempts >= MAX_HANDLER_ATTEMPTS) {
           console.error(`[EventBus] Handler "${handler.name}" failed after ${attempts} attempts for event ${event.id}:`, err);
           await this.writeDeadLetter(event.id, handler.name, err, attempts);
+          return false;
         } else {
           // Brief backoff before retry
           await new Promise((r) => setTimeout(r, 500 * attempts));
         }
       }
     }
+    return false;
   }
 
   private async writeDeadLetter(

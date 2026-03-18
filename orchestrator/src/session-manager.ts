@@ -5,6 +5,7 @@ import { GitEngine } from "./git-engine.js";
 import { SessionRunner, type SessionResult, type AgentType } from "./session-runner.js";
 import { ActivityLogger } from "./logger.js";
 import type { KnowledgeGraph } from "./knowledge-graph.js";
+import type { SessionBrief } from "./research-planner.js";
 
 export interface SessionSignals {
   criticVerdict?: "ACCEPT" | "REVISE" | "REJECT";
@@ -127,6 +128,74 @@ export class SessionManager {
     return session;
   }
 
+  /** Start a session using a planner-generated brief with specific objectives and constraints. */
+  async startProjectWithBrief(brief: SessionBrief): Promise<Session> {
+    const branch = `research/${brief.projectName}`;
+    const requestedPath = join(this.rootDir, ".worktrees", brief.projectName);
+    const worktreePath = await this.gitEngine.createWorktree(requestedPath, branch);
+
+    const session: Session = {
+      projectName: brief.projectName,
+      worktreePath,
+      branch,
+      status: "running",
+      startedAt: new Date().toISOString(),
+    };
+    this.sessions.set(brief.projectName, session);
+
+    console.log(`Started session for ${brief.projectName}`);
+    console.log(`  Agent: ${brief.agentType} | Strategy: ${brief.strategy}`);
+    console.log(`  Branch: ${branch}`);
+    console.log(`  Objective: ${brief.objective.slice(0, 120)}`);
+
+    try {
+      const result = await this.sessionRunner.runWithBrief(brief, worktreePath);
+      session.sessionId = result.sessionId;
+      session.result = result;
+      session.status = result.status === "completed" ? "completed" : "failed";
+
+      console.log(`Session finished for ${brief.projectName}: ${result.status}`);
+      console.log(`  Turns: ${result.turnsUsed} | Cost: $${result.costUsd.toFixed(4)} | Duration: ${Math.round(result.durationMs / 1000)}s`);
+
+      if (result.error) console.log(`  Error: ${result.error}`);
+    } catch (err) {
+      session.status = "failed";
+      console.error(`Session crashed for ${brief.projectName}:`, err);
+    }
+
+    // Auto-create PR if session produced commits
+    if (session.result && session.result.commitsCreated.length > 0) {
+      try {
+        const worktreeEngine = this.gitEngine.inDir(session.worktreePath);
+        const prUrl = await worktreeEngine.createSessionPR({
+          projectName: brief.projectName,
+          branch: session.branch,
+          sessionId: session.result.sessionId,
+          status: session.result.status,
+          turnsUsed: session.result.turnsUsed,
+          costUsd: session.result.costUsd,
+          durationMs: session.result.durationMs,
+          commits: session.result.commitsCreated,
+        });
+
+        if (prUrl) {
+          console.log(`  PR created: ${prUrl}`);
+          await this.logger.log({
+            type: "pr_created",
+            project: brief.projectName,
+            data: { url: prUrl, sessionId: session.result.sessionId },
+          });
+        }
+      } catch (err) {
+        console.error(`  Failed to create PR: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    session.signals = await this.detectSignals(session.worktreePath, session.result);
+    await this.stopProject(brief.projectName);
+    return session;
+  }
+
   private async detectSignals(worktreePath: string, result?: SessionResult): Promise<SessionSignals> {
     const signals: SessionSignals = {
       commitsCreated: result?.commitsCreated.length ?? 0,
@@ -149,10 +218,19 @@ export class SessionManager {
       // No reviews directory — expected for non-critic sessions
     }
 
-    // Only mark status as advanced if session produced substantive commits
-    // (commitsCreated now tracks per-session commits, not all branch commits)
-    if (result && result.commitsCreated.length > 1) {
-      signals.statusYamlChanged = true;
+    // Check if status.yaml was actually modified by this session
+    if (result && result.commitsCreated.length > 0) {
+      try {
+        const { execSync } = await import("node:child_process");
+        const diff = execSync(
+          `git diff --name-only HEAD~${result.commitsCreated.length} HEAD -- '*/status.yaml'`,
+          { cwd: worktreePath, encoding: "utf-8", timeout: 5000 },
+        ).trim();
+        signals.statusYamlChanged = diff.includes("status.yaml");
+      } catch {
+        // Fallback: assume changed if 2+ commits (conservative)
+        signals.statusYamlChanged = result.commitsCreated.length > 1;
+      }
     }
 
     return signals;

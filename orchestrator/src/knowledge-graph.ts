@@ -87,22 +87,24 @@ export class KnowledgeGraph {
   async addClaim(claim: Claim): Promise<ClaimRow> {
     const id = claim.id ?? randomUUID();
 
-    // Check for near-duplicates first
-    if (this.embedFn) {
-      const dupes = await this.findNearDuplicates(claim.statement, claim.project);
-      if (dupes.length > 0) {
-        console.log(`[KnowledgeGraph] Near-duplicate found for "${claim.statement.slice(0, 60)}..." — returning existing claim ${dupes[0].id}`);
-        return dupes[0];
-      }
-    }
-
+    // Compute embedding once and reuse for dedup check + insert
+    let embedding: number[] | null = null;
     let embeddingStr: string | null = null;
     if (this.embedFn) {
       try {
-        const embedding = await this.embedFn(claim.statement);
+        embedding = await this.embedFn(claim.statement);
         embeddingStr = `[${embedding.join(",")}]`;
       } catch (err) {
         console.error("[KnowledgeGraph] Embedding failed (inserting without):", err);
+      }
+    }
+
+    // Check for near-duplicates using pre-computed embedding
+    if (embeddingStr) {
+      const dupes = await this.findNearDuplicatesWithVector(embeddingStr, claim.project);
+      if (dupes.length > 0) {
+        console.log(`[KnowledgeGraph] Near-duplicate found for "${claim.statement.slice(0, 60)}..." — returning existing claim ${dupes[0].id}`);
+        return dupes[0];
       }
     }
 
@@ -409,9 +411,12 @@ export class KnowledgeGraph {
   /** Check for near-duplicate claims (cosine distance < 0.05). */
   async findNearDuplicates(statement: string, project: string): Promise<ClaimRow[]> {
     if (!this.embedFn) return [];
-
     const embedding = await this.embedFn(statement);
-    const embeddingStr = `[${embedding.join(",")}]`;
+    return this.findNearDuplicatesWithVector(`[${embedding.join(",")}]`, project);
+  }
+
+  /** Check for near-duplicates using a pre-computed embedding vector string. */
+  private async findNearDuplicatesWithVector(embeddingStr: string, project: string): Promise<ClaimRow[]> {
     const { rows } = await this.pool.query(
       `SELECT *, (embedding <=> $1::vector) AS distance
        FROM claims

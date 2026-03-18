@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
 import { SessionManager, type Session, type SessionSignals } from "./session-manager.js";
-import { type AgentType } from "./session-runner.js";
+import { type AgentType, PHASE_TO_AGENT } from "./session-runner.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
@@ -18,18 +18,6 @@ import { createEmbedFn } from "./embeddings.js";
 import { EventBus } from "./event-bus.js";
 import { registerHandlers } from "./event-handlers.js";
 import { ResearchPlanner, type SessionBrief } from "./research-planner.js";
-
-const PHASE_TO_AGENT: Record<string, AgentType> = {
-  "research": "researcher",
-  "literature-review": "researcher",
-  "empirical-evaluation": "experimenter",
-  "analysis": "experimenter",
-  "drafting": "writer",
-  "revision": "writer",
-  "paper-finalization": "writer",
-  "final": "editor",
-  "active": "engineer",
-};
 
 /** Agent sequences for multi-step phases. After one agent finishes, the next in the sequence runs. */
 const PHASE_SEQUENCES: Record<string, string[]> = {
@@ -131,6 +119,7 @@ export class Daemon {
   private knowledgeGraph: KnowledgeGraph | null = null;
   private eventBus: EventBus | null = null;
   private planner: ResearchPlanner | null = null;
+  private lastMaintenanceAt = 0;
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -201,6 +190,10 @@ export class Daemon {
 
   getPlanner(): ResearchPlanner | null {
     return this.planner;
+  }
+
+  getKnowledgeGraph(): KnowledgeGraph | null {
+    return this.knowledgeGraph;
   }
 
   /**
@@ -610,14 +603,40 @@ export class Daemon {
         console.error("Knowledge graph maintenance error:", err);
       }
     }
+
+    // Dead-letter auto-retry and domain_events cleanup
+    if (this.eventBus) {
+      try {
+        const retried = await this.eventBus.retryAllDeadLetters();
+        if (retried > 0) {
+          console.log("Retried " + retried + " dead letter(s)");
+        }
+      } catch (err) {
+        console.error("Dead letter retry error:", err);
+      }
+
+      // Prune old domain_events (keep 30 days)
+      if (this.dbPool && this.cycleCount % 24 === 0) {
+        try {
+          const { rowCount } = await this.dbPool.query(
+            "DELETE FROM domain_events WHERE processed = TRUE AND created_at < NOW() - INTERVAL '30 days'",
+          );
+          if (rowCount && rowCount > 0) {
+            console.log("Pruned " + rowCount + " old domain events");
+          }
+        } catch { /* non-critical */ }
+      }
+    }
   }
 
   /** Periodic knowledge graph tasks: daily snapshots, contradiction logging. */
   private async knowledgeGraphMaintenance(): Promise<void> {
     if (!this.knowledgeGraph) return;
 
-    // Run once per day (every ~24 cycles at 60-min interval)
-    if (this.cycleCount % 24 !== 0) return;
+    // Run once per 24 hours regardless of poll interval
+    const hoursSinceLast = (Date.now() - this.lastMaintenanceAt) / (1000 * 60 * 60);
+    if (this.lastMaintenanceAt > 0 && hoursSinceLast < 24) return;
+    this.lastMaintenanceAt = Date.now();
 
     const projects = await this.projectManager.listProjects();
     for (const project of projects) {
@@ -787,7 +806,7 @@ export class Daemon {
   private async runSessionFromBrief(brief: SessionBrief): Promise<void> {
     const chainId = randomUUID();
     try {
-      const session = await this.sessionManager.startProject(brief.projectName, brief.agentType);
+      const session = await this.sessionManager.startProjectWithBrief(brief);
       const quality = this.assessQuality(session, brief.agentType);
       this.recordQuality(brief.projectName, quality);
 

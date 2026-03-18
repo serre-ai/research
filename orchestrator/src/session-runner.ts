@@ -6,11 +6,25 @@ import { GitEngine } from "./git-engine.js";
 import { TranscriptWriter } from "./transcript-writer.js";
 import { calculateCost as calcModelCost } from "./pricing.js";
 import type { KnowledgeGraph, ClaimRow } from "./knowledge-graph.js";
+import type { SessionBrief } from "./research-planner.js";
 
 export type AgentType =
   | "researcher" | "writer" | "reviewer" | "editor"
   | "critic" | "experimenter" | "theorist" | "strategist" | "scout"
   | "engineer";
+
+/** Canonical mapping from project phase to default agent type. */
+export const PHASE_TO_AGENT: Record<string, AgentType> = {
+  "research": "researcher",
+  "literature-review": "researcher",
+  "empirical-evaluation": "experimenter",
+  "analysis": "experimenter",
+  "drafting": "writer",
+  "revision": "writer",
+  "paper-finalization": "writer",
+  "final": "editor",
+  "active": "engineer",
+};
 
 const DEFAULT_MAX_TURNS = 50;
 const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;
@@ -171,6 +185,201 @@ export class SessionRunner {
       transcriptPath: writer.getFilePath(),
       error,
     };
+  }
+
+  /** Run a session using a planner-generated brief with specific objectives and context. */
+  async runWithBrief(brief: SessionBrief, worktreePath: string): Promise<SessionResult> {
+    const sessionId = randomUUID();
+    const writer = new TranscriptWriter(this.rootDir, brief.projectName, sessionId);
+    const maxTurns = brief.constraints.maxTurns;
+    const maxDurationMs = brief.constraints.maxDurationMs;
+    const startTime = Date.now();
+
+    // Build prompt using the brief's curated context
+    const prompt = await this.buildBriefPrompt(brief);
+
+    const commitsCreated: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resultMessage: any;
+    let error: string | undefined;
+    let sessionStatus: SessionResult["status"] = "completed";
+
+    const preSessionEngine = new GitEngine(worktreePath);
+    let preSessionCommitCount = 0;
+    try {
+      const preLogs = await preSessionEngine.logBetween("main");
+      preSessionCommitCount = preLogs.length;
+    } catch { /* new branch */ }
+
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), maxDurationMs);
+
+    try {
+      const stream = query({
+        prompt,
+        options: {
+          cwd: worktreePath,
+          allowedTools: [
+            "Read", "Write", "Edit", "Bash", "Glob", "Grep",
+            "WebSearch", "WebFetch",
+          ],
+          permissionMode: "acceptEdits",
+          maxTurns,
+          abortController,
+          systemPrompt: {
+            type: "preset",
+            preset: "claude_code",
+            append: prompt,
+          },
+        },
+      });
+
+      for await (const message of stream) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((message as any).type !== "stream_event") {
+          await writer.write(message);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((message as any).type === "result") {
+          resultMessage = message;
+        }
+      }
+    } catch (err) {
+      if (abortController.signal.aborted) {
+        sessionStatus = "timeout";
+        error = "Session exceeded maximum duration";
+      } else {
+        sessionStatus = "failed";
+        error = err instanceof Error ? err.message : String(err);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (resultMessage) {
+      if (resultMessage.subtype === "error_max_turns") {
+        sessionStatus = "timeout";
+        error = "Session exceeded maximum turns";
+      } else if (resultMessage.subtype === "error_max_budget_usd") {
+        sessionStatus = "budget_exceeded";
+        error = "Session exceeded budget limit";
+      } else if (resultMessage.subtype === "error_during_execution") {
+        sessionStatus = "failed";
+        error = "errors" in resultMessage ? resultMessage.errors.join("; ") : "Unknown execution error";
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+    const worktreeEngine = new GitEngine(worktreePath);
+    try {
+      const allLogs = await worktreeEngine.logBetween("main");
+      const sessionLogs = allLogs.slice(0, allLogs.length - preSessionCommitCount);
+      commitsCreated.push(...sessionLogs.map((l: string) => l.split(" ")[0]));
+    } catch { /* no commits */ }
+
+    const tokensUsed = this.extractTokenUsage(resultMessage);
+    const costUsd = resultMessage?.total_cost_usd ?? this.calculateCost(tokensUsed);
+
+    return {
+      sessionId,
+      projectName: brief.projectName,
+      agentType: brief.agentType,
+      status: sessionStatus,
+      turnsUsed: resultMessage?.num_turns ?? 0,
+      tokensUsed,
+      costUsd,
+      durationMs,
+      commitsCreated,
+      transcriptPath: writer.getFilePath(),
+      error,
+    };
+  }
+
+  /** Build a prompt from a planner brief — injects specific objectives and curated context. */
+  private async buildBriefPrompt(brief: SessionBrief): Promise<string> {
+    const sections: string[] = [];
+
+    const globalClaude = await this.readOptional(join(this.rootDir, "CLAUDE.md"));
+    if (globalClaude) sections.push("# Global Platform Instructions\n\n" + globalClaude);
+
+    const agentDef = await this.readOptional(
+      join(this.rootDir, ".claude", "agents", `${brief.agentType}.md`),
+    );
+    if (agentDef) sections.push("# Agent Role Definition\n\n" + agentDef);
+
+    const projectClaude = await this.readOptional(
+      join(this.rootDir, "projects", brief.projectName, "CLAUDE.md"),
+    );
+    if (projectClaude) sections.push("# Project-Specific Instructions\n\n" + projectClaude);
+
+    const statusYaml = await this.readOptional(
+      join(this.rootDir, "projects", brief.projectName, "status.yaml"),
+    );
+    if (statusYaml) {
+      sections.push("# Current Project Status (status.yaml)\n\n```yaml\n" + statusYaml + "\n```");
+    }
+
+    // Brief-specific context — this is what makes planner sessions intelligent
+    const briefParts: string[] = [];
+    briefParts.push("# Session Objective\n");
+    briefParts.push(brief.objective);
+    briefParts.push("\n## Why This Task Was Selected\n");
+    briefParts.push(brief.reasoning);
+
+    if (brief.context.claims.length > 0) {
+      briefParts.push("\n## Relevant Claims from Knowledge Graph\n");
+      for (const c of brief.context.claims.slice(0, 15)) {
+        const conf = (c.confidence * 100).toFixed(0);
+        briefParts.push(`- **[${c.claimType}]** (${conf}% confidence) ${c.statement}`);
+      }
+    }
+
+    if (brief.context.contradictions.length > 0) {
+      briefParts.push("\n## Known Contradictions\n");
+      for (const c of brief.context.contradictions.slice(0, 5)) {
+        briefParts.push(`- Claim ${c.sourceId.slice(0, 8)} contradicts ${c.targetId.slice(0, 8)} (strength: ${c.strength})`);
+        if (c.evidence) briefParts.push(`  Evidence: ${c.evidence}`);
+      }
+    }
+
+    if (brief.context.files.length > 0) {
+      briefParts.push("\n## Files to Read First\n");
+      for (const f of brief.context.files) {
+        briefParts.push(`- ${f}`);
+      }
+    }
+
+    if (brief.context.supplementary) {
+      briefParts.push("\n## Additional Context\n");
+      briefParts.push(brief.context.supplementary);
+    }
+
+    briefParts.push("\n## Deliverables\n");
+    for (const d of brief.deliverables) {
+      briefParts.push(`- [ ] ${d.description}`);
+    }
+
+    briefParts.push("\n## Constraints\n");
+    briefParts.push(`- Max turns: ${brief.constraints.maxTurns}`);
+    briefParts.push(`- Budget: $${brief.constraints.maxBudgetUsd.toFixed(2)}`);
+
+    sections.push(briefParts.join("\n"));
+
+    sections.push(
+      "# Session Workflow\n\n" +
+      `You are working autonomously on the "${brief.projectName}" project as a ${brief.agentType} agent.\n\n` +
+      "1. Read project files to understand current state before making changes\n" +
+      "2. Make all decisions autonomously using your best judgment\n" +
+      "3. Use extended thinking for critical research decisions\n" +
+      `4. Make frequent conventional commits: type(${brief.projectName}): description\n` +
+      "5. Update status.yaml after significant progress\n" +
+      "6. Log all decisions in decisions_made with date and rationale\n" +
+      "7. Push changes to remote regularly\n" +
+      "8. Create a PR to main when you reach a milestone\n\n" +
+      "Today's date is " + new Date().toISOString().split("T")[0] + ".",
+    );
+
+    return sections.join("\n\n---\n\n");
   }
 
   private async buildPrompt(projectName: string, agentType: string): Promise<string> {

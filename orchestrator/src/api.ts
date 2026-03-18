@@ -1092,7 +1092,7 @@ export function createApi(
   const { wss, broadcast } = setupWebSocket(server, config.apiKey);
 
   // Mount routes
-  const kg = new KnowledgeGraph(pool, createEmbedFn());
+  const kg = daemon?.getKnowledgeGraph() ?? new KnowledgeGraph(pool, createEmbedFn());
 
   // EventBus: use daemon's if available, otherwise create standalone
   const eventBus = daemon?.getEventBus() ?? new EventBus(pool);

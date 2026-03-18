@@ -4,8 +4,7 @@ import type { ProjectManager, ProjectStatus } from "./project-manager.js";
 import type { KnowledgeGraph, ClaimRow, ClaimRelationRow } from "./knowledge-graph.js";
 import type { BudgetTracker } from "./budget-tracker.js";
 import type { BacklogManager } from "./backlog.js";
-import type { AgentType } from "./session-runner.js";
-import type { SessionResult } from "./session-runner.js";
+import { type AgentType, PHASE_TO_AGENT, type SessionResult } from "./session-runner.js";
 import type { SessionSignals } from "./session-manager.js";
 
 // ============================================================
@@ -93,18 +92,6 @@ export interface PlannerState {
 // Constants
 // ============================================================
 
-const PHASE_TO_AGENT: Record<string, AgentType> = {
-  "research": "researcher",
-  "literature-review": "researcher",
-  "empirical-evaluation": "experimenter",
-  "analysis": "experimenter",
-  "drafting": "writer",
-  "revision": "writer",
-  "paper-finalization": "writer",
-  "final": "editor",
-  "active": "engineer",
-};
-
 const DEFAULT_STRATEGY_WEIGHTS: Record<PlanningStrategy, number> = {
   "risk_mitigation": 1.5,
   "contradiction_resolution": 1.4,
@@ -149,6 +136,65 @@ export class ResearchPlanner {
     this.strategyWeights = new Map(
       Object.entries(DEFAULT_STRATEGY_WEIGHTS) as [PlanningStrategy, number][],
     );
+
+    // Load persisted state from DB (non-blocking)
+    this.loadPersistedState().catch((err) => {
+      console.error("[Planner] Failed to load persisted state:", err);
+    });
+  }
+
+  /** Load evaluation history and strategy weights from DB to survive restarts. */
+  private async loadPersistedState(): Promise<void> {
+    if (!this.pool) return;
+
+    // Load recent evaluations
+    try {
+      const { rows } = await this.pool.query(
+        `SELECT session_id, brief_id, project, agent_type, strategy, objective,
+                deliverables_met, deliverables_total, quality_score, reasoning,
+                cost_usd, duration_ms, created_at
+         FROM session_evaluations ORDER BY created_at DESC LIMIT 50`,
+      );
+      this.evaluationHistory = rows.map((r: Record<string, unknown>) => ({
+        sessionId: r.session_id as string,
+        briefId: r.brief_id as string,
+        project: r.project as string,
+        agentType: r.agent_type as string,
+        strategy: r.strategy as PlanningStrategy,
+        objective: r.objective as string,
+        deliverablesMet: r.deliverables_met as number,
+        deliverablesTotal: r.deliverables_total as number,
+        qualityScore: r.quality_score as number,
+        reasoning: r.reasoning as string,
+        costUsd: r.cost_usd as number,
+        durationMs: r.duration_ms as number,
+        createdAt: (r.created_at as Date).toISOString(),
+      })).reverse(); // oldest first for slice(-N) operations
+      if (this.evaluationHistory.length > 0) {
+        console.log(`[Planner] Loaded ${this.evaluationHistory.length} evaluations from DB`);
+      }
+    } catch {
+      // Table might not exist yet
+    }
+
+    // Load strategy weights
+    try {
+      const { rows } = await this.pool.query(
+        `SELECT key, value FROM planner_state WHERE project = '_global'`,
+      );
+      for (const row of rows) {
+        const key = row.key as string;
+        if (key === "strategy_weights") {
+          const weights = row.value as Record<string, number>;
+          for (const [strategy, weight] of Object.entries(weights)) {
+            this.strategyWeights.set(strategy as PlanningStrategy, weight);
+          }
+          console.log("[Planner] Loaded strategy weights from DB");
+        }
+      }
+    } catch {
+      // Table might not exist yet
+    }
   }
 
   // --------------------------------------------------------
@@ -662,6 +708,18 @@ export class ResearchPlanner {
     const adjustment = score / 50; // score 50 = neutral, 100 = 2x, 0 = 0x
     const updated = STRATEGY_WEIGHT_ALPHA * adjustment + (1 - STRATEGY_WEIGHT_ALPHA) * current;
     this.strategyWeights.set(strategy, Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, updated)));
+    this.persistStrategyWeights().catch(() => {});
+  }
+
+  private async persistStrategyWeights(): Promise<void> {
+    if (!this.pool) return;
+    const weights = Object.fromEntries(this.strategyWeights);
+    await this.pool.query(
+      `INSERT INTO planner_state (project, key, value, updated_at)
+       VALUES ('_global', 'strategy_weights', $1, NOW())
+       ON CONFLICT (project, key) DO UPDATE SET value = $1, updated_at = NOW()`,
+      [JSON.stringify(weights)],
+    );
   }
 
   // --------------------------------------------------------
