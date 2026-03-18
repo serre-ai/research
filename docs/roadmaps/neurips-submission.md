@@ -9,6 +9,67 @@
 
 ---
 
+## Live Progress Tracker
+
+> **Last updated**: 2026-03-18
+> **Branch**: `research/reasoning-gaps`
+> **VPS**: 89.167.5.50 (deepwork-vps)
+
+### Phase 1: Critical Experiments
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1.1 | Opus 4.6 evaluation (13,500 instances) | **RUNNING** | VPS background process, B1/direct done (68% acc), ~3h ETA. Checkpoint/resume enabled. Log: `~/opus_eval.log` |
+| 1.2a | Tool-use condition implementation | **DONE** | `tool_executor.py`, `query_with_tools()` in anthropic/openai clients, evaluate.py `--condition tool_use` |
+| 1.2b | Tool-use evaluation (B5, B6) | **READY** | Code deployed to VPS. Not yet launched. Run: `python3 run_evaluation.py --models "anthropic:claude-sonnet-4-20250514" "openai:gpt-4o" "anthropic:claude-haiku-4-5-20251001" --tasks B5 B6 --conditions tool_use --yes` |
+| 1.3a | Budget sensitivity implementation | **DONE** | `--budget-multipliers` CLI flag, separate checkpoints per multiplier |
+| 1.3b | Budget sensitivity evaluation (B2, B3) | **READY** | Code deployed to VPS. Not yet launched. Run: `python3 run_evaluation.py --models "anthropic:claude-sonnet-4-20250514" "openai:gpt-4o" "anthropic:claude-haiku-4-5-20251001" --tasks B2 B3 --conditions budget_cot --budget-multipliers "0.25,0.5,1.0,2.0,4.0" --yes` |
+
+### Phase 2: Analysis & Paper Revision
+
+| # | Task | Status | Depends on |
+|---|------|--------|------------|
+| 2.1 | Integrate Opus results (tables, figures, text) | BLOCKED | Opus eval (1.1) |
+| 2.2 | Tool-use results section | BLOCKED | Tool-use eval (1.2b) |
+| 2.3 | B8 reframing (negative control) | **CAN START** | Nothing |
+| 2.4 | Budget sensitivity section + figure | BLOCKED | Budget sweep eval (1.3b) |
+| 2.5 | Real-world mapping section | **CAN START** | Nothing |
+| 2.6 | Song et al. differentiation | **CAN START** | Nothing |
+
+### Phase 3: Submission Polish
+
+| # | Task | Status | Depends on |
+|---|------|--------|------------|
+| 3.1 | NeurIPS checklist + ethics statement | NOT STARTED | All Phase 2 |
+| 3.2 | Double-blind anonymization | NOT STARTED | All Phase 2 |
+| 3.3 | Supplementary materials package | NOT STARTED | All Phase 2 |
+| 3.4 | Figure quality pass (300dpi, colorblind-safe) | NOT STARTED | All Phase 2 |
+| 3.5 | Final LaTeX checks (page count, refs) | NOT STARTED | All Phase 3 items |
+| 3.6 | Proofreading pass | NOT STARTED | Everything |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `projects/reasoning-gaps/paper/main.tex` | Paper LaTeX source |
+| `projects/reasoning-gaps/benchmarks/evaluate.py` | Core evaluation script |
+| `projects/reasoning-gaps/benchmarks/run_evaluation.py` | Batch evaluation runner |
+| `projects/reasoning-gaps/benchmarks/tool_executor.py` | Sandboxed Python execution for tool_use |
+| `projects/reasoning-gaps/benchmarks/results/analysis/` | Analysis output (tables, figures) |
+| `projects/reasoning-gaps/status.yaml` | Project state (update after milestones) |
+
+### Model ID Reference
+
+| Model | API ID | Pricing (in/out per 1M) |
+|-------|--------|------------------------|
+| Opus 4.6 | `claude-opus-4-6` | $15 / $75 |
+| Sonnet 4.6 | `claude-sonnet-4-20250514` | $3 / $15 |
+| Haiku 4.5 | `claude-haiku-4-5-20251001` | $0.80 / $4 |
+| GPT-4o | `gpt-4o` | $2.50 / $10 |
+| o3 | `o3` | $10 / $40 |
+
+---
+
 ## Reviewer Threat Model
 
 Before planning experiments, think like a reviewer. NeurIPS assigns 3-4 reviewers who each score on novelty, quality, clarity, significance. Here's what will get flagged:
