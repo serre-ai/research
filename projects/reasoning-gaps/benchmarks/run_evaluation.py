@@ -43,7 +43,7 @@ MODELS: dict[str, dict[str, str]] = {
     # Proprietary (API)
     "anthropic:claude-haiku-4-5-20251001": {"family": "claude", "size": "small"},
     "anthropic:claude-sonnet-4-20250514": {"family": "claude", "size": "medium"},
-    "anthropic:claude-opus-4-20250514": {"family": "claude", "size": "large"},
+    "anthropic:claude-opus-4-6": {"family": "claude", "size": "large"},
     "openai:gpt-4o-mini": {"family": "gpt", "size": "small"},
     "openai:gpt-4o": {"family": "gpt", "size": "medium"},
     "openai:o3": {"family": "gpt", "size": "large"},
