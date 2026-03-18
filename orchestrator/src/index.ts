@@ -60,13 +60,18 @@ async function main() {
 
       console.log(`Starting daemon: interval=${interval}m, sessions=${maxSessions}, budget=$${budget}/day`);
 
-      // Create daemon first so we can pass its eval manager to the API
-      const daemon = new Daemon(config);
-
-      // Start API server if configured
+      // Create DB pool for daemon + API to share
       const apiKey = process.env.DEEPWORK_API_KEY;
       const databaseUrl = process.env.DATABASE_URL;
       const apiPort = Number(process.env.API_PORT) || 3001;
+
+      let dbPool: import("pg").Pool | undefined;
+      if (databaseUrl) {
+        const pg = await import("pg");
+        dbPool = new pg.default.Pool({ connectionString: databaseUrl, max: 10 });
+      }
+
+      const daemon = new Daemon(config, dbPool);
 
       if (apiKey && databaseUrl) {
         const { broadcast } = createApi(
