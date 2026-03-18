@@ -12,11 +12,16 @@ Generates:
     analysis_output/tables/accuracy_by_condition.tex
     analysis_output/tables/cot_lift.tex
     analysis_output/tables/scale_analysis.tex
+    analysis_output/tables/tool_use_comparison.tex  (if tool_use data exists)
+    analysis_output/tables/budget_sensitivity.tex    (if budget sweep data exists)
     analysis_output/figures/accuracy_vs_difficulty.pdf
     analysis_output/figures/cot_lift_heatmap.pdf
     analysis_output/figures/phase_transition.pdf
     analysis_output/figures/scale_sensitivity.pdf
     analysis_output/figures/intervention_comparison.pdf
+    analysis_output/figures/tool_use_comparison.pdf   (if tool_use data exists)
+    analysis_output/figures/budget_sensitivity.pdf     (if budget sweep data exists)
+    analysis_output/stats.tex
     analysis_output/summary.md
 """
 
@@ -34,6 +39,8 @@ from analysis.tables import (
     accuracy_by_condition_table,
     cot_lift_table,
     scale_analysis_table,
+    tool_use_comparison_table,
+    budget_sensitivity_table,
     to_latex,
 )
 from analysis.plots import (
@@ -42,16 +49,20 @@ from analysis.plots import (
     plot_phase_transition,
     plot_scale_sensitivity,
     plot_intervention_comparison,
+    plot_tool_use_comparison,
+    plot_budget_sensitivity,
 )
 from analysis.statistics import compute_all_cis
+from analysis.stats import generate_stats_tex
 
 
 def _write_table(
     df: pd.DataFrame,
     output_dir: Path,
     name: str,
-    caption: str,
-    label: str,
+    caption: str = "",
+    label: str = "",
+    tabular_only: bool = True,
     **kwargs,
 ) -> None:
     """Write a table as both CSV and LaTeX."""
@@ -62,7 +73,9 @@ def _write_table(
     df.to_csv(tables_dir / f"{name}.csv")
 
     # LaTeX for paper
-    latex = to_latex(df, caption=caption, label=label, **kwargs)
+    latex = to_latex(
+        df, caption=caption, label=label, tabular_only=tabular_only, **kwargs
+    )
     (tables_dir / f"{name}.tex").write_text(latex)
 
     print(f"  -> {name}.csv, {name}.tex")
@@ -179,7 +192,7 @@ def main() -> None:
     print(f"Loaded {len(df):,} instances across {df['task'].nunique()} tasks, "
           f"{df['model'].nunique()} models, {df['condition'].nunique()} conditions.")
 
-    # Generate tables
+    # Generate tables (all tabular_only for paper \input{})
     print("\nGenerating tables...")
 
     table1 = main_accuracy_table(df)
@@ -188,6 +201,8 @@ def main() -> None:
         caption="Overall accuracy by task and model.",
         label="tab:main-accuracy",
         highlight_max=True,
+        rotated_headers=True,
+        strip_leading_zero=True,
     )
 
     table2 = accuracy_by_condition_table(df)
@@ -204,6 +219,7 @@ def main() -> None:
             caption="CoT lift (accuracy improvement over direct) by gap type.",
             label="tab:cot-lift",
             float_format=".3f",
+            sign_prefix=True,
         )
 
     table4 = scale_analysis_table(df)
@@ -214,6 +230,30 @@ def main() -> None:
             label="tab:scale-analysis",
         )
 
+    # New: tool_use comparison table
+    table5 = tool_use_comparison_table(df)
+    if not table5.empty:
+        _write_table(
+            table5, output_dir, "tool_use_comparison",
+            caption="Tool use accuracy comparison.",
+            label="tab:tool-use",
+        )
+        print("  (tool_use_comparison table generated)")
+    else:
+        print("  (no tool_use data -- skipping tool_use_comparison table)")
+
+    # New: budget sensitivity table
+    table6 = budget_sensitivity_table(df)
+    if not table6.empty:
+        _write_table(
+            table6, output_dir, "budget_sensitivity",
+            caption="Budget sensitivity for B2 and B3.",
+            label="tab:budget-sensitivity",
+        )
+        print("  (budget_sensitivity table generated)")
+    else:
+        print("  (no budget sweep data -- skipping budget_sensitivity table)")
+
     # Confidence intervals
     print("\nComputing confidence intervals...")
     ci_df = compute_all_cis(df, n_bootstrap=args.n_bootstrap)
@@ -221,6 +261,12 @@ def main() -> None:
     ci_dir.mkdir(parents=True, exist_ok=True)
     ci_df.to_csv(ci_dir / "confidence_intervals.csv", index=False)
     print(f"  -> confidence_intervals.csv ({len(ci_df)} groups)")
+
+    # Generate stats.tex
+    print("\nGenerating stats.tex...")
+    stats_path = str(output_dir / "stats.tex")
+    generate_stats_tex(df, stats_path)
+    print(f"  -> stats.tex")
 
     # Generate figures
     if not args.skip_plots:
@@ -241,6 +287,24 @@ def main() -> None:
 
         print("  - intervention_comparison...")
         plot_intervention_comparison(df, figures_dir)
+
+        # New: tool_use comparison plot
+        if "tool_use" in df["condition"].unique():
+            print("  - tool_use_comparison...")
+            plot_tool_use_comparison(df, figures_dir)
+        else:
+            print("  (no tool_use data -- skipping tool_use_comparison plot)")
+
+        # New: budget sensitivity plot
+        budget_sweep_conds = [
+            c for c in df["condition"].unique()
+            if c.startswith("budget_cot_") and c.endswith("x")
+        ]
+        if budget_sweep_conds:
+            print("  - budget_sensitivity...")
+            plot_budget_sensitivity(df, figures_dir)
+        else:
+            print("  (no budget sweep data -- skipping budget_sensitivity plot)")
 
     # Summary
     print("\nGenerating summary...")

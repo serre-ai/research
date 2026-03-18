@@ -62,7 +62,50 @@ GAP_TYPE_ORDER: list[str] = [
 ]
 
 # Condition ordering
-CONDITION_ORDER: list[str] = ["direct", "short_cot", "budget_cot", "tool"]
+CONDITION_ORDER: list[str] = ["direct", "short_cot", "budget_cot", "tool_use"]
+
+# Condition display labels
+CONDITION_LABELS: dict[str, str] = {
+    "direct": "Direct",
+    "short_cot": "Short CoT",
+    "budget_cot": "Budget CoT",
+    "tool_use": "Tool Use",
+}
+
+# ---------------------------------------------------------------------------
+# Model display names and ordering (for paper tables/figures)
+# ---------------------------------------------------------------------------
+
+MODEL_DISPLAY_NAMES: dict[str, str] = {
+    "claude-haiku-4-5-20251001": "Haiku 4.5",
+    "claude-sonnet-4-20250514": "Sonnet 4.6",
+    "claude-opus-4-6": "Opus 4.6",
+    "gpt-4o": "GPT-4o",
+    "gpt-4o-mini": "GPT-4o-m",
+    "o3": "o3",
+    "meta-llama/llama-3.1-8b-instruct": "Llama 8B",
+    "meta-llama/llama-3.1-70b-instruct": "Llama 70B",
+    "mistralai/ministral-8b-2512": "Ministral 8B",
+    "mistralai/mistral-small-24b-instruct-2501": "Mistral 24B",
+    "qwen/qwen-2.5-7b-instruct": "Qwen 7B",
+    "qwen/qwen-2.5-72b-instruct": "Qwen 72B",
+}
+
+MODEL_DISPLAY_ORDER: list[str] = [
+    "Haiku 4.5", "Sonnet 4.6", "Opus 4.6",
+    "GPT-4o-m", "GPT-4o", "o3",
+    "Llama 8B", "Llama 70B",
+    "Ministral 8B", "Mistral 24B",
+    "Qwen 7B", "Qwen 72B",
+]
+
+
+def get_display_name(model: str) -> str:
+    """Look up the human-readable display name for a model.
+
+    Falls back to the raw model name if no mapping exists.
+    """
+    return MODEL_DISPLAY_NAMES.get(model, model)
 
 # ---------------------------------------------------------------------------
 # Model family extraction
@@ -244,17 +287,35 @@ def _strip_provider_prefix(model_name: str) -> str:
     return model_name
 
 
-def _normalize_record(record: dict) -> dict:
+def _extract_condition_from_filename(filename: str, record_condition: str) -> str:
+    """Extract condition from filename, preserving budget multiplier suffixes.
+
+    Budget sweep files are named like 'model_B2_budget_cot_0.25x.json' but the
+    condition field inside the JSON is just 'budget_cot'. This function extracts
+    the full condition including the multiplier suffix from the filename.
+    """
+    # Match budget_cot_<number>x pattern in filename
+    match = re.search(r"budget_cot_(\d+\.?\d*)x", filename)
+    if match:
+        return f"budget_cot_{match.group(1)}x"
+    return record_condition
+
+
+def _normalize_record(record: dict, source_filename: str = "") -> dict:
     """Normalize a single result record to canonical column names."""
     # Handle nested metadata
     metadata = record.get("metadata", {})
     is_refusal = metadata.get("is_refusal", False) if isinstance(metadata, dict) else False
 
+    condition = record.get("condition", "")
+    if source_filename:
+        condition = _extract_condition_from_filename(source_filename, condition)
+
     return {
         "instance_id": record.get("instance_id", ""),
         "task": record.get("task", ""),
         "difficulty": int(record.get("difficulty", 0)),
-        "condition": record.get("condition", ""),
+        "condition": condition,
         "model": _strip_provider_prefix(record.get("model", "")),
         "extracted_answer": str(record.get("extracted_answer", "")),
         "ground_truth": str(record.get("ground_truth", "")),
@@ -291,14 +352,18 @@ def load_results(results_dir: str) -> pd.DataFrame:
     for path in json_files:
         try:
             records = _parse_json_file(path)
-            all_records.extend(_normalize_record(r) for r in records)
+            all_records.extend(
+                _normalize_record(r, source_filename=path.name) for r in records
+            )
         except (json.JSONDecodeError, KeyError) as exc:
             print(f"Warning: skipping {path}: {exc}")
 
     for path in jsonl_files:
         try:
             records = _parse_jsonl_file(path)
-            all_records.extend(_normalize_record(r) for r in records)
+            all_records.extend(
+                _normalize_record(r, source_filename=path.name) for r in records
+            )
         except (json.JSONDecodeError, KeyError) as exc:
             print(f"Warning: skipping {path}: {exc}")
 

@@ -25,6 +25,7 @@ import { EventBus } from "./event-bus.js";
 import { plannerRoutes } from "./routes/planner.js";
 import { verificationRoutes } from "./routes/verification.js";
 import { ClaimVerifier } from "./verification.js";
+import { paperRoutes } from "./routes/paper.js";
 
 const { Pool } = pg;
 
@@ -1133,6 +1134,9 @@ export function createApi(
   // Verification layer (Sprint 5)
   const verifier = daemon?.getVerifier() ?? new ClaimVerifier(pool, kg, process.cwd());
   app.use("/api/projects", verificationRoutes(verifier));
+
+  // Paper build pipeline
+  app.use("/api/paper", paperRoutes());
 
   // Start listening
   server.listen(config.port, () => {

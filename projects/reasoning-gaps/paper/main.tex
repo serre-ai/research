@@ -36,6 +36,9 @@
 \newcommand{\calC}{\mathcal{C}}
 \newcommand{\calT}{\mathcal{T}}
 
+% Auto-generated statistics from analysis pipeline
+\input{../benchmarks/analysis_output/stats}
+
 \title{On the Reasoning Gaps of Large Language Models:\\ A Formal Characterization}
 
 \author{
@@ -53,7 +56,7 @@ Large language models demonstrate remarkable reasoning abilities yet fail system
 We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
 Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
 We introduce \textsc{ReasonGap}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
-Evaluation across twelve models from five families (159,162 instances) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
+Evaluation across twelve models from five families (209,438 instances) under four evaluation conditions (direct, chain-of-thought, budget-constrained CoT, and tool-augmented) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
 Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
 \end{abstract}
 
@@ -331,7 +334,7 @@ Models span five families: Claude (Haiku~4.5, Sonnet~4.6, Opus~4.6), GPT (4o-min
 \label{sec:experiments}
 % ============================================================
 
-We evaluate the \textsc{ReasonGap} benchmark across twelve models from five families under three reasoning conditions, totaling 159,162 evaluated instances.
+We evaluate the \textsc{ReasonGap} benchmark across twelve models from five families under four reasoning conditions, totaling 209,438 evaluated instances.
 The results validate the taxonomy's central predictions: chain-of-thought selectively closes depth and serial gaps while leaving intractability and architectural gaps unchanged, and reasoning budget calibration critically determines whether constrained CoT helps or harms.
 
 \subsection{Experimental Setup}
@@ -370,10 +373,11 @@ Qwen & Qwen 2.5 72B & 72B & Local \\
 \end{table}
 
 \paragraph{Evaluation conditions.}
-Each task is evaluated under three conditions:
+Each task is evaluated under four conditions:
 (1)~\textbf{Direct}: the model must answer immediately without intermediate reasoning (``Answer with just the final answer.'');
 (2)~\textbf{Short CoT}: unconstrained chain-of-thought (``Think step by step, then provide your final answer.'');
-(3)~\textbf{Budget CoT}: chain-of-thought with a fixed token budget calibrated per task.\footnote{The B2 budget was recalibrated from $O(2^d)$ (too restrictive at 24 words for depth~3) to a node-count formula giving ${\sim}180$ words. See \Cref{sec:budget} for discussion.\label{fn:b2budget}}
+(3)~\textbf{Budget CoT}: chain-of-thought with a fixed token budget calibrated per task;\footnote{The B2 budget was recalibrated from $O(2^d)$ (too restrictive at 24 words for depth~3) to a node-count formula giving ${\sim}180$ words. See \Cref{sec:budget} for discussion.\label{fn:b2budget}}
+(4)~\textbf{Tool-augmented}: the model may write and execute Python code to solve the task (evaluated on B5 and B6 for a subset of models; see \Cref{sec:tool_use}).
 
 \paragraph{Tasks and instances.}
 We use the nine \textsc{ReasonGap} diagnostic tasks described in \Cref{sec:benchmark}.
@@ -404,21 +408,7 @@ This 60-percentage-point range across tasks, compared to a typical within-task r
 \label{tab:main-accuracy-results}
 \small
 \setlength{\tabcolsep}{2pt}
-\begin{tabular}{@{}lcccccccccccc@{}}
-\toprule
- & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{Sonnet 4.6} & \rotatebox{70}{Opus 4.6} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{o3} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 72B} & \rotatebox{70}{Qwen 7B} \\
-\midrule
-B1: Majority & .63 & .66 & .70 & .78 & .72 & .13 & .68 & .55 & .72 & .72 & \textbf{.81} & .67 \\
-B2: Bool Eval & .81 & .72 & .83 & \textbf{.88} & .83 & .57 & .85 & .68 & .82 & .81 & .86 & .76 \\
-B3: Perm Comp & .58 & .46 & \textbf{.81} & .69 & .58 & .25 & .60 & .27 & .62 & .57 & .62 & .31 \\
-B4: State Track & .71 & .74 & \textbf{.79} & .55 & .62 & .35 & .69 & .48 & .66 & .68 & .72 & .52 \\
-B5: Graph Reach & .79 & .68 & .79 & \textbf{.84} & .79 & .35 & .70 & .51 & .78 & .65 & .83 & .66 \\
-B6: LIS & .31 & .34 & \textbf{.62} & .38 & .30 & .25 & .24 & .21 & .24 & .22 & .35 & .28 \\
-B7: 3-SAT & .37 & .40 & .56 & \textbf{.67} & .63 & .11 & .34 & .32 & .42 & .51 & .61 & .56 \\
-B8: Reversal & 1.00 & 1.00 & \textbf{1.00} & .99 & .94 & .73 & 1.00 & .97 & .99 & .98 & .99 & .95 \\
-B9: Negation & .73 & .79 & \textbf{.81} & .57 & .54 & .31 & .74 & .50 & .56 & .57 & .75 & .59 \\
-\bottomrule
-\end{tabular}
+\input{../benchmarks/analysis_output/tables/main_accuracy}
 \end{table}
 
 \Cref{tab:accuracy-by-condition} reports accuracy by task and condition, averaged across models.
@@ -432,21 +422,7 @@ Second, \textbf{B6 (LIS) is hard for most models}: even with unconstrained CoT, 
 \caption{Accuracy by task and evaluation condition (averaged across all twelve models). Short CoT provides the largest gains on serial tasks (B3, B4) and the smallest on intractability (B7) and architectural (B8) tasks.}
 \label{tab:accuracy-by-condition}
 \small
-\begin{tabular}{@{}lccc@{}}
-\toprule
- & \textbf{Direct} & \textbf{Short CoT} & \textbf{Budget CoT} \\
-\midrule
-B1: Majority & 0.61 & 0.74 & 0.61 \\
-B2: Bool Eval & 0.61 & 0.86 & 0.85 \\
-B3: Perm Comp & 0.20 & 0.79 & 0.61 \\
-B4: State Track & 0.36 & 0.78 & 0.74 \\
-B5: Graph Reach & 0.67 & 0.82 & 0.64 \\
-B6: LIS & 0.25 & 0.40 & 0.30 \\
-B7: 3-SAT & 0.51 & 0.51 & 0.39 \\
-B8: Reversal & 0.93 & 0.99 & 0.97 \\
-B9: Negation & 0.51 & 0.74 & 0.61 \\
-\bottomrule
-\end{tabular}
+\input{../benchmarks/analysis_output/tables/accuracy_by_condition}
 \end{table}
 
 \Cref{fig:accuracy-difficulty} shows accuracy as a function of difficulty level for each task, revealing the characteristic degradation patterns predicted by the taxonomy.
@@ -454,7 +430,7 @@ Serial tasks (B3, B4) show the steepest decline with difficulty, consistent with
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/accuracy_vs_difficulty.png}
+\includegraphics[width=\textwidth]{../benchmarks/analysis_output/figures/accuracy_vs_difficulty.pdf}
 \caption{Accuracy versus difficulty level for all nine tasks, shown for each evaluation condition. Tasks are arranged by gap type. Serial tasks (B3, B4) degrade most steeply with difficulty; architectural tasks (B8) remain near ceiling. Error bars show 95\% bootstrap CIs.}
 \label{fig:accuracy-difficulty}
 \end{figure}
@@ -471,18 +447,7 @@ The central empirical finding of this paper is that \textbf{chain-of-thought eff
 \caption{CoT lift (accuracy improvement over direct) by gap type. Types~2--3 show the largest lift under unconstrained CoT, while Types~5--6 show negligible or negative lift, confirming the taxonomy's predictions (\Cref{prop:depth,prop:serial,prop:intractable}).}
 \label{tab:cot-lift-results}
 \small
-\begin{tabular}{@{}lcc@{}}
-\toprule
-\textbf{Gap Type} & \textbf{Short CoT Lift} & \textbf{Budget CoT Lift} \\
-\midrule
-Type 1: Sensitivity & $+$0.132 & $+$0.001 \\
-Type 2: Depth & $+$0.199 & $+$0.109 \\
-Type 3: Serial & \textbf{$+$0.502} & $+$0.390 \\
-Type 4: Algorithmic & $+$0.148 & $+$0.043 \\
-Type 5: Intractability & $+$0.003 & $-$0.120 \\
-Type 6: Architectural & $+$0.144 & $+$0.068 \\
-\bottomrule
-\end{tabular}
+\input{../benchmarks/analysis_output/tables/cot_lift}
 \end{table}
 
 \paragraph{Depth and serial gaps benefit most from CoT.}
@@ -502,14 +467,14 @@ For Type~4, CoT lift is limited because the bottleneck is algorithmic knowledge,
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/cot_lift_heatmap.png}
+\includegraphics[width=0.85\textwidth]{../benchmarks/analysis_output/figures/cot_lift_heatmap.pdf}
 \caption{CoT lift heatmap by gap type and condition. Dark cells indicate large improvements from CoT; light cells indicate no change or degradation. The taxonomy's predictions are clearly visible: serial gaps (Type~3) benefit most, while intractability gaps (Type~5) show no benefit.}
 \label{fig:cot-heatmap}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../benchmarks/results/analysis/figures/intervention_comparison.png}
+\includegraphics[width=0.9\textwidth]{../benchmarks/analysis_output/figures/intervention_comparison.pdf}
 \caption{Accuracy under each evaluation condition, grouped by gap type. The divergence between conditions is largest for serial tasks and smallest for intractability and architectural tasks.}
 \label{fig:intervention}
 \end{figure}
@@ -531,6 +496,21 @@ Truncated CoT produced partially evaluated formulas that were systematically wro
 We recalibrated the budget to scale with formula node count (${\sim}180$ words for depth~3), which provides sufficient room for step-by-step evaluation without unconstrained reasoning.
 After recalibration, B2 budget CoT accuracy rose to 0.85---\emph{matching} short CoT (0.86) and dramatically exceeding the direct condition (0.61), demonstrating that a well-calibrated budget can match or surpass unconstrained reasoning when the budget aligns with the task's computational structure.
 
+\paragraph{Budget sweep analysis.}
+To characterize the budget--accuracy relationship more precisely, we evaluate B2 and B3 at five budget multipliers (0.25$\times$, 0.5$\times$, 1.0$\times$, 2.0$\times$, 4.0$\times$) across three models.
+The results reveal qualitatively different budget sensitivity profiles that align with the taxonomy's predictions (\Cref{fig:budget-sensitivity}).
+B2 (depth gap) shows a clear threshold: accuracy rises sharply from ${\sim}$44\% at 0.25$\times$ to ${\sim}$93\% at 1.0$\times$, then plateaus---additional budget provides no benefit, consistent with the $O(\log n)$ CoT requirement for $\NC$ problems.
+B3 (serial gap) shows monotonic improvement with no plateau: accuracy climbs from ${\sim}$8\% at 0.25$\times$ to ${\sim}$72\% at 4.0$\times$, with a dramatic jump between 1.0$\times$ (${\sim}$13\%) and 2.0$\times$ (${\sim}$55\%).
+This confirms \Cref{prop:monotone}: serial composition tasks require proportionally more reasoning tokens, and performance is monotonically non-decreasing in budget up to the optimal $O(n)$ allocation.
+The divergence between B2 and B3 is itself a prediction of the taxonomy: depth gaps have a sharp budget threshold, while serial gaps demand budget proportional to sequence length.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{../benchmarks/analysis_output/figures/budget_sensitivity.pdf}
+\caption{Budget sensitivity curves for B2 (depth gap) and B3 (serial gap). B2 shows a clear threshold: accuracy plateaus at 1.0$\times$ budget, and additional budget provides no benefit. B3 shows monotonic improvement with no plateau, confirming that serial composition requires proportionally more reasoning tokens. Proposition~4 predicts this divergence.}
+\label{fig:budget-sensitivity}
+\end{figure}
+
 \paragraph{Practical implications.}
 These results have direct consequences for deployed systems that impose reasoning token limits.
 A budget that is insufficient for the task's computational requirements is not merely unhelpful---it actively degrades performance below the no-reasoning baseline.
@@ -548,18 +528,7 @@ We partition models into small ($\leq$10B) and medium (10--80B) categories.
 \caption{Accuracy by model scale and gap type (open-source models only). Scale provides the largest benefit for serial gaps and almost no benefit for algorithmic gaps.}
 \label{tab:scale-results}
 \small
-\begin{tabular}{@{}lccc@{}}
-\toprule
-\textbf{Gap Type} & \textbf{Small ($\leq$10B)} & \textbf{Medium (10--80B)} & \textbf{$\Delta$} \\
-\midrule
-Type 1: Sensitivity & 0.65 & 0.74 & $+$0.09 \\
-Type 2: Depth & 0.70 & 0.78 & $+$0.08 \\
-Type 3: Serial & 0.48 & 0.64 & $+$0.17 \\
-Type 4: Algorithmic & 0.24 & 0.27 & $+$0.03 \\
-Type 5: Intractability & 0.43 & 0.49 & $+$0.05 \\
-Type 6: Architectural & 0.76 & 0.84 & $+$0.08 \\
-\bottomrule
-\end{tabular}
+\input{../benchmarks/analysis_output/tables/scale_analysis}
 \end{table}
 
 \paragraph{Algorithmic gaps resist scaling.}
@@ -579,7 +548,7 @@ The moderate scaling for Type~5 likely reflects improved heuristic pattern match
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/scale_sensitivity.png}
+\includegraphics[width=0.85\textwidth]{../benchmarks/analysis_output/figures/scale_sensitivity.pdf}
 \caption{Accuracy by model scale (open-source models) for each gap type. Algorithmic gaps (Type~4) show nearly flat scaling---a 10$\times$ increase in parameters yields only 3 percentage points of improvement. Serial gaps (Type~3) show the steepest scaling curve.}
 \label{fig:scale}
 \end{figure}
@@ -601,7 +570,7 @@ The phase transition result connects to complexity theory: at the critical ratio
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.75\textwidth]{../benchmarks/results/analysis/figures/phase_transition.png}
+\includegraphics[width=0.75\textwidth]{../benchmarks/analysis_output/figures/phase_transition.pdf}
 \caption{Accuracy on B7 (3-SAT) as a function of difficulty level. Models show a sharp accuracy cliff as instances approach the phase transition ($\alpha \approx 4.27$). Larger models maintain accuracy slightly longer, but all converge toward chance at the hardest instances. CoT (dashed lines) provides no systematic improvement over direct evaluation (solid lines).}
 \label{fig:phase}
 \end{figure}
@@ -650,6 +619,27 @@ The higher direct accuracy (0.70 vs.\ Haiku 0.10 and Sonnet 0.22) likely reflect
 \paragraph{Depth gaps reach ceiling.}
 On B2 (Nested Boolean), Opus achieves 0.99 with both short and budget CoT (vs.\ Haiku 0.93 and Sonnet 0.92), approaching the theoretical ceiling.
 This confirms that depth gaps (Type~2) are fully closable by CoT at sufficient scale, as predicted.
+
+\subsection{Tool Augmentation Validates Type~4 Prediction}
+\label{sec:tool_use}
+
+We evaluate a fourth condition---\textbf{tool-augmented} (Python code execution)---on B5 (Graph Reachability) and B6 (Longest Increasing Subsequence) for three models: Sonnet~4.6, Haiku~4.5, and GPT-4o.
+The results provide striking validation of the Type~4 prediction that algorithmic gaps are best closed by tool use rather than additional reasoning tokens.
+
+On B6 (LIS), tool augmentation raises accuracy from 24\% (direct) and 44\% (short CoT) to near-perfect levels for Claude models: Sonnet achieves 100\% and Haiku 99\%.
+GPT-4o's tool-use accuracy on B6 is notably lower at 29\%, likely reflecting differences in code generation capability rather than a failure of the Type~4 prediction itself.
+On B5 (Graph Reachability), tool use yields 80\% accuracy for both Sonnet and Haiku, and 70\% for GPT-4o---comparable to or exceeding the best CoT results.
+
+The Type~4 CoT lift from tool use is $+$0.635, dramatically larger than the $+$0.148 lift from short CoT alone.
+This confirms that for problems in $\PTIME$ requiring non-trivial algorithms, providing access to code execution is a far more effective intervention than extending the reasoning chain.
+\Cref{fig:tool-use} visualizes the condition comparison for tasks with tool-use data.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{../benchmarks/analysis_output/figures/tool_use_comparison.pdf}
+\caption{Accuracy under four evaluation conditions for tasks with tool-use data. On B6 (LIS), tool augmentation via Python execution raises accuracy from 24\% (direct) to near-perfect for Claude models, validating the Type~4 prediction that algorithmic gaps require tool access rather than more reasoning tokens.}
+\label{fig:tool-use}
+\end{figure}
 
 % ============================================================
 \section{Discussion}
@@ -725,8 +715,7 @@ Second, benchmark tasks are synthetic by design---they isolate individual gap ty
 The ecological validity of synthetic benchmarks remains an open question.
 Third, our evaluation covers a snapshot of twelve models from five families as of early 2026; the landscape evolves rapidly, and future architectures may shift the boundaries.
 Fourth, while B8's ceiling effect is informative as calibration (distinguishing in-context from training-time reversal), the primary evidence for inference-time Type~6 gaps rests on B9 alone; additional architectural gap tasks would strengthen this category.
-Fifth, our current evaluation does not include a tool-augmented condition, which our taxonomy predicts would be most effective for Type~4 (algorithmic) gaps.
-Adding code execution as an intervention would strengthen the empirical validation.
+Fifth, our tool-augmented evaluation covers only two tasks (B5, B6) with three models; extending tool use to all tasks and models would provide more comprehensive Type~4 validation.
 Sixth, the budget\_cot sensitivity to calibration (discussed above) means our budget\_cot results should be interpreted cautiously---the condition tests a specific budget, not the optimal budget for each task.
 
 % ============================================================
@@ -753,7 +742,7 @@ A growing body of work documents systematic reasoning failures in LLMs.
 \citet{kambhampati2024} provided evidence that LLMs cannot plan autonomously but can serve as components in hybrid systems.
 \citet{joshi2024} catalogued causal reasoning fallacies, including post hoc and confounding errors.
 \citet{song2026failures} offer the most comprehensive survey to date, organizing failures by reasoning type (embodied vs.\ non-embodied, intuitive vs.\ logical) and failure category (fundamental architectural limitations, domain-specific constraints, robustness issues).
-Our contribution is complementary but distinct in a crucial respect: where \citet{song2026failures} organize failures \emph{descriptively} by task domain and failure category, we ground each failure pattern in a specific complexity-theoretic boundary, yielding \emph{testable predictions} about which interventions (CoT, tools, scaling) close which gaps---predictions that we validate empirically across 159,162 instances.
+Our contribution is complementary but distinct in a crucial respect: where \citet{song2026failures} organize failures \emph{descriptively} by task domain and failure category, we ground each failure pattern in a specific complexity-theoretic boundary, yielding \emph{testable predictions} about which interventions (CoT, tools, scaling) close which gaps---predictions that we validate empirically across 209,438 instances.
 Concretely, their taxonomy can diagnose \emph{what} fails (e.g., ``compositional reasoning'') but not \emph{why} it fails or \emph{which} mitigation to apply; our framework predicts both, because each gap type is defined by the computational boundary that causes it.
 The convergence of these independently developed taxonomies (their survey submitted February 2026, our work targeting NeurIPS 2026) underscores the timeliness and importance of systematic reasoning failure analysis.
 
@@ -789,9 +778,10 @@ We have shown that reasoning failures in large language models are systematic, p
 Our six-type taxonomy of reasoning gaps connects each failure pattern to a specific complexity-theoretic boundary, yielding testable predictions about when chain-of-thought, scaling, and tool augmentation will close or fail to close each gap.
 The \textsc{ReasonGap} benchmark suite provides a diagnostic tool for evaluating models against these predictions.
 
-Evaluation across twelve models from five families on 159,162 instances validates the taxonomy's core prediction: chain-of-thought closes depth and serial gaps with mean lifts of $+35.1\%$ (Types~2,3 combined under short CoT) and budget CoT lift of $+50.2\%$ for serial tasks, while intractability and architectural gaps show negligible aggregate response ($+9.4\%$ combined under short CoT).
+Evaluation across twelve models from five families on 209,438 instances validates the taxonomy's core prediction: chain-of-thought closes depth and serial gaps with mean lifts of $+35.1\%$ (Types~2,3 combined under short CoT) and budget CoT lift of $+50.2\%$ for serial tasks, while intractability and architectural gaps show negligible aggregate response ($+9.4\%$ combined under short CoT).
 The sharpest confirmation comes from the serial composition tasks (B3, B4), where direct accuracy averages 28.0\% but rises to 78.5\% with short CoT---a pattern predicted by the $\Omega(n)$ CoT lower bound for iterated composition.
 Opus~4.6 achieves perfect accuracy (1.00) on B3 with CoT, demonstrating that the serial gap is fully closable at sufficient scale.
+Tool augmentation provides the strongest validation of the Type~4 prediction: on B6 (LIS), code execution raises accuracy from 24\% (direct) to near-perfect for Claude models, with a Type~4 lift of $+$0.635---over four times the lift from unconstrained CoT alone.
 
 Our framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform, and what augmentations extend its reach?''
 The answer, grounded in decades of circuit complexity theory, is precise: without augmentation, transformers compute within $\TC$; with chain-of-thought, they reach $\PTIME$; and beyond $\PTIME$, no known augmentation helps.
@@ -1418,7 +1408,7 @@ Accuracy degrades with negation depth $d$. CoT may help with explicit negation t
 \section{Per-Model Detailed Results}
 \label{app:results}
 
-\Cref{tab:full_results} reports accuracy with 95\% Wilson confidence intervals for each (model, task, condition) combination across all evaluated groups (12 models $\times$ 9 tasks $\times$ 3 conditions), totalling 159,162 instances. Note that o3 was not evaluated on B6 (LIS) due to budget constraints.
+\Cref{tab:full_results} reports accuracy with 95\% Wilson confidence intervals for each (model, task, condition) combination across all evaluated groups (12 models $\times$ 9 tasks $\times$ 4 conditions), totalling 209,438 instances. Note that o3 was not evaluated on B6 (LIS) due to budget constraints, and the tool-augmented condition was evaluated on B5 and B6 only for a subset of models.
 
 {\small
 \begin{longtable}{llccc}

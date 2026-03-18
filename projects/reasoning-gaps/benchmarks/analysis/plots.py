@@ -50,14 +50,14 @@ CONDITION_COLORS: dict[str, str] = {
     "direct": "#4c72b0",
     "short_cot": "#55a868",
     "budget_cot": "#c44e52",
-    "tool": "#8172b2",
+    "tool_use": "#8172b2",
 }
 
 CONDITION_LABELS: dict[str, str] = {
     "direct": "Direct",
     "short_cot": "Short CoT",
     "budget_cot": "Budget CoT",
-    "tool": "Tool Use",
+    "tool_use": "Tool Use",
 }
 
 
@@ -476,3 +476,183 @@ def plot_intervention_comparison(df: pd.DataFrame, output_dir: str) -> None:
 
     fig.tight_layout()
     _save_figure(fig, output_dir, "intervention_comparison")
+
+
+# ---------------------------------------------------------------------------
+# Figure 6: Tool Use Comparison (B5, B6)
+# ---------------------------------------------------------------------------
+
+def plot_tool_use_comparison(df: pd.DataFrame, output_dir: str) -> None:
+    """Bar chart comparing conditions on tasks with tool_use data.
+
+    x-axis: tasks (B5, B6 or whichever have tool_use data).
+    Grouped bars: one per condition (direct, short_cot, budget_cot, tool_use).
+    Includes bootstrap CI error bars.
+    """
+    _setup_style()
+
+    # Only include tasks that have tool_use data
+    tool_use_tasks = df[df["condition"] == "tool_use"]["task"].unique()
+    if len(tool_use_tasks) == 0:
+        return
+
+    tasks = [t for t in TASK_ORDER if t in tool_use_tasks]
+    if not tasks:
+        return
+
+    # Filter to only models that have tool_use data for a fair comparison
+    tool_use_models = df[df["condition"] == "tool_use"]["model"].unique()
+    df_sub = df[(df["model"].isin(tool_use_models)) & (df["task"].isin(tasks))]
+
+    from analysis.loader import CONDITION_ORDER as _COND_ORDER
+    conditions = [c for c in _COND_ORDER if c in df_sub["condition"].unique()]
+
+    fig, ax = plt.subplots(figsize=(NEURIPS_FULL_WIDTH, 3.0))
+
+    n_tasks = len(tasks)
+    n_conds = len(conditions)
+    bar_width = 0.8 / n_conds
+    x = np.arange(n_tasks)
+
+    for i, cond in enumerate(conditions):
+        accs = []
+        ci_los = []
+        ci_his = []
+
+        for task in tasks:
+            mask = (df_sub["task"] == task) & (df_sub["condition"] == cond)
+            group = df_sub[mask]
+            if group.empty:
+                accs.append(0.0)
+                ci_los.append(0.0)
+                ci_his.append(0.0)
+            else:
+                acc, ci_lo, ci_hi = _compute_accuracy_with_ci(group)
+                accs.append(acc)
+                ci_los.append(acc - ci_lo)
+                ci_his.append(ci_hi - acc)
+
+        color = CONDITION_COLORS.get(cond, "#333333")
+        label = CONDITION_LABELS.get(cond, cond)
+        offset = (i - n_conds / 2 + 0.5) * bar_width
+
+        ax.bar(
+            x + offset, accs,
+            width=bar_width,
+            yerr=[ci_los, ci_his],
+            color=color, label=label,
+            capsize=2, alpha=0.85,
+        )
+
+    from analysis.loader import TASK_SHORT_LABELS as _TSL
+    task_labels = [_TSL.get(t, t) for t in tasks]
+    ax.set_xticks(x)
+    ax.set_xticklabels(task_labels, rotation=0)
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(0, 1.05)
+    ax.set_title("Tool Use vs. Other Conditions", fontweight="bold")
+    ax.legend(loc="upper right", frameon=True)
+
+    fig.tight_layout()
+    _save_figure(fig, output_dir, "tool_use_comparison")
+
+
+# ---------------------------------------------------------------------------
+# Figure 7: Budget Sensitivity (B2, B3)
+# ---------------------------------------------------------------------------
+
+def plot_budget_sensitivity(df: pd.DataFrame, output_dir: str) -> None:
+    """Line plot of accuracy vs budget multiplier for B2 and B3.
+
+    Budget multiplier is encoded in the condition field as
+    'budget_cot_<mult>x' (e.g., 'budget_cot_0.25x').
+
+    Two subplots: left = B2, right = B3.
+    Lines coloured by model family.
+    """
+    _setup_style()
+
+    # Identify budget sweep conditions
+    budget_sweep_conds = sorted(
+        c for c in df["condition"].unique()
+        if c.startswith("budget_cot_") and c.endswith("x")
+    )
+    if not budget_sweep_conds:
+        return
+
+    # Parse multipliers
+    def _parse_mult(cond: str) -> float:
+        # "budget_cot_0.25x" -> 0.25
+        return float(cond.replace("budget_cot_", "").rstrip("x"))
+
+    mult_map = {c: _parse_mult(c) for c in budget_sweep_conds}
+
+    target_tasks = ["B2_nested_boolean", "B3_permutation_composition"]
+    tasks_present = [t for t in target_tasks if t in df["task"].unique()]
+    if not tasks_present:
+        return
+
+    n_plots = len(tasks_present)
+    fig, axes = plt.subplots(
+        1, n_plots,
+        figsize=(NEURIPS_FULL_WIDTH, 3.0),
+        squeeze=False,
+    )
+
+    from analysis.loader import _extract_model_family
+
+    models = sorted(df[df["condition"].isin(budget_sweep_conds)]["model"].unique())
+    family_map = {m: _extract_model_family(m) for m in models}
+
+    for col_idx, task in enumerate(tasks_present):
+        ax = axes[0][col_idx]
+        task_df = df[(df["task"] == task) & (df["condition"].isin(budget_sweep_conds))]
+
+        for model in models:
+            model_df = task_df[task_df["model"] == model]
+            if model_df.empty:
+                continue
+
+            mults = []
+            accs = []
+            ci_los = []
+            ci_his = []
+
+            for cond in sorted(budget_sweep_conds, key=lambda c: mult_map[c]):
+                cond_df = model_df[model_df["condition"] == cond]
+                if cond_df.empty:
+                    continue
+                acc, ci_lo, ci_hi = _compute_accuracy_with_ci(cond_df)
+                mults.append(mult_map[cond])
+                accs.append(acc)
+                ci_los.append(acc - ci_lo)
+                ci_his.append(ci_hi - acc)
+
+            if not mults:
+                continue
+
+            family = family_map[model]
+            color = FAMILY_COLORS.get(family, FAMILY_COLORS["Other"])
+
+            from analysis.loader import get_display_name
+            label = get_display_name(model)
+
+            ax.errorbar(
+                mults, accs,
+                yerr=[ci_los, ci_his],
+                marker="o", markersize=3, linewidth=1.2,
+                color=color, label=label, capsize=2,
+            )
+
+        short_label = TASK_SHORT_LABELS.get(task, task)
+        ax.set_title(short_label, fontweight="bold")
+        ax.set_xlabel("Budget Multiplier")
+        ax.set_ylabel("Accuracy")
+        ax.set_ylim(-0.05, 1.05)
+        ax.set_xscale("log", base=2)
+        ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v}x"))
+        ax.legend(loc="best", frameon=True, fontsize=6)
+
+    fig.suptitle("Budget Sensitivity", fontweight="bold", y=1.02)
+    fig.tight_layout()
+    _save_figure(fig, output_dir, "budget_sensitivity")
