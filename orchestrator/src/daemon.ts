@@ -17,6 +17,7 @@ import { KnowledgeGraph } from "./knowledge-graph.js";
 import { createEmbedFn } from "./embeddings.js";
 import { EventBus } from "./event-bus.js";
 import { registerHandlers } from "./event-handlers.js";
+import { ResearchPlanner, type SessionBrief } from "./research-planner.js";
 
 const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
@@ -129,6 +130,7 @@ export class Daemon {
   private dbPool: pg.Pool | null = null;
   private knowledgeGraph: KnowledgeGraph | null = null;
   private eventBus: EventBus | null = null;
+  private planner: ResearchPlanner | null = null;
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -159,6 +161,17 @@ export class Daemon {
         logger: this.logger,
       });
     }
+
+    // Research planner (feature flag: USE_RESEARCH_PLANNER=1)
+    if (process.env.USE_RESEARCH_PLANNER === "1") {
+      this.planner = new ResearchPlanner(
+        this.dbPool,
+        this.projectManager,
+        this.knowledgeGraph,
+        this.budgetTracker,
+      );
+      console.log("Research planner enabled");
+    }
   }
 
   getEvalManager(): EvalJobManager {
@@ -183,6 +196,10 @@ export class Daemon {
 
   getEventBus(): EventBus | null {
     return this.eventBus;
+  }
+
+  getPlanner(): ResearchPlanner | null {
+    return this.planner;
   }
 
   /**
@@ -470,56 +487,94 @@ export class Daemon {
 
     if (availableSlots <= 0) return;
 
-    // Score and select projects
-    const projects = await this.projectManager.listProjects();
-    const scored = await this.scoreProjects(projects);
+    if (this.planner) {
+      // ---- Planner path ----
+      const activeSet = new Set(this.activeSessions.keys());
+      const briefs = await this.planner.planNextActions(availableSlots, activeSet);
 
-    // Filter out already-running projects and take top N
-    const candidates = scored
-      .filter((s) => !this.activeSessions.has(s.project.project))
-      .filter((s) => s.score > 0)
-      .slice(0, availableSlots);
-
-    if (candidates.length === 0 && this.followUpQueue.length === 0) {
-      console.log("No eligible projects this cycle");
-      return;
-    }
-
-    // Launch sessions for selected projects
-    for (const candidate of candidates) {
-      const { project, agentType } = candidate;
-
-      // Loop detection: skip if last 3 sessions were all low-quality with same agent
-      if (this.isStuckLoop(project.project, agentType)) {
-        console.log("⚠ Loop detected: " + project.project + " has 3+ consecutive low-quality " + agentType + " sessions — skipping this cycle");
-        await this.logger.log({
-          type: "loop_detected",
-          project: project.project,
-          agent: agentType,
-          data: { reason: "3+ consecutive sessions with quality < 70, same agent type" },
-        });
-        continue;
+      if (briefs.length === 0) {
+        console.log("Planner: no actions this cycle");
       }
 
-      console.log("Launching " + agentType + " session for " + project.project + " (score: " + candidate.score + ")");
+      for (const brief of briefs) {
+        if (this.activeSessions.has(brief.projectName)) continue;
 
-      await this.logger.log({
-        type: "session_start",
-        project: project.project,
-        agent: agentType,
-        data: { score: candidate.score, phase: project.phase },
-      });
+        console.log("Planner: launching " + brief.agentType + " for " + brief.projectName + " (strategy: " + brief.strategy + ", pri=" + brief.priority + ")");
+        console.log("  Objective: " + brief.objective.slice(0, 120));
 
-      const tracker: SessionTracker = {
-        promise: Promise.resolve(),
-        projectName: project.project,
-        startedAt: Date.now(),
-        settled: false,
-      };
-      tracker.promise = this.runSession(project.project, agentType).finally(() => {
-        tracker.settled = true;
-      });
-      this.activeSessions.set(project.project, tracker);
+        await this.logger.log({
+          type: "session_start",
+          project: brief.projectName,
+          agent: brief.agentType,
+          data: {
+            briefId: brief.id,
+            strategy: brief.strategy,
+            priority: brief.priority,
+            objective: brief.objective,
+            model: brief.constraints.model,
+            source: "planner",
+          },
+        });
+
+        const tracker: SessionTracker = {
+          promise: Promise.resolve(),
+          projectName: brief.projectName,
+          startedAt: Date.now(),
+          settled: false,
+        };
+        tracker.promise = this.runSessionFromBrief(brief).finally(() => {
+          tracker.settled = true;
+        });
+        this.activeSessions.set(brief.projectName, tracker);
+      }
+    } else {
+      // ---- Legacy scoring path ----
+      const projects = await this.projectManager.listProjects();
+      const scored = await this.scoreProjects(projects);
+
+      const candidates = scored
+        .filter((s) => !this.activeSessions.has(s.project.project))
+        .filter((s) => s.score > 0)
+        .slice(0, availableSlots);
+
+      if (candidates.length === 0 && this.followUpQueue.length === 0) {
+        console.log("No eligible projects this cycle");
+      } else {
+        for (const candidate of candidates) {
+          const { project, agentType } = candidate;
+
+          if (this.isStuckLoop(project.project, agentType)) {
+            console.log("⚠ Loop detected: " + project.project + " has 3+ consecutive low-quality " + agentType + " sessions — skipping this cycle");
+            await this.logger.log({
+              type: "loop_detected",
+              project: project.project,
+              agent: agentType,
+              data: { reason: "3+ consecutive sessions with quality < 70, same agent type" },
+            });
+            continue;
+          }
+
+          console.log("Launching " + agentType + " session for " + project.project + " (score: " + candidate.score + ")");
+
+          await this.logger.log({
+            type: "session_start",
+            project: project.project,
+            agent: agentType,
+            data: { score: candidate.score, phase: project.phase },
+          });
+
+          const tracker: SessionTracker = {
+            promise: Promise.resolve(),
+            projectName: project.project,
+            startedAt: Date.now(),
+            settled: false,
+          };
+          tracker.promise = this.runSession(project.project, agentType).finally(() => {
+            tracker.settled = true;
+          });
+          this.activeSessions.set(project.project, tracker);
+        }
+      }
     }
 
     // Tick eval job manager — check running jobs, start queued ones
@@ -725,6 +780,62 @@ export class Daemon {
     // Session chaining: determine and queue follow-up based on signals
     if (session?.signals && session.status === "completed") {
       this.processSessionSignals(projectName, agentType, session.signals, currentChainId, chainDepth);
+    }
+  }
+
+  private async runSessionFromBrief(brief: SessionBrief): Promise<void> {
+    const chainId = randomUUID();
+    try {
+      const session = await this.sessionManager.startProject(brief.projectName, brief.agentType);
+      const quality = this.assessQuality(session, brief.agentType);
+      this.recordQuality(brief.projectName, quality);
+
+      // Planner evaluation
+      if (this.planner && session.result) {
+        const evaluation = await this.planner.evaluateSession(brief, session.result, session.signals);
+        await this.logger.log({
+          type: "session_end",
+          project: brief.projectName,
+          agent: brief.agentType,
+          data: {
+            briefId: brief.id,
+            strategy: brief.strategy,
+            deliverablesMet: evaluation.deliverablesMet,
+            deliverablesTotal: evaluation.deliverablesTotal,
+            evaluationScore: evaluation.qualityScore,
+            legacyScore: quality.score,
+            cost: session.result.costUsd,
+            commits: session.result.commitsCreated.length,
+          },
+        });
+      }
+
+      // Notification
+      const commitCount = session.result?.commitsCreated.length ?? 0;
+      const cost = session.result?.costUsd?.toFixed(2) ?? "0.00";
+      await this.notifier.notify({
+        event: "Session Completed",
+        project: brief.projectName,
+        summary: `${brief.agentType}/${brief.strategy}: ${commitCount} commits, $${cost} (quality: ${quality.score}/100)`,
+        level: "info",
+      });
+
+      this.clearFailure(brief.projectName);
+
+      // Session chaining
+      if (session.signals && session.status === "completed") {
+        this.processSessionSignals(brief.projectName, brief.agentType, session.signals, chainId, 0);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Planner session failed for " + brief.projectName + ": " + msg);
+      this.recordFailure(brief.projectName);
+      await this.notifier.notify({
+        event: "Session Failed",
+        project: brief.projectName,
+        summary: `${brief.agentType}/${brief.strategy}: ${msg}`,
+        level: "error",
+      });
     }
   }
 

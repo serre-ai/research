@@ -22,6 +22,7 @@ import { eventRoutes } from "./routes/events.js";
 import { KnowledgeGraph } from "./knowledge-graph.js";
 import { createEmbedFn } from "./embeddings.js";
 import { EventBus } from "./event-bus.js";
+import { plannerRoutes } from "./routes/planner.js";
 
 const { Pool } = pg;
 
@@ -1123,6 +1124,9 @@ export function createApi(
   // Collective integration routes (Sprint 9)
   app.use("/api/collective", collectiveContextRoutes(pool));
   app.use("/api/triggers", triggerRoutes(pool));
+
+  // Research planner (Sprint 4)
+  app.use("/api/planner", plannerRoutes(daemon?.getPlanner() ?? null));
 
   // Start listening
   server.listen(config.port, () => {
