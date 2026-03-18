@@ -182,8 +182,8 @@ def plot_accuracy_vs_difficulty(
                 continue
 
             color = FAMILY_COLORS.get(family_map[model], FAMILY_COLORS["Other"])
-            # Strip provider prefix for label
-            label = model.split(":")[-1] if ":" in model else model
+            from analysis.loader import get_display_name
+            label = get_display_name(model)
             ax.errorbar(
                 diffs_present, accs,
                 yerr=[ci_los, ci_his],
@@ -208,7 +208,7 @@ def plot_accuracy_vs_difficulty(
         fig.legend(
             handles, labels,
             loc="lower center",
-            ncol=min(len(models), 5),
+            ncol=min(len(models), 6),
             bbox_to_anchor=(0.5, -0.02),
             frameon=True,
         )
@@ -229,8 +229,12 @@ def plot_cot_lift_heatmap(df: pd.DataFrame, output_dir: str) -> None:
     """
     _setup_style()
 
+    # Filter to standard conditions only (exclude budget sweep variants)
+    standard_conds = [c for c in CONDITION_ORDER if c in df["condition"].unique()]
+    df_std = df[df["condition"].isin(standard_conds)]
+
     # Compute per-gap-type accuracy by condition
-    acc = df.pivot_table(
+    acc = df_std.pivot_table(
         values="correct",
         index="gap_type",
         columns="condition",
@@ -240,7 +244,7 @@ def plot_cot_lift_heatmap(df: pd.DataFrame, output_dir: str) -> None:
     if "direct" not in acc.columns:
         return
 
-    # Compute lift
+    # Compute lift — only for standard conditions
     lift = pd.DataFrame(index=acc.index)
     for cond in acc.columns:
         if cond != "direct":
@@ -327,7 +331,8 @@ def plot_phase_transition(df: pd.DataFrame, output_dir: str) -> None:
             ci_his.append(ci_hi - acc)
 
         color = FAMILY_COLORS.get(family_map[model], FAMILY_COLORS["Other"])
-        label = model.split(":")[-1] if ":" in model else model
+        from analysis.loader import get_display_name
+        label = get_display_name(model)
 
         ax.errorbar(
             difficulties, accs,
