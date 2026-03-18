@@ -831,6 +831,11 @@ export class Daemon {
   }
 
   private async runSessionFromBrief(brief: SessionBrief): Promise<void> {
+    // Collective actions use API calls, not git worktrees
+    if (brief.strategy === "collective_action") {
+      return this.runCollectiveSession(brief);
+    }
+
     const chainId = randomUUID();
     try {
       const session = await this.sessionManager.startProjectWithBrief(brief);
@@ -891,6 +896,44 @@ export class Daemon {
         summary: `${brief.agentType}/${brief.strategy}: ${msg}`,
         level: "error",
       });
+    }
+  }
+
+  /** Run a collective action session — no worktree, agent uses API calls. */
+  private async runCollectiveSession(brief: SessionBrief): Promise<void> {
+    try {
+      const result = await this.sessionManager.getRunner().runCollective(brief);
+
+      console.log(`Collective session finished: ${result.status} ($${result.costUsd.toFixed(2)}, ${result.turnsUsed} turns)`);
+
+      if (this.planner) {
+        const evaluation = await this.planner.evaluateSession(brief, result);
+        await this.logger.log({
+          type: "session_end",
+          project: brief.projectName,
+          agent: brief.agentType,
+          data: {
+            briefId: brief.id,
+            strategy: brief.strategy,
+            evaluationScore: evaluation.qualityScore,
+            cost: result.costUsd,
+            source: "collective",
+          },
+        });
+      }
+
+      await this.notifier.notify({
+        event: "Collective Action",
+        project: brief.projectName,
+        summary: `${brief.agentType}: ${brief.objective.slice(0, 100)} ($${result.costUsd.toFixed(2)})`,
+        level: "info",
+      });
+
+      this.clearFailure(brief.projectName);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Collective session failed: " + msg);
+      this.recordFailure(brief.projectName);
     }
   }
 

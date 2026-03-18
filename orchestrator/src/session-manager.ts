@@ -256,6 +256,10 @@ export class SessionManager {
     console.log(`Stopped session for ${projectName}`);
   }
 
+  getRunner(): SessionRunner {
+    return this.sessionRunner;
+  }
+
   getSession(projectName: string): Session | undefined {
     return this.sessions.get(projectName);
   }
