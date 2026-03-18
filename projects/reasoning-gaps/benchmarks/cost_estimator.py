@@ -54,6 +54,7 @@ AVG_OUTPUT_TOKENS: dict[str, int] = {
     "direct": 15,
     "short_cot": 300,
     "budget_cot": 200,
+    "tool_use": 600,  # code generation + tool call overhead + final answer
 }
 
 # Default difficulty distribution (instances per difficulty level)
@@ -126,9 +127,16 @@ def estimate_cost(
                 for diff in difficulties:
                     avg_input = task_input_tokens.get(diff, 200)
 
-                    # System prompt adds ~30 tokens
-                    instance_input_tokens = avg_input + 30
+                    # System prompt adds ~30 tokens; tool definitions add ~100
+                    tool_def_tokens = 100 if condition == "tool_use" else 0
+                    instance_input_tokens = avg_input + 30 + tool_def_tokens
                     instance_output_tokens = avg_output
+                    # Tool_use has multi-turn: model generates code, we execute
+                    # it, then feed result back (~150 extra input tokens for
+                    # tool result + context, ~100 extra output for final answer)
+                    if condition == "tool_use":
+                        instance_input_tokens += 150
+                        instance_output_tokens += 100
                     n_instances = instances_per_task
 
                     batch_input = instance_input_tokens * n_instances

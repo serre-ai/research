@@ -27,6 +27,7 @@ Conditions:
     direct      -- No chain-of-thought; force immediate answer.
     short_cot   -- "Think step by step" prompt prefix (unconstrained).
     budget_cot  -- Dynamic CoT token budget based on task complexity.
+    tool_use    -- Model uses python_execute tool via native tool_use API.
 """
 
 from __future__ import annotations
@@ -59,6 +60,11 @@ CONDITION_PROMPTS: dict[str, str] = {
     "budget_cot": (
         "Think step by step (using at most {budget} words), "
         "then provide your final answer on the last line."
+    ),
+    "tool_use": (
+        "You have access to a python_execute tool. "
+        "Write and execute Python code to solve this problem. "
+        "Return only the final answer on the last line."
     ),
 }
 
@@ -165,15 +171,18 @@ def evaluate_instance(
     client: ModelClient,
     condition: str,
     budget: int | None = None,
+    budget_multiplier: float | None = None,
 ) -> EvalResult:
     """Evaluate a single benchmark instance.
 
     Args:
         instance: Benchmark instance dict (from generated JSON).
         client: Model client to use for inference.
-        condition: One of 'direct', 'short_cot', 'budget_cot'.
+        condition: One of 'direct', 'short_cot', 'budget_cot', 'tool_use'.
         budget: Token budget for budget_cot condition. If None and
                 condition is budget_cot, compute dynamically.
+        budget_multiplier: Optional multiplier to scale the dynamically
+                computed budget_cot word budget. Clamped to [10, 5000].
 
     Returns:
         EvalResult with scoring.
@@ -197,23 +206,42 @@ def evaluate_instance(
     elif condition == "budget_cot":
         if budget is not None:
             budget_val = budget
+            # Apply multiplier to explicit budgets, then clamp
+            if budget_multiplier is not None:
+                budget_val = max(10, min(5000, round(budget_val * budget_multiplier)))
         else:
             # Dynamic budget based on task type and instance metadata
             from budget_calculator import compute_budget
             task_id = instance.get("task", "")
-            budget_val = compute_budget(task_id, instance)
+            if budget_multiplier is not None:
+                # Use wider clamp range [10, 5000] for sensitivity sweeps
+                budget_val = compute_budget(
+                    task_id, instance,
+                    multiplier=budget_multiplier,
+                    min_budget=10,
+                    max_budget=5000,
+                )
+            else:
+                budget_val = compute_budget(task_id, instance)
         system_prompt = CONDITION_PROMPTS["budget_cot"].format(budget=budget_val)
         full_prompt = base_prompt
         max_tokens = budget_val * 2  # rough token-to-word ratio
+    elif condition == "tool_use":
+        system_prompt = CONDITION_PROMPTS["tool_use"]
+        full_prompt = base_prompt
+        max_tokens = 2048  # room for code generation
     else:
         raise ValueError(f"Unknown condition: {condition}")
 
-    # Query the model
-    response, latency = client.query(
-        prompt=full_prompt,
-        system_prompt=system_prompt,
-        max_tokens=max_tokens,
-    )
+    # Query the model -- tool_use condition uses special path
+    if condition == "tool_use":
+        response, latency = _evaluate_tool_use(client, full_prompt, system_prompt, max_tokens)
+    else:
+        response, latency = client.query(
+            prompt=full_prompt,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+        )
 
     # Extract and score
     ground_truth = str(instance["answer"])
@@ -235,6 +263,88 @@ def evaluate_instance(
         latency_ms=latency,
         metadata={"is_refusal": refusal},
     )
+
+
+def _evaluate_tool_use(
+    client: ModelClient,
+    prompt: str,
+    system_prompt: str,
+    max_tokens: int,
+) -> tuple[str, float]:
+    """Execute tool_use evaluation using the appropriate client method.
+
+    For Anthropic/OpenAI clients, uses native tool_use API with a
+    python_execute tool. For OpenRouter, falls back to prompt-based
+    code extraction and subprocess execution.
+    """
+    from tool_executor import (
+        ANTHROPIC_TOOL_DEFINITION,
+        OPENAI_TOOL_DEFINITION,
+        OPENROUTER_TOOL_PROMPT,
+        execute_python,
+        extract_code_from_response,
+        get_last_output_line,
+    )
+
+    def _tool_handler(name: str, args: dict[str, Any]) -> str:
+        """Handle tool calls by executing Python code."""
+        if name != "python_execute":
+            return f"Error: unknown tool '{name}'"
+        code = args.get("code", "")
+        if not code:
+            return "Error: no code provided"
+        result = execute_python(code)
+        if result["success"] == "true":
+            output = result["stdout"]
+            if result["stderr"]:
+                output += f"\nStderr: {result['stderr']}"
+            return output or "(no output)"
+        else:
+            return f"Error: {result['stderr']}"
+
+    # Determine client type and dispatch accordingly
+    client_module = type(client).__module__
+
+    if "anthropic" in client_module:
+        # Native Anthropic tool_use
+        response, latency = client.query_with_tools(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+            tools=[ANTHROPIC_TOOL_DEFINITION],
+            tool_handler=_tool_handler,
+        )
+        return response, latency
+
+    elif "openai" in client_module and "openrouter" not in client_module:
+        # Native OpenAI function calling
+        response, latency = client.query_with_tools(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+            tools=[OPENAI_TOOL_DEFINITION],
+            tool_handler=_tool_handler,
+        )
+        return response, latency
+
+    else:
+        # OpenRouter / vLLM / other: prompt-based fallback
+        fallback_prompt = f"{OPENROUTER_TOOL_PROMPT}\n\n{prompt}"
+        response, latency = client.query(
+            prompt=fallback_prompt,
+            system_prompt="",
+            max_tokens=max_tokens,
+        )
+
+        # Try to extract and execute code from the response
+        code = extract_code_from_response(response)
+        if code:
+            exec_result = execute_python(code)
+            if exec_result["success"] == "true" and exec_result["stdout"]:
+                output_line = get_last_output_line(exec_result["stdout"])
+                response = f"{response}\n\nExecution output:\n{exec_result['stdout']}\n\n{output_line}"
+
+        return response, latency
 
 
 def compute_summary(results: list[EvalResult]) -> EvalSummary:
@@ -316,7 +426,7 @@ def main() -> None:
     parser.add_argument(
         "--condition",
         type=str,
-        choices=["direct", "short_cot", "budget_cot"],
+        choices=["direct", "short_cot", "budget_cot", "tool_use"],
         default="direct",
         help="Evaluation condition (default: direct).",
     )
@@ -326,6 +436,13 @@ def main() -> None:
         default=None,
         help="Word budget for budget_cot condition. "
              "If not set, computed dynamically per instance.",
+    )
+    parser.add_argument(
+        "--budget-multiplier",
+        type=float,
+        default=None,
+        help="Multiplier for budget_cot word budget (e.g., 0.5 for half, 2.0 for double). "
+             "Scales the dynamically computed budget. Clamped to [10, 5000] words.",
     )
     parser.add_argument(
         "--output",
@@ -487,6 +604,7 @@ def main() -> None:
                 client=client,
                 condition=args.condition,
                 budget=args.budget,
+                budget_multiplier=args.budget_multiplier,
                 checkpoint=checkpoint,
                 concurrency=args.parallel,
                 evaluate_fn=evaluate_instance,
@@ -502,7 +620,8 @@ def main() -> None:
 
             try:
                 result = evaluate_instance(
-                    instance, client, args.condition, args.budget
+                    instance, client, args.condition, args.budget,
+                    budget_multiplier=args.budget_multiplier,
                 )
                 # Checkpoint immediately
                 checkpoint.save(result)

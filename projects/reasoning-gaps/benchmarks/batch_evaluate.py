@@ -24,6 +24,7 @@ async def evaluate_batch(
     checkpoint: Any | None = None,
     concurrency: int = 5,
     evaluate_fn: Any = None,
+    budget_multiplier: float | None = None,
 ) -> list[Any]:
     """Evaluate a batch of instances concurrently.
 
@@ -33,11 +34,12 @@ async def evaluate_batch(
     Args:
         instances: List of benchmark instance dicts.
         client: ModelClient instance (synchronous query interface).
-        condition: Evaluation condition (direct, short_cot, budget_cot).
+        condition: Evaluation condition (direct, short_cot, budget_cot, tool_use).
         budget: Word budget for budget_cot (None for dynamic).
         checkpoint: Optional CheckpointManager for incremental saves.
         concurrency: Maximum number of concurrent evaluations.
         evaluate_fn: The evaluate_instance function to call. Must be provided.
+        budget_multiplier: Optional multiplier for budget_cot word budget.
 
     Returns:
         List of EvalResult objects for all successfully evaluated instances.
@@ -64,13 +66,18 @@ async def evaluate_batch(
         async with semaphore:
             try:
                 # Run sync evaluate_instance in thread pool
-                result = await loop.run_in_executor(
-                    executor,
+                import functools
+                _eval_call = functools.partial(
                     evaluate_fn,
                     instance,
                     client,
                     condition,
                     budget,
+                    budget_multiplier=budget_multiplier,
+                )
+                result = await loop.run_in_executor(
+                    executor,
+                    _eval_call,
                 )
 
                 # Save checkpoint immediately

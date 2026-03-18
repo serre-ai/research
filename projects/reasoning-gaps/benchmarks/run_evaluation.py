@@ -101,7 +101,7 @@ def _load_vllm_endpoints() -> dict[str, str]:
 
 TASKS: list[str] = ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
 
-CONDITIONS: list[str] = ["direct", "short_cot", "budget_cot"]
+CONDITIONS: list[str] = ["direct", "short_cot", "budget_cot", "tool_use"]
 
 # Task key -> benchmark data filename (relative to benchmarks/ directory)
 TASK_FILE_MAP: dict[str, str] = {
@@ -381,18 +381,20 @@ def run_single_evaluation(
     log_dir: Path,
     python_executable: str,
     max_instances: int | None = None,
+    budget_multiplier: float | None = None,
 ) -> RunResult:
     """Run a single evaluate.py subprocess for one (model, task, condition).
 
     Args:
         model: Full model spec (e.g., "anthropic:claude-haiku-4-5-20251001").
         task: Task key (e.g., "B1").
-        condition: Evaluation condition.
+        condition: Evaluation condition (base condition without multiplier suffix).
         benchmarks_dir: Path to benchmarks/ directory.
         checkpoint_dir: Shared checkpoint directory.
         log_dir: Directory for stdout/stderr logs.
         python_executable: Python interpreter path.
         max_instances: Optional limit on instances (for testing).
+        budget_multiplier: Optional budget multiplier for budget_cot condition.
 
     Returns:
         RunResult with success/failure status.
@@ -404,13 +406,22 @@ def run_single_evaluation(
     provider = model.split(":", 1)[0] if ":" in model else "unknown"
     parallel = PROVIDER_PARALLEL.get(provider, 5)
 
-    # Build output path
+    # Build output path -- include multiplier suffix for budget sweep runs
     model_safe = model.replace(":", "_").replace("/", "_")
+    condition_label = condition
+    if budget_multiplier is not None and condition == "budget_cot":
+        condition_label = f"budget_cot_{budget_multiplier}x"
     output_file = (
         benchmarks_dir / "results"
-        / f"{model_safe}_{task}_{condition}.json"
+        / f"{model_safe}_{task}_{condition_label}.json"
     )
     output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Use a separate checkpoint directory for multiplier runs to avoid conflicts
+    effective_checkpoint_dir = checkpoint_dir
+    if budget_multiplier is not None and condition == "budget_cot":
+        effective_checkpoint_dir = checkpoint_dir / f"budget_{budget_multiplier}x"
+        effective_checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     # Build command
     cmd = [
@@ -421,16 +432,19 @@ def run_single_evaluation(
         "--condition", condition,
         "--output", str(output_file),
         "--resume",
-        "--checkpoint-dir", str(checkpoint_dir),
+        "--checkpoint-dir", str(effective_checkpoint_dir),
         "--parallel", str(parallel),
     ]
 
     if max_instances is not None:
         cmd.extend(["--max-instances", str(max_instances)])
 
+    if budget_multiplier is not None:
+        cmd.extend(["--budget-multiplier", str(budget_multiplier)])
+
     # Set up log files
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_stem = f"{model_safe}_{task}_{condition}"
+    log_stem = f"{model_safe}_{task}_{condition_label}"
     stdout_log = log_dir / f"{log_stem}.stdout.log"
     stderr_log = log_dir / f"{log_stem}.stderr.log"
 
@@ -578,13 +592,22 @@ def build_combination_list(
     models: list[str],
     tasks: list[str],
     conditions: list[str],
-) -> list[tuple[str, str, str]]:
-    """Build the full list of (model, task, condition) combinations."""
-    combos = []
+    budget_multipliers: list[float] | None = None,
+) -> list[tuple[str, str, str, float | None]]:
+    """Build the full list of (model, task, condition, budget_multiplier) combinations.
+
+    When budget_multipliers is provided, budget_cot runs are expanded into
+    one combination per multiplier value.
+    """
+    combos: list[tuple[str, str, str, float | None]] = []
     for model in models:
         for task in tasks:
             for condition in conditions:
-                combos.append((model, task, condition))
+                if condition == "budget_cot" and budget_multipliers:
+                    for mult in budget_multipliers:
+                        combos.append((model, task, condition, mult))
+                else:
+                    combos.append((model, task, condition, None))
     return combos
 
 
@@ -599,6 +622,7 @@ def run_batch(
     python_executable: str,
     max_instances: int | None = None,
     dry_run: bool = False,
+    budget_multipliers: list[float] | None = None,
 ) -> BatchProgress:
     """Execute the full batch evaluation.
 
@@ -613,17 +637,21 @@ def run_batch(
         python_executable: Python interpreter path.
         max_instances: Optional limit per task (for testing).
         dry_run: If True, only estimate costs and exit.
+        budget_multipliers: Optional list of multipliers for budget_cot sweep.
 
     Returns:
         BatchProgress with all results.
     """
-    combinations = build_combination_list(models, tasks, conditions)
+    combinations = build_combination_list(
+        models, tasks, conditions, budget_multipliers
+    )
     progress = BatchProgress(total_combinations=len(combinations))
 
     if dry_run:
         print(f"\n[DRY RUN] Would execute {len(combinations)} combinations:")
-        for model, task, condition in combinations:
-            print(f"  {model} / {task} / {condition}")
+        for model, task, condition, mult in combinations:
+            mult_str = f" ({mult}x)" if mult is not None else ""
+            print(f"  {model} / {task} / {condition}{mult_str}")
         return progress
 
     print(f"\nStarting batch evaluation: {len(combinations)} combinations")
@@ -631,8 +659,9 @@ def run_batch(
     print(f"Log dir: {log_dir}")
     print()
 
-    for model, task, condition in combinations:
-        combo_label = f"{model} / {task} / {condition}"
+    for model, task, condition, budget_mult in combinations:
+        mult_str = f" ({budget_mult}x)" if budget_mult is not None else ""
+        combo_label = f"{model} / {task} / {condition}{mult_str}"
         idx = progress.completed + 1
         print(f"[{idx}/{progress.total_combinations}] {combo_label} ...", flush=True)
 
@@ -645,6 +674,7 @@ def run_batch(
             log_dir=log_dir,
             python_executable=python_executable,
             max_instances=max_instances,
+            budget_multiplier=budget_mult,
         )
 
         progress.record(result)
@@ -819,6 +849,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Skip running the analysis pipeline after evaluation.",
     )
     parser.add_argument(
+        "--budget-multipliers",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated list of budget multipliers for budget_cot sensitivity sweep "
+            "(e.g., '0.25,0.5,1.0,2.0,4.0'). When specified, budget_cot runs once per "
+            "multiplier with separate result/checkpoint files."
+        ),
+    )
+    parser.add_argument(
         "--instance",
         type=str,
         default=None,
@@ -879,6 +919,18 @@ def main(argv: list[str] | None = None) -> int:
     """Main entry point. Returns exit code."""
     args = parse_args(argv)
 
+    # Parse budget multipliers if provided
+    budget_multipliers: list[float] | None = None
+    if args.budget_multipliers:
+        try:
+            budget_multipliers = [
+                float(x.strip()) for x in args.budget_multipliers.split(",")
+            ]
+        except ValueError as exc:
+            print(f"ERROR: Invalid --budget-multipliers value: {exc}")
+            return 1
+        print(f"Budget sensitivity sweep: {budget_multipliers}")
+
     benchmarks_dir = Path(__file__).resolve().parent
     checkpoint_dir = Path(
         args.checkpoint_dir
@@ -894,14 +946,21 @@ def main(argv: list[str] | None = None) -> int:
     # Load vLLM endpoint URLs
     _load_vllm_endpoints()
 
+    # Compute combination count (accounting for budget multipliers)
+    combos_preview = build_combination_list(
+        args.models, args.tasks, args.conditions, budget_multipliers
+    )
+    n_combos = len(combos_preview)
+
     # Print header
-    n_combos = len(args.models) * len(args.tasks) * len(args.conditions)
     print("=" * 60)
     print("ReasonGap Batch Evaluation Runner")
     print("=" * 60)
     print(f"Models:      {len(args.models)}")
     print(f"Tasks:       {len(args.tasks)}")
     print(f"Conditions:  {len(args.conditions)}")
+    if budget_multipliers:
+        print(f"Budget mult: {', '.join(f'{m}x' for m in budget_multipliers)}")
     print(f"Combinations: {n_combos}")
     print()
 
@@ -960,7 +1019,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Dry run exits here
     if args.dry_run:
-        combos = build_combination_list(args.models, args.tasks, args.conditions)
+        combos = build_combination_list(
+            args.models, args.tasks, args.conditions, budget_multipliers
+        )
         print(f"\n[DRY RUN] Would execute {len(combos)} combinations.")
         return 0
 
@@ -988,6 +1049,7 @@ def main(argv: list[str] | None = None) -> int:
         python_executable=python_exe,
         max_instances=args.max_instances,
         dry_run=False,
+        budget_multipliers=budget_multipliers,
     )
 
     # Final summary

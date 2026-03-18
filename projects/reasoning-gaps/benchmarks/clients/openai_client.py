@@ -149,6 +149,94 @@ class OpenAIClient(ModelClient):
         self._wait_for_rate_limit()
         return self._query_with_retry(prompt, system_prompt, max_tokens)
 
+    def query_with_tools(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int = 2048,
+        tools: list[dict[str, Any]] | None = None,
+        tool_handler: Any = None,
+    ) -> tuple[str, float]:
+        """Send prompt with function calling and handle tool_call responses.
+
+        Loops until the model produces a final text response (up to 5 rounds).
+        """
+        self._wait_for_rate_limit()
+        return self._tool_use_loop(
+            prompt, system_prompt, max_tokens, tools or [], tool_handler
+        )
+
+    def _tool_use_loop(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int,
+        tools: list[dict[str, Any]],
+        tool_handler: Any,
+        max_rounds: int = 5,
+    ) -> tuple[str, float]:
+        """Execute the function calling conversation loop."""
+        import json as _json
+
+        messages: list[dict[str, Any]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        total_latency_ms = 0.0
+
+        for _round in range(max_rounds):
+            kwargs: dict[str, Any] = {
+                "model": self.model_name,
+                "messages": messages,
+                "max_tokens": max_tokens,
+            }
+            if tools:
+                kwargs["tools"] = tools
+
+            start = time.perf_counter()
+            response = self._client.chat.completions.create(**kwargs)
+            round_latency = (time.perf_counter() - start) * 1000
+            total_latency_ms += round_latency
+
+            # Track tokens and cost
+            usage = response.usage
+            input_tokens = usage.prompt_tokens if usage else 0
+            output_tokens = usage.completion_tokens if usage else 0
+            cost = self._compute_cost(input_tokens, output_tokens)
+            with self._lock:
+                self._total_input_tokens += input_tokens
+                self._total_output_tokens += output_tokens
+                self._total_cost += cost
+
+            choice = response.choices[0]
+
+            # Check if the model wants to call tools
+            if choice.finish_reason != "tool_calls" or not choice.message.tool_calls:
+                return choice.message.content or "", total_latency_ms
+
+            # Add the assistant message with tool calls
+            messages.append(choice.message)
+
+            # Process each tool call
+            for tool_call in choice.message.tool_calls:
+                if tool_handler is not None:
+                    try:
+                        args = _json.loads(tool_call.function.arguments)
+                    except _json.JSONDecodeError:
+                        args = {"code": tool_call.function.arguments}
+                    tool_result = tool_handler(tool_call.function.name, args)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": str(tool_result),
+                    })
+
+            self._wait_for_rate_limit()
+
+        # Exhausted rounds -- return last content
+        return choice.message.content or "", total_latency_ms
+
     @retry(
         retry=retry_if_exception(_is_retryable),
         wait=wait_exponential(multiplier=1, min=1, max=60),

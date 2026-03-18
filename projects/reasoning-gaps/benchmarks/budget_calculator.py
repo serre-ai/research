@@ -155,6 +155,8 @@ def compute_budget(
     task: str,
     instance: dict[str, Any],
     multiplier: float = DEFAULT_MULTIPLIER,
+    min_budget: int | None = None,
+    max_budget: int | None = None,
 ) -> int:
     """Compute the word budget for a budget_cot evaluation.
 
@@ -162,9 +164,11 @@ def compute_budget(
         task: Task identifier (e.g., "B1", "B1_masked_majority").
         instance: Instance dict containing 'metadata' with task parameters.
         multiplier: Multiplier on the theoretical minimum (default 3.0).
+        min_budget: Override minimum budget clamp (default: MIN_BUDGET=20).
+        max_budget: Override maximum budget clamp (default: MAX_BUDGET=2000).
 
     Returns:
-        Word budget clamped to [MIN_BUDGET, MAX_BUDGET].
+        Word budget clamped to [min_budget, max_budget].
 
     Raises:
         ValueError: If the task identifier is not recognized.
@@ -175,6 +179,9 @@ def compute_budget(
             f"Unknown task '{task}'. Expected one of: {sorted(_BUDGET_FNS.keys())}"
         )
 
+    lo = min_budget if min_budget is not None else MIN_BUDGET
+    hi = max_budget if max_budget is not None else MAX_BUDGET
+
     budget_fn = _BUDGET_FNS[key]
     raw_budget = budget_fn(instance, multiplier)
-    return max(MIN_BUDGET, min(MAX_BUDGET, raw_budget))
+    return max(lo, min(hi, raw_budget))

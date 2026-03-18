@@ -141,6 +141,99 @@ class AnthropicClient(ModelClient):
         self._wait_for_rate_limit()
         return self._query_with_retry(prompt, system_prompt, max_tokens)
 
+    def query_with_tools(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int = 2048,
+        tools: list[dict[str, Any]] | None = None,
+        tool_handler: Any = None,
+    ) -> tuple[str, float]:
+        """Send prompt with tool definitions and handle tool_use responses.
+
+        Loops until the model produces a final text response (up to 5 rounds).
+        """
+        self._wait_for_rate_limit()
+        return self._tool_use_loop(
+            prompt, system_prompt, max_tokens, tools or [], tool_handler
+        )
+
+    def _tool_use_loop(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int,
+        tools: list[dict[str, Any]],
+        tool_handler: Any,
+        max_rounds: int = 5,
+    ) -> tuple[str, float]:
+        """Execute the tool_use conversation loop."""
+        messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
+        total_latency_ms = 0.0
+
+        for _round in range(max_rounds):
+            kwargs: dict[str, Any] = {
+                "model": self.model_name,
+                "max_tokens": max_tokens,
+                "messages": messages,
+            }
+            if system_prompt:
+                kwargs["system"] = system_prompt
+            if tools:
+                kwargs["tools"] = tools
+
+            start = time.perf_counter()
+            response = self._client.messages.create(**kwargs)
+            round_latency = (time.perf_counter() - start) * 1000
+            total_latency_ms += round_latency
+
+            # Track tokens and cost
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+            cost = self._compute_cost(input_tokens, output_tokens)
+            with self._lock:
+                self._total_input_tokens += input_tokens
+                self._total_output_tokens += output_tokens
+                self._total_cost += cost
+
+            # Check for tool_use blocks in the response
+            has_tool_use = any(
+                block.type == "tool_use" for block in response.content
+            )
+
+            if not has_tool_use or response.stop_reason == "end_turn":
+                # Extract final text
+                text_parts = []
+                for block in response.content:
+                    if block.type == "text":
+                        text_parts.append(block.text)
+                return "\n".join(text_parts), total_latency_ms
+
+            # Process tool_use blocks and build tool_result messages
+            messages.append({"role": "assistant", "content": response.content})
+
+            tool_results: list[dict[str, Any]] = []
+            for block in response.content:
+                if block.type == "tool_use" and tool_handler is not None:
+                    tool_result = tool_handler(block.name, block.input)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": str(tool_result),
+                    })
+
+            if tool_results:
+                messages.append({"role": "user", "content": tool_results})
+
+            self._wait_for_rate_limit()
+
+        # If we exhausted rounds, extract whatever text we have
+        text_parts = []
+        for block in response.content:
+            if block.type == "text":
+                text_parts.append(block.text)
+        return "\n".join(text_parts), total_latency_ms
+
     @retry(
         retry=retry_if_exception(_is_retryable),
         wait=wait_exponential(multiplier=1, min=1, max=60),
