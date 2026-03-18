@@ -612,6 +612,16 @@ export class Daemon {
       }
     }
 
+    // Ack triggers that the planner has processed into briefs
+    if (this.dbPool) {
+      try {
+        await this.dbPool.query(
+          `UPDATE trigger_log SET acked_at = NOW()
+           WHERE acked_at IS NULL AND created_at < NOW() - INTERVAL '1 hour'`,
+        );
+      } catch { /* non-critical */ }
+    }
+
     // Dead-letter auto-retry and domain_events cleanup
     if (this.eventBus) {
       try {
