@@ -1,4 +1,6 @@
 import { createServer, type Server as HttpServer } from "node:http";
+import { readFile, readdir } from "node:fs/promises";
+import { join, basename } from "node:path";
 import { freemem, totalmem, cpus } from "node:os";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { WebSocketServer, type WebSocket } from "ws";
@@ -1046,6 +1048,322 @@ function activityRoutes(logger?: ActivityLogger): express.Router {
   return router;
 }
 
+// ============================================================
+// Session detail routes (GET /api/sessions/:id, /:id/transcript)
+// ============================================================
+
+function sessionDetailRoutes(): express.Router {
+  const router = express.Router();
+
+  // GET /api/sessions/:id — single session metadata
+  router.get("/:id", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT session_id, project, agent_type, model, status,
+                started_at, duration_s, tokens_used, cost_usd,
+                commits_created, error
+         FROM sessions WHERE session_id = $1`,
+        [req.params.id],
+      );
+      if (rows.length === 0) {
+        res.status(404).json({ error: "Session not found" });
+        return;
+      }
+      res.json(rows[0]);
+    } catch (err) {
+      console.error("GET /api/sessions/:id error:", err);
+      res.status(500).json({ error: "Failed to fetch session" });
+    }
+  });
+
+  // GET /api/sessions/:id/transcript — paginated transcript lines
+  router.get("/:id/transcript", async (req: Request, res: Response) => {
+    const offset = Math.max(parseInt(req.query["offset"] as string) || 0, 0);
+    const limit = Math.min(Math.max(parseInt(req.query["limit"] as string) || 50, 1), 500);
+
+    try {
+      // Look up the session to find its project
+      const { rows } = await pool.query(
+        `SELECT project FROM sessions WHERE session_id = $1`,
+        [req.params.id],
+      );
+
+      if (rows.length === 0) {
+        res.status(404).json({ error: "Session not found" });
+        return;
+      }
+
+      const project = rows[0].project as string;
+      const transcriptPath = join(process.cwd(), "projects", project, "sessions", `${req.params.id}.jsonl`);
+
+      let content: string;
+      try {
+        content = await readFile(transcriptPath, "utf-8");
+      } catch {
+        // No transcript file — return empty
+        res.json({ lines: [], total: 0, offset, limit });
+        return;
+      }
+
+      const allLines = content.split("\n").filter((l) => l.trim().length > 0);
+      const total = allLines.length;
+      const sliced = allLines.slice(offset, offset + limit);
+
+      res.json({ lines: sliced, total, offset, limit });
+    } catch (err) {
+      console.error("GET /api/sessions/:id/transcript error:", err);
+      res.status(500).json({ error: "Failed to fetch transcript" });
+    }
+  });
+
+  return router;
+}
+
+// ============================================================
+// Project phases route (GET /api/projects/:id/phases)
+// ============================================================
+
+function projectPhaseRoutes(): express.Router {
+  const router = express.Router();
+
+  // GET /api/projects/:id/phases — structured phase data from status.yaml
+  router.get("/:id/phases", async (req: Request, res: Response) => {
+    try {
+      const { parse } = await import("yaml");
+      const projectId = req.params.id as string;
+      const statusPath = join(process.cwd(), "projects", projectId, "status.yaml");
+
+      let content: string;
+      try {
+        content = await readFile(statusPath, "utf-8");
+      } catch {
+        res.status(404).json({ error: "Project not found or status.yaml missing" });
+        return;
+      }
+
+      const status = parse(content) as Record<string, unknown>;
+
+      // Extract current phase
+      const currentPhase = (status.phase as string) ?? null;
+
+      // Extract phases — handle various formats
+      let phases: Array<{ name: string; status: string }> = [];
+
+      if (Array.isArray(status.phases)) {
+        // Already an array — normalize each entry
+        phases = (status.phases as unknown[]).map((p) => {
+          if (typeof p === "string") {
+            return { name: p, status: p === currentPhase ? "active" : "pending" };
+          }
+          if (typeof p === "object" && p !== null) {
+            const obj = p as Record<string, unknown>;
+            return {
+              name: (obj.name as string) ?? (obj.phase as string) ?? "unknown",
+              status: (obj.status as string) ?? (obj.name === currentPhase || obj.phase === currentPhase ? "active" : "pending"),
+            };
+          }
+          return { name: String(p), status: "pending" };
+        });
+      } else if (typeof status.phases === "object" && status.phases !== null) {
+        // Object with phase names as keys
+        phases = Object.entries(status.phases as Record<string, unknown>).map(([name, val]) => ({
+          name,
+          status: typeof val === "string" ? val : ((val as Record<string, unknown>)?.status as string) ?? "pending",
+        }));
+      }
+
+      // If no phases field but we have a current phase, generate a basic structure
+      if (phases.length === 0 && currentPhase) {
+        const defaultPhases = [
+          "literature_review", "framework", "benchmark_design",
+          "evaluation", "paper_writing", "submission",
+        ];
+        const currentIdx = defaultPhases.indexOf(currentPhase);
+        phases = defaultPhases.map((name, idx) => ({
+          name,
+          status: idx < currentIdx ? "complete" : idx === currentIdx ? "active" : "pending",
+        }));
+      }
+
+      res.json({ current_phase: currentPhase, phases });
+    } catch (err) {
+      console.error("GET /api/projects/:id/phases error:", err);
+      res.status(500).json({ error: "Failed to fetch project phases" });
+    }
+  });
+
+  return router;
+}
+
+// ============================================================
+// Budget daily history route (GET /api/budget/daily-history)
+// ============================================================
+
+function budgetDailyHistoryRoutes(): express.Router {
+  const router = express.Router();
+
+  // GET /api/budget/daily-history — 30-day daily spending history
+  router.get("/daily-history", async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT DATE(timestamp) AS date,
+                SUM(cost_usd) AS total_usd,
+                COUNT(*) AS event_count
+         FROM budget_events
+         WHERE timestamp >= NOW() - INTERVAL '30 days'
+         GROUP BY DATE(timestamp)
+         ORDER BY date ASC`,
+      );
+
+      const days = rows.map((r) => ({
+        date: r.date instanceof Date ? r.date.toISOString().split("T")[0] : String(r.date),
+        total_usd: parseFloat(r.total_usd),
+        event_count: parseInt(r.event_count),
+      }));
+
+      res.json({ days });
+    } catch (err) {
+      console.error("GET /api/budget/daily-history error:", err);
+      res.status(500).json({ error: "Failed to fetch daily budget history" });
+    }
+  });
+
+  return router;
+}
+
+// ============================================================
+// Agent definitions route (GET /api/agents/definitions)
+// ============================================================
+
+function agentDefinitionRoutes(): express.Router {
+  const router = express.Router();
+
+  // GET /api/agents/definitions — list agent definitions from .claude/agents/
+  router.get("/definitions", async (_req: Request, res: Response) => {
+    try {
+      const agentsDir = join(process.cwd(), ".claude", "agents");
+
+      let files: string[];
+      try {
+        const entries = await readdir(agentsDir);
+        files = entries.filter((f) => f.endsWith(".md"));
+      } catch {
+        // Directory doesn't exist or unreadable
+        res.json([]);
+        return;
+      }
+
+      const agents = await Promise.all(
+        files.map(async (file) => {
+          const name = basename(file, ".md");
+          let description = "";
+          try {
+            const content = await readFile(join(agentsDir, file), "utf-8");
+            // Extract first non-heading, non-empty lines as description
+            const lines = content.split("\n");
+            const descLines: string[] = [];
+            for (const line of lines) {
+              if (line.startsWith("#")) continue;
+              if (line.trim().length === 0 && descLines.length > 0) break;
+              if (line.trim().length > 0) descLines.push(line.trim());
+            }
+            description = descLines.slice(0, 3).join(" ");
+          } catch {
+            // Could not read file
+          }
+          return { name, description, file };
+        }),
+      );
+
+      res.json(agents);
+    } catch (err) {
+      console.error("GET /api/agents/definitions error:", err);
+      res.status(500).json({ error: "Failed to fetch agent definitions" });
+    }
+  });
+
+  return router;
+}
+
+// ============================================================
+// Collective health route (GET /api/collective/health)
+// ============================================================
+
+function collectiveHealthRoutes(): express.Router {
+  const router = express.Router();
+
+  // GET /api/collective/health — aggregated collective health summary
+  router.get("/health", async (_req: Request, res: Response) => {
+    const result: {
+      status: string;
+      agents: { total: number; active: number };
+      forum: { posts: number; threads: number };
+      proposals: { active: number };
+      last_activity: string | null;
+    } = {
+      status: "operational",
+      agents: { total: 0, active: 0 },
+      forum: { posts: 0, threads: 0 },
+      proposals: { active: 0 },
+      last_activity: null,
+    };
+
+    // Agent counts
+    try {
+      const { rows } = await pool.query(
+        `SELECT COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '24 hours') AS active
+         FROM agent_state`,
+      );
+      result.agents.total = parseInt(rows[0].total);
+      result.agents.active = parseInt(rows[0].active);
+    } catch {
+      // Table may not exist yet
+    }
+
+    // Forum post/thread counts
+    try {
+      const { rows } = await pool.query(
+        `SELECT COUNT(*) AS posts,
+                COUNT(DISTINCT thread_id) AS threads
+         FROM forum_posts`,
+      );
+      result.forum.posts = parseInt(rows[0].posts);
+      result.forum.threads = parseInt(rows[0].threads);
+    } catch {
+      // Table may not exist yet
+    }
+
+    // Active proposals
+    try {
+      const { rows } = await pool.query(
+        `SELECT COUNT(*) AS active
+         FROM proposals
+         WHERE status = 'open' OR status = 'voting'`,
+      );
+      result.proposals.active = parseInt(rows[0].active);
+    } catch {
+      // Table may not exist yet
+    }
+
+    // Last activity timestamp
+    try {
+      const { rows } = await pool.query(
+        `SELECT MAX(created_at) AS last_activity FROM forum_posts`,
+      );
+      result.last_activity = rows[0].last_activity
+        ? new Date(rows[0].last_activity).toISOString()
+        : null;
+    } catch {
+      // Table may not exist yet
+    }
+
+    res.json(result);
+  });
+
+  return router;
+}
+
 export function createApi(
   config: ApiConfig,
   evalManager?: EvalJobManager,
@@ -1137,6 +1455,13 @@ export function createApi(
 
   // Paper build pipeline
   app.use("/api/paper", paperRoutes());
+
+  // Sprint 3C: New endpoints
+  app.use("/api/sessions", sessionDetailRoutes());
+  app.use("/api/projects", projectPhaseRoutes());
+  app.use("/api/budget", budgetDailyHistoryRoutes());
+  app.use("/api/agents", agentDefinitionRoutes());
+  app.use("/api/collective", collectiveHealthRoutes());
 
   // Start listening
   server.listen(config.port, () => {
