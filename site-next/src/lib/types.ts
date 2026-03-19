@@ -48,6 +48,47 @@ export interface Budget {
   remaining: number;
 }
 
+// Raw API response shapes for transform functions
+export interface BudgetApiResponse {
+  monthly: {
+    total_usd: number;
+    variable_usd: number;
+    fixed_usd: number;
+    tokens_in: number;
+    tokens_out: number;
+    events: number;
+  };
+  byProvider: { provider: string; display_name: string; provider_type: string; cost_usd: number }[];
+  byProject: { project: string; cost_usd: number; events: string }[];
+  byModel: { model: string; cost_usd: number; events: string }[];
+  burnRate: {
+    daily_7d_avg: number;
+    projected_month_end: number;
+    daily_history: { day: string; total: number }[];
+  };
+  limits: { daily_usd: number; monthly_usd: number };
+}
+
+export interface HealthApiResponse {
+  status: string;
+  uptime_s: number;
+  started_at: string;
+  memory: { free_mb: number; total_mb: number; percent_used: number };
+  cpus: number;
+  database: string;
+  timestamp: string;
+}
+
+export interface DaemonApiResponse {
+  running: boolean;
+  uptimeMs: number;
+  cyclesCompleted: number;
+  activeSessions: unknown[];
+  failureCounts: Record<string, number>;
+  pendingFollowUps: number;
+  pendingDispatches: number;
+}
+
 export interface Decision {
   date: string;
   decision: string;
