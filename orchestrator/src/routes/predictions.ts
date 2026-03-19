@@ -99,6 +99,34 @@ export function predictionRoutes(pool: pg.Pool): express.Router {
     }
   });
 
+  // GET /api/predictions/calibration/:agent — calibration stats
+  // (must be before /:id to avoid matching "calibration" as an ID)
+  router.get("/calibration/:agent", async (req: Request, res: Response) => {
+    const agent = req.params.agent as string;
+
+    try {
+      const calibration = await getCalibration(pool, agent);
+      res.json(calibration);
+    } catch (err) {
+      console.error("GET /api/predictions/calibration/:agent error:", err);
+      res.status(500).json({ error: "Failed to fetch calibration" });
+    }
+  });
+
+  // GET /api/predictions/leaderboard — all agents ranked by Brier score
+  // (must be before /:id to avoid matching "leaderboard" as an ID)
+  router.get("/leaderboard", async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT * FROM v_prediction_calibration ORDER BY brier_score ASC`,
+      );
+      res.json(rows);
+    } catch (err) {
+      console.error("GET /api/predictions/leaderboard error:", err);
+      res.status(500).json({ error: "Failed to fetch leaderboard" });
+    }
+  });
+
   // GET /api/predictions/:id — single prediction
   router.get("/:id", async (req: Request, res: Response) => {
     try {
@@ -159,32 +187,6 @@ export function predictionRoutes(pool: pg.Pool): express.Router {
     } catch (err) {
       console.error("PATCH /api/predictions/:id/resolve error:", err);
       res.status(500).json({ error: "Failed to resolve prediction" });
-    }
-  });
-
-  // GET /api/predictions/calibration/:agent — calibration stats
-  router.get("/calibration/:agent", async (req: Request, res: Response) => {
-    const agent = req.params.agent as string;
-
-    try {
-      const calibration = await getCalibration(pool, agent);
-      res.json(calibration);
-    } catch (err) {
-      console.error("GET /api/predictions/calibration/:agent error:", err);
-      res.status(500).json({ error: "Failed to fetch calibration" });
-    }
-  });
-
-  // GET /api/predictions/leaderboard — all agents ranked by Brier score
-  router.get("/leaderboard", async (_req: Request, res: Response) => {
-    try {
-      const { rows } = await pool.query(
-        `SELECT * FROM v_prediction_calibration ORDER BY brier_score ASC`,
-      );
-      res.json(rows);
-    } catch (err) {
-      console.error("GET /api/predictions/leaderboard error:", err);
-      res.status(500).json({ error: "Failed to fetch leaderboard" });
     }
   });
 

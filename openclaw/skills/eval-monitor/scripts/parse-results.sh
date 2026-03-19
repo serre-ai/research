@@ -13,21 +13,21 @@ TASK="${3:-}"
 
 case "$COMMAND" in
   status)
-    "$API_CLIENT" GET /api/evals
+    "$API_CLIENT" GET /api/eval/jobs
     ;;
   results)
     if [ -z "$PROJECT" ]; then
       echo "Error: project name required for results command" >&2
       exit 1
     fi
-    "$API_CLIENT" GET "/api/evals/results?project=$PROJECT"
+    "$API_CLIENT" GET "/api/projects/$PROJECT/eval"
     ;;
   compare)
     if [ -z "$PROJECT" ] || [ -z "$TASK" ]; then
       echo "Error: project and task required for compare command" >&2
       exit 1
     fi
-    "$API_CLIENT" GET "/api/evals/results?project=$PROJECT&task=$TASK"
+    "$API_CLIENT" GET "/api/projects/$PROJECT/eval?task=$TASK"
     ;;
   *)
     echo "Unknown command: $COMMAND" >&2

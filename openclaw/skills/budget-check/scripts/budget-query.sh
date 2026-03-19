@@ -17,7 +17,7 @@ case "$COMMAND" in
     "$API_CLIENT" GET /api/budget
     ;;
   daily)
-    "$API_CLIENT" GET /api/budget/history
+    "$API_CLIENT" GET /api/budget/daily-history
     ;;
   projection)
     # Fetch budget and calculate projection
