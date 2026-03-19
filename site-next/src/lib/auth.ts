@@ -17,6 +17,7 @@ const ALLOWED_USERS = new Set(
 );
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  debug: true,
   adapter: AuthjsAdapter(pool),
   providers: [
     GitHub({
