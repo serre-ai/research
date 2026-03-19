@@ -139,6 +139,53 @@ function projectRoutes(): express.Router {
     }
   });
 
+  // GET /api/projects/:id/eval/instances — instance-level eval data
+  router.get("/:id/eval/instances", async (req: Request, res: Response) => {
+    const { model, task, condition } = req.query as {
+      model?: string;
+      task?: string;
+      condition?: string;
+    };
+
+    if (!model || !task) {
+      res.status(400).json({ error: "Required query params: model, task" });
+      return;
+    }
+
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, model, task, condition, difficulty, correct AS is_correct,
+                latency_ms AS response_time_ms, tokens AS tokens_used, created_at
+         FROM eval_results
+         WHERE project_id = $1
+           AND model = $2
+           AND task = $3
+           AND ($4::text IS NULL OR condition = $4)
+         ORDER BY created_at DESC
+         LIMIT 100`,
+        [req.params.id, model, task, condition ?? null],
+      );
+
+      const { rows: countRows } = await pool.query(
+        `SELECT COUNT(*) AS total
+         FROM eval_results
+         WHERE project_id = $1
+           AND model = $2
+           AND task = $3
+           AND ($4::text IS NULL OR condition = $4)`,
+        [req.params.id, model, task, condition ?? null],
+      );
+
+      res.json({
+        instances: rows,
+        total: parseInt(countRows[0]?.total ?? "0", 10),
+      });
+    } catch (err) {
+      console.error("GET /api/projects/:id/eval/instances error:", err);
+      res.status(500).json({ error: "Failed to fetch eval instances" });
+    }
+  });
+
   // GET /api/projects/:id/sessions — session history
   router.get("/:id/sessions", async (req: Request, res: Response) => {
     const limit = parseInt(req.query["limit"] as string) || 50;
