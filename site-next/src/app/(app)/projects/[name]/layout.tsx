@@ -13,6 +13,8 @@ const tabs = [
   { label: 'Budget', href: '/budget' },
   { label: 'Sessions', href: '/sessions' },
   { label: 'Decisions', href: '/decisions' },
+  { label: 'Verification', href: '/verification' },
+  { label: 'Planner', href: '/planner' },
 ];
 
 function mapProjectStatus(status?: string): StatusKey {
