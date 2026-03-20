@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { Activity, BarChart3, Crosshair, Gauge } from 'lucide-react';
 import { useProject, useEvalData, useDecisions, useSessions } from '@/hooks';
+import { useQuality } from '@/hooks/use-quality';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,7 @@ export default function ProjectOverviewPage() {
   const { data: evalData, isLoading: evalLoading } = useEvalData(name);
   const { data: decisions, isLoading: decisionsLoading } = useDecisions(name);
   const { data: sessions, isLoading: sessionsLoading } = useSessions(name);
+  const { data: quality, isLoading: qualityLoading } = useQuality(name);
 
   return (
     <div className="space-y-8">
@@ -80,6 +82,44 @@ export default function ProjectOverviewPage() {
               icon={Activity}
             />
           </div>
+        )}
+      </section>
+
+      {/* Quality score */}
+      <section>
+        <Label className="mb-4 block">Quality Score</Label>
+        {qualityLoading ? (
+          <Card className="space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-7 w-24" />
+          </Card>
+        ) : quality ? (
+          <Card>
+            <div className="flex items-center gap-4">
+              <span className="font-mono text-2xl font-bold text-text-bright">
+                {quality.score}
+              </span>
+              <span className="font-mono text-xs text-text-muted">/ 100</span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {quality.checks.map((check, i) => (
+                <span
+                  key={i}
+                  className={`font-mono text-xs px-2 py-0.5 rounded ${
+                    check.passed
+                      ? 'bg-green-500/10 text-green-400'
+                      : 'bg-red-500/10 text-red-400'
+                  }`}
+                >
+                  {check.name}
+                </span>
+              ))}
+            </div>
+          </Card>
+        ) : (
+          <Card>
+            <EmptyState message="No quality data" description="Quality scores will appear once generated" />
+          </Card>
         )}
       </section>
 
