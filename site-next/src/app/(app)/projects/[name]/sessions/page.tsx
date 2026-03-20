@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowRight, Radio, Filter } from 'lucide-react';
 import { useSessions } from '@/hooks';
+import { DispatchSessionDialog } from '@/components/dispatch-session-dialog';
 import { Card } from '@/components/ui/card';
 import { StatusDot } from '@/components/ui/status-dot';
 import { Badge } from '@/components/ui/badge';
@@ -161,35 +162,38 @@ export default function SessionsPage() {
   return (
     <div>
       {/* Filter bar */}
-      {sessions && sessions.length > 0 && (
-        <div className="mb-6 flex items-center gap-6">
-          <Filter className="h-4 w-4 text-text-muted" />
-          <FilterSelect
-            label="Agent"
-            value={agentFilter}
-            options={agentTypes}
-            onChange={setAgentFilter}
-          />
-          <FilterSelect
-            label="Status"
-            value={statusFilter}
-            options={statuses}
-            onChange={setStatusFilter}
-          />
-          {(agentFilter || statusFilter) && (
-            <button
-              type="button"
-              onClick={() => {
-                setAgentFilter('');
-                setStatusFilter('');
-              }}
-              className="font-mono text-xs text-text-muted hover:text-text-secondary"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      )}
+      <div className="mb-6 flex items-center gap-6">
+        <DispatchSessionDialog projectName={name} />
+        {sessions && sessions.length > 0 && (
+          <>
+            <Filter className="h-4 w-4 text-text-muted" />
+            <FilterSelect
+              label="Agent"
+              value={agentFilter}
+              options={agentTypes}
+              onChange={setAgentFilter}
+            />
+            <FilterSelect
+              label="Status"
+              value={statusFilter}
+              options={statuses}
+              onChange={setStatusFilter}
+            />
+            {(agentFilter || statusFilter) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAgentFilter('');
+                  setStatusFilter('');
+                }}
+                className="font-mono text-xs text-text-muted hover:text-text-secondary"
+              >
+                Clear filters
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Content */}
       {isLoading ? (

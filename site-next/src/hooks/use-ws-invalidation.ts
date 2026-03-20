@@ -15,6 +15,8 @@ export function useWsInvalidation() {
   useEffect(() => {
     subscribe('eval-progress');
     subscribe('logs');
+    subscribe('budget');
+    subscribe('health');
 
     const cleanup = onMessage((msg) => {
       switch (msg.channel) {
@@ -38,6 +40,8 @@ export function useWsInvalidation() {
     return () => {
       unsubscribe('eval-progress');
       unsubscribe('logs');
+      unsubscribe('budget');
+      unsubscribe('health');
       cleanup();
     };
   }, [subscribe, unsubscribe, onMessage, queryClient]);
