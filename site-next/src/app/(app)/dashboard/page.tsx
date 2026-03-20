@@ -8,7 +8,7 @@ import {
   DollarSign,
   ArrowRight,
 } from 'lucide-react';
-import { useProjects, useBudget, useHealth, useDaemonHealth, useDecisions } from '@/hooks';
+import { useProjects, useBudget, useHealth, useDaemonHealth, useDecisions, usePendingTriggers, useAckTrigger } from '@/hooks';
 import { PageHeader } from '@/components/ui/page-header';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Card } from '@/components/ui/card';
@@ -17,40 +17,9 @@ import { StatusDot } from '@/components/ui/status-dot';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import type { StatusKey } from '@/lib/constants';
+import { TriggerCard } from '@/components/collective/trigger-card';
+import { mapStatusToKey, formatCurrency, formatDate } from '@/lib/dashboard-helpers';
 import type { Decision } from '@/lib/types';
-
-function mapStatusToKey(status: string): StatusKey {
-  switch (status) {
-    case 'active':
-    case 'running':
-      return 'ok';
-    case 'paused':
-    case 'pending':
-      return 'warn';
-    case 'error':
-    case 'failed':
-      return 'error';
-    default:
-      return 'idle';
-  }
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(0)}`;
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 function MetricSkeleton() {
   return (
@@ -103,6 +72,8 @@ export default function DashboardPage() {
 
   const projectIds = (projects ?? []).map((p) => p.id);
   const { data: decisions, isLoading: decisionsLoading } = useAllDecisions(projectIds);
+  const { data: triggers } = usePendingTriggers();
+  const ackTrigger = useAckTrigger();
 
   const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
   const isActiveSessions = daemon?.running ?? false;
@@ -234,6 +205,28 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Pending Triggers */}
+      {triggers && triggers.length > 0 && (
+        <div className="mt-8">
+          <Card>
+            <Label className="mb-4 block">
+              Pending Triggers
+              <Badge variant="warning" className="ml-2">{triggers.length}</Badge>
+            </Label>
+            <div className="divide-y divide-border -mx-4 -mb-4">
+              {triggers.slice(0, 8).map((trigger) => (
+                <TriggerCard
+                  key={trigger.id}
+                  trigger={trigger}
+                  onAck={(id) => ackTrigger.mutate(id)}
+                  isAcking={ackTrigger.isPending}
+                />
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Bottom row: Decisions + Health */}
       <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">

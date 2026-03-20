@@ -7,14 +7,9 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Only these GitHub usernames can sign in (comma-separated).
-// If empty / unset, all GitHub users are allowed.
-const ALLOWED_USERS = new Set(
-  (process.env.AUTH_ALLOWED_USERS ?? '')
-    .split(',')
-    .map((u) => u.trim())
-    .filter(Boolean),
-);
+// Hard-coded owner allowlist — only these identities can sign in.
+const ALLOWED_EMAILS = new Set(['oddurs@gmail.com']);
+const ALLOWED_GITHUB_LOGINS = new Set(['oddurs']);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: process.env.NODE_ENV !== 'production',
@@ -27,8 +22,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ profile }) {
-      if (ALLOWED_USERS.size === 0) return true;
-      return ALLOWED_USERS.has(profile?.login as string);
+      const login = (profile?.login as string | undefined)?.toLowerCase();
+      const email = (profile?.email as string | undefined)?.toLowerCase();
+      return (
+        (!!login && ALLOWED_GITHUB_LOGINS.has(login)) ||
+        (!!email && ALLOWED_EMAILS.has(email))
+      );
     },
     async session({ session, user }) {
       if (session.user) {
