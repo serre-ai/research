@@ -4,13 +4,16 @@ import { use } from 'react';
 import { DollarSign, TrendingUp, Gauge, Calendar } from 'lucide-react';
 import { useBudget } from '@/hooks';
 import { useDailySpend } from '@/hooks/use-daily-spend';
+import { useBudgetProviders } from '@/hooks/use-budget-extras';
 import { Card } from '@/components/ui/card';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { BurnChart } from '@/components/burn-chart';
 import { ProviderBreakdown } from '@/components/provider-breakdown';
+import { ManualCostDialog } from '@/components/manual-cost-dialog';
 
 function MetricSkeleton() {
   return (
@@ -51,6 +54,7 @@ export default function BudgetPage({
 
   const { data: budget, isLoading: budgetLoading } = useBudget();
   const { data: dailySpend, isLoading: dailyLoading } = useDailySpend();
+  const { data: providers, isLoading: providersLoading } = useBudgetProviders();
 
   const monthlyBudget = 1000;
   const spent = budget?.total ?? 0;
@@ -59,6 +63,12 @@ export default function BudgetPage({
 
   return (
     <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-mono text-lg font-semibold text-text-bright">Budget</h2>
+        <ManualCostDialog />
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {budgetLoading ? (
@@ -188,6 +198,55 @@ export default function BudgetPage({
           </Card>
         )}
       </div>
+
+      {/* Providers */}
+      <section>
+        <Label className="mb-3 block">Providers</Label>
+        {providersLoading ? (
+          <Card>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          </Card>
+        ) : providers && providers.length > 0 ? (
+          <Card padding={false}>
+            <div className="overflow-x-auto">
+              <table className="w-full font-mono text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left text-text-muted">
+                    <th className="px-4 py-2 font-medium">Provider</th>
+                    <th className="px-4 py-2 font-medium">Type</th>
+                    <th className="px-4 py-2 font-medium text-right">Monthly Fixed</th>
+                    <th className="px-4 py-2 font-medium text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {providers.map((p) => (
+                    <tr key={p.id} className="hover:bg-bg-elevated transition-colors">
+                      <td className="px-4 py-2 text-text-secondary">{p.display_name}</td>
+                      <td className="px-4 py-2 text-text-muted">{p.provider_type}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-text-bright">
+                        ${p.monthly_fixed.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <Badge variant={p.enabled ? 'success' : 'default'}>
+                          {p.enabled ? 'active' : 'disabled'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : (
+          <Card>
+            <p className="font-mono text-xs text-text-muted">No providers configured.</p>
+          </Card>
+        )}
+      </section>
     </div>
   );
 }

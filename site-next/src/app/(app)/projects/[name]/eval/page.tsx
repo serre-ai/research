@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { FlaskConical } from 'lucide-react';
 import { useEvalData, useEvalStatus } from '@/hooks';
+import { useEvalJobs } from '@/hooks/use-eval-jobs';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,8 @@ import { StatusDot } from '@/components/ui/status-dot';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ConditionTabs } from '@/components/condition-tabs';
 import { AccuracyHeatmap } from '@/components/accuracy-heatmap';
+import { EnqueueEvalDialog } from '@/components/enqueue-eval-dialog';
+import { EvalJobCard } from '@/components/eval-job-card';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -29,7 +32,13 @@ export default function EvalPage() {
 
   const { data: evalData, isLoading } = useEvalData(name);
   const { data: evalStatus } = useEvalStatus();
+  const { data: evalJobs } = useEvalJobs();
   const [activeCondition, setActiveCondition] = useState('direct');
+
+  const activeJobs = useMemo(() => {
+    if (!evalJobs) return [];
+    return evalJobs.filter((j) => j.status === 'queued' || j.status === 'running');
+  }, [evalJobs]);
 
   const conditions = useMemo(() => {
     if (!evalData?.runs) return ['direct', 'cot', 'budget_cot'];
@@ -68,22 +77,37 @@ export default function EvalPage() {
         <h2 className="font-mono text-lg font-semibold text-text-bright">
           Evaluation Results
         </h2>
-        {evalStatus && (
-          <div className="flex items-center gap-2">
-            <StatusDot
-              status={evalStatus.running ? 'ok' : 'idle'}
-              pulse={evalStatus.running}
-            />
-            <span className="font-mono text-xs text-text-muted">
-              {evalStatus.running
-                ? `Running (${evalStatus.queued} queued)`
-                : evalStatus.completed > 0
-                  ? `${evalStatus.completed} completed`
-                  : 'Idle'}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {evalStatus && (
+            <div className="flex items-center gap-2">
+              <StatusDot
+                status={evalStatus.running ? 'ok' : 'idle'}
+                pulse={evalStatus.running}
+              />
+              <span className="font-mono text-xs text-text-muted">
+                {evalStatus.running
+                  ? `Running (${evalStatus.queued} queued)`
+                  : evalStatus.completed > 0
+                    ? `${evalStatus.completed} completed`
+                    : 'Idle'}
+              </span>
+            </div>
+          )}
+          <EnqueueEvalDialog />
+        </div>
       </div>
+
+      {/* Job queue */}
+      {activeJobs.length > 0 && (
+        <section>
+          <Label className="mb-3 block">Active Jobs ({activeJobs.length})</Label>
+          <div className="space-y-2">
+            {activeJobs.map((job) => (
+              <EvalJobCard key={job.id} job={job} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {!evalData || evalData.runs.length === 0 ? (
         <Card>
