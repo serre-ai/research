@@ -5,27 +5,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
-  LayoutDashboard,
-  FolderOpen,
-  Users,
-  ScrollText,
-  Settings,
   ChevronDown,
   ChevronUp,
   Menu,
   X,
 } from 'lucide-react';
-import { useProjects } from '@/hooks';
+import { useProjects, usePendingTriggers, useCollectiveHealth } from '@/hooks';
 import { StatusDot } from '@/components/ui/status-dot';
 import type { StatusKey } from '@/lib/constants';
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Projects', href: '/projects', icon: FolderOpen },
-  { label: 'Collective', href: '/collective', icon: Users },
-  { label: 'Logs', href: '/logs', icon: ScrollText },
-  { label: 'Settings', href: '/settings', icon: Settings },
-] as const;
+import { AGENTS } from '@/lib/agents';
+import { NAV_ITEMS } from '@/lib/nav-items';
 
 function mapStatusToKey(status: string): StatusKey {
   switch (status) {
@@ -46,7 +35,10 @@ function mapStatusToKey(status: string): StatusKey {
 export function AppSidebar() {
   const pathname = usePathname();
   const { data: projects } = useProjects();
+  const { data: triggers } = usePendingTriggers();
+  const { data: collectiveHealth } = useCollectiveHealth();
   const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [agentsExpanded, setAgentsExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -106,7 +98,17 @@ export function AppSidebar() {
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
-                    {label}
+                    <span className="flex-1">{label}</span>
+                    {label === 'Dashboard' && triggers && triggers.length > 0 && (
+                      <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 font-mono text-[9px] font-bold bg-[--color-status-warn-muted] text-[--color-status-warn] border border-[--color-status-warn-border]">
+                        {triggers.length}
+                      </span>
+                    )}
+                    {label === 'Collective' && collectiveHealth && collectiveHealth.unread_messages > 0 && (
+                      <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 font-mono text-[9px] font-bold bg-[--color-status-error-muted] text-[--color-status-error] border border-[--color-status-error-border]">
+                        {collectiveHealth.unread_messages}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );
@@ -147,6 +149,51 @@ export function AppSidebar() {
                       >
                         <StatusDot status={mapStatusToKey(project.status)} />
                         <span className="truncate">{project.name}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Agents list */}
+          <div className="mt-4">
+            <button
+              onClick={() => setAgentsExpanded(!agentsExpanded)}
+              className="flex w-full items-center justify-between px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-text-muted hover:text-text-secondary"
+            >
+              Agents
+              {agentsExpanded ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </button>
+
+            {agentsExpanded && (
+              <ul className="mt-1 space-y-0.5">
+                {Object.values(AGENTS).map((agent) => {
+                  const agentHref = `/collective/agents/${agent.id}`;
+                  const isActive = pathname === agentHref;
+
+                  return (
+                    <li key={agent.id}>
+                      <Link
+                        href={agentHref}
+                        onClick={() => setMobileOpen(false)}
+                        className={clsx(
+                          'flex items-center gap-2.5 px-3 py-1.5 font-mono text-xs transition-colors hover:no-underline',
+                          isActive
+                            ? 'bg-bg-elevated text-text-bright'
+                            : 'text-text-secondary hover:bg-bg-hover hover:text-text',
+                        )}
+                      >
+                        <span
+                          className="inline-block h-2 w-2 shrink-0"
+                          style={{ backgroundColor: agent.color, borderRadius: '50%' }}
+                        />
+                        <span className="truncate">{agent.displayName}</span>
                       </Link>
                     </li>
                   );
