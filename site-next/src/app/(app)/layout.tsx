@@ -20,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <AppProviders>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-bg-elevated focus:text-text-bright focus:border focus:border-border focus:font-mono focus:text-sm">Skip to content</a>
       <CommandPalette />
       <div className="flex min-h-screen">
         <AppSidebar />
@@ -30,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <BreadcrumbNav />
             <UserMenu user={session.user} signOutAction={handleSignOut} />
           </header>
-          <main className="flex-1 p-6">{children}</main>
+          <main id="main-content" className="flex-1 p-6">{children}</main>
         </div>
       </div>
     </AppProviders>

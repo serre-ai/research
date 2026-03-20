@@ -62,6 +62,8 @@ export function AppSidebar() {
 
       {/* Sidebar */}
       <aside
+        role="navigation"
+        aria-label="Main navigation"
         className={clsx(
           'fixed left-0 top-0 z-40 flex h-screen w-[220px] flex-col border-r border-border bg-bg',
           'transition-transform duration-200 md:relative md:translate-x-0',
@@ -119,6 +121,7 @@ export function AppSidebar() {
           <div className="mt-6">
             <button
               onClick={() => setProjectsExpanded(!projectsExpanded)}
+              aria-expanded={projectsExpanded}
               className="flex w-full items-center justify-between px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-text-muted hover:text-text-secondary"
             >
               Projects
@@ -161,6 +164,7 @@ export function AppSidebar() {
           <div className="mt-4">
             <button
               onClick={() => setAgentsExpanded(!agentsExpanded)}
+              aria-expanded={agentsExpanded}
               className="flex w-full items-center justify-between px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-text-muted hover:text-text-secondary"
             >
               Agents

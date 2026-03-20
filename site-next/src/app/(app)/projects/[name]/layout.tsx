@@ -68,7 +68,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       </div>
 
       {/* Tab navigation */}
-      <nav className="flex border-b border-border mb-6">
+      <nav className="flex overflow-x-auto border-b border-border mb-6">
         {tabs.map((tab) => {
           const tabPath = `${basePath}${tab.href}`;
           const isActive =
@@ -80,7 +80,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             <Link
               key={tab.label}
               href={tabPath}
-              className={`px-4 py-2 font-mono text-sm border-b-2 -mb-px transition-colors ${
+              className={`whitespace-nowrap shrink-0 px-4 py-2 font-mono text-sm border-b-2 -mb-px transition-colors ${
                 isActive
                   ? 'border-primary text-text-bright'
                   : 'border-transparent text-text-muted hover:text-text-secondary'
