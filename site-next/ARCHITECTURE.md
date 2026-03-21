@@ -166,12 +166,11 @@ Separate layout without sidebar or WebSocket.
 1. User clicks "Sign in with GitHub" on `/sign-in`
 2. OAuth flow via `api/auth/[...nextauth]` route handlers
 3. Sessions stored in PostgreSQL via custom `auth-adapter.ts`
-4. Allowlist via `AUTH_ALLOWED_USERS` env var (comma-separated GitHub usernames)
+4. Allowlist hard-coded in `auth.ts` — only `oddurs` (GitHub) / `oddurs@gmail.com` can sign in
 5. Session checked server-side in `(app)/layout.tsx` — redirect if missing
 
 Environment variables:
 - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — GitHub OAuth app credentials
-- `AUTH_ALLOWED_USERS` — optional user allowlist
 - `AUTH_SECRET` — NextAuth session encryption key
 - `DATABASE_URL` — PostgreSQL connection string for session storage
 
