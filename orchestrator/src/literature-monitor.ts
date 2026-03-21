@@ -251,7 +251,7 @@ export class LiteratureMonitor {
     await this.pool.query(
       `INSERT INTO lit_papers (id, arxiv_id, title, abstract, authors, year, published_at, categories, url, pdf_url, source)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'arxiv')
-       ON CONFLICT (arxiv_id) DO NOTHING`,
+       ON CONFLICT DO NOTHING`,
       [
         id,
         paper.id,
