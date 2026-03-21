@@ -193,9 +193,9 @@ function projectRoutes(): express.Router {
 
     try {
       const { rows } = await pool.query(
-        `SELECT session_id, project, agent_type, model,
-                tokens_used, cost_usd, commits_created, status,
-                error, started_at, duration_s
+        `SELECT session_id AS id, project AS project_id, agent_type, model,
+                tokens_used AS token_usage, cost_usd AS cost, commits_created,
+                status, error, started_at, duration_s AS duration_seconds
          FROM sessions
          WHERE project = $1
          ORDER BY started_at DESC

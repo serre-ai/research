@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
 import { SessionManager, type Session, type SessionSignals } from "./session-manager.js";
-import { type AgentType, PHASE_TO_AGENT } from "./session-runner.js";
+import { type AgentType, type SessionResult, PHASE_TO_AGENT } from "./session-runner.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
@@ -709,6 +709,7 @@ export class Daemon {
       const result = session.result;
       const quality = this.assessQuality(session, agentType);
       this.recordQuality(projectName, quality);
+      if (result) await this.persistSession(result);
 
       await this.logger.log({
         type: "session_end",
@@ -841,6 +842,7 @@ export class Daemon {
       const session = await this.sessionManager.startProjectWithBrief(brief);
       const quality = this.assessQuality(session, brief.agentType);
       this.recordQuality(brief.projectName, quality);
+      if (session.result) await this.persistSession(session.result, brief.constraints.model);
 
       // Planner evaluation
       if (this.planner && session.result) {
@@ -905,6 +907,7 @@ export class Daemon {
       const result = await this.sessionManager.getRunner().runCollective(brief);
 
       console.log(`Collective session finished: ${result.status} ($${result.costUsd.toFixed(2)}, ${result.turnsUsed} turns)`);
+      await this.persistSession(result, brief.constraints.model);
 
       if (this.planner) {
         const evaluation = await this.planner.evaluateSession(brief, result);
@@ -1042,6 +1045,35 @@ export class Daemon {
       agentType,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  private async persistSession(
+    result: SessionResult,
+    model?: string,
+  ): Promise<void> {
+    if (!this.dbPool) return;
+    try {
+      await this.dbPool.query(
+        `INSERT INTO sessions (session_id, project, agent_type, model, tokens_used, cost_usd, commits_created, status, error, started_at, duration_s)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW() - INTERVAL '1 second' * $10, $11)
+         ON CONFLICT (session_id) DO NOTHING`,
+        [
+          result.sessionId,
+          result.projectName,
+          result.agentType,
+          model ?? "claude-sonnet-4-6",
+          result.tokensUsed.input + result.tokensUsed.output,
+          result.costUsd,
+          result.commitsCreated.length,
+          result.status === "budget_exceeded" || result.status === "timeout" ? "failed" : result.status,
+          result.error ?? null,
+          result.durationMs / 1000,
+          result.durationMs / 1000,
+        ],
+      );
+    } catch (err) {
+      console.error("[Daemon] Failed to persist session:", err);
+    }
   }
 
   private recordQuality(projectName: string, quality: SessionQuality): void {
