@@ -239,7 +239,7 @@ export class ResearchPlanner {
     }
 
     // Collective actions (forum signals, triggers, overdue rituals)
-    if (this.pool) {
+    if (this.pool && process.env.COLLECTIVE_ENABLED !== "0") {
       try {
         const collectiveBriefs = await this.collectiveActionBriefs(budgetStatus.dailyRemaining);
         if (collectiveBriefs.length > 0) {
