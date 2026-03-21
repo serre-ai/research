@@ -1,0 +1,61 @@
+project: verification-complexity
+title: "The Computational Complexity of Verifying LLM Outputs Across Reasoning Domains"
+status: active
+phase: research
+confidence: 0.5
+created: "2026-03-21"
+updated: "2026-03-21T00:00:00Z"
+venue: "NeurIPS 2026"
+
+collaborators: []
+
+current_focus: "Literature review — survey complexity-theoretic verification results and LLM verification methods"
+
+next_steps:
+  - "Survey interactive proof systems literature (Goldwasser-Micali-Rackoff, Babai, Shamir IP=PSPACE)"
+  - "Survey PCP theorem and its implications for approximate verification"
+  - "Catalog existing LLM output verification methods (reward models, self-consistency, majority voting)"
+  - "Identify task families with provably different verification complexity"
+  - "Begin formalizing verification complexity hierarchy for LLM tasks"
+  - "Define generation-verification gap formally and identify collapse conditions"
+
+progress:
+  literature_review:
+    status: not_started
+    notes: "Target: classical verification complexity (IP, PCP, AM), LLM verification methods (RLHF, self-consistency, constitutional AI), scalable oversight proposals (IDA, debate, recursive reward modeling)"
+  formal_framework:
+    status: not_started
+    notes: "Core deliverable: verification complexity hierarchy, gap collapse theorems, connection to reward model trainability"
+  empirical_validation:
+    status: not_started
+    notes: "Controlled experiments on existing benchmarks (GSM8K, MATH, PlanBench, ARC) plus synthetic tasks. ~$100 budget."
+  paper_writing:
+    status: not_started
+    notes: "NeurIPS 2026 format. Abstract deadline May 4, paper deadline May 6."
+
+decisions_pending: []
+
+decisions_made:
+  - date: 2026-03-21
+    decision: "Target NeurIPS 2026 as primary venue, ICLR 2027 as fallback"
+    rationale: "NeurIPS has strong ML theory track and is the natural venue for work connecting complexity theory to LLM training. May 6 deadline is tight (6.5 weeks) but feasible for a theory paper with limited empirical validation. ICLR 2027 fallback gives ~5 additional months if scope needs expansion."
+  - date: 2026-03-21
+    decision: "Scope to verification complexity of LLM outputs specifically, not general computational verification"
+    rationale: "A general complexity-theoretic treatment of verification would be a textbook chapter, not a conference paper. The novel contribution is connecting classical verification complexity to concrete LLM training and inference methods (RLHF, self-consistency, majority voting). This keeps the paper focused and actionable."
+  - date: 2026-03-21
+    decision: "Position as third paper in theoretical trilogy with reasoning-gaps and self-improvement-limits"
+    rationale: "The three papers form a coherent research program: what LLMs can't reason about (reasoning-gaps), what they can't learn on their own (self-improvement-limits), and what can't be verified (verification-complexity). Cross-references strengthen all three papers and establish a unified theoretical framework."
+
+key_references: []
+
+git:
+  branch: "research/verification-complexity"
+  latest_commit: ""
+  open_prs: []
+
+metrics:
+  theorems_proved: 0
+  experiments_run: 0
+  papers_reviewed: 0
+
+notes: "Project initialized. Theory paper with minimal empirical component. Tight timeline to NeurIPS 2026 (May 6). May need to narrow scope to core theorems if timeline pressure mounts."
