@@ -110,7 +110,7 @@ export default function PlannerPage() {
             </div>
 
             <div className="space-y-2">
-              {quality.checks.map((check, i) => (
+              {(quality.checks ?? []).map((check, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <span
                     className={`inline-block h-2 w-2 rounded-full ${

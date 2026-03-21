@@ -102,7 +102,7 @@ export default function ProjectOverviewPage() {
               <span className="font-mono text-xs text-text-muted">/ 100</span>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
-              {quality.checks.map((check, i) => (
+              {(quality.checks ?? []).map((check, i) => (
                 <span
                   key={i}
                   className={`font-mono text-xs px-2 py-0.5 rounded ${
