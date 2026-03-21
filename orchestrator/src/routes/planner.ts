@@ -1,11 +1,12 @@
 import express, { type Request, type Response } from "express";
 import type { ResearchPlanner } from "../research-planner.js";
 
-export function plannerRoutes(planner: ResearchPlanner | null): express.Router {
+export function plannerRoutes(getPlanner: () => ResearchPlanner | null): express.Router {
   const router = express.Router();
 
   // GET /api/planner/status
   router.get("/status", async (_req: Request, res: Response) => {
+    const planner = getPlanner();
     if (!planner) {
       res.status(503).json({ error: "Planner not enabled (set USE_RESEARCH_PLANNER=1)" });
       return;
@@ -15,6 +16,7 @@ export function plannerRoutes(planner: ResearchPlanner | null): express.Router {
 
   // GET /api/planner/insights/:project
   router.get("/insights/:project", async (req: Request, res: Response) => {
+    const planner = getPlanner();
     if (!planner) {
       res.status(503).json({ error: "Planner not enabled" });
       return;
@@ -29,6 +31,7 @@ export function plannerRoutes(planner: ResearchPlanner | null): express.Router {
 
   // GET /api/planner/evaluations
   router.get("/evaluations", async (req: Request, res: Response) => {
+    const planner = getPlanner();
     if (!planner) {
       res.status(503).json({ error: "Planner not enabled" });
       return;

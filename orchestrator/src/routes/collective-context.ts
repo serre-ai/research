@@ -190,5 +190,26 @@ export function collectiveContextRoutes(pool: pg.Pool): express.Router {
     }
   });
 
+  // GET /api/collective/health — collective health dashboard
+  router.get("/health", async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query("SELECT * FROM v_collective_health");
+      const h = rows[0] ?? {};
+      res.json({
+        active_threads: parseInt(h.active_threads) || 0,
+        pending_proposals: parseInt(h.pending_proposals) || 0,
+        unread_messages: parseInt(h.unread_messages) || 0,
+        upcoming_rituals: parseInt(h.upcoming_rituals) || 0,
+        unresolved_predictions: parseInt(h.unresolved_predictions) || 0,
+        open_governance: parseInt(h.open_governance) || 0,
+        posts_last_24h: parseInt(h.posts_last_24h) || 0,
+        collective_spend_today: parseFloat(h.collective_spend_today) || 0,
+      });
+    } catch (err) {
+      console.error("GET /api/collective/health error:", err);
+      res.status(500).json({ error: "Failed to fetch collective health" });
+    }
+  });
+
   return router;
 }
