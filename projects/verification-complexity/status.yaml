@@ -2,51 +2,80 @@ project: verification-complexity
 title: "The Computational Complexity of Verifying LLM Outputs Across Reasoning Domains"
 status: active
 phase: research
-confidence: 0.5
+confidence: 0.6
 created: "2026-03-21"
-updated: "2026-03-21T00:00:00Z"
+updated: "2026-03-21T23:00:00Z"
 venue: "NeurIPS 2026"
 
 collaborators: []
 
-current_focus: "Literature review — survey complexity-theoretic verification results and LLM verification methods"
+current_focus: "Begin formal framework development — define verification complexity hierarchy and prove core theorems"
 
 next_steps:
-  - "Survey interactive proof systems literature (Goldwasser-Micali-Rackoff, Babai, Shamir IP=PSPACE)"
-  - "Survey PCP theorem and its implications for approximate verification"
-  - "Catalog existing LLM output verification methods (reward models, self-consistency, majority voting)"
-  - "Identify task families with provably different verification complexity"
-  - "Begin formalizing verification complexity hierarchy for LLM tasks"
-  - "Define generation-verification gap formally and identify collapse conditions"
+  - "Define Verification Complexity Class VC(F) formally (Definition 1)"
+  - "Define Generation-Verification Gap GV-Gap(F) and model-relative variant (Definitions 2-3)"
+  - "Prove Verification Advantage theorem (mitigation works iff VC(F) in augmented model class)"
+  - "Prove Self-Consistency Condition theorem (conditions for majority voting to work)"
+  - "Prove GV-Gap Collapse for HTN planning (VC >= coNP)"
+  - "Map verification complexity onto 6 gap types from reasoning-gaps taxonomy"
+  - "Design empirical validation: GSM8K vs PlanBench vs SAT self-consistency experiments"
 
 progress:
   literature_review:
-    status: not_started
-    notes: "Target: classical verification complexity (IP, PCP, AM), LLM verification methods (RLHF, self-consistency, constitutional AI), scalable oversight proposals (IDA, debate, recursive reward modeling)"
+    status: complete
+    notes: "~60 papers surveyed across classical complexity (IP, PCP, AM), LLM verification (self-consistency, reward models, GenRM), scalable oversight (debate, W2S), and domain-specific verification (planning, code, math). Key gap identified: no unified framework connecting classical verification complexity to LLM capability hierarchy. Synthesis at literature/synthesis.md"
   formal_framework:
     status: not_started
-    notes: "Core deliverable: verification complexity hierarchy, gap collapse theorems, connection to reward model trainability"
+    notes: "Ready to begin. Core definitions and 4 theorems sketched in synthesis. Scope decision: target Theorems 1-3 for NeurIPS, defer Theorem 4 (oversight ceiling) to extended version."
   empirical_validation:
     status: not_started
-    notes: "Controlled experiments on existing benchmarks (GSM8K, MATH, PlanBench, ARC) plus synthetic tasks. ~$100 budget."
+    notes: "Controlled experiments on existing benchmarks (GSM8K, MATH, PlanBench, SAT). ~$100 budget. Design after theorems formalized."
   paper_writing:
     status: not_started
     notes: "NeurIPS 2026 format. Abstract deadline May 4, paper deadline May 6."
 
-decisions_pending: []
+decisions_pending:
+  - "Whether to include interactive verification (debate connection) or scope to single-round verification"
+  - "Whether to build directly on reasoning-gaps taxonomy or develop independent framework"
 
 decisions_made:
   - date: 2026-03-21
     decision: "Target NeurIPS 2026 as primary venue, ICLR 2027 as fallback"
-    rationale: "NeurIPS has strong ML theory track and is the natural venue for work connecting complexity theory to LLM training. May 6 deadline is tight (6.5 weeks) but feasible for a theory paper with limited empirical validation. ICLR 2027 fallback gives ~5 additional months if scope needs expansion."
+    rationale: "NeurIPS has strong ML theory track. May 6 deadline is tight but feasible. Fallback gives 5 months more."
   - date: 2026-03-21
     decision: "Scope to verification complexity of LLM outputs specifically, not general computational verification"
-    rationale: "A general complexity-theoretic treatment of verification would be a textbook chapter, not a conference paper. The novel contribution is connecting classical verification complexity to concrete LLM training and inference methods (RLHF, self-consistency, majority voting). This keeps the paper focused and actionable."
+    rationale: "Novel contribution is the bridge between classical complexity and concrete LLM methods."
   - date: 2026-03-21
     decision: "Position as third paper in theoretical trilogy with reasoning-gaps and self-improvement-limits"
-    rationale: "The three papers form a coherent research program: what LLMs can't reason about (reasoning-gaps), what they can't learn on their own (self-improvement-limits), and what can't be verified (verification-complexity). Cross-references strengthen all three papers and establish a unified theoretical framework."
+    rationale: "Cross-references strengthen all three papers."
+  - date: 2026-03-21
+    decision: "Scope to Theorems 1-3 for NeurIPS; defer oversight ceiling theorem to extended version"
+    rationale: "6.5 weeks is tight. Three focused theorems plus empirical validation is more viable than four theorems. Oversight connection is important but can be a standalone contribution."
+  - date: 2026-03-21
+    decision: "Build verification complexity table on top of reasoning-gaps 6-type taxonomy"
+    rationale: "Directly extends the reasoning-gaps framework, strengthens both papers, and provides concrete predictions. The taxonomy provides the task classification; this paper adds the verification dimension."
+  - date: 2026-03-21
+    decision: "If theorems aren't landing by April 15, pivot to ICLR 2027"
+    rationale: "Better to submit a strong theory paper late than a weak one on time."
 
-key_references: []
+key_references:
+  - "Shamir 1992 — IP = PSPACE"
+  - "Arora et al. 1998 — PCP theorem"
+  - "Merrill & Sabharwal 2022-2024 — transformer expressiveness hierarchy"
+  - "Song et al. 2024 — Mind the Gap (GV-Gap definition), ICLR 2025"
+  - "Wang et al. 2023 — Self-Consistency, ICLR 2023"
+  - "Lightman et al. 2023 — Let's Verify Step by Step, ICLR 2024"
+  - "Jia et al. 2025 — Process vs Outcome supervision equivalence, ICML 2025"
+  - "Brown-Cohen et al. 2024 — Doubly-Efficient Debate, ICML 2024"
+  - "Huang et al. 2024 — LLMs Cannot Self-Correct Reasoning, ICLR 2024"
+  - "Hosseini et al. 2024 — Generative Verifiers (GenRM), ICLR 2025"
+  - "Burns et al. 2023 — Weak-to-Strong Generalization, OpenAI"
+  - "Engels et al. 2025 — Scaling Laws for Scalable Oversight, NeurIPS 2025"
+  - "Irving et al. 2018 — AI Safety via Debate"
+  - "Stechly et al. 2024 — Self-Verification Limitations"
+  - "Kwa et al. 2024 — Catastrophic Goodhart, NeurIPS 2024"
+  - "Behnke et al. 2024 — HTN Plan Verification complexity, AAAI 2024"
+  - "Kambhampati et al. 2024 — LLMs Can't Plan, ICML 2024"
 
 git:
   branch: "research/verification-complexity"
@@ -56,6 +85,6 @@ git:
 metrics:
   theorems_proved: 0
   experiments_run: 0
-  papers_reviewed: 0
+  papers_reviewed: 60
 
-notes: "Project initialized. Theory paper with minimal empirical component. Tight timeline to NeurIPS 2026 (May 6). May need to narrow scope to core theorems if timeline pressure mounts."
+notes: "Literature review complete. Key insight: the novel contribution is a unified verification complexity framework mapped onto the 6 gap types, grounding the operationally-defined GV-Gap (Song et al.) in classical complexity theory. Core structure: 3 definitions, 3 theorems, verification complexity table, targeted empirical validation. Proceeding to formal framework development."
