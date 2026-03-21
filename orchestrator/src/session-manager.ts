@@ -38,11 +38,12 @@ export class SessionManager {
     gitEngine: GitEngine,
     rootDir: string = process.cwd(),
     knowledgeGraph?: KnowledgeGraph | null,
+    dbPool?: import("pg").Pool | null,
   ) {
     this.projectManager = projectManager;
     this.gitEngine = gitEngine;
     this.rootDir = rootDir;
-    this.sessionRunner = new SessionRunner(rootDir, knowledgeGraph);
+    this.sessionRunner = new SessionRunner(rootDir, knowledgeGraph, dbPool);
     this.logger = new ActivityLogger(rootDir);
   }
 

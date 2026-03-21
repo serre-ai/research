@@ -85,6 +85,14 @@ decisions_made:
     decision: "Execute contingency plan: run Sonnet 4.6 evaluation locally, defer o3 due to budget constraints"
     rationale: "VPS down 11+ hours, no SSH access available. Original cost estimates ($40 o3, $55 Sonnet) were incorrect - actual costs are $792 o3 + $272 Sonnet = $1,064 total, exceeding monthly $1,000 budget by $147. Decision: Run only Sonnet 4.6 ($272, within budget) and proceed with 10-model paper. 10 models provide complete framework validation across all families with strong statistical power. o3's reasoning-specialized capabilities desirable but not essential. Maintains budget compliance while advancing project to completion."
 
+key_terms:
+  - "reasoning gaps"
+  - "chain of thought complexity"
+  - "transformer expressiveness circuit"
+  - "CoT benchmark diagnostic"
+  - "reasoning gap formal"
+  - "chain of thought limitation"
+
 key_references:
   - "Merrill & Sabharwal, Saturated Transformers are Constant-Depth Threshold Circuits, TACL 2022"
   - "Merrill & Sabharwal, The Parallelism Tradeoff, TACL 2023"
@@ -106,5 +114,8 @@ next_steps:
   - "NeurIPS submission polish: checklist, anonymization, page check"
 
 notes: "12 models evaluated with 159,162 instances. Opus 4.6 added 2026-03-18 (~$272). Tool-use and budget sweep evals running on VPS (~$35). Paper revised: B8 reframing, real-world mapping, Song et al. differentiation, Opus subsection."
+
+metrics:
+  deadline_epoch: 1777939200000
 
 current_activity: "NeurIPS final sprint. Streams 1-2 complete (Opus integrated, evals launched, paper revised). Awaiting VPS eval results for Streams 3-4."

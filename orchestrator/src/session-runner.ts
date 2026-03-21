@@ -20,6 +20,7 @@ export const PHASE_TO_AGENT: Record<string, AgentType> = {
   "empirical-evaluation": "experimenter",
   "analysis": "experimenter",
   "drafting": "writer",
+  "submission-prep": "writer",
   "revision": "writer",
   "paper-finalization": "writer",
   "final": "editor",
@@ -69,10 +70,12 @@ const KNOWLEDGE_LIMITS: Record<string, number> = {
 export class SessionRunner {
   private rootDir: string;
   private knowledgeGraph: KnowledgeGraph | null;
+  private dbPool: import("pg").Pool | null;
 
-  constructor(rootDir: string = process.cwd(), knowledgeGraph?: KnowledgeGraph | null) {
+  constructor(rootDir: string = process.cwd(), knowledgeGraph?: KnowledgeGraph | null, dbPool?: import("pg").Pool | null) {
     this.rootDir = rootDir;
     this.knowledgeGraph = knowledgeGraph ?? null;
+    this.dbPool = dbPool ?? null;
   }
 
   async run(config: SessionConfig): Promise<SessionResult> {
@@ -486,6 +489,15 @@ export class SessionRunner {
       briefParts.push(brief.context.supplementary);
     }
 
+    // Literature alerts for scout/researcher sessions
+    if (["scout", "researcher"].includes(brief.agentType)) {
+      const litContext = await this.getLiteratureContext(brief.projectName);
+      if (litContext) {
+        briefParts.push("\n## Recent Literature Alerts\n");
+        briefParts.push(litContext);
+      }
+    }
+
     briefParts.push("\n## Deliverables\n");
     for (const d of brief.deliverables) {
       briefParts.push(`- [ ] ${d.description}`);
@@ -551,6 +563,14 @@ export class SessionRunner {
     const knowledgeContext = await this.getKnowledgeContext(projectName, agentType, statusYaml);
     if (knowledgeContext) {
       sections.push("# Existing Knowledge (from Knowledge Graph)\n\n" + knowledgeContext);
+    }
+
+    // Inject recent literature alerts for scout/researcher sessions
+    if (["scout", "researcher"].includes(agentType)) {
+      const litContext = await this.getLiteratureContext(projectName);
+      if (litContext) {
+        sections.push("# Recent Literature Alerts\n\n" + litContext);
+      }
     }
 
     sections.push(
@@ -683,5 +703,65 @@ export class SessionRunner {
 
   private calculateCost(tokens: { input: number; output: number }, model: string = "claude-sonnet-4-6"): number {
     return calcModelCost(model, tokens.input, tokens.output);
+  }
+
+  /**
+   * Query recent literature alerts for a project.
+   * Injected into scout/researcher session prompts.
+   */
+  private async getLiteratureContext(projectName: string): Promise<string | null> {
+    if (!this.dbPool) return null;
+
+    try {
+      // Check if lit_alerts table exists
+      const { rows: tableCheck } = await this.dbPool.query(
+        `SELECT EXISTS (
+          SELECT FROM information_schema.tables WHERE table_name = 'lit_alerts'
+        ) AS exists`,
+      );
+      if (!tableCheck[0]?.exists) return null;
+
+      const { rows } = await this.dbPool.query(
+        `SELECT a.priority, a.relation, a.similarity, a.matched_claim, a.explanation,
+                p.title, p.authors, p.year, p.url, p.abstract
+         FROM lit_alerts a
+         JOIN lit_papers p ON p.id = a.paper_id
+         WHERE a.project = $1 AND a.acknowledged = FALSE
+         ORDER BY
+           CASE a.priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+           a.created_at DESC
+         LIMIT 10`,
+        [projectName],
+      );
+
+      if (rows.length === 0) return null;
+
+      const parts: string[] = [];
+      parts.push(`Since your last session, ${rows.length} relevant paper(s) were detected:\n`);
+
+      for (const r of rows) {
+        const authors = Array.isArray(r.authors) ? r.authors : [];
+        const authorStr = authors.length > 0 ? `${authors[0]} et al.` : "Unknown";
+        const simStr = r.similarity ? ` (similarity: ${parseFloat(r.similarity).toFixed(2)})` : "";
+
+        parts.push(`### [${r.priority.toUpperCase()}] ${r.title}`);
+        parts.push(`- **Authors**: ${authorStr} (${r.year ?? "preprint"})`);
+        parts.push(`- **Relation**: ${r.relation}${simStr}`);
+        if (r.matched_claim) parts.push(`- **Matched claim**: ${r.matched_claim}`);
+        if (r.url) parts.push(`- **URL**: ${r.url}`);
+        if (r.abstract) parts.push(`- **Abstract**: ${r.abstract.slice(0, 300)}...`);
+        if (r.explanation) parts.push(`- **Analysis**: ${r.explanation}`);
+        parts.push("");
+      }
+
+      parts.push("**Action requested**: Assess the impact of these papers on our research. " +
+        "For competing papers, determine if our contribution is still novel. " +
+        "Update status.yaml with your assessment.");
+
+      return parts.join("\n");
+    } catch (err) {
+      console.error("[SessionRunner] Literature context failed:", err);
+      return null;
+    }
   }
 }

@@ -5,13 +5,16 @@ import { parse as parseYaml, stringify as stringifyYaml } from "./yaml.js";
 export interface ProjectStatus {
   project: string;
   title: string;
-  status: "active" | "paused" | "review" | "completed";
+  status: "active" | "in-progress" | "paused" | "review" | "completed";
   phase: string;
   confidence: number;
   created: string;
   updated: string;
   collaborators: string[];
   current_focus: string;
+  current_activity?: string;
+  venue?: string;
+  key_terms?: string[];
   next_steps: string[];
   decisions_pending: Decision[];
   git?: {

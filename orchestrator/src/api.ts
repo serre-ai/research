@@ -28,6 +28,7 @@ import { plannerRoutes } from "./routes/planner.js";
 import { verificationRoutes } from "./routes/verification.js";
 import { ClaimVerifier } from "./verification.js";
 import { paperRoutes } from "./routes/paper.js";
+import { literatureRoutes } from "./routes/literature.js";
 
 const { Pool } = pg;
 
@@ -1494,7 +1495,7 @@ export function createApi(
   app.use("/api/triggers", triggerRoutes(pool));
 
   // Research planner (Sprint 4)
-  app.use("/api/planner", plannerRoutes(daemon?.getPlanner() ?? null));
+  app.use("/api/planner", plannerRoutes(() => daemon?.getPlanner() ?? null));
 
   // Verification layer (Sprint 5)
   const verifier = daemon?.getVerifier() ?? new ClaimVerifier(pool, kg, process.cwd());
@@ -1502,6 +1503,9 @@ export function createApi(
 
   // Paper build pipeline
   app.use("/api/paper", paperRoutes());
+
+  // Literature intelligence
+  app.use("/api/literature", literatureRoutes(() => daemon?.getLiteratureMonitor() ?? null));
 
   // Sprint 3C: New endpoints
   app.use("/api/sessions", sessionDetailRoutes());

@@ -21,6 +21,13 @@ export interface HandlerDeps {
   notifier?: Notifier | null;
   logger?: ActivityLogger | null;
   verifier?: ClaimVerifier | null;
+  queueSession?: (request: {
+    project: string;
+    agent_type: string;
+    priority?: string;
+    reason: string;
+    triggered_by: string;
+  }) => Promise<unknown>;
 }
 
 /**
@@ -146,6 +153,51 @@ export function registerHandlers(bus: EventBus, deps: HandlerDeps): void {
       }
     } catch (err) {
       console.error("[Verification] Auto-verify failed:", err);
+    }
+  });
+
+  // --- Literature events ---
+
+  bus.on("literature.threat_detected", "notify-literature-threat", async (event) => {
+    if (notifier) {
+      await notifier.notify({
+        event: "Literature Threat",
+        project: event.payload.project as string,
+        summary: `${event.payload.relation ?? "related"}: "${event.payload.title}" (similarity: ${event.payload.similarity ?? "keyword"})`,
+        level: (event.payload.priority as string) === "critical" ? "error" : "warning",
+      });
+    }
+
+    // Auto-schedule scout session for high/critical threats
+    const priority = event.payload.priority as string;
+    if ((priority === "high" || priority === "critical") && deps.queueSession) {
+      try {
+        await deps.queueSession({
+          project: event.payload.project as string,
+          agent_type: "scout",
+          priority: priority === "critical" ? "critical" : "high",
+          reason: `Literature threat: "${event.payload.title}" (${event.payload.relation}, sim=${event.payload.similarity ?? "keyword"})`,
+          triggered_by: "literature_monitor",
+        });
+        console.log(`[EventHandler] Auto-queued scout session for literature threat in ${event.payload.project}`);
+      } catch (err) {
+        // Rate limiting or other constraint — not critical
+        console.log(`[EventHandler] Could not auto-queue scout: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+  });
+
+  bus.on("literature.scan_completed", "log-literature-scan", async (event) => {
+    if (logger) {
+      await logger.log({
+        type: "session_end",
+        project: event.payload.project as string,
+        data: {
+          source: "literature_scan_event",
+          newPapers: event.payload.newPapers ?? event.payload.totalResults,
+          alerts: event.payload.alerts ?? event.payload.threats,
+        },
+      });
     }
   });
 

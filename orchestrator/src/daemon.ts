@@ -19,6 +19,10 @@ import { EventBus } from "./event-bus.js";
 import { registerHandlers } from "./event-handlers.js";
 import { ResearchPlanner, type SessionBrief } from "./research-planner.js";
 import { ClaimVerifier } from "./verification.js";
+import { LiteratureScanner } from "./literature-scanner.js";
+import { LiteratureMonitor } from "./literature-monitor.js";
+import { ArxivClient } from "./arxiv.js";
+import { SemanticScholarClient } from "./semantic-scholar.js";
 
 /** Agent sequences for multi-step phases. After one agent finishes, the next in the sequence runs. */
 const PHASE_SEQUENCES: Record<string, string[]> = {
@@ -121,7 +125,10 @@ export class Daemon {
   private eventBus: EventBus | null = null;
   private planner: ResearchPlanner | null = null;
   private verifier: ClaimVerifier | null = null;
+  private literatureScanner: LiteratureScanner | null = null;
+  private literatureMonitor: LiteratureMonitor | null = null;
   private lastMaintenanceAt = 0;
+  private lastLiteratureScanAt = 0;
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -135,7 +142,7 @@ export class Daemon {
 
     this.projectManager = new ProjectManager(rootDir);
     this.gitEngine = new GitEngine(rootDir);
-    this.sessionManager = new SessionManager(this.projectManager, this.gitEngine, rootDir, this.knowledgeGraph);
+    this.sessionManager = new SessionManager(this.projectManager, this.gitEngine, rootDir, this.knowledgeGraph, this.dbPool);
     this.logger = new ActivityLogger(rootDir);
     this.notifier = new Notifier(rootDir);
     this.budgetTracker = new BudgetTracker(rootDir, this.logger, this.notifier, this.dbPool ?? undefined);
@@ -152,7 +159,36 @@ export class Daemon {
         notifier: this.notifier,
         logger: this.logger,
         verifier: this.verifier,
+        queueSession: (req) => this.queueSession(req as Parameters<typeof this.queueSession>[0]),
       });
+    }
+
+    // Literature intelligence
+    const s2Client = new SemanticScholarClient();
+    const arxivClient = new ArxivClient();
+
+    // Level 1: Lightweight scanner (always on, no DB required)
+    this.literatureScanner = new LiteratureScanner(
+      s2Client,
+      arxivClient,
+      this.logger,
+      this.notifier,
+      this.eventBus,
+      this.dbPool,
+    );
+
+    // Level 2: Full monitor (requires DB for paper storage + alerts)
+    if (this.dbPool) {
+      this.literatureMonitor = new LiteratureMonitor(
+        this.dbPool,
+        s2Client,
+        arxivClient,
+        createEmbedFn(),
+        this.knowledgeGraph,
+        this.logger,
+        this.notifier,
+        this.eventBus,
+      );
     }
 
     // Research planner (feature flag: USE_RESEARCH_PLANNER=1)
@@ -198,6 +234,14 @@ export class Daemon {
 
   getKnowledgeGraph(): KnowledgeGraph | null {
     return this.knowledgeGraph;
+  }
+
+  getLiteratureScanner(): LiteratureScanner | null {
+    return this.literatureScanner;
+  }
+
+  getLiteratureMonitor(): LiteratureMonitor | null {
+    return this.literatureMonitor;
   }
 
   getVerifier(): ClaimVerifier | null {
@@ -312,6 +356,9 @@ export class Daemon {
     if (this.eventBus) {
       await this.eventBus.start();
     }
+
+    // Sync filesystem projects to DB before first cycle
+    await this.syncProjectsToDb();
 
     console.log("Deepwork daemon started");
     console.log("  Poll interval: " + Math.round(this.config.pollIntervalMs / 60000) + "m");
@@ -612,6 +659,15 @@ export class Daemon {
       }
     }
 
+    // Literature scan — daily keyword search for competing papers
+    if (this.literatureMonitor || this.literatureScanner) {
+      try {
+        await this.runLiteratureScan();
+      } catch (err) {
+        console.error("Literature scan error:", err);
+      }
+    }
+
     // Ack triggers that the planner has processed into briefs
     if (this.dbPool) {
       try {
@@ -647,6 +703,41 @@ export class Daemon {
     }
   }
 
+  /** Sync filesystem projects to the DB on startup so FK references never break. */
+  private async syncProjectsToDb(): Promise<void> {
+    if (!this.dbPool) return;
+    try {
+      const projects = await this.projectManager.listProjects();
+      for (const p of projects) {
+        await this.dbPool.query(
+          `INSERT INTO projects (id, name, title, venue, phase, status, confidence, current_focus, current_activity, branch, updated_at)
+           VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+           ON CONFLICT (id) DO UPDATE SET
+             phase = EXCLUDED.phase,
+             status = EXCLUDED.status,
+             confidence = EXCLUDED.confidence,
+             current_focus = EXCLUDED.current_focus,
+             current_activity = EXCLUDED.current_activity,
+             updated_at = NOW()`,
+          [
+            p.project,
+            p.title,
+            p.venue ?? null,
+            p.phase,
+            p.status === "in-progress" ? "active" : p.status,
+            p.confidence,
+            p.current_focus,
+            p.current_activity ?? null,
+            p.git?.branch ?? null,
+          ],
+        );
+      }
+      console.log(`Synced ${projects.length} project(s) to DB`);
+    } catch (err) {
+      console.error("Failed to sync projects to DB:", err);
+    }
+  }
+
   /** Periodic knowledge graph tasks: daily snapshots, contradiction logging. */
   private async knowledgeGraphMaintenance(): Promise<void> {
     if (!this.knowledgeGraph) return;
@@ -657,7 +748,14 @@ export class Daemon {
     this.lastMaintenanceAt = Date.now();
 
     const projects = await this.projectManager.listProjects();
+
+    // Only run maintenance for projects that exist in DB
+    const dbProjectIds = this.dbPool
+      ? (await this.dbPool.query("SELECT id FROM projects")).rows.map((r: Record<string, unknown>) => r.id as string)
+      : [];
+
     for (const project of projects) {
+      if (dbProjectIds.length > 0 && !dbProjectIds.includes(project.project)) continue;
       try {
         // Create daily snapshot
         await this.knowledgeGraph.createSnapshot(project.project);
@@ -674,6 +772,32 @@ export class Daemon {
       } catch (err) {
         console.error(`Knowledge maintenance failed for ${project.project}:`, err);
       }
+    }
+  }
+
+  /** Daily literature scan — keyword search for competing papers. */
+  private async runLiteratureScan(): Promise<void> {
+    // Run once per 24 hours regardless of poll interval
+    const hoursSinceLast = (Date.now() - this.lastLiteratureScanAt) / (1000 * 60 * 60);
+    if (this.lastLiteratureScanAt > 0 && hoursSinceLast < 24) return;
+    this.lastLiteratureScanAt = Date.now();
+
+    const projects = await this.projectManager.listProjects();
+    const activeProjects = projects.filter(
+      (p) => p.status === "active" || p.status === "in-progress",
+    );
+
+    if (activeProjects.length === 0) return;
+
+    console.log(`[LitScan] Scanning ${activeProjects.length} active project(s)`);
+
+    // Prefer Level 2 monitor (DB-backed) over Level 1 scanner
+    if (this.literatureMonitor) {
+      await this.literatureMonitor.tick(
+        activeProjects.map((p) => ({ project: p.project, keyTerms: p.key_terms ?? [] })),
+      );
+    } else if (this.literatureScanner) {
+      await this.literatureScanner.scan(activeProjects);
     }
   }
 

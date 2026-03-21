@@ -17,7 +17,8 @@ export type PlanningStrategy =
   | "risk_mitigation"
   | "deadline_driven"
   | "quality_improvement"
-  | "collective_action";
+  | "collective_action"
+  | "literature_driven";
 
 export interface SessionBrief {
   id: string;
@@ -97,9 +98,10 @@ const DEFAULT_STRATEGY_WEIGHTS: Record<PlanningStrategy, number> = {
   "risk_mitigation": 1.5,
   "contradiction_resolution": 1.4,
   "deadline_driven": 1.3,
+  "literature_driven": 1.2,
+  "collective_action": 1.1,
   "gap_filling": 1.0,
   "quality_improvement": 0.9,
-  "collective_action": 1.1,
 };
 
 const MAX_CLAIMS_IN_CONTEXT = 15;
@@ -211,7 +213,7 @@ export class ResearchPlanner {
     const candidates: SessionBrief[] = [];
 
     const projects = await this.projectManager.listProjects();
-    const active = projects.filter((p) => p.status === "active");
+    const active = projects.filter((p) => p.status === "active" || p.status === "in-progress");
     const budgetStatus = await this.budgetTracker.getStatus();
 
     if (budgetStatus.alertLevel === "exceeded") {
@@ -349,7 +351,13 @@ export class ResearchPlanner {
     // Strategy 4: Deadline-driven
     briefs.push(...this.deadlineBriefs(project, claims, budgetUsd));
 
-    // Strategy 5: Quality improvement (meta-review if stuck)
+    // Strategy 5: Literature-driven (respond to new competing papers)
+    if (this.pool && !recentAllLow) {
+      const litBriefs = await this.literatureDrivenBriefs(project, claims, budgetUsd);
+      briefs.push(...litBriefs);
+    }
+
+    // Strategy 6: Quality improvement (meta-review if stuck)
     if (recentAllLow) {
       briefs.push(...this.qualityImprovementBriefs(project, recentEvals, claims, budgetUsd));
     }
@@ -514,7 +522,7 @@ export class ResearchPlanner {
 
     const now = Date.now();
     const daysUntil = (deadline - now) / (1000 * 60 * 60 * 24);
-    if (daysUntil <= 0 || daysUntil > 28) return [];
+    if (daysUntil <= 0 || daysUntil > 60) return [];
 
     let priority: number;
     if (daysUntil <= 3) priority = 95;
@@ -523,7 +531,7 @@ export class ResearchPlanner {
     else priority = 50;
 
     const agentType: AgentType =
-      project.phase === "drafting" || project.phase === "revision" ? "writer" :
+      project.phase === "drafting" || project.phase === "revision" || project.phase === "submission-prep" ? "writer" :
       project.phase === "paper-finalization" || project.phase === "final" ? "editor" :
       PHASE_TO_AGENT[project.phase] ?? "researcher";
 
@@ -551,6 +559,78 @@ export class ResearchPlanner {
       reasoning: `Venue deadline in ${Math.round(daysUntil)} days. Current phase: ${project.phase}.`,
       strategy: "deadline_driven",
     }];
+  }
+
+  // --------------------------------------------------------
+  // Strategy: Literature-driven (respond to new competing papers)
+  // --------------------------------------------------------
+
+  private async literatureDrivenBriefs(
+    project: ProjectStatus,
+    allClaims: ClaimRow[],
+    budgetUsd: number,
+  ): Promise<SessionBrief[]> {
+    if (!this.pool) return [];
+
+    try {
+      // Check if lit_alerts table exists
+      const { rows: tableCheck } = await this.pool.query(
+        `SELECT EXISTS (
+          SELECT FROM information_schema.tables WHERE table_name = 'lit_alerts'
+        ) AS exists`,
+      );
+      if (!tableCheck[0]?.exists) return [];
+
+      // Find unacknowledged high/critical alerts
+      const { rows: alerts } = await this.pool.query(
+        `SELECT a.priority, a.relation, a.similarity,
+                p.title, p.authors, p.year, p.url
+         FROM lit_alerts a
+         JOIN lit_papers p ON p.id = a.paper_id
+         WHERE a.project = $1 AND a.acknowledged = FALSE
+           AND a.priority IN ('high', 'critical')
+         ORDER BY a.created_at DESC
+         LIMIT 5`,
+        [project.project],
+      );
+
+      if (alerts.length === 0) return [];
+
+      const alertSummary = alerts.map((a: Record<string, unknown>) => {
+        const authors = Array.isArray(a.authors) ? a.authors : [];
+        return `"${a.title}" by ${authors[0] ?? "Unknown"} (${a.relation}, sim=${a.similarity ?? "keyword"})`;
+      }).join("; ");
+
+      const hasCritical = alerts.some((a: Record<string, unknown>) => a.priority === "critical");
+      const priority = hasCritical ? 90 : 80;
+
+      return [{
+        id: randomUUID().slice(0, 8),
+        projectName: project.project,
+        agentType: "scout" as AgentType,
+        objective: `Assess ${alerts.length} new competing paper(s): ${alertSummary}. ` +
+          "Determine overlap with our contribution, identify differentiation opportunities, " +
+          "and recommend positioning adjustments.",
+        context: {
+          claims: allClaims.slice(0, MAX_CLAIMS_IN_CONTEXT),
+          contradictions: [],
+          files: ["paper/main.tex", "BRIEF.md", "status.yaml"],
+          recentDecisions: project.next_steps?.slice(0, 3) ?? [],
+          supplementary: `Literature alerts: ${alertSummary}`,
+        },
+        constraints: this.buildConstraints("scout", budgetUsd),
+        deliverables: [
+          { description: "Assess relevance and overlap of detected papers", type: "analysis", verificationMethod: "manual" },
+          { description: "Update status.yaml with literature findings", type: "status_update", verificationMethod: "status_changed" },
+        ],
+        priority,
+        reasoning: `${alerts.length} high-priority literature alert(s) detected. Scout session needed to assess competitive landscape.`,
+        strategy: "literature_driven",
+      }];
+    } catch (err) {
+      console.error(`Planner: literature strategy failed for ${project.project}:`, err);
+      return [];
+    }
   }
 
   // --------------------------------------------------------
@@ -596,11 +676,22 @@ export class ResearchPlanner {
   private phaseBasedFallback(project: ProjectStatus, budgetUsd: number): SessionBrief {
     const agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
 
+    const PHASE_OBJECTIVES: Record<string, string> = {
+      "submission-prep": "Polish paper for submission: integrate pending results, check formatting, verify anonymization, review figures and tables",
+      "revision": "Revise paper based on reviews: address reviewer comments, strengthen weak sections",
+      "paper-finalization": "Final paper polish: copyedit, verify references, check page limits",
+      "analysis": "Run analysis pipeline and interpret results",
+      "empirical-evaluation": "Execute evaluation experiments and collect data",
+    };
+
+    const objective = PHASE_OBJECTIVES[project.phase]
+      ?? `Progress ${project.phase} phase. Focus: ${project.current_focus || project.next_steps?.[0] || "continue current work"}.`;
+
     return {
       id: randomUUID().slice(0, 8),
       projectName: project.project,
       agentType,
-      objective: `Progress ${project.phase} phase. Focus: ${project.current_focus || project.next_steps?.[0] || "continue current work"}.`,
+      objective,
       context: {
         claims: [],
         contradictions: [],
