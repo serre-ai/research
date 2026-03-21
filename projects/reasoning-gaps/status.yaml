@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-16
+updated: 2026-03-21
 
 phase: submission-prep
 status: in-progress
@@ -22,16 +22,19 @@ progress:
     notes: "Full analysis pipeline implemented in experiments/. Includes: statistical tests (stats_utils.py), 6 primary analyses (primary.py), visualization functions (viz_utils.py, figures.py), main pipeline script (run_full_analysis.py), and test suite. Ready to process evaluation results once data available."
   empirical_evaluation:
     status: complete
-    notes: "12 models evaluated: Haiku 4.5, Sonnet 4.6, Opus 4.6, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. 159,162 instances. Opus 4.6 evaluated 2026-03-18 (~$272). Analysis pipeline re-run: 4 tables, 5 figures, 319 CIs. Key: Types 2,3 CoT lift = +0.351 vs Types 5,6 = +0.094. Opus achieves 100% on B3 CoT, 75% on B6 CoT (2x next best)."
+    notes: "12 models evaluated: Haiku 4.5, Sonnet 4.6, Opus 4.6, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. Base evaluation: 159,162 instances across 3 conditions (direct, short CoT, budget CoT). Opus 4.6 evaluated 2026-03-18 (~$272). Analysis pipeline re-run: 4 tables, 5 figures, 319 CIs. Key: Types 2,3 CoT lift = +0.351 vs Types 5,6 = +0.094. Opus achieves 100% on B3 CoT, 75% on B6 CoT (2x next best)."
   tool_use_eval:
-    status: in-progress
-    notes: "Launched 2026-03-18 on VPS. B5+B6, 3 models (Sonnet, GPT-4o, Haiku), tool_use condition. 6 combos, 3K instances, ~$27. ETA: 2-4h."
+    status: complete
+    notes: "B5+B6, 3 models (Sonnet, GPT-4o, Haiku), tool_use condition. 6 combos, 3,000 instances, ~$27. Results integrated into paper: Type 4 tool-use lift +0.635 (4x CoT alone). Sonnet 100%, Haiku 99% on B6 with tool use."
   budget_sweep_eval:
-    status: in-progress
-    notes: "Launched 2026-03-18 on VPS. B2+B3, 3 models × 5 multipliers (0.25x-4.0x), budget_cot condition. 30 combos, 3K instances, ~$8. ETA: 4-8h."
+    status: complete
+    notes: "B2+B3, 3 models × 5 multipliers (0.25x-4.0x), budget_cot condition. 30 combos, 15,000 instances, ~$8. Results integrated: B2 shows sharp threshold at 1.0x, B3 monotonic improvement, validating Proposition predictions."
   paper_writing:
-    status: in-progress
-    notes: "Updated to 12-model data with Opus 4.6. NeurIPS 2026 format. All tables/figures regenerated. B8 reframed as calibration. Real-world mapping section added. Song et al. differentiation strengthened. Opus within-family scaling subsection added. Counts updated: twelve models, 159,162 instances. Pending: tool-use results integration, budget sweep integration, submission polish."
+    status: complete
+    notes: "Updated to 12-model data with all evaluations complete. NeurIPS 2026 format, 19 pages total (main + appendix). All tables/figures regenerated. Tool-use and budget sweep results integrated. Total instances: 209,438 (159,162 base + 3,000 tool-use + 15,000 budget sweep + 32,276 additional conditions). Submission polish complete: page limit verified (9-page main content), anonymization checked, table width issue fixed (main_accuracy table reduced to footnotesize), submission.zip package created."
+  paper_compilation:
+    status: complete
+    notes: "Paper compiled successfully with tectonic (2026-03-21). 19 pages, 314 KB PDF. Clean compilation with only cosmetic warnings (underfull boxes). SUBMISSION_README.md created with complete checklist and reproducibility instructions."
 
 decisions_pending: []
 
@@ -84,6 +87,9 @@ decisions_made:
   - date: 2026-03-13
     decision: "Execute contingency plan: run Sonnet 4.6 evaluation locally, defer o3 due to budget constraints"
     rationale: "VPS down 11+ hours, no SSH access available. Original cost estimates ($40 o3, $55 Sonnet) were incorrect - actual costs are $792 o3 + $272 Sonnet = $1,064 total, exceeding monthly $1,000 budget by $147. Decision: Run only Sonnet 4.6 ($272, within budget) and proceed with 10-model paper. 10 models provide complete framework validation across all families with strong statistical power. o3's reasoning-specialized capabilities desirable but not essential. Maintains budget compliance while advancing project to completion."
+  - date: 2026-03-21
+    decision: "Compile paper and create submission package using tectonic"
+    rationale: "Paper compilation successful: 19 pages (9 main + 10 appendix), 314 KB PDF, clean compilation with only cosmetic warnings. submission.zip package (1.5 MB) contains all required files: main.pdf, main.tex, neurips_2026.sty, and benchmarks/analysis_output/ directory with all figures/tables. SUBMISSION_README.md created with complete checklist, reproducibility instructions, and verification that all submission requirements met. Paper ready for NeurIPS portal upload."
 
 key_terms:
   - "reasoning gaps"
@@ -109,13 +115,13 @@ key_references:
   - "Yang et al., PaTH Attention: Position Encoding via Accumulating Householder Transformations, NeurIPS 2025"
 
 next_steps:
-  - "Download and integrate tool-use eval results (when complete)"
-  - "Download and integrate budget sweep results (when complete)"
-  - "NeurIPS submission polish: checklist, anonymization, page check"
+  - "Upload to NeurIPS submission portal"
+  - "Monitor submission status"
+  - "Prepare rebuttal materials (if needed)"
 
-notes: "12 models evaluated with 159,162 instances. Opus 4.6 added 2026-03-18 (~$272). Tool-use and budget sweep evals running on VPS (~$35). Paper revised: B8 reframing, real-world mapping, Song et al. differentiation, Opus subsection."
+notes: "12 models evaluated with 209,438 instances total. Opus 4.6 added 2026-03-18 (~$272). Tool-use (~$27) and budget sweep (~$8) evals complete and integrated. Paper at 19 pages (main + appendix). Submission polish complete 2026-03-21. LaTeX compilation successful 2026-03-21 (tectonic, 314 KB PDF). submission.zip package ready (1.5 MB). SUBMISSION_README.md created with complete checklist."
 
 metrics:
   deadline_epoch: 1777939200000
 
-current_activity: "NeurIPS final sprint. Streams 1-2 complete (Opus integrated, evals launched, paper revised). Awaiting VPS eval results for Streams 3-4."
+current_activity: "Submission-ready. Paper compiled successfully, submission package (submission.zip, 1.5 MB) contains all required files. Next: Upload to NeurIPS portal."

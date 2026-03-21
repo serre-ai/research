@@ -204,6 +204,7 @@ Full task specifications appear in \Cref{app:benchmarks}.
 \caption{\textsc{ReasonGap} benchmark tasks. Each task targets a specific gap type with a controlled difficulty parameter and a testable prediction.}
 \label{tab:tasks}
 \small
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}clllll@{}}
 \toprule
 \textbf{ID} & \textbf{Task} & \textbf{Gap Type} & \textbf{Complexity} & \textbf{Difficulty} & \textbf{CoT Prediction} \\
@@ -248,7 +249,7 @@ Overall accuracy is 0.519 (direct), 0.739 (short CoT), and 0.637 (budget CoT), w
 \centering
 \caption{Overall accuracy by task and model (averaged across conditions). Bold: best model per task. Accuracy varies far more across tasks than models, confirming gap type as the primary difficulty determinant.}
 \label{tab:main-accuracy-results}
-\small
+\footnotesize
 \setlength{\tabcolsep}{2pt}
 \input{../benchmarks/analysis_output/tables/main_accuracy}
 \end{table}
