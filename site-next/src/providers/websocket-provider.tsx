@@ -40,6 +40,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const handlersRef = useRef<Set<MessageHandler>>(new Set());
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const subscribedChannelsRef = useRef<Set<string>>(new Set());
 
   const connect = useCallback(async () => {
     try {
@@ -58,6 +59,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       ws.onopen = () => {
         setConnected(true);
         reconnectAttemptRef.current = 0;
+        // Re-subscribe to all channels after reconnect
+        for (const channel of subscribedChannelsRef.current) {
+          ws.send(JSON.stringify({ type: 'subscribe', channel }));
+        }
       };
 
       ws.onmessage = (event) => {
@@ -107,12 +112,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, [connect]);
 
   const subscribe = useCallback((channel: string) => {
+    subscribedChannelsRef.current.add(channel);
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'subscribe', channel }));
     }
   }, []);
 
   const unsubscribe = useCallback((channel: string) => {
+    subscribedChannelsRef.current.delete(channel);
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'unsubscribe', channel }));
     }
