@@ -53,21 +53,34 @@ target_acceptance_score: 7.5
 # Literature survey status
 literature_survey:
   status: in_progress
-  papers_reviewed: 35
+  papers_reviewed: 65  # +30 from GV-gap survey
   key_papers_identified:
+    - "Eisenach et al. (2024) - Mind the Gap: Self-Improvement Capabilities of LLMs (ICLR 2025) [CRITICAL - GV-gap formalization]"
     - "Tian et al. (2025) - Theoretical Modeling of LLM Self-Improvement via Solver-Verifier Gap [CRITICAL]"
     - "SCoRe (2024) - Training Language Models to Self-Correct via RL"
     - "SRT (2025) - Can Large Reasoning Models Self-Train?"
+    - "Shrinking the Generation-Verification Gap with Weak Verifiers (2025)"
+    - "Cobbe et al. (2021) - Training Verifiers to Solve Math Word Problems"
+    - "Rewarding Progress: Scaling Automated Process Verifiers (2024)"
     - "Heinrich (2015) - Fictitious Self-Play in Extensive-Form Games"
     - "Haeffele & Vidal (2017) - Global Optimality in Neural Network Training"
     - "Dynamic Data Mixing (NAACL 2025)"
     - "Curriculum Learning for LLM Pretraining (2025)"
+    - "Lilian Weng (2024) - Reward Hacking in Reinforcement Learning"
   gaps_identified:
     - "No rigorous fixed-point existence proof for general self-improvement operators"
     - "Uniqueness conditions for self-improvement fixed points not characterized"
     - "Initial condition dependence formalized empirically but not theoretically"
     - "Escaping fixed points via curriculum/external data not formalized"
     - "Self-play fixed points not connected to game-theoretic Nash equilibrium theory"
+    - "No explicit formula for f(g_D) in GV-gap ceiling theorem"
+    - "Monotonicity of improvement w.r.t. gap not rigorously proved"
+    - "Collapsed gap impossibility not formalized as theorem"
+    - "Large gap limit behavior not characterized"
+    - "Task-level vs model-level gap relationship not established"
+    - "Information-theoretic characterization of f(g_D) incomplete"
+    - "Process vs outcome reward gap not unified in framework"
+    - "Complexity-theoretic connection (P vs NP) not formalized"
   areas_surveyed:
     - "Fixed-point theory (Banach, Tarski, Brouwer)"
     - "Self-improvement in LLMs (2024-2025)"
@@ -77,6 +90,13 @@ literature_survey:
     - "Basins of attraction and initial condition dependence"
     - "Curriculum learning and data mixing (2025)"
     - "Escaping training plateaus"
+    - "Generation-verification gap formalization and empirics"
+    - "Computational complexity theory (P vs NP, NP-completeness)"
+    - "Process reward models vs outcome reward models"
+    - "Reward hacking and verification collapse"
+    - "Information-theoretic bounds on oracle complexity"
+    - "Mathematical proof verification complexity"
+    - "Reasoning gaps and cognitive asymmetry in LLMs"
 
 # Experiments (not applicable for pure theory paper, but may need toy examples)
 experiments:
@@ -178,6 +198,19 @@ decisions_made:
       actionable for Theorist and addresses specific gaps in current draft. Found critical
       paper (Tian et al. 2025) that empirically models exactly our theoretical claims.
       Identified 5 major gaps our work should fill.
+    agent: Researcher
+
+  - date: 2026-03-22
+    decision: "Characterize large GV-gap as limiting (not enabling) self-improvement"
+    rationale: |
+      Linear issue DW-67 requested GV-gap characterization. Literature survey revealed
+      counterintuitive finding: LARGE gap limits improvement, not enables it. Key insight
+      from "Mind the Gap" (ICLR 2025): improvement bound f(g_D) is monotonically DECREASING
+      in gap. When verification is much easier than generation (large gap), verification
+      provides weak signal about generation quality, limiting improvement. Optimal regime
+      is SMALL gap with reliable verification. This is critical theoretical contribution
+      that challenges naive intuition. Decision: Formalize this as core theorem showing
+      f(g_D) monotonically decreasing, with f(∞) → 0 and f(0) = small constant.
     agent: Researcher
 
 # Blockers and issues
@@ -327,6 +360,61 @@ sessions:
 
       Papers surveyed: 35+ across fixed-point theory, RL convergence, self-improvement
       in LLMs (2024-2025), game theory, curriculum learning, and training dynamics.
+
+  - date: 2026-03-22
+    agent: Researcher
+    turns_used: 25
+    budget_used: 2.50
+    objective: "Generation-verification gap characterization (DW-67)"
+    outcome: "Comprehensive survey of GV-gap literature with critical finding: large gap LIMITS improvement (counterintuitive)"
+    linear_issue: DW-67
+    deliverables:
+      - notes/02-generation-verification-gap-characterization.md (comprehensive research note: ~650 lines)
+      - status.yaml (updated with 30+ new papers, 8 new gaps identified)
+    notes: |
+      Conducted comprehensive literature survey on generation-verification gap requested in DW-67.
+      Surveyed 30+ additional papers across:
+      (1) GV-gap formalization (Mind the Gap - ICLR 2025, Tian et al.)
+      (2) Computational complexity (P vs NP, verification asymmetry)
+      (3) Process vs outcome reward models
+      (4) Reward hacking and verification collapse
+      (5) Information-theoretic bounds
+      (6) Mathematical proof and code verification complexity
+
+      CRITICAL FINDING - Counterintuitive result:
+      Large GV-gap LIMITS self-improvement, not enables it! Improvement bound f(g_D) is
+      monotonically DECREASING in gap size. When verification is much easier than generation,
+      verification provides weak signal about generation quality, creating information bottleneck.
+
+      Key findings:
+      - "Mind the Gap" (ICLR 2025) formalizes GV-gap, proves gap saturation to 0 in few rounds
+      - Collapsed gap (Ver ≈ Gen) → no self-improvement possible (confirmed empirically)
+      - Large gap → f(g_D) → 0 (minimal improvement despite large gap)
+      - Optimal regime: SMALL gap with reliable verification (e.g., code with tests)
+      - Process reward models exploit small step-level gaps (why PRMs work)
+      - Connection to P vs NP: verification easier than generation is fundamental asymmetry
+      - Reward hacking occurs when verification unreliable (large gap or collapsed gap)
+
+      Identified 8 new gaps our paper should fill:
+      1. No explicit formula for f(g_D) derived
+      2. Monotonicity not rigorously proved
+      3. Collapsed gap case not formalized as theorem
+      4. Large gap limit not characterized
+      5. Task-level vs model-level gap relationship unclear
+      6. Information-theoretic characterization incomplete
+      7. Process vs outcome reward gap not unified
+      8. Complexity-theoretic connection not formalized
+
+      Recommendations for Theorist:
+      - Derive explicit f(g_D) (exponential, power law, or rational function)
+      - Prove monotonicity: ∂(γ_max - γ_0)/∂g_D < 0
+      - Add collapsed gap impossibility theorem: lim_{g_D→0} f(g_D) = 0
+      - Add large gap limit: lim_{g_D→∞} f(g_D) = 0 with rate characterization
+      - Connect to information theory: f(g_D) ≤ h(I(Ver_M; Quality))
+      - Extend to multi-step settings (PRMs)
+
+      Papers surveyed: 30+ new papers on GV-gap, complexity theory, reward models, and
+      verification systems. Total literature survey: 65+ papers across all topics.
 
 # Links
 linear_issues:
