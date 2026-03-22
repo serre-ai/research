@@ -12,3 +12,13 @@ dist/
 openclaw/
 .deepwork.heartbeat
 site/package-lock.json
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+missfont.log
