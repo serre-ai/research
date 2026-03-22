@@ -40,7 +40,15 @@ progress:
     status: complete
     notes: "Submission guides created 2026-03-22. OPENREVIEW_SUBMISSION_GUIDE.md provides complete step-by-step instructions for portal upload. SUBMISSION_QUICK_START.md provides 5-minute quick reference. Portal URL: https://openreview.net/group?id=NeurIPS.cc/2026/Conference. Portal opens April 5, 2026. Deadline: May 6, 2026 (abstract May 4). All materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Awaiting portal opening."
 
-decisions_pending: []
+decisions_pending:
+  - issue: "DW-104: NeurIPS Submit rebuttal task premature"
+    description: "Linear task requests rebuttal submission, but paper not yet submitted (portal opens April 5). Reviews expected July 2026."
+    options:
+      - "Mark task as blocked, reschedule for July 2026"
+      - "Prepare rebuttal infrastructure and common concern responses"
+      - "Clarify task intent with human oversight"
+    recommendation: "Mark blocked - rebuttal period is ~4 months away (July 2026)"
+    documents: "REBUTTAL_STATUS_ASSESSMENT.md, reviews/REBUTTAL_PREPARATION_GUIDE.md"
 
 decisions_made:
   - date: 2026-03-07
@@ -100,6 +108,9 @@ decisions_made:
   - date: 2026-03-22
     decision: "Create comprehensive submission guides for OpenReview portal"
     rationale: "Cannot directly submit to OpenReview (requires human authentication). Created two guides: OPENREVIEW_SUBMISSION_GUIDE.md (comprehensive step-by-step with metadata, troubleshooting) and SUBMISSION_QUICK_START.md (5-minute quick reference). Documented portal URL (opens April 5), deadlines (abstract May 4, full paper May 6), required metadata (title, abstract, keywords, subject areas), and file upload procedure. All submission materials verified ready. Phase changed to 'awaiting-portal' until April 5 when upload becomes possible."
+  - date: 2026-03-22
+    decision: "Assess DW-104 rebuttal task as premature; prepare rebuttal infrastructure instead"
+    rationale: "Linear task DW-104 requests 'Submit rebuttal' but paper has not been submitted yet (portal opens April 5, 2026). Review period expected May-July 2026, with rebuttal period in July 2026 (~4 months from now). Cannot write rebuttal without reviewer feedback. Instead, created comprehensive preparation documents: REBUTTAL_STATUS_ASSESSMENT.md (timeline analysis, task feasibility) and reviews/REBUTTAL_PREPARATION_GUIDE.md (anticipated concerns, response strategies, experiment menu, $200 budget reserve). This positions project for rapid response when reviews arrive while acknowledging task timing mismatch."
 
 key_terms:
   - "reasoning gaps"
@@ -127,8 +138,8 @@ key_references:
 next_steps:
   - "Wait for portal opening (April 5, 2026)"
   - "Upload to NeurIPS OpenReview portal (by May 6, 2026)"
-  - "Monitor submission status during review"
-  - "Prepare rebuttal materials (if needed)"
+  - "Monitor submission status during review (May-July 2026)"
+  - "Respond to reviewer feedback during rebuttal period (July 2026) [DW-104]"
 
 submission_info:
   portal_url: "https://openreview.net/group?id=NeurIPS.cc/2026/Conference"
@@ -149,4 +160,4 @@ notes: "12 models evaluated with 209,438 instances total. Opus 4.6 added 2026-03
 metrics:
   deadline_epoch: 1777939200000
 
-current_activity: "Awaiting OpenReview portal opening (April 5, 2026). Submission materials fully prepared and verified. Created comprehensive submission guides (OPENREVIEW_SUBMISSION_GUIDE.md, SUBMISSION_QUICK_START.md) with step-by-step instructions for portal upload. Paper ready: 19 pages (9 main + 10 appendix), 315 KB PDF, anonymized, clean compilation. Submission package ready: submission.zip (1.5 MB) with all required files. Portal URL: https://openreview.net/group?id=NeurIPS.cc/2026/Conference. Deadlines: Abstract May 4, Full paper May 6 (45 days remaining). Next action: Upload when portal opens."
+current_activity: "Assessed DW-104 'Submit rebuttal' task (2026-03-22). Task premature by ~4 months - paper not yet submitted, reviews expected July 2026. Created comprehensive preparation: REBUTTAL_STATUS_ASSESSMENT.md (timeline analysis, feasibility) and reviews/REBUTTAL_PREPARATION_GUIDE.md (anticipated concerns, response strategies, experiment menu, workflow). Reserved $200 for rebuttal experiments. Recommendation: Mark DW-104 as blocked, reschedule for July 2026. Current phase: awaiting-portal (opens April 5). Submission materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Next action: Upload to OpenReview when portal opens (by May 6, 2026)."
