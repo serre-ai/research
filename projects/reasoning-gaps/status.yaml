@@ -4,7 +4,7 @@ venue: NeurIPS 2026
 created: 2026-03-07
 updated: 2026-03-22
 last_verified: 2026-03-22
-last_session: 2026-03-22-DW-106
+last_session: 2026-03-22-DW-105
 
 phase: awaiting-portal
 status: ready
@@ -43,6 +43,9 @@ progress:
   contingency_planning:
     status: complete
     notes: "Rejection contingency plan created 2026-03-22 (DW-106). REJECTION_CONTINGENCY_PLAN.md (1,155 lines) covers: 4 rejection scenarios (near-miss, mixed, fundamental, outlier), venue decision tree (10 options across 4 tiers), revision strategies for 6 concern types, timeline mapping, budget allocation ($300-500), psychological strategy, template documents. Ready to execute if rejection occurs (expected August 2026)."
+  camera_ready_preparation:
+    status: guide-created
+    notes: "Camera-ready guide created 2026-03-22 (DW-105). CAMERA_READY_GUIDE.md (4,682 lines) provides complete workflow for camera-ready preparation if paper accepted. Covers: 8 preparation phases (de-anonymization, content revisions, figure/table polish, references, supplementary materials, presentation materials, verification, upload), 14-day timeline, checklists and templates, NeurIPS requirements, contingency planning. Task premature - camera-ready work cannot begin until acceptance notification (expected August 2026). Guide ready for immediate execution if acceptance occurs."
 
 decisions_pending:
   - issue: "DW-100 & DW-104: NeurIPS rebuttal tasks premature"
@@ -53,6 +56,14 @@ decisions_pending:
       - "Clarify task intent with human oversight"
     recommendation: "Mark both as blocked - rebuttal period is ~4 months away (July 2026)"
     documents: "REBUTTAL_STATUS_ASSESSMENT.md, reviews/REBUTTAL_PREPARATION_GUIDE.md, reviews/SESSION-2026-03-22-DW-100-assessment.md"
+  - issue: "DW-105: NeurIPS camera-ready preparation premature"
+    description: "Linear task DW-105 ('Camera-ready preparation (conditional)') requests camera-ready work, but paper not yet submitted (portal opens April 5). Acceptance expected August 2026, camera-ready deadline ~4 weeks later (September 2026). Cannot de-anonymize, incorporate reviewer feedback, or prepare final materials without acceptance confirmation."
+    options:
+      - "Mark task as blocked, reschedule for August 2026 (after acceptance)"
+      - "Create preparation guide now for rapid execution later"
+      - "Defer until acceptance notification received"
+    recommendation: "Mark as blocked - camera-ready work is ~5-6 months premature. Preparation guide created for when acceptance occurs."
+    documents: "paper/CAMERA_READY_GUIDE.md, reviews/SESSION-2026-03-22-DW-105-camera-ready-prep.md"
 
 decisions_made:
   - date: 2026-03-07
@@ -121,6 +132,9 @@ decisions_made:
   - date: 2026-03-22
     decision: "Create comprehensive rejection contingency plan (DW-106)"
     rationale: "NeurIPS 2026 acceptance rate ~25%, making rejection likely. Preparatory planning enables faster, higher-quality response if rejection occurs. Created REJECTION_CONTINGENCY_PLAN.md (1,155 lines): 4 rejection scenarios (near-miss, mixed reviews, fundamental concerns, outlier), venue decision tree (10 options: ICLR, ICML, NeurIPS 2027, TMLR, COLT, AISTATS, EMNLP, ACL, workshops, JMLR), revision strategies for 6 concern types (theoretical rigor, empirical coverage, benchmark design, positioning, scope, presentation), timeline mapping (August 2026 decision → Oct 2026 - Rolling deadlines), budget allocation ($300-500 for revisions across 4 scenarios), psychological strategy (emotional regulation, mindset reframing, historical examples), template documents (FEEDBACK_ANALYSIS.md, REVISION_PLAN.md), and contingency-within-contingency (second rejection pathways). Plan is operationally complete: can execute without additional planning if rejection occurs. Reduces stress and improves decision quality under time pressure."
+  - date: 2026-03-22
+    decision: "Create camera-ready preparation guide (DW-105) instead of executing premature task"
+    rationale: "Linear task DW-105 requests camera-ready preparation, but task is 5-6 months premature - paper not yet submitted (portal opens April 5, deadline May 6), reviews expected July 2026, acceptance notification expected August 2026, camera-ready deadline ~4 weeks after acceptance (September 2026). Cannot de-anonymize, incorporate reviewer feedback, or prepare final materials without acceptance confirmation and official NeurIPS camera-ready instructions. Instead, created comprehensive preparation guide (CAMERA_READY_GUIDE.md, 4,682 lines) covering 8 phases from de-anonymization to upload, with 14-day timeline, checklists, templates, NeurIPS requirements, and contingency plans. This enables rapid execution when acceptance occurs (similar to rejection contingency plan DW-106). Reduces planning overhead during intense camera-ready period and ensures comprehensive coverage of all requirements."
 
 key_terms:
   - "reasoning gaps"
@@ -164,6 +178,7 @@ submission_info:
   guides_created:
     - "paper/OPENREVIEW_SUBMISSION_GUIDE.md (comprehensive)"
     - "paper/SUBMISSION_QUICK_START.md (quick reference)"
+    - "paper/CAMERA_READY_GUIDE.md (camera-ready preparation, 4,682 lines)"
   contingency_plan:
     - "reviews/REJECTION_CONTINGENCY_PLAN.md (1,155 lines, 11 parts + 3 appendices)"
     - "reviews/REBUTTAL_PREPARATION_GUIDE.md (rebuttal phase preparation)"
@@ -173,4 +188,4 @@ notes: "12 models evaluated with 209,438 instances total. Opus 4.6 added 2026-03
 metrics:
   deadline_epoch: 1777939200000
 
-current_activity: "Completed DW-106 'NeurIPS: Rejection contingency plan' (2026-03-22). Created REJECTION_CONTINGENCY_PLAN.md (1,155 lines): comprehensive plan covering 4 rejection scenarios, 10 venue options, 6 revision strategies, timeline/budget mapping, psychological strategy, template documents. Operationally complete - can execute if rejection occurs (August 2026). Also completed: DW-100 and DW-104 rebuttal task assessments (both premature, blocked until July 2026), REBUTTAL_PREPARATION_GUIDE.md created. Current phase: awaiting-portal (opens April 5, 2026). All submission materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB), submission guides, contingency/rebuttal plans. Next: Upload to OpenReview when portal opens (deadline May 6, 2026)."
+current_activity: "Completed DW-105 'NeurIPS: Camera-ready preparation' (2026-03-22). Task premature - paper not yet submitted, acceptance expected August 2026. Created CAMERA_READY_GUIDE.md (4,682 lines): 8-phase workflow (de-anonymization, content revisions, figure/table polish, references, supplementary materials, presentation, verification, upload), 14-day timeline, complete checklists/templates, NeurIPS requirements, contingency plans. Guide ready for immediate execution if acceptance occurs. Previous sessions today: DW-106 (rejection contingency), DW-100/DW-104 (rebuttal prep - also premature). All preparatory planning complete: submission guides, rebuttal guide, rejection contingency, camera-ready guide. Current phase: awaiting-portal (opens April 5, 2026). All submission materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Next: Upload to OpenReview when portal opens (deadline May 6, 2026)."
