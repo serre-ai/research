@@ -41,14 +41,14 @@ progress:
     notes: "Submission guides created 2026-03-22. OPENREVIEW_SUBMISSION_GUIDE.md provides complete step-by-step instructions for portal upload. SUBMISSION_QUICK_START.md provides 5-minute quick reference. Portal URL: https://openreview.net/group?id=NeurIPS.cc/2026/Conference. Portal opens April 5, 2026. Deadline: May 6, 2026 (abstract May 4). All materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Awaiting portal opening."
 
 decisions_pending:
-  - issue: "DW-104: NeurIPS Submit rebuttal task premature"
-    description: "Linear task requests rebuttal submission, but paper not yet submitted (portal opens April 5). Reviews expected July 2026."
+  - issue: "DW-100 & DW-104: NeurIPS rebuttal tasks premature"
+    description: "Linear tasks DW-100 ('Process reviews and draft rebuttal') and DW-104 ('Submit rebuttal') both request rebuttal work, but paper not yet submitted (portal opens April 5). Reviews expected July 2026. Tasks appear to be duplicates."
     options:
-      - "Mark task as blocked, reschedule for July 2026"
-      - "Prepare rebuttal infrastructure and common concern responses"
+      - "Mark both tasks as blocked, reschedule for July 2026"
+      - "Mark DW-100 as duplicate of DW-104"
       - "Clarify task intent with human oversight"
-    recommendation: "Mark blocked - rebuttal period is ~4 months away (July 2026)"
-    documents: "REBUTTAL_STATUS_ASSESSMENT.md, reviews/REBUTTAL_PREPARATION_GUIDE.md"
+    recommendation: "Mark both as blocked - rebuttal period is ~4 months away (July 2026)"
+    documents: "REBUTTAL_STATUS_ASSESSMENT.md, reviews/REBUTTAL_PREPARATION_GUIDE.md, reviews/SESSION-2026-03-22-DW-100-assessment.md"
 
 decisions_made:
   - date: 2026-03-07
@@ -111,6 +111,9 @@ decisions_made:
   - date: 2026-03-22
     decision: "Assess DW-104 rebuttal task as premature; prepare rebuttal infrastructure instead"
     rationale: "Linear task DW-104 requests 'Submit rebuttal' but paper has not been submitted yet (portal opens April 5, 2026). Review period expected May-July 2026, with rebuttal period in July 2026 (~4 months from now). Cannot write rebuttal without reviewer feedback. Instead, created comprehensive preparation documents: REBUTTAL_STATUS_ASSESSMENT.md (timeline analysis, task feasibility) and reviews/REBUTTAL_PREPARATION_GUIDE.md (anticipated concerns, response strategies, experiment menu, $200 budget reserve). This positions project for rapid response when reviews arrive while acknowledging task timing mismatch."
+  - date: 2026-03-22
+    decision: "Assess DW-100 rebuttal task as premature and duplicate of DW-104"
+    rationale: "Linear task DW-100 requests 'Process reviews and draft rebuttal' - identical work to DW-104 assessed earlier today. Paper not yet submitted (portal opens April 5, deadline May 6). Thorough search found no NeurIPS reviewer feedback in repository or external sources. Review period expected May-July 2026, rebuttal period July 2026 (~4 months from now). Cannot process reviews or draft rebuttal without reviewer feedback. All preparation work already complete via DW-104 session (REBUTTAL_PREPARATION_GUIDE.md with 6-phase workflow, 9 anticipated concern categories, 6 experiment options, $200 budget reserve). Created SESSION-2026-03-22-DW-100-assessment.md documenting investigation, timeline analysis, and blocking rationale. Recommendation: mark DW-100 as blocked (or duplicate of DW-104), reschedule July 2026."
 
 key_terms:
   - "reasoning gaps"
@@ -160,4 +163,4 @@ notes: "12 models evaluated with 209,438 instances total. Opus 4.6 added 2026-03
 metrics:
   deadline_epoch: 1777939200000
 
-current_activity: "Assessed DW-104 'Submit rebuttal' task (2026-03-22). Task premature by ~4 months - paper not yet submitted, reviews expected July 2026. Created comprehensive preparation: REBUTTAL_STATUS_ASSESSMENT.md (timeline analysis, feasibility) and reviews/REBUTTAL_PREPARATION_GUIDE.md (anticipated concerns, response strategies, experiment menu, workflow). Reserved $200 for rebuttal experiments. Recommendation: Mark DW-104 as blocked, reschedule for July 2026. Current phase: awaiting-portal (opens April 5). Submission materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Next action: Upload to OpenReview when portal opens (by May 6, 2026)."
+current_activity: "Assessed DW-100 'Process reviews and draft rebuttal' task (2026-03-22). Duplicate of DW-104 assessed earlier today. Both tasks premature by ~4 months - paper not yet submitted, reviews expected July 2026. Thorough investigation: no NeurIPS reviewer feedback exists (searched repository, git history, external sources). Cannot process reviews without reviewer feedback. All preparation complete via DW-104 session: REBUTTAL_PREPARATION_GUIDE.md (6-phase workflow, 9 concern categories, 6 experiments, $200 budget). Created SESSION-2026-03-22-DW-100-assessment.md (13 KB, comprehensive investigation and timeline analysis). Recommendation: Mark DW-100 as blocked/duplicate, reschedule July 2026. Current phase: awaiting-portal (opens April 5). Submission ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Next: Upload to OpenReview when portal opens (by May 6, 2026)."
