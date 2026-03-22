@@ -52,10 +52,31 @@ target_acceptance_score: 7.5
 
 # Literature survey status
 literature_survey:
-  status: not_started
-  papers_reviewed: 0
-  key_papers_identified: []
-  gaps_identified: []
+  status: in_progress
+  papers_reviewed: 35
+  key_papers_identified:
+    - "Tian et al. (2025) - Theoretical Modeling of LLM Self-Improvement via Solver-Verifier Gap [CRITICAL]"
+    - "SCoRe (2024) - Training Language Models to Self-Correct via RL"
+    - "SRT (2025) - Can Large Reasoning Models Self-Train?"
+    - "Heinrich (2015) - Fictitious Self-Play in Extensive-Form Games"
+    - "Haeffele & Vidal (2017) - Global Optimality in Neural Network Training"
+    - "Dynamic Data Mixing (NAACL 2025)"
+    - "Curriculum Learning for LLM Pretraining (2025)"
+  gaps_identified:
+    - "No rigorous fixed-point existence proof for general self-improvement operators"
+    - "Uniqueness conditions for self-improvement fixed points not characterized"
+    - "Initial condition dependence formalized empirically but not theoretically"
+    - "Escaping fixed points via curriculum/external data not formalized"
+    - "Self-play fixed points not connected to game-theoretic Nash equilibrium theory"
+  areas_surveyed:
+    - "Fixed-point theory (Banach, Tarski, Brouwer)"
+    - "Self-improvement in LLMs (2024-2025)"
+    - "RL convergence (policy iteration, value iteration, Bellman operator)"
+    - "Game theory (fictitious play, Nash equilibrium)"
+    - "Multiple equilibria and local minima in neural networks"
+    - "Basins of attraction and initial condition dependence"
+    - "Curriculum learning and data mixing (2025)"
+    - "Escaping training plateaus"
 
 # Experiments (not applicable for pure theory paper, but may need toy examples)
 experiments:
@@ -72,9 +93,9 @@ milestones:
 
   - name: Literature survey complete
     date: null
-    status: not_started
+    status: in_progress
     agent: Researcher
-    note: "Survey self-improvement methods, verification literature, and impossibility results in ML theory"
+    note: "Fixed-point characterization survey completed (2026-03-22). Surveyed 35+ papers on fixed-point theory, self-improvement convergence, game theory, and curriculum learning. Key finding: Tian et al. (2025) provides empirical model of solver-verifier gap convergence. Identified 5 major gaps our paper should fill."
 
   - name: Formal framework developed
     date: null
@@ -146,6 +167,18 @@ decisions_made:
       clearly marks which proofs need verification. This is a "theoretical draft" that
       states theorems and provides proof sketches, pending rigorous verification.
     agent: Writer
+
+  - date: 2026-03-22
+    decision: "Focus literature survey on fixed-point characterization"
+    rationale: |
+      Linear issue DW-76 requested "Fixed-point characterization" including uniqueness
+      conditions, initial condition dependence, escaping local fixed points, connection
+      to training plateaus, and curriculum implications. As Researcher agent, I focused
+      survey narrowly on these topics rather than broad literature survey. This is more
+      actionable for Theorist and addresses specific gaps in current draft. Found critical
+      paper (Tian et al. 2025) that empirically models exactly our theoretical claims.
+      Identified 5 major gaps our work should fill.
+    agent: Researcher
 
 # Blockers and issues
 blockers: []
@@ -248,6 +281,52 @@ sessions:
 
       Next steps: (1) Theorist should verify/prove all theorems rigorously, (2) Experimenter
       should conduct validation experiments, (3) Critic should review for correctness.
+
+  - date: 2026-03-22
+    agent: Researcher
+    turns_used: 25
+    budget_used: 2.50
+    objective: "Fixed-point characterization literature survey (DW-76)"
+    outcome: "Comprehensive survey of fixed-point theory, convergence analysis, and curriculum learning with 35+ papers reviewed"
+    linear_issue: DW-76
+    deliverables:
+      - notes/01-fixed-point-characterization.md (comprehensive research note: ~450 lines)
+      - status.yaml (updated literature survey status)
+    notes: |
+      Conducted focused literature survey on five key topics requested in DW-76:
+      (1) Uniqueness conditions for fixed points
+      (2) Initial condition dependence
+      (3) Escaping local fixed points
+      (4) Connection to training plateaus
+      (5) Curriculum design implications
+
+      Key findings:
+      - Found critical paper (Tian et al. 2025) providing empirical model of solver-verifier
+        gap dynamics with explicit convergence formulas
+      - Identified three theoretical frameworks: Banach (contraction → uniqueness),
+        Tarski (monotone on lattice → multiple fixed points), and Nash equilibrium (game theory)
+      - Self-improvement likely has MULTIPLE fixed points (not unique) based on local minima
+        evidence and empirical reward hacking observations
+      - Initial conditions determine which basin of attraction, hence which fixed point
+      - Escaping requires external intervention: curriculum, verification data, or dynamics changes
+      - Recent 2025 work on curriculum learning shows 15-22% gains from strategic data ordering
+
+      Identified 5 major gaps our paper should fill:
+      1. No rigorous fixed-point existence proof for general self-improvement
+      2. Uniqueness conditions not characterized theoretically
+      3. Initial condition dependence formalized empirically but not theoretically
+      4. Escaping via curriculum/external data not formalized
+      5. Self-play fixed points not connected to Nash equilibrium theory
+
+      Recommendations for Theorist:
+      - Add theorem on initial condition dependence (continuous dependence on Ver(M_0))
+      - Add theorem on escaping fixed points via external verification
+      - Characterize uniqueness conditions (when is fixed point unique vs multiple?)
+      - Derive convergence rate (exponential decay following Tian et al.)
+      - Prove bounds are tight with construction
+
+      Papers surveyed: 35+ across fixed-point theory, RL convergence, self-improvement
+      in LLMs (2024-2025), game theory, curriculum learning, and training dynamics.
 
 # Links
 linear_issues:
