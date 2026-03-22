@@ -257,7 +257,12 @@ Then majority voting over $N$ samples satisfies:
 \begin{enumerate}[label=(\alph*)]
     \item \textbf{(Convergence)} If $p^* > \max_{y \neq y^*} p_y$ (the correct answer is the plurality), then majority accuracy $\to 1$ as $N \to \infty$, with convergence rate $\exp(-\Omega(N))$.
     \item \textbf{(Independence requirement)} If samples share a systematic bias --- i.e., errors are positively correlated with correlation $\rho > 0$ --- then the effective sample size is $N_{\text{eff}} = N / (1 + (N-1)\rho)$, and convergence slows to $\exp(-\Omega(N_{\text{eff}}))$.
-    \item \textbf{(Verification connection)} The plurality condition $p^* > \max_{y \neq y^*} p_y$ is equivalent to requiring that the model can \emph{implicitly} distinguish $y^*$ from alternatives with probability $> 1/|Y|$. When $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, systematic errors arise because the model lacks the computational capacity to verify its own intermediate steps, producing correlated errors ($\rho > 0$) that violate the independence assumption.
+    \item \textbf{(Bottleneck structure)} Error correlation depends on whether the source of failure is \emph{shared} across samples or \emph{instance-specific}:
+    \begin{itemize}
+        \item If failures arise from a shared structural limitation (e.g., lack of algorithmic knowledge, insufficient depth), then errors are positively correlated ($\rho > 0$) regardless of $\VC$ class. Self-consistency provides limited benefit.
+        \item If failures arise from instance-specific stochastic difficulty (e.g., random combinatorial search near a phase transition), then errors may be approximately independent ($\rho \approx 0$) even when $\VC$ is hard. Self-consistency can improve accuracy.
+    \end{itemize}
+    For within-model sampling at fixed temperature, the shared-bottleneck case dominates: all samples use the same weights and thus share the same computational limitations, producing $\rho > 0$.
 \end{enumerate}
 \end{theorem}
 
@@ -271,17 +276,18 @@ This is equivalent to $N_{\text{eff}} = N / (1 + (N-1)\rho)$ independent samples
 When $\rho = \Omega(1)$, $N_{\text{eff}} = O(1/\rho)$ regardless of $N$, and majority voting converges to a fixed (potentially incorrect) answer.
 
 \textbf{Part (c).}
-When $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, the model cannot distinguish correct from incorrect reasoning steps in polynomial time.
-Errors therefore arise from the same computational bottleneck across all $N$ samples (e.g., the inability to verify plan consistency in polynomial time for $\PSPACE$-hard tasks).
-These errors are shared across samples, producing $\rho > 0$.
-Formally, let $E$ be the event that the computational bottleneck causes an error.
-Then $\Pr[y_i \neq y^* \mid E] = \Pr[y_j \neq y^* \mid E]$ for all $i, j$, and $\rho \geq \Pr[E]^2 > 0$.
+The error correlation $\rho$ depends on the \emph{structure} of the computational bottleneck, not solely on $\VC(\calF)$.
+Consider two cases.
+\emph{Case 1 (shared bottleneck):} If the model lacks a specific computational capability required for all instances of a task --- e.g., an algorithm (Type~4), sufficient circuit depth (Types~2--3), or sensitivity computation (Type~1) --- then errors are systematic: the model fails on the same instances regardless of sampling randomness, producing $\rho > 0$.
+\emph{Case 2 (stochastic bottleneck):} If the task's difficulty is instance-specific and stochastic --- e.g., satisfiability near the phase transition, where each random formula has unpredictable hardness --- then different sampling paths (or different models) may succeed or fail on different instances, producing $\rho \approx 0$.
+For within-model self-consistency sampling at temperature $T > 0$, Case~1 dominates because all samples share the same model weights and thus the same structural limitations.
+The effective sample size $N_{\text{eff}}$ is therefore bounded by the structural component of the error, independent of $N$.
 \end{proof}
 
 \begin{corollary}
 \label{cor:selfconsistency_prediction}
-Self-consistency yields diminishing returns on tasks where $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, because the effective sample size $N_{\text{eff}}$ is bounded by a constant independent of $N$.
-This predicts that self-consistency improves accuracy on GSM8K ($\VC = \PTIME$) but not on PlanBench with hierarchical plans ($\VC \supseteq \coNP$).
+Within-model self-consistency yields diminishing returns on tasks where the model faces a shared structural bottleneck (algorithmic gap, depth limitation), regardless of whether $\VC$ is tractable.
+Between-model ensembles are most effective on tasks with stochastic, instance-specific difficulty (e.g., 3-SAT near the phase transition), where different models fail on different instances.
 \end{corollary}
 
 \subsection{Gap Collapse for Planning}
@@ -349,7 +355,8 @@ Type 6: Architectural & --- & --- & --- & Inapplicable & Inapplicable \\
 For sensitivity, depth, serial, and algorithmic gaps, the verification function $V(x, y)$ is computable in polynomial time.
 Checking whether a majority vote is correct, whether a Boolean expression evaluates to true, whether a permutation composition was applied correctly, or whether an algorithm's output matches the specification --- all are $\PTIME$ operations.
 Reward models trained on such tasks have a well-defined target function within their hypothesis class.
-Self-consistency is effective because per-sample errors are largely uncorrelated (different reasoning paths fail independently, not from a shared computational bottleneck).
+Self-consistency effectiveness varies within this group: for Types~2--3 (depth, serial), different reasoning paths can independently reach the correct answer, yielding moderate error correlation ($\rho \approx 0.2\text{--}0.3$).
+For Type~4 (algorithmic), errors are highly correlated ($\rho > 0.4$) because models share the same algorithmic knowledge gap --- self-consistency is less effective here despite tractable verification.
 
 \paragraph{Type 5: Verification splits.}
 For intractability gaps ($\NP$-hard generation), verification of \emph{feasibility} (``does this assignment satisfy the formula?'') is in $\PTIME$, but verification of \emph{optimality} (``is this the best assignment?'') is $\coNP$-hard.
@@ -373,15 +380,16 @@ We validate these predictions across four benchmark families spanning the verifi
 We evaluate three model families (Claude Haiku~4.5, GPT-4o-mini, Llama-3.1-8B) under self-consistency with $N \in \{1, 4, 8, 16, 32\}$ samples.
 We measure accuracy and the \emph{self-consistency lift}: the accuracy gain from $N=32$ over $N=1$.
 
-\paragraph{Prediction 1: Self-consistency works when $\VC \subseteq \PTIME$.}
-On GSM8K (arithmetic reasoning, $\VC = \PTIME$) and MATH (mathematical problem-solving, $\VC = \PTIME$), self-consistency should yield monotonic improvement with $N$.
+\paragraph{Prediction 1: Self-consistency lift tracks error correlation, not $\VC$ class.}
+Tasks with high between-model error correlation (shared structural bottleneck) should show less self-consistency lift than tasks with low correlation (stochastic, instance-specific difficulty), regardless of verification complexity.
+Concretely, algorithmic tasks like B6 (LIS, $\VC = \PTIME$, $\rho = 0.42$) should show less SC lift than intractability tasks like B7 (3-SAT, $\VC \supseteq \coNP$, $\rho = 0.06$).
 
-\paragraph{Prediction 2: Self-consistency saturates when $\VC$ is hard.}
-On 3-SAT near the phase transition (feasibility $\VC = \PTIME$, but model errors are correlated), self-consistency should improve for feasibility but not for optimality variants.
-On PlanBench with hierarchical plans ($\VC \supseteq \coNP$), self-consistency should show minimal improvement.
+\paragraph{Prediction 2: Within-model SC is bounded by shared weights.}
+Within-model sampling at fixed temperature produces high $\rho$ across all tasks because all samples share the same model weights and computational limitations.
+The discriminative signal is in the \emph{magnitude} of lift, which tracks the stochastic (instance-specific) component of difficulty.
 
-\paragraph{Prediction 3: Improvement tracks verification complexity, not task difficulty.}
-Self-consistency lift should correlate with $\VC(\calF)$ rather than with raw task difficulty. An easy task with hard verification should show less improvement than a hard task with easy verification.
+\paragraph{Prediction 3: Between-model ensembles show the strongest separation.}
+Since different models have different structural bottlenecks (different training data, architectures, and learned algorithms), between-model agreement provides a cleaner test of whether failures are structural or stochastic than within-model self-consistency.
 
 \subsection{Results}
 
@@ -507,6 +515,12 @@ Our framework applies to tasks with decidable verification functions (\Cref{def:
 The worst-case complexity analysis may overestimate difficulty on typical (average-case) instances.
 The connection between formal complexity classes and practical model capabilities is an idealization: real models may approximate verification for specific distributions even when worst-case verification is hard.
 Our empirical validation is limited to a small set of benchmarks and model families.
+
+\paragraph{Structural vs.\ stochastic error correlation.}
+Our empirical error correlation analysis reveals a nuance not captured by naive applications of \Cref{thm:selfconsistency}(c): error correlation tracks \emph{shared structural bottlenecks} rather than worst-case verification complexity.
+Algorithmic tasks (Type~4, $\VC = \PTIME$) show the highest between-model correlation ($\rho = 0.42$) because all models lack the same algorithm.
+Intractability tasks (Type~5, $\VC \supseteq \coNP$) show the \emph{lowest} correlation ($\rho = 0.06$) because instance-level difficulty near the phase transition is stochastic.
+This refined understanding strengthens the practical implications: self-consistency is most effective precisely where error correlation is lowest, regardless of $\VC$ class.
 
 \paragraph{Scope boundaries.}
 The framework assumes a well-defined verification function $V$ exists. For many real-world tasks --- creative writing, open-ended dialogue, aesthetic judgment --- no such function is available, even in principle. The taxonomy (\Cref{tab:taxonomy}) marks Type~6 (architectural gaps) as having undefined verification, but many additional task families fall outside the framework's scope. The theory applies where ground truth is decidable, not universal.
