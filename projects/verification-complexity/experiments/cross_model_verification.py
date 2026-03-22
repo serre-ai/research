@@ -102,6 +102,7 @@ class VerificationResult:
     instance_id: str
     task: str
     difficulty: int
+    prompt_variant: str  # "full_cot" or "answer_only"
     generator_model: str
     generator_answer: str
     generator_correct: bool
@@ -118,7 +119,8 @@ class VerificationResult:
 # Verification prompt
 # ---------------------------------------------------------------------------
 
-VERIFICATION_PROMPT = """You are evaluating whether a student's answer to a reasoning problem is correct.
+# Variant A: verifier sees full CoT response — tests reasoning trace validation
+PROMPT_FULL_COT = """You are evaluating whether a student's answer to a reasoning problem is correct.
 
 ## Problem
 {prompt}
@@ -128,15 +130,35 @@ VERIFICATION_PROMPT = """You are evaluating whether a student's answer to a reas
 
 Is the student's final answer correct? Think step by step about the problem, then on the last line write just "Correct" or "Incorrect"."""
 
+# Variant B: verifier sees only the claimed answer — must independently verify
+# This is the real test of verification complexity: the verifier must DO the
+# verification computation, not just check if the reasoning looks consistent.
+PROMPT_ANSWER_ONLY = """The answer to the following problem is claimed to be "{answer}". Is this correct?
+
+## Problem
+{prompt}
+
+Think step by step to verify whether the claimed answer is correct, then on the last line write just "Correct" or "Incorrect"."""
+
+PROMPT_VARIANTS = {
+    "full_cot": PROMPT_FULL_COT,
+    "answer_only": PROMPT_ANSWER_ONLY,
+}
+
 
 def extract_verification_judgment(response: str) -> str:
-    """Extract 'Correct' or 'Incorrect' from verifier's response."""
+    """Extract 'Correct' or 'Incorrect' from verifier's response.
+
+    Strategy: check last line first (where the prompt asks for the answer),
+    then fall back to the last occurrence in the full text. "Incorrect" always
+    wins over "correct" at the same position since it contains the substring.
+    """
     if not response or not response.strip():
         return ""
 
     text = response.strip()
 
-    # Check last line first
+    # Check last line first — the prompt asks for judgment on the last line
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if lines:
         last = lines[-1].lower().strip(".*!,;:")
@@ -145,22 +167,16 @@ def extract_verification_judgment(response: str) -> str:
         if "correct" in last:
             return "Correct"
 
-    # Search full text for last occurrence
-    correct_pos = -1
-    incorrect_pos = -1
-    for m in re.finditer(r"\bcorrect\b", text.lower()):
-        # Make sure it's not "incorrect"
-        start = m.start()
-        if start > 0 and text[start-2:start].lower() == "in":
-            incorrect_pos = start
-        else:
-            correct_pos = start
-    for m in re.finditer(r"\bincorrect\b", text.lower()):
-        incorrect_pos = m.start()
+    # Fall back to last occurrence in full text
+    lower = text.lower()
+    last_incorrect = max((m.start() for m in re.finditer(r"\bincorrect\b", lower)), default=-1)
+    last_correct = max((m.start() for m in re.finditer(r"\bcorrect\b", lower)), default=-1)
 
-    if incorrect_pos > correct_pos:
+    # "incorrect" contains "correct" as a substring, so if the last "correct"
+    # match is inside an "incorrect" match, "incorrect" wins
+    if last_incorrect >= 0 and last_incorrect >= last_correct - 2:
         return "Incorrect"
-    if correct_pos > incorrect_pos and correct_pos >= 0:
+    if last_correct >= 0:
         return "Correct"
 
     return ""
@@ -214,14 +230,30 @@ def load_generator_results(
         data = json.loads(matches[0].read_text())
         all_results = data.get("results", data) if isinstance(data, dict) else data
 
-        # Filter by difficulty and sample
+        # Filter by difficulty with balanced correct/incorrect sampling.
+        # Equal representation ensures verifier is tested on both confirmation
+        # and error detection, not just biased by generator accuracy.
         selected = []
         for d in difficulties:
             d_results = [r for r in all_results if r.get("difficulty") == d]
-            selected.extend(d_results[:per_difficulty])
+            correct = [r for r in d_results if r.get("correct")]
+            incorrect = [r for r in d_results if not r.get("correct")]
+            half = per_difficulty // 2
+            # Take up to half correct + half incorrect; fill remainder from whichever has more
+            n_correct = min(half, len(correct))
+            n_incorrect = min(half, len(incorrect))
+            remainder = per_difficulty - n_correct - n_incorrect
+            selected.extend(correct[:n_correct])
+            selected.extend(incorrect[:n_incorrect])
+            if remainder > 0:
+                # Fill from whichever pool has leftover
+                leftover = correct[n_correct:] + incorrect[n_incorrect:]
+                selected.extend(leftover[:remainder])
 
+        n_correct = sum(1 for r in selected if r.get("correct"))
+        n_incorrect = len(selected) - n_correct
         results_by_task[task_key] = selected
-        logger.info(f"  Loaded {len(selected)} instances for {task_key} ({generator_model})")
+        logger.info(f"  Loaded {len(selected)} instances for {task_key} ({generator_model}) [{n_correct} correct, {n_incorrect} incorrect]")
 
     return results_by_task
 
@@ -244,6 +276,9 @@ def main():
                         help="Instances per difficulty level per task")
     parser.add_argument("--condition", default="short_cot",
                         help="Generator condition to use")
+    parser.add_argument("--prompt-variant", default="answer_only",
+                        choices=["full_cot", "answer_only"],
+                        help="Prompt variant: full_cot (verifier sees reasoning) or answer_only (verifier must independently verify)")
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true")
@@ -270,9 +305,12 @@ def main():
         for v in verifiers
     )
 
+    prompt_template = PROMPT_VARIANTS[args.prompt_variant]
+
     logger.info(f"Tasks: {tasks}")
     logger.info(f"Generators: {generators}")
     logger.info(f"Verifiers: {verifiers}")
+    logger.info(f"Prompt variant: {args.prompt_variant}")
     logger.info(f"Instances per task: {len(difficulties) * args.instances_per_difficulty}")
     logger.info(f"Total instances: {total_instances}")
     logger.info(f"Total verification calls: {total_calls:,}")
@@ -300,7 +338,7 @@ def main():
 
             client = create_verifier_client(ver_provider, ver_model)
 
-            output_file = args.output_dir / f"verify_{gen_key}_by_{ver_key}.jsonl"
+            output_file = args.output_dir / f"verify_{gen_key}_by_{ver_key}_{args.prompt_variant}.jsonl"
 
             # Resume support
             completed_ids = set()
@@ -323,18 +361,24 @@ def main():
 
                     for idx, inst in enumerate(remaining):
                         try:
-                            # Build verification prompt
-                            prompt = VERIFICATION_PROMPT.format(
-                                prompt=inst["prompt_sent"],
-                                response=inst["model_response"],
-                            )
+                            # Build verification prompt based on variant
+                            if args.prompt_variant == "answer_only":
+                                prompt = prompt_template.format(
+                                    prompt=inst["prompt_sent"],
+                                    answer=inst["extracted_answer"],
+                                )
+                            else:
+                                prompt = prompt_template.format(
+                                    prompt=inst["prompt_sent"],
+                                    response=inst["model_response"],
+                                )
 
                             # Query verifier
                             start = time.perf_counter()
                             response, latency = client.query(
                                 prompt,
                                 system_prompt="You are a careful reasoning evaluator.",
-                                max_tokens=1024,
+                                max_tokens=2048,
                             )
                             actual_latency = (time.perf_counter() - start) * 1000
 
@@ -354,11 +398,12 @@ def main():
                                 instance_id=inst["instance_id"],
                                 task=inst["task"],
                                 difficulty=inst["difficulty"],
+                                prompt_variant=args.prompt_variant,
                                 generator_model=gen_model,
                                 generator_answer=inst["extracted_answer"],
                                 generator_correct=gen_correct,
                                 verifier_model=ver_model,
-                                verifier_response=response[:500],  # truncate for storage
+                                verifier_response=response[:1500],  # keep enough for debugging
                                 verifier_judgment=judgment,
                                 verification_accurate=verification_accurate,
                                 ground_truth=inst["ground_truth"],
