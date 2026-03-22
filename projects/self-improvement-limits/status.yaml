@@ -4,12 +4,12 @@ status: active
 phase: research
 confidence: 0.5
 created: "2026-03-21"
-updated: "2026-03-21"
+updated: "2026-03-22"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Literature survey — collect and synthesize self-improvement approaches across self-training, self-refinement, self-play, and constitutional AI"
+current_focus: "Empirical validation design complete. Ready for experiment execution pending budget allocation."
 
 next_steps:
   - "Survey self-improvement literature: self-training (He et al., Huang et al.), self-refinement (Madaan et al.), self-play (Burns et al., Chen et al.), constitutional AI (Bai et al.)"
@@ -32,8 +32,8 @@ progress:
     status: not_started
     notes: "Prove separation results for self-play vs. self-training under game-theoretic assumptions"
   empirical_validation:
-    status: not_started
-    notes: "Small-scale experiments on controlled tasks with tunable generation-verification gaps (~$200)"
+    status: design_complete
+    notes: "Complete experimental design for 4 mechanisms (self-training, self-refinement, self-play, constitutional AI). Self-training implementation complete with simulation validation. Budget: ~$200. Ready for execution."
   paper_writing:
     status: not_started
     notes: "ICLR 2027 format, proofs in appendix"
@@ -50,6 +50,15 @@ decisions_made:
   - date: 2026-03-21
     decision: "Scope empirical validation to ~$200 on small models with controlled tasks"
     rationale: "This is primarily a theory paper. Empirical validation confirms theoretical predictions but is not the main contribution. Controlled tasks (arithmetic, logic, constrained writing) provide clean generation-verification gap manipulation."
+  - date: 2026-03-22
+    decision: "Design comprehensive validation across 4 self-improvement mechanisms"
+    rationale: "DW-77 requested experiment design. Extended beyond self-training (already designed in DW-78) to cover self-refinement, self-play, and constitutional AI as mentioned in BRIEF. This provides complete validation of all theoretical claims. Budget allocation: self-training ($100-150) + self-refinement ($35-50) = Phase 1 ($135-200), with optional Phase 2 for self-play and constitutional AI if budget permits."
+  - date: 2026-03-22
+    decision: "Prioritize self-training and self-refinement experiments first (Phase 1)"
+    rationale: "These directly test core theorems (1-3) and resolve FATAL issue #1 from internal review. Self-play and constitutional AI are valuable extensions but not critical for minimum viable validation. Two-phase approach manages budget risk while ensuring critical experiments complete."
+  - date: 2026-03-22
+    decision: "Use in-context learning instead of fine-tuning for self-improvement simulation"
+    rationale: "ICL reduces cost 5× ($100 vs $500) while still testing core theoretical prediction (convergence to verification-bounded fixed point). Trade-off: May underestimate improvement magnitude, but if ICL validates theory, fine-tuning would strengthen it further. This is a cost-effective validation strategy."
 
 key_references: []
 
@@ -61,6 +70,9 @@ git:
 metrics:
   theorems_proved: 0
   papers_reviewed: 0
-  experiments_run: 0
+  experiments_designed: 4  # self-training, self-refinement, self-play, constitutional AI
+  experiments_implemented: 1  # self-training (with simulation)
+  experiments_run: 0  # real experiments pending budget
+  simulations_run: 1  # self-training simulation complete
 
 notes: "Project initialized. Complements reasoning-gaps by providing impossibility results for self-improvement rather than just characterizing reasoning limitations. Together they form a theoretical program: what can't LLMs do, and what can't they learn to do on their own."
