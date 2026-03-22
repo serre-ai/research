@@ -1,0 +1,76 @@
+{
+  "task": {
+    "id": "humaneval",
+    "name": "HumanEval (Small Gap)",
+    "nu_0": 0.8,
+    "gamma_0": 0.5,
+    "g_D": 0.1,
+    "epsilon": 0.1,
+    "noise_std": 0.02
+  },
+  "iterations": 10,
+  "predicted_ceiling": 0.9,
+  "f_g_D": 0.33333333333333337,
+  "results": [
+    {
+      "iteration": 0,
+      "gamma_t": 0.5293129753784311,
+      "nu_t": 0.7954844739902693,
+      "convergence_delta": 0.0
+    },
+    {
+      "iteration": 1,
+      "gamma_t": 0.5272687420255866,
+      "nu_t": 0.784464125241645,
+      "convergence_delta": 0.0020442333528445378
+    },
+    {
+      "iteration": 2,
+      "gamma_t": 0.5342311819000937,
+      "nu_t": 0.8247778699894961,
+      "convergence_delta": 0.006962439874507065
+    },
+    {
+      "iteration": 3,
+      "gamma_t": 0.536323162477494,
+      "nu_t": 0.8371854773798836,
+      "convergence_delta": 0.002091980577400343
+    },
+    {
+      "iteration": 4,
+      "gamma_t": 0.5578678050104037,
+      "nu_t": 0.8291064144085245,
+      "convergence_delta": 0.021544642532909664
+    },
+    {
+      "iteration": 5,
+      "gamma_t": 0.5656528517405691,
+      "nu_t": 0.8758890556827573,
+      "convergence_delta": 0.007785046730165446
+    },
+    {
+      "iteration": 6,
+      "gamma_t": 0.5832001666830826,
+      "nu_t": 0.8205808370098027,
+      "convergence_delta": 0.017547314942513492
+    },
+    {
+      "iteration": 7,
+      "gamma_t": 0.6042052554167656,
+      "nu_t": 0.8194603055879306,
+      "convergence_delta": 0.02100508873368301
+    },
+    {
+      "iteration": 8,
+      "gamma_t": 0.5951054765711539,
+      "nu_t": 0.806270699857934,
+      "convergence_delta": 0.00909977884561175
+    },
+    {
+      "iteration": 9,
+      "gamma_t": 0.5667157277480563,
+      "nu_t": 0.850576949080395,
+      "convergence_delta": 0.028389748823097527
+    }
+  ]
+}

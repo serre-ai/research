@@ -1,0 +1,76 @@
+{
+  "task": {
+    "id": "writingprompts",
+    "name": "WritingPrompts (Large Gap)",
+    "nu_0": 0.6,
+    "gamma_0": 0.55,
+    "g_D": 0.5,
+    "epsilon": 0.2,
+    "noise_std": 0.02
+  },
+  "iterations": 10,
+  "predicted_ceiling": 0.8,
+  "f_g_D": 0.2,
+  "results": [
+    {
+      "iteration": 0,
+      "gamma_t": 0.5647693315999083,
+      "nu_t": 0.6034273656237994,
+      "convergence_delta": 0.0
+    },
+    {
+      "iteration": 1,
+      "gamma_t": 0.550278852145418,
+      "nu_t": 0.6069370150541283,
+      "convergence_delta": 0.014490479454490224
+    },
+    {
+      "iteration": 2,
+      "gamma_t": 0.5249414438317113,
+      "nu_t": 0.6081625340274045,
+      "convergence_delta": 0.02533740831370679
+    },
+    {
+      "iteration": 3,
+      "gamma_t": 0.5467215279833983,
+      "nu_t": 0.6508139615373484,
+      "convergence_delta": 0.021780084151687085
+    },
+    {
+      "iteration": 4,
+      "gamma_t": 0.5638604236722472,
+      "nu_t": 0.5996794862971352,
+      "convergence_delta": 0.017138895688848854
+    },
+    {
+      "iteration": 5,
+      "gamma_t": 0.5642503777864116,
+      "nu_t": 0.6311418463842522,
+      "convergence_delta": 0.0003899541141644258
+    },
+    {
+      "iteration": 6,
+      "gamma_t": 0.544808571111665,
+      "nu_t": 0.6539685813657381,
+      "convergence_delta": 0.019441806674746598
+    },
+    {
+      "iteration": 7,
+      "gamma_t": 0.5793954261673893,
+      "nu_t": 0.662502780969675,
+      "convergence_delta": 0.03458685505572423
+    },
+    {
+      "iteration": 8,
+      "gamma_t": 0.5423084700026531,
+      "nu_t": 0.6392798548185051,
+      "convergence_delta": 0.03708695616473612
+    },
+    {
+      "iteration": 9,
+      "gamma_t": 0.5659532135006737,
+      "nu_t": 0.6661506269054597,
+      "convergence_delta": 0.023644743498020593
+    }
+  ]
+}

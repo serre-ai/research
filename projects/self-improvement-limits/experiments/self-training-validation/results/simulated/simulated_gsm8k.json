@@ -1,0 +1,76 @@
+{
+  "task": {
+    "id": "gsm8k",
+    "name": "GSM8K (Moderate Gap)",
+    "nu_0": 0.75,
+    "gamma_0": 0.55,
+    "g_D": 0.2,
+    "epsilon": 0.15,
+    "noise_std": 0.02
+  },
+  "iterations": 10,
+  "predicted_ceiling": 0.9,
+  "f_g_D": 0.28571428571428575,
+  "results": [
+    {
+      "iteration": 0,
+      "gamma_t": 0.5599342830602247,
+      "nu_t": 0.7472347139765763,
+      "convergence_delta": 0.0
+    },
+    {
+      "iteration": 1,
+      "gamma_t": 0.5777641581516301,
+      "nu_t": 0.7934196860940746,
+      "convergence_delta": 0.017829875091405323
+    },
+    {
+      "iteration": 2,
+      "gamma_t": 0.5710991247287319,
+      "nu_t": 0.7678766790563151,
+      "convergence_delta": 0.006665033422898148
+    },
+    {
+      "iteration": 3,
+      "gamma_t": 0.6154945614678279,
+      "nu_t": 0.7950202115960283,
+      "convergence_delta": 0.04439543673909596
+    },
+    {
+      "iteration": 4,
+      "gamma_t": 0.5805422716006037,
+      "nu_t": 0.7957914902761093,
+      "convergence_delta": 0.03495228986722421
+    },
+    {
+      "iteration": 5,
+      "gamma_t": 0.5851242084209834,
+      "nu_t": 0.7795288969211734,
+      "convergence_delta": 0.004581936820379773
+    },
+    {
+      "iteration": 6,
+      "gamma_t": 0.6025364518186586,
+      "nu_t": 0.7534694506957647,
+      "convergence_delta": 0.01741224339767511
+    },
+    {
+      "iteration": 7,
+      "gamma_t": 0.5656469903067118,
+      "nu_t": 0.7826314280025315,
+      "convergence_delta": 0.03688946151194672
+    },
+    {
+      "iteration": 8,
+      "gamma_t": 0.5817023516910594,
+      "nu_t": 0.8017490489874349,
+      "convergence_delta": 0.0160553613843476
+    },
+    {
+      "iteration": 9,
+      "gamma_t": 0.585142060618733,
+      "nu_t": 0.7683936503363067,
+      "convergence_delta": 0.003439708927673535
+    }
+  ]
+}
