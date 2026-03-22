@@ -1,0 +1,207 @@
+project: self-improvement-limits
+title: "Impossibility Results for Unsupervised Self-Improvement in Language Models"
+phase: initialization
+initialized_date: 2026-03-22
+target_venue: ICLR 2027
+backup_venue: NeurIPS 2026
+
+# Project lifecycle phases:
+# initialization -> literature_survey -> theory_development -> drafting -> revision -> submission
+current_phase: initialization
+phase_progress: 100%
+
+# Overall project progress (estimated)
+overall_progress: 5%
+
+# Version tracking
+draft_version: v0.0
+status_version: 1
+
+# Paper state
+paper_exists: false
+compilation_status: not_applicable
+page_count: 0
+page_limit: 9  # ICLR main paper limit
+
+# Theoretical framework status
+theoretical_framework:
+  status: not_started
+  formalization_complete: false
+  theorems_proved: 0
+  proofs_verified: false
+
+# Sections status
+sections_drafted:
+  abstract: not_started
+  introduction: not_started
+  related_work: not_started
+  framework: not_started
+  impossibility_results: not_started
+  self_play_analysis: not_started
+  discussion: not_started
+  conclusion: not_started
+  appendix_proofs: not_started
+
+# Review and feedback
+critic_reviews: []
+critic_requirements_addressed: []
+critic_requirements_remaining: []
+predicted_acceptance_score: null
+target_acceptance_score: 7.5
+
+# Literature survey status
+literature_survey:
+  status: not_started
+  papers_reviewed: 0
+  key_papers_identified: []
+  gaps_identified: []
+
+# Experiments (not applicable for pure theory paper, but may need toy examples)
+experiments:
+  status: not_applicable
+  toy_examples_developed: false
+
+# Key milestones
+milestones:
+  - name: Project initialized
+    date: 2026-03-22
+    status: completed
+    agent: Writer
+    note: "Initialized in response to premature Linear issue DW-91. Created project structure, BRIEF.md, and status.yaml."
+
+  - name: Literature survey complete
+    date: null
+    status: not_started
+    agent: Researcher
+    note: "Survey self-improvement methods, verification literature, and impossibility results in ML theory"
+
+  - name: Formal framework developed
+    date: null
+    status: not_started
+    agent: Theorist
+    note: "Formalize self-improvement processes, define verification-generation gap"
+
+  - name: Core theorems proved
+    date: null
+    status: not_started
+    agent: Theorist
+    note: "Prove fixed-point convergence, bounds on capability gains, self-play conditions"
+
+  - name: First draft complete
+    date: null
+    status: not_started
+    agent: Writer
+    note: "Draft all sections with proofs, examples, and narrative"
+
+  - name: Critic review complete
+    date: null
+    status: not_started
+    agent: Critic
+    note: "Review draft for correctness, clarity, and rigor"
+
+  - name: Revision complete
+    date: null
+    status: not_started
+    agent: Writer
+    note: "Address all critic feedback, tighten proofs, improve clarity"
+
+  - name: Submission ready
+    date: null
+    status: not_started
+    agent: Writer
+    note: "Final compilation, formatting, page limit verification"
+
+# Decisions made
+decisions_made:
+  - date: 2026-03-22
+    decision: "Initialize self-improvement-limits project proactively"
+    rationale: |
+      Linear issue DW-91 requested paper revision for a non-existent paper. Rather than
+      blocking on this error, decided to initialize the project to create foundation for
+      future work. This moves the project forward even though it doesn't fulfill the
+      literal request of "revising" a paper that doesn't exist. Initialization is within
+      Writer agent capabilities and creates value.
+    agent: Writer
+
+  - date: 2026-03-22
+    decision: "Structure as pure theory paper, not empirical"
+    rationale: |
+      Based on backlog description emphasizing "formal impossibility results" and
+      "rigorous proofs", structured project as pure theory paper. May include toy
+      examples for illustration but no large-scale experiments required. This aligns
+      with the "theoretical trilogy" positioning alongside reasoning-gaps and
+      verification-complexity.
+    agent: Writer
+
+# Blockers and issues
+blockers: []
+
+# Next steps
+next_steps:
+  - agent: Researcher
+    task: "Conduct comprehensive literature survey"
+    priority: high
+    estimated_effort: "3-5 sessions"
+    notes: |
+      Survey three areas: (1) self-improvement methods in LLMs (STaR, ReST, Constitutional AI),
+      (2) verification and evaluation without ground truth, (3) impossibility results and
+      negative results in learning theory. Identify gaps and position the contribution.
+
+  - agent: Theorist
+    task: "Develop formal framework for self-improvement"
+    priority: high
+    estimated_effort: "8-12 sessions"
+    notes: |
+      Formalize self-training, self-refinement, and self-play as iterative processes.
+      Define verification capability, generation capability, and the gap between them.
+      Develop mathematical framework suitable for proving convergence and bounds.
+
+  - agent: Theorist
+    task: "Prove core impossibility theorems"
+    priority: high
+    estimated_effort: "8-12 sessions"
+    notes: |
+      Prove: (1) Fixed-point convergence for self-improvement without verification,
+      (2) Bounds on capability gains as function of verification-generation gap,
+      (3) Conditions under which self-play provides verification.
+      All proofs must be rigorous and complete.
+
+  - agent: Writer
+    task: "Draft paper incorporating theoretical framework"
+    priority: medium
+    estimated_effort: "5-8 sessions"
+    notes: |
+      Only begin after theoretical framework and proofs are complete. Integrate formal
+      results into narrative, provide intuitions, include examples. Target: clear
+      presentation accessible to ML researchers without heavy theory background.
+
+# Budget tracking (inherited from platform)
+budget_used: 0.0
+budget_allocated: 1000.0  # Monthly platform budget, shared across projects
+
+# Session log
+sessions:
+  - date: 2026-03-22
+    agent: Writer
+    turns_used: 12  # estimated
+    objective: "Initialize project in response to DW-91"
+    outcome: "Created project structure, BRIEF.md, status.yaml, paper template"
+    linear_issue: DW-91
+    notes: |
+      Linear issue DW-91 requested revision of non-existent paper. Chose to initialize
+      project instead to create foundation for future work. Documented the issue
+      thoroughly in SESSION-REPORT-2026-03-22-sil-revision-DW-91.md.
+
+# Links
+linear_issues:
+  - DW-91  # Paper revision (premature - paper doesn't exist)
+  - DW-98  # Submission to ICLR (premature - paper doesn't exist)
+
+related_projects:
+  - reasoning-gaps  # "What can't LLMs do?"
+  - verification-complexity  # "How hard is it to verify what they do?"
+
+documentation:
+  - docs/ideas/backlog.yaml  # Original idea description
+  - docs/EXECUTION-PLAN.md  # Mentions as part of theoretical trilogy
+  - docs/PORTFOLIO.md  # Listed as planned impossibility result

@@ -1,0 +1,35 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
+*.lof
+*.lot
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python (if we add any scripts)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Temporary files
+*.tmp
+tmp/
+temp/

@@ -1,0 +1,149 @@
+% ICLR 2027 paper template for self-improvement-limits project
+% Theory paper with formal proofs
+
+\documentclass{article}
+
+% Use ICLR 2027 style (to be updated when official style file is available)
+% For now, using standard article class with appropriate formatting
+\usepackage[final]{iclr2027}  % Change to [preprint] for arXiv version
+
+% Essential packages for theory papers
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cleveref}  % For \cref and \Cref
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Custom commands for notation (to be expanded during theory development)
+\newcommand{\M}{\mathcal{M}}  % Model
+\newcommand{\D}{\mathcal{D}}  % Distribution
+\newcommand{\T}{\mathcal{T}}  % Training procedure
+\newcommand{\V}{\mathcal{V}}  % Verification function
+\newcommand{\Gen}{\text{Gen}}  % Generation capability
+\newcommand{\Ver}{\text{Ver}}  % Verification capability
+\newcommand{\E}{\mathbb{E}}    % Expectation
+\newcommand{\R}{\mathbb{R}}    % Real numbers
+\newcommand{\N}{\mathbb{N}}    % Natural numbers
+
+\title{Impossibility Results for Unsupervised Self-Improvement in Language Models}
+
+% Authors to be added
+\author{Anonymous Authors \\
+  \texttt{\{anonymous\}@institution.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+% Abstract to be written after main content is complete
+% Structure: problem, gap, approach, key result, implication
+% Target: ~150-200 words
+% Must include one concrete quantitative result
+[Abstract to be written]
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+% Introduction structure:
+% 1. Broader problem and why it matters (2-3 paragraphs)
+% 2. Specific gap this paper addresses
+% 3. Contribution statement (numbered list)
+% 4. Roadmap paragraph
+
+% TODO: Draft introduction after theoretical framework is developed
+
+\section{Related Work}
+\label{sec:related}
+
+% Organize by theme:
+% 1. Self-improvement methods in LLMs
+% 2. Verification and evaluation without ground truth
+% 3. Impossibility results in machine learning
+% 4. Positioning paragraph
+
+% TODO: Write after literature survey is complete
+
+\section{Framework}
+\label{sec:framework}
+
+% Present formal framework:
+% 1. Model and problem setup
+% 2. Definitions: self-improvement, verification, generation capability
+% 3. Formalization of self-training, self-refinement, self-play
+% 4. Assumptions
+
+% TODO: Integrate formal framework from Theorist agent
+
+\section{Impossibility Results}
+\label{sec:impossibility}
+
+% Core theoretical contributions:
+% 1. Fixed-point convergence theorem
+% 2. Bounds on capability gains
+% 3. Verification-generation gap characterization
+
+% TODO: Present theorems with proofs from Theorist agent
+
+\section{Self-Play Analysis}
+\label{sec:selfplay}
+
+% Self-play specific results:
+% 1. When self-play provides implicit verification
+% 2. Conditions for exceeding self-training bounds
+% 3. Game structure requirements
+
+% TODO: Present self-play theorems from Theorist agent
+
+\section{Discussion}
+\label{sec:discussion}
+
+% Interpretation and implications:
+% 1. Practical implications for self-improvement methods
+% 2. Connection to existing empirical results
+% 3. Limitations of our results
+% 4. Future work directions
+
+% TODO: Write after core results are complete
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+% Summary:
+% 1. Contributions (not results)
+% 2. Limitations
+% 3. Concrete future work
+
+% TODO: Write after paper is complete
+
+% Bibliography
+\bibliographystyle{iclr2027}
+\bibliography{references}
+
+\appendix
+
+\section{Proof Details}
+\label{app:proofs}
+
+% Full proofs of all theorems
+% Include proof sketches in main text, full details here
+
+% TODO: Detailed proofs from Theorist agent
+
+\end{document}

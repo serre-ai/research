@@ -1,0 +1,95 @@
+% ICLR 2027 LaTeX style file (placeholder)
+% Official style file to be updated when released
+% Based on ICLR 2026 format
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{iclr2027}[2026/03/22 ICLR 2027 submission style (placeholder)]
+
+\RequirePackage{eso-pic}
+\RequirePackage{fancyhdr}
+\RequirePackage{lastpage}
+
+% Declare options
+\newif\if@preprint\@preprintfalse
+\DeclareOption{preprint}{\@preprinttrue}
+\DeclareOption{final}{\@preprintfalse}
+\ProcessOptions\relax
+
+% Page layout
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{9in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.5in}
+\setlength{\headheight}{0.5in}
+\setlength{\headsep}{0.25in}
+\setlength{\footskip}{0.5in}
+
+% Headers and footers
+\if@preprint
+  \fancyhead[L]{Preprint. Work in progress.}
+\else
+  \fancyhead[L]{Under review as a conference paper at ICLR 2027}
+\fi
+\fancyhead[R]{}
+\fancyfoot[C]{\thepage}
+\pagestyle{fancy}
+
+% Title formatting
+\renewcommand{\maketitle}{%
+  \par
+  \begingroup
+    \renewcommand{\thefootnote}{\fnsymbol{footnote}}%
+    \def\@makefnmark{\hbox to\z@{$\m@th^{\@thefnmark}$\hss}}%
+    \long\def\@makefntext##1{\parindent 1em\noindent
+            \hbox to1.8em{\hss$\m@th^{\@thefnmark}$}##1}%
+    \@maketitle
+    \@thanks
+  \endgroup
+  \setcounter{footnote}{0}%
+  \let\maketitle\relax
+  \let\@maketitle\relax
+  \gdef\@thanks{}
+  \gdef\@author{}
+  \gdef\@title{}
+}
+
+\def\@maketitle{%
+  \newpage
+  \null
+  \vskip 2em%
+  \begin{center}%
+  \let\footnote\thanks
+    {\LARGE\bfseries\@title\par}%
+    \vskip 1.5em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+    \vskip 1em%
+  \end{center}%
+  \par
+  \vskip 1.5em
+}
+
+% Section formatting
+\renewcommand{\section}{\@startsection{section}{1}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}%
+  {2.3ex \@plus.2ex}%
+  {\normalfont\Large\bfseries}}
+
+\renewcommand{\subsection}{\@startsection{subsection}{2}{\z@}%
+  {-3.25ex\@plus -1ex \@minus -.2ex}%
+  {1.5ex \@plus .2ex}%
+  {\normalfont\large\bfseries}}
+
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{\z@}%
+  {-3.25ex\@plus -1ex \@minus -.2ex}%
+  {1.5ex \@plus .2ex}%
+  {\normalfont\normalsize\bfseries}}
+
+% Captions
+\RequirePackage[font=small,labelfont=bf]{caption}
+
+\endinput
