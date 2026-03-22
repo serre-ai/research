@@ -80,7 +80,7 @@ Large language models demonstrate remarkable reasoning abilities yet fail system
 We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
 Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
 We introduce \bench{}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
-Evaluation across twelve models from five families (\statTotalInstances{} instances) under four evaluation conditions (direct, chain-of-thought, budget-constrained CoT, and tool-augmented) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
+Evaluation across twelve models from five families (\statTotalInstances{} instances) under four evaluation conditions (direct, chain-of-thought, budget-constrained CoT, and tool-augmented) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps show limited or model-dependent response to CoT.
 Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
 \end{abstract}
 
@@ -165,7 +165,7 @@ We identify six gap types, each defined by the complexity boundary it reflects (
 \textbf{Type~3 (Serial Composition):} Problems requiring $\Omega(n)$ sequential steps (iterated permutation, state tracking); CoT budget must match the number of serial steps~\citep{merrill2024cot}.
 \textbf{Type~4 (Algorithmic):} $\PTIME$ problems requiring non-trivial algorithms; polynomial CoT suffices in theory, but tool use closes the gap far more reliably~\citep{gao2023pal}.
 \textbf{Type~5 (Intractability):} $\NP$-hard problems where even polynomial CoT reaches only $\PTIME$; accuracy degrades sharply at phase transitions~\citep{hazra2025}.
-\textbf{Type~6 (Architectural):} Failures from autoregressive structure or training objectives (reversal curse~\citep{reversal}, negation insensitivity~\citep{negation2025}); these persist regardless of CoT, scaling, or problem size.
+\textbf{Type~6 (Architectural):} Failures from autoregressive structure or training objectives (reversal curse~\citep{reversal}, negation insensitivity~\citep{negation2025}); these persist regardless of scaling or problem size; CoT may partially compensate for inference-time manifestations but cannot resolve the underlying structural limitation.
 
 \begin{table}[t]
 \centering
@@ -181,7 +181,7 @@ We identify six gap types, each defined by the complexity boundary it reflects (
 3. Serial & Linear depth & Yes (steps) & Yes & $O(n)$ & Partially \\
 4. Algorithmic & $\PTIME$ & Yes & In theory & $O(\mathrm{poly}(n))$ & \textbf{Yes} \\
 5. Intractability & $\NP$ & Yes (phase) & No & --- & Only w/ solver \\
-6. Architectural & Structural & No (constant) & No & --- & Sometimes \\
+6. Architectural & Structural & No (constant) & Partially & --- & Sometimes \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -289,10 +289,20 @@ Overall accuracy is 0.519 (direct), 0.739 (short CoT), and 0.637 (budget CoT), w
 \label{sec:cot_results}
 
 The central empirical finding is that \textbf{CoT effectiveness is strongly predicted by gap type} (\Cref{fig:cot-heatmap}).
-Types~2--3 (depth and serial) show mean short-CoT lift of $+$0.351, versus $+$0.094 for Types~5--6 (intractability and architectural)---a nearly four-fold difference confirming \Cref{prop:depth,prop:serial,prop:intractable}.
+Types~2--3 (depth and serial) show mean short-CoT lift of $+$0.351.
+Type~5 (intractability) shows negligible lift ($+$0.003), confirming \Cref{prop:intractable}: the computational bottleneck for $\NP$-hard problems is hardness, not parallelism.
+Type~6 (architectural) presents a nuanced picture: B8 (reversal) shows near-zero lift ($+$0.060) for standard models, but B9 (negation sensitivity) shows substantial model-dependent lift ($+$0.235), with Claude models gaining $+$0.36--0.57 while GPT-4o gains only $+$0.02.
+This suggests architectural gaps are not monolithic---CoT can compensate for inference-time manifestations (B9) but not training-time limitations (B8).
 Type~3 shows the largest single lift ($+$0.502): on B3, direct accuracy is 0.20 but CoT raises it to 0.79, consistent with the $O(k)$ sequential steps the forward pass cannot parallelize.
-Type~5 lift is negligible ($+$0.003), confirming that the computational bottleneck for $\NP$-hard problems is hardness, not parallelism.
 Types~1 and~4 show intermediate lifts ($+$0.132 and $+$0.148): for sensitivity gaps, CoT enables explicit counting; for algorithmic gaps, the bottleneck is algorithmic knowledge rather than computation depth.
+
+\paragraph{Type~6 decomposition.}
+The divergent CoT response between B8 and B9 reveals that architectural gaps have two modes.
+B8 (reversal inference) tests a training-distribution limitation: models trained on ``A is B'' cannot reverse to ``B is A.''
+CoT provides no leverage because the missing information was never encoded.
+B9 (negation sensitivity) tests an attention/processing limitation: models default to affirmative patterns and miss negation markers.
+Here, CoT allows explicit negation tracking, yielding large gains for models with strong instruction following (Claude Haiku: $+$0.42, Opus: $+$0.57) but minimal gains for others (GPT-4o-mini: $+$0.01).
+This distinction---distributional vs.\ attentional architectural gaps---refines the Type~6 prediction and explains the model-dependent response.
 
 \begin{figure}[t]
 \centering
@@ -391,6 +401,7 @@ The taxonomy's grounding is conditional on $\TC \neq \NC$ (standard but unproven
 Tasks are synthetic by design, isolating individual gap types rather than realistic combinations; this is a feature for controlled evaluation but limits direct applicability claims.
 Our evaluation is a snapshot of twelve models as of early 2026 and does not include the most recent reasoning-specialized models beyond o3.
 Type~6 evidence at inference time rests primarily on B9 (negation sensitivity); B8 (reversal) shows a strong ceiling effect ($>$92\%) that limits discriminative power.
+B9 shows unexpectedly large CoT lift for some model families ($+$0.42 for Claude vs.\ $+$0.02 for GPT-4o), suggesting the Type~6 prediction requires refinement into distributional (B8-like) and attentional (B9-like) subtypes.
 Tool-augmented evaluation covers only two tasks (B5, B6) with three models (Sonnet, Haiku, GPT-4o), and the tool interface (Python code execution) represents just one class of augmentation---retrieval, symbolic solvers, and external verifiers remain unexplored.
 Finally, the taxonomy assumes a fixed computational model; as architectures evolve beyond standard transformers (e.g., state-space models, mixture-of-experts with adaptive computation), the complexity-theoretic grounding may require revision.
 
@@ -423,7 +434,7 @@ Concurrent diagnostic frameworks---X-RAY~\citep{xray2026} and ConvexBench~\citep
 % ============================================================
 
 We have shown that reasoning failures in LLMs are systematic, predictable, and formally characterizable.
-Our six-type taxonomy connects each failure to a complexity-theoretic boundary, yielding testable predictions validated across twelve models and \statTotalInstances{} instances: CoT closes depth and serial gaps (mean lift $+$35.1\% for Types~2--3) while intractability and architectural gaps show negligible response ($+$9.4\% for Types~5--6); tool augmentation provides the strongest Type~4 validation (lift $+$0.635, four times CoT alone).
+Our six-type taxonomy connects each failure to a complexity-theoretic boundary, yielding testable predictions validated across twelve models and \statTotalInstances{} instances: CoT closes depth and serial gaps (mean lift $+$35.1\% for Types~2--3) while intractability gaps show negligible response ($+$0.3\% for Type~5) and architectural gaps show model-dependent partial response ($+$14.4\% for Type~6, concentrated in B9); tool augmentation provides the strongest Type~4 validation (lift $+$0.635, four times CoT alone).
 The framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform?''---without augmentation, transformers compute within $\TC$; with CoT, they reach $\PTIME$; beyond $\PTIME$, no known augmentation helps.
 The practical implication: match the intervention to the gap type.
 
