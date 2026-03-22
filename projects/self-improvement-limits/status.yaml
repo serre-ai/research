@@ -53,7 +53,7 @@ target_acceptance_score: 7.5
 # Literature survey status
 literature_survey:
   status: in_progress
-  papers_reviewed: 65  # +30 from GV-gap survey
+  papers_reviewed: 100  # +35 from proof strategy survey (2026-03-22)
   key_papers_identified:
     - "Eisenach et al. (2024) - Mind the Gap: Self-Improvement Capabilities of LLMs (ICLR 2025) [CRITICAL - GV-gap formalization]"
     - "Tian et al. (2025) - Theoretical Modeling of LLM Self-Improvement via Solver-Verifier Gap [CRITICAL]"
@@ -67,6 +67,10 @@ literature_survey:
     - "Dynamic Data Mixing (NAACL 2025)"
     - "Curriculum Learning for LLM Pretraining (2025)"
     - "Lilian Weng (2024) - Reward Hacking in Reinforcement Learning"
+    - "Shen & Sanghavi (2024) - Reciprocal Learning [CRITICAL - proves self-training linear convergence via Banach]"
+    - "Wei et al. (2021) - Theoretical Analysis of Self-Training with Deep Networks [CRITICAL - expansion assumption]"
+    - "Converse to Banach Fixed Point Theorem (arXiv 2017) - Universal analysis tool for convergence"
+    - "Xu & Raginsky (2017) - Generalization Error Bounds for Noisy Iterative Algorithms [CRITICAL]"
   gaps_identified:
     - "No rigorous fixed-point existence proof for general self-improvement operators"
     - "Uniqueness conditions for self-improvement fixed points not characterized"
@@ -97,6 +101,13 @@ literature_survey:
     - "Information-theoretic bounds on oracle complexity"
     - "Mathematical proof verification complexity"
     - "Reasoning gaps and cognitive asymmetry in LLMs"
+    - "Contraction mapping theorems and applications to ML (2024-2025)"
+    - "Lipschitz continuity in neural networks and training dynamics"
+    - "Monotone convergence theorems and operator theory"
+    - "Self-training convergence guarantees (2024-2025)"
+    - "Error propagation in iterative learning algorithms"
+    - "Information bottleneck theory and generalization bounds"
+    - "Training data quality and filtering in ML systems"
 
 # Experiments (not applicable for pure theory paper, but may need toy examples)
 experiments:
@@ -415,6 +426,79 @@ sessions:
 
       Papers surveyed: 30+ new papers on GV-gap, complexity theory, reward models, and
       verification systems. Total literature survey: 65+ papers across all topics.
+
+  - date: 2026-03-22
+    agent: Researcher
+    turns_used: 18
+    budget_used: 2.00
+    objective: "Proof strategy for self-training convergence bound (DW-60)"
+    outcome: "Comprehensive survey of proof techniques with detailed strategy for Theorist"
+    linear_issue: DW-60
+    deliverables:
+      - notes/03-self-training-convergence-proof-strategy.md (~500 lines, comprehensive proof strategy)
+      - status.yaml (updated with 35+ new papers on convergence theory)
+    notes: |
+      Conducted targeted literature survey on proof techniques for convergence bounds in
+      self-training and iterative learning systems. Surveyed 35+ papers across:
+      (1) Contraction mapping theorems and Banach fixed-point applications (2024-2025)
+      (2) Monotone convergence theorems and operator theory
+      (3) Self-training convergence guarantees (recent work Aug 2024-2025)
+      (4) RL convergence proofs (Bellman operator, policy iteration)
+      (5) Lipschitz continuity and neural network training dynamics
+      (6) Information-theoretic bounds and generalization error
+      (7) Error propagation in iterative algorithms
+      (8) Training data quality and filtering bounds
+
+      KEY FINDINGS:
+      - Reciprocal Learning (Aug 2024) proves self-training converges at LINEAR RATES using
+        Banach fixed-point theorem when sample adaptation is Lipschitz and non-greedy
+      - Wei et al. (ICLR 2021) proves self-training achieves high accuracy under "expansion"
+        assumption with polynomial sample complexity
+      - Converse Banach theorem (2017): If convergence to unique fixed point is proven by
+        other means, there exists metric making operator a contraction
+      - Xu & Raginsky (2017): Generalization error bounds for noisy iterative algorithms
+        based on mutual information
+
+      RECOMMENDED PROOF APPROACH (3 options):
+      A. Monotone Convergence (Most Robust):
+         - Show capability sequence monotonic and bounded
+         - Apply monotone convergence theorem
+         - Requires proving: (1) filtered data quality ≤ verification + δ,
+           (2) training on quality-q data yields capability ≤ q + ε,
+           (3) verification improvement bounded
+         - Establishes existence of bounded fixed point
+
+      B. Contraction Mapping (Stronger if Provable):
+         - Define metric on model space
+         - Show self-training operator is contraction (Lipschitz constant < 1)
+         - Apply Banach theorem: unique fixed point + geometric convergence
+         - Challenge: may not be globally contracting
+         - Alternative: use converse Banach theorem
+
+      C. Information-Theoretic (For GV-gap characterization):
+         - Quantify information available from verification
+         - Show learning bounded by I(Verification; Quality)
+         - Derive explicit f(g_D) for improvement bound
+
+      CRITICAL TECHNICAL CHALLENGES:
+      1. Bounding verification capability improvement (Δ)
+      2. Characterizing false positive rate (δ_FP) as function of verification capability
+      3. Establishing training error bound (ε_train)
+      4. Proving uniqueness vs multiplicity of fixed points
+
+      NEXT STEPS FOR THEORIST:
+      1. Start with monotone convergence proof (establishes Theorem 1 existence result)
+      2. Attempt contraction proof to strengthen to uniqueness
+      3. Use information-theoretic argument for Theorem 3 (GV-gap ceiling)
+      4. Build on recent Reciprocal Learning result (direct precedent for our theorem)
+
+      Papers surveyed: 35+ new papers on proof techniques, contraction theory, convergence
+      analysis. Total literature survey: 100+ papers across all topics.
+
+      Note: Provided comprehensive proof strategy guide for Theorist agent. As Researcher,
+      my role is to survey proof techniques and recommend approaches, not to develop the
+      actual proofs (Theorist role). This note provides all mathematical tools, references,
+      and strategy needed for rigorous proof development.
 
 # Links
 linear_issues:
