@@ -23,8 +23,8 @@ jobs:
       - run: npm ci
       - run: npm run build --workspace=orchestrator
 
-  cli:
-    name: CLI — typecheck & build
+  site-next:
+    name: Site-Next — build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,22 +33,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build --workspace=cli
-
-  site:
-    name: Site — build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx astro build
-        working-directory: site
-      - name: Check output size
-        run: du -sh site/dist/
+      - run: npm run build --workspace=site-next
 
   openclaw:
     name: OpenClaw — validate config
@@ -79,22 +64,68 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    needs: [orchestrator, cli, site]
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/research/')
+    needs: [orchestrator, site-next]
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Deploy — pull & build
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
             cd ~/deepwork
             git fetch origin
-            git checkout ${{ github.ref_name }}
+            git checkout main
             git pull
-            cd site
-            npm install
-            npx astro build
-            echo "Deployed $(git rev-parse --short HEAD) at $(date -u)"
+
+            # Build orchestrator
+            npm ci
+            npm run build --workspace=orchestrator
+
+            # Build site-next
+            npm run build --workspace=site-next
+
+            echo "Build complete: $(git rev-parse --short HEAD) at $(date -u)"
+
+      - name: Restart services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_ROOT_USER }}
+          key: ${{ secrets.VPS_ROOT_SSH_KEY }}
+          script: |
+            set -e
+            systemctl restart deepwork-daemon
+            systemctl restart deepwork-site
+            echo "Services restarted at $(date -u)"
+
+      - name: Health check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            sleep 5
+
+            # Check API health
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health)
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "API health check failed (HTTP $HTTP_CODE)"
+              exit 1
+            fi
+            echo "API health check passed"
+
+            # Check site
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "Site health check failed (HTTP $HTTP_CODE)"
+              exit 1
+            fi
+            echo "Site health check passed"
+
+            echo "Deploy verified at $(date -u)"

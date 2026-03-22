@@ -108,13 +108,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const subscribe = useCallback((channel: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ action: 'subscribe', channel }));
+      wsRef.current.send(JSON.stringify({ type: 'subscribe', channel }));
     }
   }, []);
 
   const unsubscribe = useCallback((channel: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ action: 'unsubscribe', channel }));
+      wsRef.current.send(JSON.stringify({ type: 'unsubscribe', channel }));
     }
   }, []);
 

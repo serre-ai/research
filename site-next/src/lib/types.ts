@@ -13,8 +13,25 @@ export interface Project {
 export interface EvalData {
   project_id: string;
   runs: EvalRun[];
-  accuracy: Record<string, Record<string, number>>;
-  progress: {
+  progress: Array<{
+    model: string;
+    task: string;
+    condition: string;
+    completed_count: number;
+    correct_count: number;
+    accuracy: number;
+    avg_latency_ms: number;
+    last_updated: string;
+  }>;
+  byDifficulty?: Array<{
+    model: string;
+    task: string;
+    condition: string;
+    difficulty: string;
+    n: number;
+    accuracy: number;
+  }>;
+  summary: {
     total: number;
     completed: number;
     failed: number;

@@ -327,7 +327,7 @@ export class EventBus {
 
     // Broadcast to WebSocket clients
     if (this.broadcastFn) {
-      this.broadcastFn("events", { id: event.id, type: event.type, payload: event.payload });
+      this.broadcastFn("logs", { id: event.id, type: event.type, payload: event.payload });
     }
   }
 

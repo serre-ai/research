@@ -230,7 +230,7 @@ function projectRoutes(): express.Router {
   return router;
 }
 
-function budgetRoutes(budgetTracker?: import("./budget-tracker.js").BudgetTracker): express.Router {
+function budgetRoutes(budgetTracker?: import("./budget-tracker.js").BudgetTracker, broadcast?: (channel: string, data: unknown) => void): express.Router {
   const router = express.Router();
 
   // GET /api/budget — comprehensive monthly budget with fixed + variable costs
@@ -418,6 +418,7 @@ function budgetRoutes(budgetTracker?: import("./budget-tracker.js").BudgetTracke
 
     try {
       await budgetTracker.recordManual({ provider, costUsd: cost_usd, description, category });
+      broadcast?.("budget", { type: "cost_recorded", provider, cost_usd, description, timestamp: new Date().toISOString() });
       res.json({ recorded: true, provider, cost_usd, description });
     } catch (err) {
       console.error("POST /api/budget/manual error:", err);
@@ -723,7 +724,7 @@ function setupWebSocket(
     ws.send(
       JSON.stringify({
         type: "connected",
-        channels: ["eval-progress", "logs"],
+        channels: ["eval-progress", "logs", "budget", "health"],
         timestamp: new Date().toISOString(),
       }),
     );
@@ -1472,7 +1473,7 @@ export function createApi(
   app.use("/api/events", eventRoutes(eventBus));
   app.use("/api/projects", projectRoutes());
   app.use("/api/projects", projectStatusRoutes());
-  app.use("/api/budget", budgetRoutes(daemon?.getBudgetTracker()));
+  app.use("/api/budget", budgetRoutes(daemon?.getBudgetTracker(), broadcast));
   app.use("/api/eval", evalControlRoutes(broadcast, evalManager));
   app.use("/api/activity", activityRoutes(logger));
   app.use("/api/quality", qualityRoutes(qualityGetter));
@@ -1519,7 +1520,19 @@ export function createApi(
     console.log(`API server listening on port ${config.port}`);
   });
 
+  // Broadcast health status every 60s
+  const healthInterval = setInterval(() => {
+    broadcast("health", {
+      type: "health_check",
+      status: "ok",
+      uptime_s: Math.round((Date.now() - startedAt) / 1000),
+      memory: { free_mb: Math.round(freemem() / 1048576), total_mb: Math.round(totalmem() / 1048576) },
+      timestamp: new Date().toISOString(),
+    });
+  }, 60_000);
+
   const close = async (): Promise<void> => {
+    clearInterval(healthInterval);
     wss.close();
     server.close();
     await pool.end();

@@ -26,6 +26,7 @@ export function useWsInvalidation() {
         case 'logs':
           queryClient.invalidateQueries({ queryKey: ['activity'] });
           queryClient.invalidateQueries({ queryKey: ['sessions'] });
+          queryClient.invalidateQueries({ queryKey: ['events'] });
           break;
         case 'budget':
           queryClient.invalidateQueries({ queryKey: ['budget'] });

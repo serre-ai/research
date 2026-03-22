@@ -135,16 +135,16 @@ export default function ProjectOverviewPage() {
           <Card className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-mono text-sm text-text-secondary">
-                {evalData.progress.completed.toLocaleString()} /{' '}
-                {evalData.progress.total.toLocaleString()} runs completed
+                {evalData.summary.completed.toLocaleString()} /{' '}
+                {evalData.summary.total.toLocaleString()} runs completed
               </span>
-              {evalData.progress.failed > 0 && (
-                <Badge variant="error">{evalData.progress.failed} failed</Badge>
+              {evalData.summary.failed > 0 && (
+                <Badge variant="error">{evalData.summary.failed} failed</Badge>
               )}
             </div>
             <ProgressBar
-              value={evalData.progress.completed}
-              max={evalData.progress.total || 1}
+              value={evalData.summary.completed}
+              max={evalData.summary.total || 1}
             />
             <div className="font-mono text-xs text-text-muted">
               {evalData.runs.length} total eval runs
