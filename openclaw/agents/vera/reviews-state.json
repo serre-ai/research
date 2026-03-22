@@ -1,1 +1,14 @@
-{}
+{
+  "reviewed": {
+    "sessions": [
+      "researcher-session-2026-03-22-fixed-point",
+      "researcher-session-2026-03-22-gv-gap"
+    ],
+    "prs": [4],
+    "last_check": "2026-03-22T08:04:00Z"
+  },
+  "pending": {
+    "prs": [1, 2, 3],
+    "sessions": []
+  }
+}
