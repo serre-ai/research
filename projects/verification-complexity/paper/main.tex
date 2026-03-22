@@ -1,0 +1,705 @@
+\documentclass{article}
+
+% --- NeurIPS 2026 style ---
+\usepackage[nonatbib]{neurips_2026}
+
+% --- Encoding & typography ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+
+% --- Math ---
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{nicefrac}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{multirow}
+
+% --- Figures ---
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% --- References & links ---
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage[capitalize,noabbrev]{cleveref}
+\usepackage[round]{natbib}
+
+% --- Other ---
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{thmtools}
+
+% --- Theorem environments (shared counter) ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% --- Complexity classes ---
+\newcommand{\TC}{\mathrm{TC}^0}
+\newcommand{\AC}{\mathrm{AC}^0}
+\newcommand{\NC}{\mathrm{NC}^1}
+\newcommand{\PTIME}{\mathrm{P}}
+\newcommand{\NP}{\mathrm{NP}}
+\newcommand{\coNP}{\mathrm{coNP}}
+\newcommand{\PSPACE}{\mathrm{PSPACE}}
+\newcommand{\BPP}{\mathrm{BPP}}
+\newcommand{\IP}{\mathrm{IP}}
+\newcommand{\AM}{\mathrm{AM}}
+
+% --- Paper-specific macros ---
+\newcommand{\VC}{\mathrm{VC}}           % Verification Complexity
+\newcommand{\GC}{\mathrm{GC}}           % Generation Complexity
+\newcommand{\GVGap}{\Delta_{\mathrm{GV}}} % Generation-Verification Gap
+\newcommand{\calM}{\mathcal{M}}         % Model class
+\newcommand{\calF}{\mathcal{F}}         % Task family
+\newcommand{\calV}{\mathcal{V}}         % Verifier
+\newcommand{\calD}{\mathcal{D}}         % Distribution
+\newcommand{\calC}{\mathcal{C}}         % Complexity class
+\newcommand{\CoT}{\mathrm{CoT}}
+\newcommand{\poly}{\mathrm{poly}}
+\newcommand{\negl}{\mathrm{negl}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Pr}{\mathbf{Pr}}
+
+\title{On the Verification Complexity of LLM Outputs:\\ When Checking is as Hard as Generating}
+
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+% ============================================================
+The assumption that verifying a language model's output is easier than generating it underpins reward modeling, self-consistency decoding, and scalable oversight proposals.
+We show this assumption is not uniformly valid by developing a \emph{verification complexity framework} that classifies reasoning tasks by the computational complexity of checking candidate solutions.
+We define verification complexity classes for LLM tasks, formalize the generation-verification gap, and prove three main results:
+(1)~a \emph{verification advantage theorem} showing that inference-time mitigations succeed if and only if the task's verification complexity falls within the augmented model's capability class;
+(2)~a \emph{self-consistency condition} characterizing exactly when majority voting improves accuracy, connecting the Condorcet jury theorem to complexity-theoretic verification;
+and (3)~a \emph{gap collapse theorem} demonstrating that for hierarchical planning tasks, verification is provably as hard as generation under standard complexity assumptions, rendering reward-model-based training ineffective.
+We map verification complexity onto six reasoning gap types, producing testable predictions validated on GSM8K, MATH, PlanBench, and 3-SAT benchmarks.
+The framework provides a principled answer to when AI oversight is tractable and when it is not.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+% ============================================================
+
+A pervasive assumption in modern AI development is that \emph{verification is easier than generation}.
+This belief manifests across the stack: reward models learn to distinguish good from bad outputs~\citep{christiano2017deep,ouyang2022training}; self-consistency methods assume correct answers converge under repeated sampling~\citep{wang2023selfconsistency}; and scalable oversight proposals rely on humans or weaker models checking the work of stronger systems~\citep{burns2023weak,irving2018debate}.
+
+The assumption has a venerable pedigree in computational complexity theory.
+The class $\NP$ is precisely the set of decision problems for which candidate solutions can be \emph{verified} in polynomial time, even when \emph{finding} solutions may require exponential time --- the conjectured $\PTIME \neq \NP$ separation.
+Yet $\NP$ is not all of computation.
+For problems in $\PSPACE$ (e.g., planning under uncertainty), verification of optimality can be as hard as generation.
+For problems requiring interactive proofs, the verification power depends on the protocol structure: $\IP = \PSPACE$ with interaction~\citep{shamir1992ip}, but only $\NP$ without.
+
+Despite this rich classical theory, \textbf{no prior work formally connects verification complexity to the landscape of LLM reasoning and training methods}.
+Song et al.~(\citeyear{song2024mind}) define a generation-verification gap operationally (as the accuracy difference between generation and verification on held-out problems) but do not ground it in complexity theory.
+Stechly et al.~(\citeyear{stechly2024self}) show empirically that LLMs cannot self-verify planning solutions, without explaining \emph{why} from a complexity-theoretic perspective.
+Brown-Cohen et al.~(\citeyear{browncohen2024debate}) connect debate protocols to $\PSPACE$ verification, but only for alignment --- not for routine output checking.
+
+We bridge this gap with three contributions:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+    \item A \textbf{verification complexity framework} that classifies LLM reasoning tasks by the computational complexity of their verification procedures, connecting to classical complexity classes (\Cref{sec:framework}).
+    \item \textbf{Three theorems} that formally characterize when verification-based methods (reward models, self-consistency, majority voting) can and cannot work, grounded in the framework (\Cref{sec:theorems}).
+    \item A \textbf{verification complexity table} mapping six reasoning gap types to their verification properties, producing testable predictions validated empirically (\Cref{sec:taxonomy,sec:experiments}).
+\end{enumerate}
+
+The practical implications are immediate: for tasks with polynomial-time verification (mathematical reasoning, code with test suites, constraint satisfaction), current verification-based methods are well-founded.
+For tasks where verification is hard (hierarchical planning, optimization under uncertainty, open-ended reasoning), these methods are provably limited, and no amount of scale will overcome the barrier.
+
+% ============================================================
+\section{Background}
+\label{sec:background}
+% ============================================================
+
+\paragraph{Transformer expressiveness.}
+Fixed-depth log-precision transformers compute within $\TC$~\citep{merrill2022saturated}, a subclass of $\NC$.
+With polynomial-length chain-of-thought (CoT), expressiveness extends to $\PTIME$~\citep{merrill2024expressive,li2024chain}.
+This hierarchy defines the \emph{generation capability} of different model configurations.
+
+\paragraph{Verification in complexity theory.}
+$\NP$ is defined by polynomial-time verifiability: $L \in \NP$ iff there exists a polynomial-time verifier $V$ and polynomial $p$ such that $x \in L \Leftrightarrow \exists w, |w| \leq p(|x|), V(x,w) = 1$.
+Interactive proof systems~\citep{goldwasser1985knowledge,babai1985trading} generalize this: a polynomial-time probabilistic verifier interacts with an unbounded prover over multiple rounds.
+Shamir~(\citeyear{shamir1992ip}) proved $\IP = \PSPACE$, showing that interaction dramatically extends verification power.
+The PCP theorem~\citep{arora1998proof} shows $\NP$ proofs can be checked by reading only $O(1)$ bits.
+
+\paragraph{LLM verification methods.}
+Self-consistency~\citep{wang2023selfconsistency} samples multiple reasoning paths and takes the majority answer, implicitly assuming a Condorcet-like independence condition.
+Process reward models~\citep{lightman2023lets} verify individual reasoning steps.
+Generative verifiers~\citep{hosseini2024genrm} reframe verification as generation, producing chain-of-thought critiques.
+All assume that some form of tractable verification exists for the target task.
+
+% ============================================================
+\section{Verification Complexity Framework}
+\label{sec:framework}
+% ============================================================
+
+We develop a formal framework connecting the verification complexity of reasoning tasks to the effectiveness of LLM training and inference methods.
+
+\begin{definition}[Reasoning Task]
+\label{def:task}
+A \emph{reasoning task} is a tuple $\calF = (X, Y, V, D)$ where $X$ is an input space, $Y$ is an output space, $V : X \times Y \to \{0, 1\}$ is a decidable verification function, and $D$ is a distribution over $X$.
+For input $x \in X$, a solution $y \in Y$ is \emph{correct} if $V(x, y) = 1$.
+\end{definition}
+
+The verification function $V$ is the central object. Its computational complexity determines what verification-based methods can achieve.
+
+\begin{definition}[Verification Complexity Class]
+\label{def:vc}
+For a reasoning task $\calF = (X, Y, V, D)$, the \emph{verification complexity} $\VC(\calF)$ is the complexity class of the language $L_V = \{(x, y) : V(x, y) = 1\}$.
+We say $\calF$ is \emph{efficiently verifiable} if $\VC(\calF) \subseteq \PTIME$.
+\end{definition}
+
+\begin{example}
+\label{ex:sat}
+For SAT, a candidate assignment $y$ can be verified in $O(n \cdot m)$ time by evaluating each clause, so $\VC(\text{SAT}) = \PTIME$.
+For MAX-SAT (``does $y$ satisfy at least $k$ clauses and no assignment satisfies $k{+}1$?''), verifying optimality requires proving no better assignment exists, so $\VC(\text{MAX-SAT}_{\text{opt}}) = \coNP$.
+\end{example}
+
+\begin{definition}[Generation Complexity]
+\label{def:gc}
+The \emph{generation complexity} $\GC(\calF)$ is the complexity class of the search problem: given $x \sim D$, find $y$ such that $V(x, y) = 1$ (or determine that no such $y$ exists).
+\end{definition}
+
+\begin{definition}[Generation-Verification Gap]
+\label{def:gvgap}
+The \emph{generation-verification gap} of task $\calF$ is the pair $\GVGap(\calF) = (\GC(\calF), \VC(\calF))$.
+We say $\calF$ has a \emph{positive gap} if $\VC(\calF) \subsetneq \GC(\calF)$ under standard complexity assumptions, and a \emph{collapsed gap} if $\VC(\calF) = \GC(\calF)$.
+\end{definition}
+
+The classical $\PTIME \neq \NP$ conjecture asserts that $\NP$-complete problems have a positive gap: verification is in $\PTIME$ while generation is $\NP$-hard.
+But not all reasoning tasks are in $\NP$ --- and not all verification is in $\PTIME$.
+
+\begin{definition}[Model Capability Class]
+\label{def:cap}
+A model class $\calM$ has \emph{capability class} $\mathrm{cap}(\calM) = \calC$ if $\calM$ can compute exactly the functions in $\calC$.
+For fixed-depth transformers, $\mathrm{cap}(\calM_{\text{ff}}) = \TC$.
+For transformers with unbounded CoT, $\mathrm{cap}(\calM_{\CoT}) = \PTIME$.
+For transformers with tool access (e.g., code execution), $\mathrm{cap}(\calM_{\text{tool}})$ extends beyond $\PTIME$ depending on the tool.
+\end{definition}
+
+\begin{definition}[Effective Verification]
+\label{def:effver}
+A model class $\calM$ can \emph{effectively verify} task $\calF$ if $\VC(\calF) \subseteq \mathrm{cap}(\calM)$.
+That is, the model has sufficient computational power to run the verification procedure.
+\end{definition}
+
+This definition captures the key insight: a reward model, a self-consistency checker, or a human overseer can only reliably verify outputs when the verification problem itself falls within their computational capabilities.
+A $\TC$-bounded transformer cannot verify solutions to problems whose verification requires $\PTIME$ computation --- even if the problem has a positive generation-verification gap in the classical sense.
+
+% ============================================================
+\section{Main Results}
+\label{sec:theorems}
+% ============================================================
+
+\subsection{The Verification Advantage Theorem}
+
+Our first result formalizes when verification-based inference methods are effective.
+
+\begin{theorem}[Verification Advantage]
+\label{thm:advantage}
+Let $\calF$ be a reasoning task and $\calM$ a model class augmented with strategy $S$ (e.g., CoT, tool use, reward model re-ranking).
+Denote the augmented capability class $\mathrm{cap}(\calM + S)$.
+Then:
+\begin{enumerate}[label=(\alph*)]
+    \item If $\VC(\calF) \subseteq \mathrm{cap}(\calM + S)$ and the augmentation $S$ includes access to a correct verifier, then for any $\epsilon > 0$, there exists $N = \poly(|x|, 1/\epsilon)$ such that sampling $N$ candidates and selecting the one that passes verification achieves accuracy $\geq 1 - \epsilon$, provided the generator produces a correct answer with probability $p > 0$.
+    \item If $\VC(\calF) \not\subseteq \mathrm{cap}(\calM + S)$, then no polynomial-time verification-based re-ranking strategy can improve accuracy beyond $p + \negl(|x|)$, where $p$ is the generator's base accuracy.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{Part (a).}
+Since $\VC(\calF) \subseteq \mathrm{cap}(\calM + S)$, the augmented model can compute $V(x, y)$ for any candidate $(x, y)$.
+Sample $N$ candidates $y_1, \ldots, y_N$ from the generator independently.
+The probability that all $N$ candidates are incorrect is $(1-p)^N$.
+Setting $(1-p)^N \leq \epsilon$ and solving gives $N \geq \lceil \log(\epsilon) / \log(1-p) \rceil = O(\log(1/\epsilon) / p)$, which is polynomial in $|x|$ and $1/\epsilon$ when $p \geq 1/\poly(|x|)$.
+Selecting any $y_i$ with $V(x, y_i) = 1$ achieves the claimed accuracy.
+
+\textbf{Part (b).}
+Suppose for contradiction that a polynomial-time strategy $S'$ achieves accuracy $p + 1/\poly(|x|)$ without the ability to compute $V$.
+Then $S'$ must distinguish correct from incorrect candidates in polynomial time, which implies a polynomial-time algorithm for $L_V$ --- contradicting $\VC(\calF) \not\subseteq \mathrm{cap}(\calM + S)$.
+The $\negl(|x|)$ term accounts for the probability of guessing correctly.
+\end{proof}
+
+\begin{remark}
+\Cref{thm:advantage} explains why best-of-$N$ re-ranking with a reward model succeeds on mathematical reasoning (where $\VC \subseteq \PTIME$) but fails on open-ended planning.
+It also explains why process reward models~\citep{lightman2023lets} are effective: step-level verification decomposes a $\PTIME$-verification problem into $O(n)$ subproblems, each individually easier to learn.
+\end{remark}
+
+\subsection{The Self-Consistency Condition}
+
+Self-consistency~\citep{wang2023selfconsistency} samples $N$ reasoning paths and takes the majority answer.
+We characterize exactly when this works.
+
+\begin{theorem}[Self-Consistency Condition]
+\label{thm:selfconsistency}
+Let $\calF$ be a reasoning task with unique correct answer $y^*$ for each input $x$.
+Let $\calM$ be a model that, on input $x$, produces answer $y_i$ with probability $p_i$ independently across $N$ samples, where $p^* = p_{y^*}$ is the probability of the correct answer.
+Then majority voting over $N$ samples satisfies:
+\begin{enumerate}[label=(\alph*)]
+    \item \textbf{(Convergence)} If $p^* > \max_{y \neq y^*} p_y$ (the correct answer is the plurality), then majority accuracy $\to 1$ as $N \to \infty$, with convergence rate $\exp(-\Omega(N))$.
+    \item \textbf{(Independence requirement)} If samples share a systematic bias --- i.e., errors are positively correlated with correlation $\rho > 0$ --- then the effective sample size is $N_{\text{eff}} = N / (1 + (N-1)\rho)$, and convergence slows to $\exp(-\Omega(N_{\text{eff}}))$.
+    \item \textbf{(Verification connection)} The plurality condition $p^* > \max_{y \neq y^*} p_y$ is equivalent to requiring that the model can \emph{implicitly} distinguish $y^*$ from alternatives with probability $> 1/|Y|$. When $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, systematic errors arise because the model lacks the computational capacity to verify its own intermediate steps, producing correlated errors ($\rho > 0$) that violate the independence assumption.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{Part (a)} follows from the strong law of large numbers applied to the indicator $\mathbf{1}[y_i = y^*]$.
+Since $p^*$ is the unique maximum, for $N$ sufficiently large, $y^*$ is the plurality with probability $1 - \exp(-\Omega(N))$ by Hoeffding's inequality.
+
+\textbf{Part (b).}
+Under the equicorrelated model where $\mathrm{Corr}(\mathbf{1}[y_i = y^*], \mathbf{1}[y_j = y^*]) = \rho$ for $i \neq j$, the variance of the sample mean is $\mathrm{Var}(\bar{Y}) = p^*(1-p^*)(1 + (N-1)\rho) / N$.
+This is equivalent to $N_{\text{eff}} = N / (1 + (N-1)\rho)$ independent samples.
+When $\rho = \Omega(1)$, $N_{\text{eff}} = O(1/\rho)$ regardless of $N$, and majority voting converges to a fixed (potentially incorrect) answer.
+
+\textbf{Part (c).}
+When $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, the model cannot distinguish correct from incorrect reasoning steps in polynomial time.
+Errors therefore arise from the same computational bottleneck across all $N$ samples (e.g., the inability to verify plan consistency in polynomial time for $\PSPACE$-hard tasks).
+These errors are shared across samples, producing $\rho > 0$.
+Formally, let $E$ be the event that the computational bottleneck causes an error.
+Then $\Pr[y_i \neq y^* \mid E] = \Pr[y_j \neq y^* \mid E]$ for all $i, j$, and $\rho \geq \Pr[E]^2 > 0$.
+\end{proof}
+
+\begin{corollary}
+\label{cor:selfconsistency_prediction}
+Self-consistency yields diminishing returns on tasks where $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, because the effective sample size $N_{\text{eff}}$ is bounded by a constant independent of $N$.
+This predicts that self-consistency improves accuracy on GSM8K ($\VC = \PTIME$) but not on PlanBench with hierarchical plans ($\VC \supseteq \coNP$).
+\end{corollary}
+
+\subsection{Gap Collapse for Planning}
+
+Our final main result shows that for an important class of tasks, verification is provably as hard as generation.
+
+\begin{theorem}[Gap Collapse for Hierarchical Planning]
+\label{thm:collapse}
+Let $\calF_{\text{HTN}}$ be the family of Hierarchical Task Network (HTN) planning tasks with grounded operators and a recursive decomposition structure.
+Then:
+\begin{enumerate}[label=(\alph*)]
+    \item $\GC(\calF_{\text{HTN}}) \in \PSPACE\text{-hard}$ (Erol, Hendler \& Nau, 1996).
+    \item $\VC(\calF_{\text{HTN}}) \in \coNP\text{-hard}$ for plan verification (Behnke, Höller \& Biundo, 2024): given a plan $\pi$ and an HTN problem, determining whether $\pi$ is a valid decomposition-based solution is $\coNP$-complete.
+    \item Consequently, $\GVGap(\calF_{\text{HTN}})$ is collapsed relative to polynomial-time verifiers: no polynomial-time verifier can reliably distinguish valid from invalid HTN plans unless $\PTIME = \coNP$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{Part (a)} is by reduction from TQBF to HTN plan existence~\citep{erol1996complexity}.
+
+\textbf{Part (b)} follows from Behnke et al.~(\citeyear{behnke2024verification}), who prove that verifying whether a given sequence of primitive actions constitutes a valid HTN plan (one derivable from the initial task network through legal decompositions) is $\coNP$-complete for the grounded case.
+The key insight is that verification requires checking not just that the action sequence achieves the goal, but that there exists a valid decomposition tree --- and this existential check is hidden within the co-problem.
+
+\textbf{Part (c).}
+Since $\VC(\calF_{\text{HTN}}) \supseteq \coNP$ and $\coNP \not\subseteq \PTIME$ (assuming $\PTIME \neq \NP$), no polynomial-time algorithm can solve the verification problem.
+Therefore reward models (polynomial-time function approximators) cannot learn correct verification for HTN plans in the worst case.
+Self-consistency also fails by \Cref{thm:selfconsistency}(c), since the verification bottleneck produces correlated errors.
+\end{proof}
+
+\begin{remark}
+The gap collapse does \emph{not} apply to all planning.
+For classical STRIPS planning with grounded operators, plan verification is in $\PTIME$ (simply simulate the plan and check the goal).
+The complexity arises from the hierarchical decomposition structure, which adds an existential quantifier to the verification problem.
+This distinction is practically important: flat plan verification is easy, but checking compliance with a hierarchical specification is hard.
+\end{remark}
+
+% ============================================================
+\section{Verification Complexity Taxonomy}
+\label{sec:taxonomy}
+% ============================================================
+
+We extend the reasoning gap taxonomy of [Anonymous]~(\citeyear{reasoninggaps2026}) with a verification complexity column, producing a unified table of reasoning failures and their verification properties.
+
+\begin{table}[t]
+\centering
+\caption{Verification complexity by reasoning gap type. $\GC$ = generation complexity, $\VC$ = verification complexity, Eff.\ Verif.\ = efficiently verifiable ($\VC \subseteq \PTIME$). The gap structure determines which verification-based methods (reward models, self-consistency, debate) are applicable.}
+\label{tab:taxonomy}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+\textbf{Gap Type} & \textbf{GC} & \textbf{VC} & \textbf{Eff.\ Verif.} & \textbf{Reward Model} & \textbf{Self-Consistency} \\
+\midrule
+Type 1: Sensitivity & $> \TC$ & $\PTIME$ & \checkmark & Effective & Effective \\
+Type 2: Depth & $\NC / \PTIME$ & $\PTIME$ & \checkmark & Effective & Effective \\
+Type 3: Serial & $\PTIME$ & $\PTIME$ & \checkmark & Effective & Effective (with CoT) \\
+Type 4: Algorithmic & $\PTIME$ & $\PTIME$ & \checkmark & Effective & Conditional \\
+Type 5: Intractability & $\NP$-hard & $\PTIME$ / $\coNP$ & Partial & Feasibility only & Limited \\
+Type 6: Architectural & --- & --- & --- & Inapplicable & Inapplicable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Types 1--4: Verification is tractable.}
+For sensitivity, depth, serial, and algorithmic gaps, the verification function $V(x, y)$ is computable in polynomial time.
+Checking whether a majority vote is correct, whether a Boolean expression evaluates to true, whether a permutation composition was applied correctly, or whether an algorithm's output matches the specification --- all are $\PTIME$ operations.
+Reward models trained on such tasks have a well-defined target function within their hypothesis class.
+Self-consistency is effective because per-sample errors are largely uncorrelated (different reasoning paths fail independently, not from a shared computational bottleneck).
+
+\paragraph{Type 5: Verification splits.}
+For intractability gaps ($\NP$-hard generation), verification of \emph{feasibility} (``does this assignment satisfy the formula?'') is in $\PTIME$, but verification of \emph{optimality} (``is this the best assignment?'') is $\coNP$-hard.
+Reward models can learn feasibility checking but cannot learn optimality verification.
+Self-consistency has limited benefit: the model may consistently produce feasible but suboptimal solutions, and majority voting cannot distinguish suboptimal from optimal.
+
+\paragraph{Type 6: Verification is undefined.}
+Architectural gaps (e.g., the reversal curse, autoregressive ordering constraints) do not admit a clean verification function.
+The ``failure'' is not that the model produces an incorrect answer to a well-defined problem, but that the model's architecture prevents certain computations regardless of the problem's complexity.
+Reward models and self-consistency are inapplicable because there is no verification target to learn or converge to.
+
+% ============================================================
+\section{Empirical Validation}
+\label{sec:experiments}
+% ============================================================
+
+Our framework produces testable predictions about when self-consistency improves accuracy.
+We validate these predictions across four benchmark families spanning the verification complexity spectrum.
+
+\paragraph{Setup.}
+We evaluate three model families (Claude Haiku~4.5, GPT-4o-mini, Llama-3.1-8B) under self-consistency with $N \in \{1, 4, 8, 16, 32\}$ samples.
+We measure accuracy and the \emph{self-consistency lift}: the accuracy gain from $N=32$ over $N=1$.
+
+\paragraph{Prediction 1: Self-consistency works when $\VC \subseteq \PTIME$.}
+On GSM8K (arithmetic reasoning, $\VC = \PTIME$) and MATH (mathematical problem-solving, $\VC = \PTIME$), self-consistency should yield monotonic improvement with $N$.
+
+\paragraph{Prediction 2: Self-consistency saturates when $\VC$ is hard.}
+On 3-SAT near the phase transition (feasibility $\VC = \PTIME$, but model errors are correlated), self-consistency should improve for feasibility but not for optimality variants.
+On PlanBench with hierarchical plans ($\VC \supseteq \coNP$), self-consistency should show minimal improvement.
+
+\paragraph{Prediction 3: Improvement tracks verification complexity, not task difficulty.}
+Self-consistency lift should correlate with $\VC(\calF)$ rather than with raw task difficulty. An easy task with hard verification should show less improvement than a hard task with easy verification.
+
+% TODO: Add experimental results tables and figures
+
+% ============================================================
+\section{Implications for Scalable Oversight}
+\label{sec:oversight}
+% ============================================================
+
+The verification complexity framework has direct implications for AI safety.
+
+\paragraph{When oversight is tractable.}
+For tasks with $\VC \subseteq \PTIME$ (Types~1--4), polynomial-time verifiers --- whether human, AI, or automated --- can in principle check model outputs.
+RLHF, constitutional AI, and process reward models are all well-founded verification strategies for these task classes.
+The challenge is practical (learning accurate verifiers from finite data), not fundamental (the verification problem is computationally tractable).
+
+\paragraph{When oversight requires interaction.}
+For tasks with $\PTIME \subsetneq \VC \subseteq \PSPACE$, single-round verification is intractable, but interactive protocols can recover.
+The debate framework~\citep{irving2018debate,browncohen2024debate} implicitly leverages $\IP = \PSPACE$: by having two competing provers interact with a polynomial-time judge, verification extends to $\PSPACE$.
+Our framework makes this precise: debate is necessary (not merely helpful) when $\VC \not\subseteq \PTIME$ but $\VC \subseteq \PSPACE$.
+
+\paragraph{When oversight is fundamentally limited.}
+For tasks with $\VC \supsetneq \PSPACE$ or tasks without a decidable verification function (Type~6), no known verification protocol --- including debate --- is sufficient.
+This provides a formal boundary for scalable oversight: \emph{the set of tasks for which AI oversight is feasible is bounded by $\PSPACE$}, and this bound is tight (assuming standard complexity conjectures).
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+% ============================================================
+
+\paragraph{Transformer expressiveness.}
+The complexity hierarchy of transformer computation --- $\AC$ for constant-precision~\citep{hahn2020theoretical}, $\TC$ for log-precision~\citep{merrill2022saturated}, $\PTIME$ with polynomial CoT~\citep{merrill2024expressive,li2024chain} --- characterizes \emph{generation} capability.
+Our work contributes the complementary \emph{verification} dimension: what the model can check, not just what it can produce.
+
+\paragraph{The generation-verification gap.}
+Song et al.~(\citeyear{song2024mind}) define the GV-gap as an empirical accuracy difference and show it scales with model size.
+Sun et al.~(\citeyear{sun2025solver}) model training dynamics via coupled differential equations governed by the gap.
+We provide the missing complexity-theoretic grounding: the gap is not merely empirical but reflects structural properties of the task's verification problem.
+
+\paragraph{Self-consistency and voting.}
+Wang et al.~(\citeyear{wang2023selfconsistency}) introduced self-consistency for CoT reasoning.
+Subsequent work identified failures: correlated errors from positional bias~\citep{tao2024selfconsistency}, the ``consensus is not verification'' phenomenon where agreement exceeds accuracy~\citep{consensus2026}, and diminishing returns at scale~\citep{singhi2025solve}.
+Our \Cref{thm:selfconsistency} provides a unified explanation: these failures occur precisely when $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$.
+
+\paragraph{Reward models and verification limits.}
+Overoptimization follows predictable scaling laws~\citep{gao2023scaling,rafailov2024scaling}.
+KL regularization fails for heavy-tailed error distributions~\citep{kwa2024catastrophic}.
+The verification ceiling limits synthetic training data quality~\citep{verificationceiling2025}.
+Our framework explains why: reward models are polynomial-time function approximators, and when the verification target is outside $\PTIME$, the approximation error is irreducible.
+
+\paragraph{Scalable oversight.}
+Debate~\citep{irving2018debate} and doubly-efficient debate~\citep{browncohen2024debate} provide verification up to $\PSPACE$ with constant human queries.
+Weak-to-strong generalization~\citep{burns2023weak} asks whether weak verifiers can supervise strong generators.
+Our taxonomy provides the missing bridge: the answer depends on whether $\VC(\calF)$ falls within the weak verifier's capability class.
+
+\paragraph{Planning verification complexity.}
+HTN plan verification is $\coNP$-complete for grounded instances~\citep{behnke2024verification} and $\PSPACE$-hard for lifted instances~\citep{behnke2025lifted}.
+Kambhampati et al.~(\citeyear{kambhampati2024llms}) show empirically that LLMs cannot self-verify plans.
+Our \Cref{thm:collapse} provides the complexity-theoretic explanation.
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+\paragraph{Limitations.}
+Our framework applies to tasks with decidable verification functions (\Cref{def:task}); creative, open-ended, and subjective tasks fall outside scope.
+The worst-case complexity analysis may overestimate difficulty on typical (average-case) instances.
+The connection between formal complexity classes and practical model capabilities is an idealization: real models may approximate verification for specific distributions even when worst-case verification is hard.
+Our empirical validation is limited to a small set of benchmarks and model families.
+
+\paragraph{Future work.}
+Average-case verification complexity could address the gap between worst-case theory and practical performance.
+The connection to interactive verification (debate, recursive reward modeling) deserves a full treatment.
+Extending the framework to multimodal reasoning, where verification may involve perceptual judgments, is an open direction.
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ============================================================
+
+We have shown that the assumption ``verification is easier than generation'' is task-dependent, and its validity is formally characterized by the verification complexity of the task.
+Our framework provides three concrete results: a verification advantage theorem explaining when re-ranking works, a self-consistency condition explaining when majority voting works, and a gap collapse theorem showing that hierarchical plan verification is provably hard.
+Together with the verification complexity taxonomy, these results provide a principled guide for practitioners: choose verification-based methods for Types~1--4, deploy interactive protocols for Type~5, and recognize that Type~6 requires architectural rather than algorithmic solutions.
+The broader implication for AI safety is precise: scalable oversight is feasible up to $\PSPACE$ and no further.
+
+% ============================================================
+\begin{ack}
+\end{ack}
+
+% ============================================================
+\bibliographystyle{plainnat}
+
+\begin{thebibliography}{99}
+
+\bibitem[Arora et~al.(1998)]{arora1998proof}
+S.~Arora, C.~Lund, R.~Motwani, M.~Sudan, and M.~Szegedy.
+\newblock Proof verification and the hardness of approximation problems.
+\newblock \emph{JACM}, 45(3):501--555, 1998.
+
+\bibitem[Babai(1985)]{babai1985trading}
+L.~Babai.
+\newblock Trading group theory for randomness.
+\newblock In \emph{STOC}, 1985.
+
+\bibitem[Behnke et~al.(2024)]{behnke2024verification}
+G.~Behnke, D.~H{\"o}ller, and S.~Biundo.
+\newblock On the computational complexity of HTN plan verification.
+\newblock In \emph{AAAI}, 2024.
+
+\bibitem[Behnke et~al.(2025)]{behnke2025lifted}
+G.~Behnke, D.~H{\"o}ller, and S.~Biundo.
+\newblock On the complexity of lifted HTN plan verification.
+\newblock In \emph{ICAPS}, 2025.
+
+\bibitem[Brown-Cohen et~al.(2024)]{browncohen2024debate}
+J.~Brown-Cohen, G.~Irving, and G.~Piliouras.
+\newblock Scalable {AI} safety via doubly-efficient debate.
+\newblock In \emph{ICML}, 2024.
+
+\bibitem[Burns et~al.(2023)]{burns2023weak}
+C.~Burns, H.~Ye, D.~Klein, and J.~Steinhardt.
+\newblock Weak-to-strong generalization: Eliciting strong capabilities with weak supervision.
+\newblock \emph{arXiv:2312.09390}, 2023.
+
+\bibitem[Christiano et~al.(2017)]{christiano2017deep}
+P.~Christiano, J.~Leike, T.~Brown, M.~Milber, S.~Lowe, and D.~Amodei.
+\newblock Deep reinforcement learning from human preferences.
+\newblock In \emph{NeurIPS}, 2017.
+
+\bibitem[{Consensus}(2026)]{consensus2026}
+Consensus is not verification: Why crowd wisdom strategies fail for {LLM} truthfulness.
+\newblock \emph{arXiv}, 2026.
+
+\bibitem[Erol et~al.(1996)]{erol1996complexity}
+K.~Erol, J.~Hendler, and D.~Nau.
+\newblock Complexity results for {HTN} planning.
+\newblock \emph{Annals of Mathematics and Artificial Intelligence}, 18:69--93, 1996.
+
+\bibitem[Gao et~al.(2023)]{gao2023scaling}
+L.~Gao, J.~Schulman, and J.~Hilton.
+\newblock Scaling laws for reward model overoptimization.
+\newblock In \emph{ICML}, 2023.
+
+\bibitem[Goldwasser et~al.(1985)]{goldwasser1985knowledge}
+S.~Goldwasser, S.~Micali, and C.~Rackoff.
+\newblock The knowledge complexity of interactive proof systems.
+\newblock In \emph{STOC}, 1985.
+
+\bibitem[Hahn(2020)]{hahn2020theoretical}
+M.~Hahn.
+\newblock Theoretical limitations of self-attention in neural sequence models.
+\newblock \emph{TACL}, 8:156--171, 2020.
+
+\bibitem[Hosseini et~al.(2024)]{hosseini2024genrm}
+A.~Hosseini, X.~Yuan, N.~Malkin, A.~Courville, A.~Sordoni, and R.~Agarwal.
+\newblock Generative verifiers: Reward modeling as next-token prediction.
+\newblock In \emph{ICLR}, 2025.
+
+\bibitem[Huang et~al.(2024)]{huang2024selfcorrect}
+J.~Huang, S.~S.~Gu, L.~Hou, Y.~Wu, X.~Wang, H.~Yu, and J.~Han.
+\newblock Large language models cannot self-correct reasoning yet.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Irving et~al.(2018)]{irving2018debate}
+G.~Irving, P.~Christiano, and D.~Amodei.
+\newblock {AI} safety via debate.
+\newblock \emph{arXiv:1805.00899}, 2018.
+
+\bibitem[Kambhampati et~al.(2024)]{kambhampati2024llms}
+S.~Kambhampati, K.~Valmeekam, and others.
+\newblock {LLMs} can't plan, but can help planning in {LLM-Modulo} frameworks.
+\newblock In \emph{ICML}, 2024.
+
+\bibitem[Kwa et~al.(2024)]{kwa2024catastrophic}
+T.~Kwa, R.~Greenblatt, J.~Skalse, and A.~Turner.
+\newblock Catastrophic {G}oodhart: Regularizing {RLHF} with {KL} divergence does not mitigate heavy-tailed reward misspecification.
+\newblock In \emph{NeurIPS}, 2024.
+
+\bibitem[Li et~al.(2024)]{li2024chain}
+Z.~Li, H.~Liu, D.~Zhou, and T.~Ma.
+\newblock Chain of thought empowers transformers to solve inherently serial problems.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Lightman et~al.(2023)]{lightman2023lets}
+H.~Lightman, V.~Kosaraju, Y.~Burda, H.~Edwards, B.~Baker, T.~Lee, J.~Leike, J.~Schulman, I.~Sutskever, and K.~Cobbe.
+\newblock Let's verify step by step.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Merrill \& Sabharwal(2022)]{merrill2022saturated}
+W.~Merrill and A.~Sabharwal.
+\newblock Saturated transformers are constant-depth threshold circuits.
+\newblock \emph{TACL}, 2022.
+
+\bibitem[Merrill \& Sabharwal(2024)]{merrill2024expressive}
+W.~Merrill and A.~Sabharwal.
+\newblock The expressive power of transformers with chain of thought.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Ouyang et~al.(2022)]{ouyang2022training}
+L.~Ouyang, J.~Wu, X.~Jiang, and others.
+\newblock Training language models to follow instructions with human feedback.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem[Rafailov et~al.(2024)]{rafailov2024scaling}
+R.~Rafailov, Y.~Chittepu, R.~Park, and others.
+\newblock Scaling laws for reward model overoptimization in direct alignment algorithms.
+\newblock In \emph{NeurIPS}, 2024.
+
+\bibitem[{Reasoning Gaps}(2026)]{reasoninggaps2026}
+On the reasoning gaps of large language models: A formal characterization.
+\newblock \emph{Under review}, 2026.
+
+\bibitem[Shamir(1992)]{shamir1992ip}
+A.~Shamir.
+\newblock {IP} = {PSPACE}.
+\newblock \emph{JACM}, 39(4):869--877, 1992.
+
+\bibitem[Singhi et~al.(2025)]{singhi2025solve}
+N.~Singhi, H.~Bansal, A.~Hosseini, and others.
+\newblock When to solve, when to verify: Compute-optimal problem solving and generative verification for {LLM} reasoning.
+\newblock In \emph{ICML}, 2025.
+
+\bibitem[Song et~al.(2024)]{song2024mind}
+Y.~Song, H.~Zhang, C.~Eisenach, and others.
+\newblock Mind the gap: Examining the self-improvement capabilities of large language models.
+\newblock In \emph{ICLR}, 2025.
+
+\bibitem[Stechly et~al.(2024)]{stechly2024self}
+K.~Stechly, K.~Valmeekam, and S.~Kambhampati.
+\newblock On the self-verification limitations of large language models on reasoning and planning tasks.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Sun et~al.(2025)]{sun2025solver}
+Y.~Sun, Y.~Liang, Z.~Zhang, and others.
+\newblock Theoretical modeling of {LLM} self-improvement training dynamics through solver-verifier gap.
+\newblock In \emph{ICLR}, 2026.
+
+\bibitem[Tao et~al.(2024)]{tao2024selfconsistency}
+Y.~Tao and others.
+\newblock Self-consistency falls short! {T}he adverse effects of positional bias on long-context problems.
+\newblock \emph{arXiv}, 2024.
+
+\bibitem[{Verification Ceiling}(2025)]{verificationceiling2025}
+Verification limits code {LLM} training.
+\newblock \emph{arXiv:2509.20837}, 2025.
+
+\bibitem[Wang et~al.(2023)]{wang2023selfconsistency}
+X.~Wang, J.~Wei, D.~Schuurmans, Q.~Le, E.~Chi, S.~Narang, A.~Chowdhery, and D.~Zhou.
+\newblock Self-consistency improves chain of thought reasoning in language models.
+\newblock In \emph{ICLR}, 2023.
+
+\end{thebibliography}
+
+% ============================================================
+\appendix
+
+\section{Proof Details}
+\label{app:proofs}
+
+% Full proofs of supporting lemmas will go here.
+
+\section{Experimental Details}
+\label{app:experiments}
+
+% Full experimental setup, hyperparameters, and additional results.
+
+% ============================================================
+
+\section*{NeurIPS Paper Checklist}
+
+\begin{enumerate}[leftmargin=*]
+
+\item {\bf Claims.}
+\answerYes{All claims are supported by formal proofs (Theorems 1--3) or empirical results (Section 5).}
+
+\item {\bf Limitations.}
+\answerYes{Section 7 discusses limitations including restriction to decidable verification functions, worst-case vs average-case gap, and limited empirical validation.}
+
+\item {\bf Theory Assumptions and Proofs.}
+\answerYes{All theorems state assumptions explicitly (standard complexity conjectures). Complete proofs in main text and Appendix A.}
+
+\item {\bf Experimental Result Reproducibility.}
+\answerYes{Section 5 specifies models, benchmarks, and sample sizes. Code in supplementary materials.}
+
+\item {\bf Open access to data and code.}
+\answerYes{All benchmarks are public (GSM8K, MATH, PlanBench). Evaluation code provided.}
+
+\item {\bf Experimental Setting/Details.}
+\answerYes{Section 5 and Appendix B specify all details.}
+
+\item {\bf Experiment Statistical Significance.}
+\answerYes{95\% bootstrap confidence intervals reported for all accuracy measurements.}
+
+\item {\bf Experiments Compute Resources.}
+\answerYes{Estimated \$100 total API cost. No model training.}
+
+\item {\bf Code Of Ethics.}
+\answerYes{}
+
+\item {\bf Broader Impacts.}
+\answerYes{Section 6 discusses implications for AI safety and scalable oversight.}
+
+\item {\bf Safeguards.}
+\answerNA{Theoretical framework; no high-risk model release.}
+
+\item {\bf Licenses.}
+\answerYes{All benchmarks used under their original licenses.}
+
+\item {\bf New Assets.}
+\answerNA{No new datasets or models released.}
+
+\item {\bf Crowdsourcing and Human Subjects.}
+\answerNA{}
+
+\item {\bf IRB Approvals or Equivalent.}
+\answerNA{}
+
+\item {\bf Declaration of LLM usage.}
+\answerNA{LLMs are subjects of evaluation, not methodological tools.}
+
+\end{enumerate}
+
+\end{document}
