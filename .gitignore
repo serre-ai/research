@@ -9,3 +9,6 @@ dist/
 .logs/
 .sessions/
 .deepwork.pid
+openclaw/
+.deepwork.heartbeat
+site/package-lock.json

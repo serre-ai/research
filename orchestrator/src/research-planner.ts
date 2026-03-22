@@ -1255,7 +1255,7 @@ export class ResearchPlanner {
     }
 
     return {
-      maxTurns: agentType === "editor" ? 20 : 40,
+      maxTurns: agentType === "editor" ? 20 : agentType === "experimenter" ? 80 : 40,
       maxDurationMs: 45 * 60 * 1000,
       maxBudgetUsd: Math.min(budgetUsd, 5),
       model,
