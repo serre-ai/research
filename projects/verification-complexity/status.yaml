@@ -4,10 +4,10 @@ status: active
 phase: paper_writing
 confidence: 0.85
 created: "2026-03-21"
-updated: "2026-03-22T14:30:00Z"
+updated: "2026-03-22T15:45:00Z"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
-draft_version: "v0.2"
+draft_version: "v0.2 (appendix proofs expanded)"
 
 collaborators: []
 
@@ -68,8 +68,8 @@ progress:
     notes: "Experimental design complete with 4 benchmarks (GSM8K, MATH, 3-SAT, PlanBench-HTN) × 3 models × N ∈ {1,4,8,16,32}. Evaluation infrastructure built (self-consistency evaluator). Minimal pilot results collected (3 instances). Full experiment run pending (~$100 budget, ~10K API calls). Results section structured with placeholder tables and analysis paragraphs."
 
   paper_writing:
-    status: in_progress
-    notes: "Draft v0.2 complete (22 pages including appendices). All sections drafted: abstract, intro, background, framework, theorems (with proofs), taxonomy, experiments (structure + TODOs), scalable oversight, related work, discussion, conclusion. Appendix A.1 (proof details) and A.2 (experimental details) scaffolded with outlines. Ready for experimental results integration. ICLR enhancements: extended discussion (scope boundaries, average-case, future work), strengthened related work (verification ceiling connection), detailed experimental design in appendix."
+    status: complete_pending_experiments
+    notes: "Draft v0.2 complete (22 pages including appendices). All sections drafted: abstract, intro, background, framework, theorems (with proofs), taxonomy, experiments (structure + TODOs), scalable oversight, related work, discussion, conclusion. Appendix A.1 proofs expanded to complete derivations (2026-03-22): Lemma 2 full proof, Extended Theorem 2 complete derivation, Gap Collapse Sharpness proof. Appendix A.2 experimental design complete. Paper is publication-ready modulo experimental results data (Section 5 Table 2 and figures). Ready for Experimenter agent to run full experiments, then Writer integration in May 2026."
 
   compilation_status:
     status: "not_verified"
@@ -120,6 +120,10 @@ decisions_made:
     decision: "Target ICLR 2027 as primary venue, not NeurIPS 2026"
     rationale: "Linear issue DW-59 required choosing between NeurIPS 2026 (May 6 deadline, 45 days away) and ICLR 2027 (September deadline, 170 days away). Decision: ICLR 2027. Reasoning: (1) Experimental validation is incomplete—only 3 pilot instances run, all results tables are placeholders. (2) 45 days is enough to run experiments but not enough for quality: statistical analysis, figure generation, handling unexpected results, polish. (3) Project's own guidance (status.yaml 2026-03-21): 'Better to submit a strong theory paper late than a weak one on time.' (4) ICLR is equally prestigious for theory-practice bridge papers. (5) 170 days allows significant enhancements: Theorem 4 (Oversight Ceiling), interactive verification extension, case studies, multiple revision cycles. (6) Risk mitigation: if experiments contradict predictions, we need time to understand and revise. (7) Quality over speed: strong ICLR paper > rushed NeurIPS paper. Will post arXiv preprint August 2026 to establish priority before ICLR submission."
 
+  - date: 2026-03-22
+    decision: "Expand all appendix proof sketches to complete formal derivations (Writer session)"
+    rationale: "Linear issue DW-58 asks to 'write paper draft.' Draft v0.2 was substantially complete (22 pages, all sections drafted, all theorems proved), but Appendix A.1 had three proof sketches marked with 'TODO: Expand.' For a theory paper targeting ICLR, all proofs must be fully formal, not sketches. Expanded: (1) Lemma 2 (Verification Hardness Implies Correlated Errors) from 5-line sketch to complete derivation with law of total probability, joint error bounds, correlation coefficient calculation. (2) Extended Proof of Theorem 2 from outline to full synthesis connecting plurality condition, effective sample size under correlation, and verification hardness. (3) Gap Collapse Sharpness proof showing STRIPS=P, HTN=coNP-complete (tight), hierarchical decomposition adds exactly one complexity level. This resolves all proof TODOs and makes Appendix A.1 publication-ready."
+
 key_references:
   - "Shamir 1992 — IP = PSPACE"
   - "Arora et al. 1998 — PCP theorem"
@@ -168,11 +172,11 @@ paper_status:
     - "Conclusion (contributions summary)"
     - "Bibliography (40+ references, properly formatted)"
     - "NeurIPS Checklist (complete)"
+    - "Appendix A.1 (proof details complete - Lemma 1, Lemma 2, Extended Theorem 2, Gap Collapse Sharpness all fully expanded)"
 
   sections_partial:
-    - "Experiments (setup and predictions complete, results pending)"
-    - "Appendix A.1 (proof outlines complete, full expansions pending)"
-    - "Appendix A.2 (experimental design complete, additional results pending)"
+    - "Experiments (setup and predictions complete, results pending - Table 2 has placeholders, figures not generated)"
+    - "Appendix A.2 (experimental design complete, supplementary results tables pending)"
 
   sections_for_iclr_extension:
     - "Interactive Verification (debate, recursive RM) - new section"
