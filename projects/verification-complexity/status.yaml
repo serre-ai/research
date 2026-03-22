@@ -1,17 +1,17 @@
 project: verification-complexity
 title: "The Computational Complexity of Verifying LLM Outputs Across Reasoning Domains"
 status: active
-phase: paper_writing
-confidence: 0.85
+phase: empirical-evaluation
+confidence: 0.80
 created: "2026-03-21"
-updated: "2026-03-22T18:45:00Z"
+updated: "2026-03-22"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
-draft_version: "v0.2 (appendix proofs expanded)"
+draft_version: "v0.3 (Theorem 2c refined, SC experiment abandoned, cross-model verification designed)"
 
 collaborators: []
 
-current_focus: "ICLR 2027 preparation: complete experimental validation, add Theorem 4 (Oversight Ceiling), write case studies"
+current_focus: "ICLR 2027 — deferred from NeurIPS to build comprehensive empirical validation. Three experiment streams: cross-model verification (built, needs full run), reward model verification (design needed), Theorem 4 interactive protocols (theory needed)."
 
 # NeurIPS 2026 Path (Deadline: May 6, 2026)
 neurips_next_steps:
