@@ -204,7 +204,8 @@ def _extract_binary(text: str) -> str:
     if match:
         return match.group(0)
 
-    return preprocessed
+    # Validation: only return valid binary answers
+    return ""
 
 
 def _extract_boolean(text: str) -> str:
@@ -247,7 +248,8 @@ def _extract_boolean(text: str) -> str:
     if re.search(r"\bno\b", lower):
         return "False"
 
-    return preprocessed
+    # Validation: only return valid boolean answers
+    return ""
 
 
 def _extract_yesno(text: str) -> str:
@@ -283,7 +285,8 @@ def _extract_yesno(text: str) -> str:
             return "Yes"
         return "No"
 
-    return preprocessed
+    # Validation: only return valid yes/no answers
+    return ""
 
 
 def _extract_numeric(text: str) -> str:
@@ -310,7 +313,8 @@ def _extract_numeric(text: str) -> str:
     if matches:
         return matches[-1].group(1)
 
-    return preprocessed
+    # Validation: only return valid numeric answers
+    return ""
 
 
 def _extract_letter(text: str) -> str:
@@ -343,7 +347,8 @@ def _extract_letter(text: str) -> str:
     if len(preprocessed) == 1 and preprocessed.upper() in "ABCD":
         return preprocessed.upper()
 
-    return preprocessed
+    # Validation: only return valid letter answers
+    return ""
 
 
 def _extract_entity(text: str, expected: str | None = None) -> str:

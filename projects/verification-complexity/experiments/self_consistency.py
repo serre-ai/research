@@ -12,14 +12,15 @@ Usage:
     # Dry run (estimate cost)
     python self_consistency.py --dry-run
 
-    # Run on specific tasks
-    python self_consistency.py --tasks B2,B7,B9 --models haiku --num-samples 5
+    # Validation run (4 tasks, Haiku, short_cot, N=9)
+    python self_consistency.py --tasks B2,B4,B7,B9 --models haiku --num-samples 9 \\
+        --difficulties 2,3,4 --instances-per-difficulty 20
 
-    # Full run
-    python self_consistency.py --num-samples 5 --instances-per-difficulty 50
+    # Full run (all tasks, N=17, short_cot)
+    python self_consistency.py --models haiku --num-samples 17 --instances-per-difficulty 30
 
-    # Extended run on select tasks for scaling curve
-    python self_consistency.py --tasks B2,B3,B7,B9 --num-samples 32
+    # Direct condition comparison
+    python self_consistency.py --condition direct --num-samples 5
 """
 
 from __future__ import annotations
@@ -103,19 +104,21 @@ class EnsembleResult:
     model: str
     num_samples: int
     temperature: float
+    condition: str
     # Individual sample results
     answers: list[str]
     correct_flags: list[bool]
     latencies_ms: list[float]
-    # Majority vote
+    # Majority vote (computed from valid extractions only)
     majority_answer: str
     majority_correct: bool
-    agreement: float  # fraction of samples matching majority
+    agreement: float  # fraction of valid samples matching majority
     # Ground truth
     ground_truth: str
     # Metadata
     vc_class: str
     single_correct: bool  # was the first sample correct? (N=1 baseline)
+    extraction_failures: int  # number of samples where extraction returned ""
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +237,7 @@ def evaluate_ensemble(
     client,
     num_samples: int,
     temperature: float,
+    condition: str = "short_cot",
 ) -> EnsembleResult:
     """Evaluate one instance with N independent samples and majority vote."""
     answers = []
@@ -242,16 +246,24 @@ def evaluate_ensemble(
     ground_truth = str(instance["answer"])
 
     for i in range(num_samples):
-        result = evaluate_instance(instance, client, condition="direct")
+        result = evaluate_instance(instance, client, condition=condition)
         answers.append(result.extracted_answer)
         correct_flags.append(result.correct)
         latencies.append(result.latency_ms)
 
-    # Majority vote
-    vote_counts = Counter(answers)
-    majority_answer = vote_counts.most_common(1)[0][0]
-    majority_correct = majority_answer.strip().lower() == ground_truth.strip().lower()
-    agreement = vote_counts[majority_answer] / num_samples
+    # Filter out extraction failures before majority vote
+    valid_answers = [a for a in answers if a != ""]
+    extraction_failures = len(answers) - len(valid_answers)
+
+    if valid_answers:
+        vote_counts = Counter(valid_answers)
+        majority_answer = vote_counts.most_common(1)[0][0]
+        majority_correct = majority_answer.strip().lower() == ground_truth.strip().lower()
+        agreement = vote_counts[majority_answer] / len(valid_answers)
+    else:
+        majority_answer = ""
+        majority_correct = False
+        agreement = 0.0
 
     task_key = instance["task"].split("_")[0].upper()
 
@@ -262,6 +274,7 @@ def evaluate_ensemble(
         model=client.model_name,
         num_samples=num_samples,
         temperature=temperature,
+        condition=condition,
         answers=answers,
         correct_flags=correct_flags,
         latencies_ms=latencies,
@@ -271,6 +284,7 @@ def evaluate_ensemble(
         ground_truth=ground_truth,
         vc_class=VC_CLASS.get(task_key, "?"),
         single_correct=correct_flags[0],
+        extraction_failures=extraction_failures,
     )
 
 
@@ -312,6 +326,9 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     parser.add_argument("--dry-run", action="store_true",
                         help="Estimate cost without running")
+    parser.add_argument("--condition", default="short_cot",
+                        choices=["direct", "short_cot", "budget_cot"],
+                        help="Evaluation condition (default: short_cot for self-consistency)")
     parser.add_argument("--resume", action="store_true",
                         help="Skip instances already in output file")
 
@@ -330,12 +347,15 @@ def main():
 
     total_api_calls = total_instances * len(models) * args.num_samples
 
-    # Rough cost estimate (average ~$0.001 per API call for small models)
+    # Cost estimate per API call (short_cot: ~500 input + ~200 output tokens)
     cost_per_call = {
-        "haiku": 0.0003,
-        "gpt4o-mini": 0.0004,
-        "llama-8b": 0.0001,
+        "haiku": 0.002,
+        "gpt4o-mini": 0.002,
+        "llama-8b": 0.0005,
     }
+    if args.condition == "direct":
+        # Direct condition uses ~10 output tokens
+        cost_per_call = {"haiku": 0.0003, "gpt4o-mini": 0.0004, "llama-8b": 0.0001}
     estimated_cost = sum(
         total_instances * args.num_samples * cost_per_call.get(m, 0.0003)
         for m in models
@@ -343,6 +363,7 @@ def main():
 
     logger.info(f"Tasks: {tasks}")
     logger.info(f"Models: {models}")
+    logger.info(f"Condition: {args.condition}")
     logger.info(f"Samples per instance: {args.num_samples}")
     logger.info(f"Temperature: {args.temperature}")
     logger.info(f"Instances per task: {total_instances // len(tasks)}")
@@ -365,7 +386,7 @@ def main():
 
         for task in tasks:
             instances = load_instances(task, difficulties, args.instances_per_difficulty)
-            output_file = args.output_dir / f"sc_{model_key}_{task}_n{args.num_samples}.jsonl"
+            output_file = args.output_dir / f"sc_{model_key}_{task}_{args.condition}_n{args.num_samples}.jsonl"
 
             # Resume support
             completed_ids = set()
@@ -387,17 +408,20 @@ def main():
                 for idx, instance in enumerate(remaining):
                     try:
                         result = evaluate_ensemble(
-                            instance, client, args.num_samples, args.temperature
+                            instance, client, args.num_samples, args.temperature,
+                            condition=args.condition,
                         )
                         f.write(json.dumps(asdict(result)) + "\n")
                         f.flush()
 
                         status = "✓" if result.majority_correct else "✗"
                         if (idx + 1) % 10 == 0 or idx == 0:
+                            ext_warn = f" ext_fail={result.extraction_failures}" if result.extraction_failures else ""
                             logger.info(
                                 f"    [{idx+1}/{len(remaining)}] {status} "
                                 f"agree={result.agreement:.0%} "
                                 f"single={'✓' if result.single_correct else '✗'}"
+                                f"{ext_warn}"
                             )
                     except Exception as e:
                         logger.error(f"    [{idx+1}] {instance['id']}: {e}")
