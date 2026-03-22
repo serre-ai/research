@@ -1,0 +1,53 @@
+# Survey queries for verification-complexity literature review
+# Run with: python3 shared/tools/research_search.py survey \
+#   --queries-file projects/verification-complexity/literature/survey_queries.yaml \
+#   --output-dir projects/verification-complexity/literature/
+
+queries:
+  - topic: "Generation-Verification Gap (LLM)"
+    query: "generation verification gap language model self-improvement"
+    year_range: "2023-2026"
+
+  - topic: "Self-Consistency and Majority Voting"
+    query: "self-consistency majority voting chain of thought limitations"
+    year_range: "2023-2026"
+
+  - topic: "Reward Model Verification Limits"
+    query: "reward model overoptimization verification limits RLHF"
+    year_range: "2023-2026"
+
+  - topic: "Process vs Outcome Supervision"
+    query: "process reward model outcome supervision step verification"
+    year_range: "2023-2026"
+
+  - topic: "Scalable Oversight and Debate"
+    query: "scalable oversight debate AI safety verification complexity"
+    year_range: "2018-2026"
+
+  - topic: "Weak-to-Strong Generalization"
+    query: "weak to strong generalization superalignment verification"
+    year_range: "2023-2026"
+
+  - topic: "Interactive Proofs and LLMs"
+    query: "interactive proof system language model verification PSPACE"
+    year_range: "2020-2026"
+
+  - topic: "Self-Correction Impossibility"
+    query: "language model self-correction limitations impossibility"
+    year_range: "2023-2026"
+
+  - topic: "Planning Verification Complexity"
+    query: "planning verification complexity HTN STRIPS NP PSPACE"
+    year_range: "2020-2026"
+
+  - topic: "Verification Ceiling in Training"
+    query: "verification ceiling synthetic data LLM training limit"
+    year_range: "2024-2026"
+
+  - topic: "Complexity Theory and AI Safety"
+    query: "computational complexity alignment AI safety impossibility"
+    year_range: "2023-2026"
+
+  - topic: "PCP Theorem Applications to ML"
+    query: "probabilistically checkable proofs machine learning verification"
+    year_range: "2020-2026"
