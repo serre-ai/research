@@ -1,0 +1,326 @@
+{
+    "lastReviewed": "2026-03-22T04:04:00Z",
+    "reviewed": {
+        "pr-1": {
+            "title": "research(agent-failure-taxonomy): session 0050c817",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-17T08:04:00Z"
+        },
+        "pr-2": {
+            "title": "research(reasoning-gaps): session 0de8dd71",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-17T08:04:00Z"
+        },
+        "pr-3": {
+            "title": "chore(platform-engineering): initial health check session",
+            "verdict": "REJECT",
+            "reviewedAt": "2026-03-17T08:04:00Z"
+        },
+        "session-101": {
+            "verdict": "NO_WORK",
+            "reviewedAt": "2026-03-17T14:04:00Z"
+        },
+        "session-102": {
+            "verdict": "NO_WORK",
+            "reviewedAt": "2026-03-17T14:04:00Z"
+        },
+        "session-103": {
+            "verdict": "NO_WORK",
+            "reviewedAt": "2026-03-17T16:04:00Z"
+        },
+        "session-104": {
+            "verdict": "NO_WORK",
+            "reviewedAt": "2026-03-17T16:04:00Z"
+        },
+        "commit-4f27a908": {
+            "title": "feat(orchestrator): Sprint 3 \u2014 event bus SQL, API routes, and wiring",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T00:04:00Z"
+        },
+        "commit-fa7dc21f": {
+            "title": "docs(reasoning-gaps): NeurIPS submission final sprint roadmap",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T02:04:00Z"
+        },
+        "commit-f7b8bdc5": {
+            "title": "fix(reasoning-gaps): correct Opus model ID",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T02:04:00Z"
+        },
+        "commit-1cbd2583": {
+            "title": "feat(reasoning-gaps): tool_use condition + budget sensitivity sweep",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T02:04:00Z"
+        },
+        "commit-1caeb26e": {
+            "title": "feat(orchestrator): Sprint 4 \u2014 research planner replaces scoring heuristic",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T04:04:00Z"
+        },
+        "commit-3e838312": {
+            "title": "fix(orchestrator): add backlog guard to research planner",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T04:04:00Z"
+        },
+        "commit-9c20f6e2": {
+            "title": "fix(orchestrator): code review fixes \u2014 brief injection, persistence, events",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T04:04:00Z"
+        },
+        "commit-18984d71": {
+            "title": "docs(reasoning-gaps): add live progress tracker to NeurIPS submission roadmap",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T04:04:00Z"
+        },
+        "commit-080df746": {
+            "title": "feat(orchestrator): Sprint 5 \u2014 verification layer for paper claims",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T16:04:00Z"
+        },
+        "commit-040827d8": {
+            "title": "research(reasoning-gaps): update status for NeurIPS sprint",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T16:04:00Z"
+        },
+        "commit-2871e3ed": {
+            "title": "fix(orchestrator): create standalone verifier in API when daemon unavailable",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T16:04:00Z"
+        },
+        "commit-e9a35222": {
+            "title": "docs(reasoning-gaps): add live progress tracker",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T16:04:00Z"
+        },
+        "commit-83ae0a75": {
+            "title": "feat(reasoning-gaps): auto-generated paper pipeline with VPS build + API",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T18:04:00Z"
+        },
+        "commit-430a81ce": {
+            "title": "feat(orchestrator): collective-aware planner \u2014 forum, governance, rituals",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T18:04:00Z"
+        },
+        "commit-ff1c976b": {
+            "title": "fix(orchestrator): planner budget check no longer blocks collective actions",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T18:04:00Z"
+        },
+        "commit-a86da790": {
+            "title": "fix(reasoning-gaps): filter heatmap to standard conditions",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T18:04:00Z"
+        },
+        "commit-f1392d5b": {
+            "title": "fix(orchestrator): pass DB pool to daemon",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T16:04:00Z"
+        },
+        "commit-dee421d9": {
+            "title": "chore: add debug logging to collective planner",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T18:04:00Z"
+        },
+        "commit-040f2a08": {
+            "title": "chore: remove debug logging from collective planner",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T18:04:00Z"
+        },
+        "commit-503784cf": {
+            "title": "paper(reasoning-gaps): anonymize author block and switch to submission format",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T22:04:00Z"
+        },
+        "commit-a258637c": {
+            "title": "paper(reasoning-gaps): compress main body from ~20 to ~9 pages for NeurIPS",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T22:04:00Z"
+        },
+        "commit-2a4a1ac1": {
+            "title": "paper(reasoning-gaps): fix consistency and proofreading issues",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-18T22:04:00Z"
+        },
+        "commit-f0ec34c7": {
+            "title": "paper(reasoning-gaps): compress to 9 pages, add supplementary, fix consistency",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T22:04:00Z"
+        },
+        "commit-d37cba8b": {
+            "title": "feat(orchestrator): collective sessions run via API calls, not git",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-18T22:04:00Z"
+        },
+        "commit-3306df09": {
+            "title": "docs(roadmaps): complete Next.js migration roadmaps and master sprint plan",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T06:04:00Z"
+        },
+        "commit-3337d82f": {
+            "title": "feat(site-next): Sprint 1+2 \u2014 Next.js scaffold, design system, auth, data layer",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-19T06:04:00Z"
+        },
+        "commit-3f9981d7": {
+            "title": "feat(site-next): Sprint 3 \u2014 marketing pages, app shell, dashboard, API endpoints",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-ee8f1b50": {
+            "title": "feat(site-next): Sprint 4 \u2014 project detail pages with eval, budget, sessions",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-7b47a478": {
+            "title": "debug(site-next): add auth debug logging and deploy script",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-6a09a68d": {
+            "title": "fix(site-next): fix auth debug handler signature",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-02b64979": {
+            "title": "fix(site-next): use NextRequest type for auth debug",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-9eee6b3c": {
+            "title": "fix(site-next): switch sign-in to client-side form POST with CSRF token",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-a40ea719": {
+            "title": "fix(site-next): transform API responses to match component types, fix toFixed on undefined",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T08:04:00Z"
+        },
+        "commit-f249da4a": {
+            "title": "fix(openclaw): correct API endpoint mismatches in skills and fix prediction route ordering",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-19T20:04:00Z"
+        },
+        "commit-21d0d599": {
+            "title": "feat(site-next): wire eval jobs, budget extras endpoints",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-20T20:04:00Z"
+        },
+        "commit-45cebf38": {
+            "title": "feat(site-next): wire forum advanced, predictions CRUD, events emit",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-20T20:04:00Z"
+        },
+        "commit-7b3613ac": {
+            "title": "feat(site-next): add vitest test suite and restrict auth to owner",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T00:04:00Z"
+        },
+        "commit-91614c31": {
+            "title": "feat(site-next): add all Sprint 10 pages, components, hooks, and types",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T00:04:00Z"
+        },
+        "commit-b4e9c0a0": {
+            "title": "fix(site-next): guard quality.checks against undefined API response",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T02:04:00Z"
+        },
+        "commit-f92dd4ca": {
+            "title": "docs: update root CLAUDE.md, add scoped configs for site-next and orchestrator",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T02:04:00Z"
+        },
+        "commit-dba6eb22": {
+            "title": "feat(orchestrator): add COLLECTIVE_ENABLED env var toggle for collective actions",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T02:04:00Z"
+        },
+        "commit-17cf30cf": {
+            "title": "feat(orchestrator): persist sessions to DB and fix API column aliases",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T02:04:00Z"
+        },
+        "commit-a350b08b": {
+            "title": "feat(orchestrator): add literature intelligence system (Levels 0-3)",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-6c7b7032": {
+            "title": "feat(orchestrator): add arXiv + S2 API clients and fix planner route signature",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-fbcba533": {
+            "title": "fix(orchestrator): remove ON CONFLICT arbiter for partial unique index",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-17ed39b3": {
+            "title": "paper(reasoning-gaps): compile paper and create submission package",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-f82fa56c": {
+            "title": "paper(reasoning-gaps): add comprehensive submission checklist",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-7a811bd5": {
+            "title": "paper(reasoning-gaps): add submission status summary",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-b7118dc7": {
+            "title": "paper(reasoning-gaps): add submission prep session report",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-410d2331": {
+            "title": "docs(reasoning-gaps): add comprehensive submission guide for NeurIPS 2026",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-6d640552": {
+            "title": "paper(reasoning-gaps): complete submission-prep phase with final verification",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-e6df88e7": {
+            "title": "paper(reasoning-gaps): add afternoon writer session report",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "commit-ab8a1f2b": {
+            "title": "docs(reasoning-gaps): add project README with submission status",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-21T12:04:00Z"
+        },
+        "heartbeat-2026-03-21T18": {
+            "verdict": "NO_NEW_SESSIONS",
+            "reviewedAt": "2026-03-21T18:06:00Z",
+            "note": "No new commits since 12:04 UTC. Processed inbox message from kit re: B3 anomaly."
+        },
+        "heartbeat-2026-03-21T20": {
+            "verdict": "NO_NEW_SESSIONS",
+            "reviewedAt": "2026-03-21T20:04:00Z",
+            "note": "No new commits since 18:06 UTC. Three hardcoded stat errors confirmed still present in main.tex (lines 246, 268, 390). Status.yaml still reads complete. REVISE verdict unaddressed \u2014 3rd consecutive cycle."
+        },
+        "heartbeat-2026-03-22T00": {
+            "verdict": "NO_NEW_SESSIONS",
+            "reviewedAt": "2026-03-22T00:04:00Z",
+            "note": "No new commits since 20:04 UTC. REVISE verdict for reasoning-gaps paper still unaddressed \u2014 4th consecutive cycle. Three hardcoded stat errors (main.tex lines 246, 268, 390) remain unfixed. No active writer session detected."
+        },
+        "commit-a3149331": {
+            "title": "chore(self-improvement-limits): save session state",
+            "verdict": "ACCEPT",
+            "reviewedAt": "2026-03-22T04:04:00Z"
+        },
+        "heartbeat-2026-03-22T04": {
+            "verdict": "REVIEWED",
+            "reviewedAt": "2026-03-22T04:04:00Z",
+            "note": "Reviewed commit-a3149331: writer session blocked on DW-98, correctly diagnosed premature issue. ACCEPT verdict on session report. REVISE verdict for reasoning-gaps paper (3 hardcoded stats) still unaddressed \u2014 5th consecutive cycle."
+        }
+    }
+}
