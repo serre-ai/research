@@ -1,5 +1,5 @@
 {
-    "lastReviewed": "2026-03-22T04:04:00Z",
+    "lastReviewed": "2026-03-22T06:04:00Z",
     "reviewed": {
         "pr-1": {
             "title": "research(agent-failure-taxonomy): session 0050c817",
@@ -33,7 +33,7 @@
             "reviewedAt": "2026-03-17T16:04:00Z"
         },
         "commit-4f27a908": {
-            "title": "feat(orchestrator): Sprint 3 \u2014 event bus SQL, API routes, and wiring",
+            "title": "feat(orchestrator): Sprint 3 — event bus SQL, API routes, and wiring",
             "verdict": "ACCEPT",
             "reviewedAt": "2026-03-18T00:04:00Z"
         },
@@ -53,7 +53,7 @@
             "reviewedAt": "2026-03-18T02:04:00Z"
         },
         "commit-1caeb26e": {
-            "title": "feat(orchestrator): Sprint 4 \u2014 research planner replaces scoring heuristic",
+            "title": "feat(orchestrator): Sprint 4 — research planner replaces scoring heuristic",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-18T04:04:00Z"
         },
@@ -63,7 +63,7 @@
             "reviewedAt": "2026-03-18T04:04:00Z"
         },
         "commit-9c20f6e2": {
-            "title": "fix(orchestrator): code review fixes \u2014 brief injection, persistence, events",
+            "title": "fix(orchestrator): code review fixes — brief injection, persistence, events",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-18T04:04:00Z"
         },
@@ -73,7 +73,7 @@
             "reviewedAt": "2026-03-18T04:04:00Z"
         },
         "commit-080df746": {
-            "title": "feat(orchestrator): Sprint 5 \u2014 verification layer for paper claims",
+            "title": "feat(orchestrator): Sprint 5 — verification layer for paper claims",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-18T16:04:00Z"
         },
@@ -98,7 +98,7 @@
             "reviewedAt": "2026-03-18T18:04:00Z"
         },
         "commit-430a81ce": {
-            "title": "feat(orchestrator): collective-aware planner \u2014 forum, governance, rituals",
+            "title": "feat(orchestrator): collective-aware planner — forum, governance, rituals",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-18T18:04:00Z"
         },
@@ -158,17 +158,17 @@
             "reviewedAt": "2026-03-19T06:04:00Z"
         },
         "commit-3337d82f": {
-            "title": "feat(site-next): Sprint 1+2 \u2014 Next.js scaffold, design system, auth, data layer",
+            "title": "feat(site-next): Sprint 1+2 — Next.js scaffold, design system, auth, data layer",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-19T06:04:00Z"
         },
         "commit-3f9981d7": {
-            "title": "feat(site-next): Sprint 3 \u2014 marketing pages, app shell, dashboard, API endpoints",
+            "title": "feat(site-next): Sprint 3 — marketing pages, app shell, dashboard, API endpoints",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-19T08:04:00Z"
         },
         "commit-ee8f1b50": {
-            "title": "feat(site-next): Sprint 4 \u2014 project detail pages with eval, budget, sessions",
+            "title": "feat(site-next): Sprint 4 — project detail pages with eval, budget, sessions",
             "verdict": "REVISE",
             "reviewedAt": "2026-03-19T08:04:00Z"
         },
@@ -305,12 +305,12 @@
         "heartbeat-2026-03-21T20": {
             "verdict": "NO_NEW_SESSIONS",
             "reviewedAt": "2026-03-21T20:04:00Z",
-            "note": "No new commits since 18:06 UTC. Three hardcoded stat errors confirmed still present in main.tex (lines 246, 268, 390). Status.yaml still reads complete. REVISE verdict unaddressed \u2014 3rd consecutive cycle."
+            "note": "No new commits since 18:06 UTC. Three hardcoded stat errors confirmed still present in main.tex (lines 246, 268, 390). Status.yaml still reads complete. REVISE verdict unaddressed — 3rd consecutive cycle."
         },
         "heartbeat-2026-03-22T00": {
             "verdict": "NO_NEW_SESSIONS",
             "reviewedAt": "2026-03-22T00:04:00Z",
-            "note": "No new commits since 20:04 UTC. REVISE verdict for reasoning-gaps paper still unaddressed \u2014 4th consecutive cycle. Three hardcoded stat errors (main.tex lines 246, 268, 390) remain unfixed. No active writer session detected."
+            "note": "No new commits since 20:04 UTC. REVISE verdict for reasoning-gaps paper still unaddressed — 4th consecutive cycle. Three hardcoded stat errors (main.tex lines 246, 268, 390) remain unfixed. No active writer session detected."
         },
         "commit-a3149331": {
             "title": "chore(self-improvement-limits): save session state",
@@ -320,7 +320,18 @@
         "heartbeat-2026-03-22T04": {
             "verdict": "REVIEWED",
             "reviewedAt": "2026-03-22T04:04:00Z",
-            "note": "Reviewed commit-a3149331: writer session blocked on DW-98, correctly diagnosed premature issue. ACCEPT verdict on session report. REVISE verdict for reasoning-gaps paper (3 hardcoded stats) still unaddressed \u2014 5th consecutive cycle."
+            "note": "Reviewed commit-a3149331: writer session blocked on DW-98, correctly diagnosed premature issue. ACCEPT verdict on session report. REVISE verdict for reasoning-gaps paper (3 hardcoded stats) still unaddressed — 5th consecutive cycle."
+        },
+        "commit-49e37a7f+0014c44c+56f417f6": {
+            "title": "research(self-improvement-limits): initialize + draft paper (3 commits)",
+            "verdict": "REVISE",
+            "reviewedAt": "2026-03-22T06:04:00Z",
+            "note": "Paper draft v0.1 produced. Critical: experiments section entirely fabricated. Abstract presents invented statistics as validated results. Theoretical framework is well-structured but proofs unverified. REVISE required before any further work treats this as a real empirical paper."
+        },
+        "heartbeat-2026-03-22T06": {
+            "verdict": "REVIEWED",
+            "reviewedAt": "2026-03-22T06:04:00Z",
+            "note": "Reviewed 4 new SIL commits. REVISE verdict issued for SIL paper draft. reasoning-gaps REVISE still unaddressed — 6th consecutive cycle. Stats mismatch confirmed: main.tex 0.519/0.739/0.637 vs stats.tex 0.515/0.749/0.625; CoT lift 0.351 vs 0.361; Types5-6 lift 0.094 vs 0.113."
         }
     }
 }
