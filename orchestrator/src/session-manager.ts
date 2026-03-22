@@ -233,7 +233,6 @@ export class SessionManager {
           const specPath = join(experimentsDir, dir, "spec.yaml");
           const specContent = await readFile(specPath, "utf-8");
           const statusMatch = specContent.match(/^status:\s*(\S+)/m);
-          const reviewStatusMatch = specContent.match(/^\s+status:\s*(\S+)/m);
           if (statusMatch) {
             const specStatus = statusMatch[1];
             const relativePath = `experiments/${dir}/spec.yaml`;
@@ -241,11 +240,20 @@ export class SessionManager {
               signals.experimentSpecCreated = true;
               signals.experimentSpecPath = relativePath;
             }
-            if (reviewStatusMatch) {
-              const reviewStatus = reviewStatusMatch[1];
-              if (reviewStatus === "approved" || specStatus === "approved") {
-                signals.experimentSpecApproved = true;
-                signals.experimentSpecPath = relativePath;
+            if (specStatus === "approved") {
+              signals.experimentSpecApproved = true;
+              signals.experimentSpecPath = relativePath;
+            }
+            // Parse the review block to find review.status
+            const reviewBlock = specContent.match(/^review:\s*\n((?:\s+.*\n?)*)/m);
+            if (reviewBlock) {
+              const reviewStatusInBlock = reviewBlock[1].match(/status:\s*(\S+)/);
+              if (reviewStatusInBlock) {
+                const reviewStatus = reviewStatusInBlock[1];
+                if (reviewStatus === "approved") {
+                  signals.experimentSpecApproved = true;
+                  signals.experimentSpecPath = relativePath;
+                }
               }
             }
           }
