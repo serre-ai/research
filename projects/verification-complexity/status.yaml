@@ -4,7 +4,7 @@ status: active
 phase: paper_writing
 confidence: 0.85
 created: "2026-03-21"
-updated: "2026-03-22T15:45:00Z"
+updated: "2026-03-22T16:30:00Z"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
 draft_version: "v0.2 (appendix proofs expanded)"
@@ -124,6 +124,10 @@ decisions_made:
     decision: "Expand all appendix proof sketches to complete formal derivations (Writer session)"
     rationale: "Linear issue DW-58 asks to 'write paper draft.' Draft v0.2 was substantially complete (22 pages, all sections drafted, all theorems proved), but Appendix A.1 had three proof sketches marked with 'TODO: Expand.' For a theory paper targeting ICLR, all proofs must be fully formal, not sketches. Expanded: (1) Lemma 2 (Verification Hardness Implies Correlated Errors) from 5-line sketch to complete derivation with law of total probability, joint error bounds, correlation coefficient calculation. (2) Extended Proof of Theorem 2 from outline to full synthesis connecting plurality condition, effective sample size under correlation, and verification hardness. (3) Gap Collapse Sharpness proof showing STRIPS=P, HTN=coNP-complete (tight), hierarchical decomposition adds exactly one complexity level. This resolves all proof TODOs and makes Appendix A.1 publication-ready."
 
+  - date: 2026-03-22
+    decision: "Identify and document citation error in Theorem 3: Behnke 2015 not 2024, NP-complete not coNP-complete"
+    rationale: "Linear issue DW-49 asks to prove GV-Gap collapse for planning tasks. Theorem 3 already exists in paper draft but cites 'Behnke, Höller & Biundo 2024, coNP-hard.' Literature search reveals: (1) Actual paper is Behnke et al. ICAPS 2015, not 2024. (2) Result is NP-completeness for HTN plan verification, not coNP-completeness. (3) The NP-completeness holds even for severely restricted HTN problems. (4) Empirical validation from Kambhampati (ICML 2024) and Stechly (arXiv 2024) confirms LLMs cannot self-verify plans. Decision: Document finding in literature/01-htn-planning-verification-complexity.md with comprehensive survey of 8 papers (2015-2025). Flag issue for Theorist to resolve: either (a) correct citation to Behnke 2015 + NP-complete, or (b) find legitimate coNP-complete result for plan optimality verification. Theorem 3 validity is NOT affected: whether verification is NP-complete or coNP-complete, the key claim holds—no polynomial-time verifier exists, so GV-gap collapses relative to P-time verifiers."
+
 key_references:
   - "Shamir 1992 — IP = PSPACE"
   - "Arora et al. 1998 — PCP theorem"
@@ -138,10 +142,13 @@ key_references:
   - "Burns et al. 2023 — Weak-to-Strong Generalization, OpenAI"
   - "Engels et al. 2025 — Scaling Laws for Scalable Oversight, NeurIPS 2025"
   - "Irving et al. 2018 — AI Safety via Debate"
-  - "Stechly et al. 2024 — Self-Verification Limitations"
+  - "Stechly et al. 2024 — Self-Verification Limitations, arXiv 2402.08115"
   - "Kwa et al. 2024 — Catastrophic Goodhart, NeurIPS 2024"
-  - "Behnke et al. 2024 — HTN Plan Verification complexity, AAAI 2024"
+  - "Behnke et al. 2015 — HTN Plan Verification NP-complete, ICAPS 2015 [CORRECTED: paper cites 2024]"
+  - "Erol et al. 1996 — HTN Plan Existence PSPACE-complete, AMAI 1996"
   - "Kambhampati et al. 2024 — LLMs Can't Plan, ICML 2024"
+  - "Lauer et al. 2025 — Lifted HTN Verification PSPACE-complete, ICAPS 2025"
+  - "Lin et al. 2024 — Plan Verification Complexity (grounded vs lifted), Uni Ulm 2024"
 
 git:
   branch: "research/verification-complexity"
@@ -154,9 +161,10 @@ metrics:
   lemmas_outlined: 2
   experiments_designed: 4
   experiments_run: 0
-  papers_reviewed: 60
+  papers_reviewed: 68
   draft_pages: 22
   todos_addressed: 8
+  literature_notes_written: 1
 
 paper_status:
   sections_complete:
