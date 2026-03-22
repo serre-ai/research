@@ -1,0 +1,387 @@
+{
+  "generated": "2026-03-21T21:51:38.047086",
+  "total_unique_papers": 322,
+  "topics": {
+    "Generation-Verification Gap (LLM)": {
+      "count": 30,
+      "top_cited": [
+        {
+          "title": "OpenVLThinker: An Early Exploration to Complex Vision-Language Reasoning via Iterative Self-Improvement",
+          "citations": 143,
+          "year": 2025
+        },
+        {
+          "title": "On the Self-Verification Limitations of Large Language Models on Reasoning and Planning Tasks",
+          "citations": 115,
+          "year": 2024
+        },
+        {
+          "title": "Language Model Self-improvement by Reinforcement Learning Contemplation",
+          "citations": 83,
+          "year": 2023
+        },
+        {
+          "title": "SETS: Leveraging Self-Verification and Self-Correction for Improved Test-Time Scaling",
+          "citations": 45,
+          "year": 2025
+        },
+        {
+          "title": "Self-Challenging Language Model Agents",
+          "citations": 26,
+          "year": 2025
+        }
+      ]
+    },
+    "Self-Consistency and Majority Voting": {
+      "count": 26,
+      "top_cited": [
+        {
+          "title": "Dynamic Self-Consistency: Leveraging Reasoning Paths for Efficient LLM Sampling",
+          "citations": 25,
+          "year": 2024
+        },
+        {
+          "title": "When To Solve, When To Verify: Compute-Optimal Problem Solving and Generative Verification for LLM Reasoning",
+          "citations": 25,
+          "year": 2025
+        },
+        {
+          "title": "Ranked Voting based Self-Consistency of Large Language Models",
+          "citations": 9,
+          "year": 2025
+        },
+        {
+          "title": "Slim-SC: Thought Pruning for Efficient Scaling with Self-Consistency",
+          "citations": 7,
+          "year": 2025
+        },
+        {
+          "title": "Trustworthiness and Self-awareness in Large Language Models: An Exploration through the Think-Solve-Verify Framework",
+          "citations": 7,
+          "year": 2024
+        }
+      ]
+    },
+    "Reward Model Verification Limits": {
+      "count": 29,
+      "top_cited": [
+        {
+          "title": "Reward Model Ensembles Help Mitigate Overoptimization",
+          "citations": 195,
+          "year": 2023
+        },
+        {
+          "title": "Scaling Laws for Reward Model Overoptimization in Direct Alignment Algorithms",
+          "citations": 111,
+          "year": 2024
+        },
+        {
+          "title": "Provably Mitigating Overoptimization in RLHF: Your SFT Loss is Implicitly an Adversarial Regularizer",
+          "citations": 92,
+          "year": 2024
+        },
+        {
+          "title": "Confronting Reward Model Overoptimization with Constrained RLHF",
+          "citations": 78,
+          "year": 2023
+        },
+        {
+          "title": "Iterative Data Smoothing: Mitigating Reward Overfitting and Overoptimization in RLHF",
+          "citations": 49,
+          "year": 2024
+        }
+      ]
+    },
+    "Process vs Outcome Supervision": {
+      "count": 28,
+      "top_cited": [
+        {
+          "title": "VisualPRM: An Effective Process Reward Model for Multimodal Reasoning",
+          "citations": 97,
+          "year": 2025
+        },
+        {
+          "title": "Process Reward Model with Q-Value Rankings",
+          "citations": 72,
+          "year": 2024
+        },
+        {
+          "title": "GenPRM: Scaling Test-Time Compute of Process Reward Models via Generative Reasoning",
+          "citations": 59,
+          "year": 2025
+        },
+        {
+          "title": "Unlocking Multimodal Mathematical Reasoning via Process Reward Model",
+          "citations": 32,
+          "year": 2025
+        },
+        {
+          "title": "Entropy-Regularized Process Reward Model",
+          "citations": 21,
+          "year": 2024
+        }
+      ]
+    },
+    "Scalable Oversight and Debate": {
+      "count": 30,
+      "top_cited": [
+        {
+          "title": "AI safety via debate",
+          "citations": 338,
+          "year": 2018
+        },
+        {
+          "title": "Is Human Oversight to AI Systems still possible?",
+          "citations": 61,
+          "year": 2024
+        },
+        {
+          "title": "Scalable AI Safety via Doubly-Efficient Debate",
+          "citations": 42,
+          "year": 2023
+        },
+        {
+          "title": "Debate Helps Weak-to-Strong Generalization",
+          "citations": 4,
+          "year": 2025
+        },
+        {
+          "title": "Intrinsic Barriers and Practical Pathways for Human-AI Alignment: An Agreement-Based Complexity Analysis",
+          "citations": 4,
+          "year": 2025
+        }
+      ]
+    },
+    "Weak-to-Strong Generalization": {
+      "count": 29,
+      "top_cited": [
+        {
+          "title": "Multi-Agent Verification: Scaling Test-Time Compute with Multiple Verifiers",
+          "citations": 36,
+          "year": 2025
+        },
+        {
+          "title": "Vision Superalignment: Weak-to-Strong Generalization for Vision Foundation Models",
+          "citations": 28,
+          "year": 2024
+        },
+        {
+          "title": "Can Query Expansion Improve Generalization of Strong Cross-Encoder Rankers?",
+          "citations": 26,
+          "year": 2023
+        },
+        {
+          "title": "Heimdall: test-time scaling on the generative verification",
+          "citations": 23,
+          "year": 2025
+        },
+        {
+          "title": "Super(ficial)-alignment: Strong Models May Deceive Weak Models in Weak-to-Strong Generalization",
+          "citations": 20,
+          "year": 2024
+        }
+      ]
+    },
+    "Interactive Proofs and LLMs": {
+      "count": 27,
+      "top_cited": [
+        {
+          "title": "An Interactive Prover for Protocol Verification in the Computational Model",
+          "citations": 44,
+          "year": 2021
+        },
+        {
+          "title": "zkGPT: An Efficient Non-interactive Zero-knowledge Proof Framework for LLM Inference",
+          "citations": 24,
+          "year": 2025
+        },
+        {
+          "title": "FVEL: Interactive Formal Verification Environment with Large Language Models via Theorem Proving",
+          "citations": 24,
+          "year": 2024
+        },
+        {
+          "title": "InsightLens: Discovering and Exploring Insights from Conversational Contexts in Large-Language-Model-Powered Data Analysis",
+          "citations": 16,
+          "year": 2024
+        },
+        {
+          "title": "Recursion over Public-Coin Interactive Proof Systems; Faster Hash Verification",
+          "citations": 9,
+          "year": 2023
+        }
+      ]
+    },
+    "Self-Correction Impossibility": {
+      "count": 24,
+      "top_cited": [
+        {
+          "title": "Plan-on-Graph: Self-Correcting Adaptive Planning of Large Language Model on Knowledge Graphs",
+          "citations": 93,
+          "year": 2024
+        },
+        {
+          "title": "Goedel-Prover-V2: Scaling Formal Theorem Proving with Scaffolded Data Synthesis and Self-Correction",
+          "citations": 60,
+          "year": 2025
+        },
+        {
+          "title": "LLM Self-Correction with DeCRIM: Decompose, Critique, and Refine for Enhanced Following of Instructions with Multiple Constraints",
+          "citations": 27,
+          "year": 2024
+        },
+        {
+          "title": "Reading Your Heart: Learning ECG Words and Sentences via Pre-training ECG Language Model",
+          "citations": 23,
+          "year": 2025
+        },
+        {
+          "title": "SuperCorrect: Advancing Small LLM Reasoning with Thought Template Distillation and Self-Correction",
+          "citations": 20,
+          "year": 2024
+        }
+      ]
+    },
+    "Planning Verification Complexity": {
+      "count": 15,
+      "top_cited": [
+        {
+          "title": "Can They Come Together? A Computational Complexity Analysis of Conjunctive Possible Effects of Compound HTN Planning Tasks",
+          "citations": 5,
+          "year": 2023
+        },
+        {
+          "title": "Tight Bounds for Hybrid Planning",
+          "citations": 4,
+          "year": 2022
+        },
+        {
+          "title": "On the Computational Complexity of Plan Verification, (Bounded) Plan-Optimality Verification, and Bounded Plan Existence",
+          "citations": 3,
+          "year": 2024
+        },
+        {
+          "title": "Intermediate Results on the Complexity of STRIPS$_{1}^{1}$",
+          "citations": 0,
+          "year": 2026
+        },
+        {
+          "title": "Inapproximability of STRIPS Planning",
+          "citations": 0,
+          "year": 2026
+        }
+      ]
+    },
+    "Verification Ceiling in Training": {
+      "count": 30,
+      "top_cited": [
+        {
+          "title": "DeepSeek-Prover: Advancing Theorem Proving in LLMs through Large-Scale Synthetic Data",
+          "citations": 179,
+          "year": 2024
+        },
+        {
+          "title": "RL on Incorrect Synthetic Data Scales the Efficiency of LLM Math Reasoning by Eight-Fold",
+          "citations": 108,
+          "year": 2024
+        },
+        {
+          "title": "Synthetic Data Generation Using Large Language Models: Advances in Text and Code",
+          "citations": 60,
+          "year": 2025
+        },
+        {
+          "title": "Large language models generating synthetic clinical datasets: a feasibility and comparative analysis with real-world perioperative data",
+          "citations": 17,
+          "year": 2025
+        },
+        {
+          "title": "MAG-V: A Multi-Agent Framework for Synthetic Data Generation and Verification",
+          "citations": 13,
+          "year": 2024
+        }
+      ]
+    },
+    "Complexity Theory and AI Safety": {
+      "count": 24,
+      "top_cited": [
+        {
+          "title": "Mechanistic Interpretability for AI Safety - A Review",
+          "citations": 359,
+          "year": 2024
+        },
+        {
+          "title": "Backdoor Activation Attack: Attack Large Language Models using Activation Steering for Safety-Alignment",
+          "citations": 33,
+          "year": 2023
+        },
+        {
+          "title": "Helpful, harmless, honest? Sociotechnical limits of AI alignment and safety through Reinforcement Learning from Human Feedback",
+          "citations": 30,
+          "year": 2025
+        },
+        {
+          "title": "Trojan Activation Attack: Red-Teaming Large Language Models using Steering Vectors for Safety-Alignment",
+          "citations": 25,
+          "year": 2023
+        },
+        {
+          "title": "Challenges in Ensuring AI Safety in DeepSeek-R1 Models: The Shortcomings of Reinforcement Learning Strategies",
+          "citations": 17,
+          "year": 2025
+        }
+      ]
+    },
+    "PCP Theorem Applications to ML": {
+      "count": 30,
+      "top_cited": [
+        {
+          "title": "Research on Zero knowledge with machine learning",
+          "citations": 24,
+          "year": 2024
+        },
+        {
+          "title": "Machine Learning and Zero Knowledge Empowered Trustworthy Bitcoin Mixing for Next-G Consumer Electronics Payment",
+          "citations": 21,
+          "year": 2024
+        },
+        {
+          "title": "Evaluating the Performance of Machine Learning Models in Handwritten Signature Verification",
+          "citations": 10,
+          "year": 2024
+        },
+        {
+          "title": "Spoq: Scaling Machine-Checkable Systems Verification in Coq",
+          "citations": 8,
+          "year": 2023
+        },
+        {
+          "title": "zkPyTorch: A Hierarchical Optimized Compiler for Zero-Knowledge Machine Learning",
+          "citations": 6,
+          "year": 2025
+        }
+      ]
+    }
+  },
+  "year_distribution": {
+    "2025": 141,
+    "2023": 29,
+    "2024": 69,
+    "2020": 5,
+    "2018": 5,
+    "2022": 11,
+    "2026": 38,
+    "2014": 2,
+    "2019": 6,
+    "2021": 4,
+    "2015": 2,
+    "1999": 1,
+    "2001": 1,
+    "2009": 2,
+    "2013": 1,
+    "2016": 2,
+    "2011": 1,
+    "2000": 1,
+    "2017": 1
+  }
+}
