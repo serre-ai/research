@@ -49,7 +49,7 @@ decisions_made:
 key_references: []
 
 git:
-  branch: "research/agent-failure-taxonomy"
+  branch: "main"
   latest_commit: ""
   open_prs: []
 
