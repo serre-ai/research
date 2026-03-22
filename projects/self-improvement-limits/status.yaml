@@ -193,10 +193,19 @@ literature_survey:
     - "Information bottleneck theory and generalization bounds"
     - "Training data quality and filtering in ML systems"
 
-# Experiments (not applicable for pure theory paper, but may need toy examples)
+# Experiments (conducting empirical validation per DW-78)
 experiments:
-  status: not_applicable
-  toy_examples_developed: false
+  status: in_progress
+  spec_created: true
+  spec_file: "experiments/self-training-validation/spec.yaml"
+  canary_run: not_started
+  full_run: not_started
+  tasks:
+    - "gsm8k"  # Grade School Math (moderate gap)
+    - "humaneval"  # Code Generation (small gap)
+    - "writingprompts"  # Creative Writing (large gap)
+  estimated_cost_usd: 101.25
+  max_budget_usd: 150.00
 
 # Key milestones
 milestones:
@@ -323,6 +332,25 @@ decisions_made:
       AlphaZero). This honest assessment prevents premature submission and increases
       acceptance probability.
     agent: Writer
+
+  - date: 2026-03-22
+    decision: "Choose Option A: Conduct actual experiments to validate theory"
+    rationale: |
+      Linear issue DW-78 requested empirical validation, and internal review identified
+      hypothetical experiments as a FATAL issue. Chose Option A (conduct experiments) over
+      Option B (remove Section 5) or Option C (reframe as predictions). Rationale:
+      (1) Empirical validation significantly strengthens paper (expected +2.0 points),
+      (2) Budget estimate $101.25 well within $150 limit and platform monthly budget,
+      (3) Three tasks (GSM8K, HumanEval, WritingPrompts) with different GV-gaps directly
+      test Theorems 1-3 predictions,
+      (4) Using in-context learning instead of fine-tuning keeps costs low while still
+      validating convergence bounds.
+      Key simplification: In-context learning rather than full fine-tuning. This makes
+      experiments more reproducible and cheaper ($100 vs $500), while still testing the
+      core theoretical prediction that self-training converges to verification-bounded
+      fixed points. The mechanism (ICL vs fine-tuning) is less important than the
+      convergence behavior for validating the theory.
+    agent: Experimenter
 
 # Blockers and issues
 blockers:
