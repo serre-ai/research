@@ -56,7 +56,7 @@ export class SessionManager {
     agentType: AgentType = "researcher",
     options?: { maxTurns?: number; maxDurationMs?: number },
   ): Promise<Session> {
-    const branch = `research/${projectName}`;
+    const branch = "main";
     const requestedPath = join(this.rootDir, ".worktrees", projectName);
     const worktreePath = await this.gitEngine.createWorktree(requestedPath, branch);
 
@@ -136,7 +136,7 @@ export class SessionManager {
 
   /** Start a session using a planner-generated brief with specific objectives and constraints. */
   async startProjectWithBrief(brief: SessionBrief): Promise<Session> {
-    const branch = `research/${brief.projectName}`;
+    const branch = "main";
     const requestedPath = join(this.rootDir, ".worktrees", brief.projectName);
     const worktreePath = await this.gitEngine.createWorktree(requestedPath, branch);
 

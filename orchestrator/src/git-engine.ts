@@ -277,17 +277,23 @@ export class GitEngine {
     const newCommits = await this.logBetween("main", "HEAD");
     if (newCommits.length === 0) return null;
 
-    // Skip if PR already open for this branch
-    const openPRs = await this.listOpenPRs(opts.branch);
+    // Create an ephemeral branch for this session's PR
+    const shortId = opts.sessionId.slice(0, 8);
+    const ephemeralBranch = `session/${opts.projectName}/${shortId}`;
+
+    // Skip if PR already open for this ephemeral branch
+    const openPRs = await this.listOpenPRs(ephemeralBranch);
     if (openPRs.length > 0) return null;
 
-    await this.pushSafe(opts.branch);
+    // Rename the current branch to the ephemeral name and push
+    await this.git("checkout", "-b", ephemeralBranch);
+    await this.pushSafe(ephemeralBranch);
 
     const commitList = newCommits.slice(0, 15).map((c) => `- ${c}`).join("\n");
     const durationMin = Math.round(opts.durationMs / 60000);
 
     return this.createPR({
-      title: `research(${opts.projectName}): session ${opts.sessionId.slice(0, 8)}`,
+      title: `research(${opts.projectName}): session ${shortId}`,
       body: [
         `## Session Summary`,
         ``,
@@ -304,7 +310,7 @@ export class GitEngine {
         newCommits.length > 15 ? `\n...and ${newCommits.length - 15} more` : "",
         ``,
         `## Project`,
-        `- **Branch**: \`${opts.branch}\``,
+        `- **Branch**: \`${ephemeralBranch}\``,
         `- **Session**: \`${opts.sessionId}\``,
       ].join("\n"),
     });
@@ -320,7 +326,7 @@ export class GitEngine {
     projectName: string,
     basePath: string = ".worktrees",
   ): Promise<{ worktreePath: string; branch: string; engine: GitEngine }> {
-    const branch = `research/${projectName}`;
+    const branch = "main";
     const requestedPath = join(basePath, projectName);
     const actualPath = await this.createWorktree(requestedPath, branch);
     return {
