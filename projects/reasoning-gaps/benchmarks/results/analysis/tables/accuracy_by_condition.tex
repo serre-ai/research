@@ -1,21 +1,15 @@
-\begin{table}[t]
-\centering
-\caption{Accuracy by task and evaluation condition.}
-\label{tab:accuracy-condition}
-\small
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
- & direct & short\_cot & budget\_cot \\
+ & Direct & Short CoT & Budget CoT & Tool Use \\
 \midrule
-B1: Majority & 0.61 & 0.74 & 0.61 \\
-B2: Bool Eval & 0.61 & 0.86 & 0.85 \\
-B3: Perm Comp & 0.20 & 0.79 & 0.60 \\
-B4: State Track & 0.36 & 0.78 & 0.74 \\
-B5: Graph Reach & 0.67 & 0.82 & 0.64 \\
-B6: LIS & 0.25 & 0.40 & 0.30 \\
-B7: 3-SAT & 0.51 & 0.51 & 0.39 \\
-B8: Reversal & 0.93 & 0.99 & 0.97 \\
-B9: Negation & 0.51 & 0.74 & 0.61 \\
+B1: Majority & 0.61 & 0.74 & 0.61 & -- \\
+B2: Bool Eval & 0.61 & 0.86 & 0.85 & -- \\
+B3: Perm Comp & 0.20 & 0.79 & 0.60 & -- \\
+B4: State Track & 0.36 & 0.78 & 0.74 & -- \\
+B5: Graph Reach & 0.67 & 0.82 & 0.64 & 0.78 \\
+B6: LIS & 0.25 & 0.40 & 0.30 & 0.88 \\
+B7: 3-SAT & 0.51 & 0.51 & 0.39 & -- \\
+B8: Reversal & 0.93 & 0.99 & 0.97 & -- \\
+B9: Negation & 0.51 & 0.74 & 0.61 & -- \\
 \bottomrule
 \end{tabular}
-\end{table}

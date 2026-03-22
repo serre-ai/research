@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-16
+updated: 2026-03-22
 
 phase: submission-prep
 status: in-progress
@@ -24,11 +24,11 @@ progress:
     status: complete
     notes: "12 models evaluated: Haiku 4.5, Sonnet 4.6, Opus 4.6, GPT-4o-mini, GPT-4o, o3, Llama 3.1 8B/70B, Ministral 8B, Mistral Small 24B, Qwen 2.5 7B/72B. 159,162 instances. Opus 4.6 evaluated 2026-03-18 (~$272). Analysis pipeline re-run: 4 tables, 5 figures, 319 CIs. Key: Types 2,3 CoT lift = +0.351 vs Types 5,6 = +0.094. Opus achieves 100% on B3 CoT, 75% on B6 CoT (2x next best)."
   tool_use_eval:
-    status: in-progress
-    notes: "Launched 2026-03-18 on VPS. B5+B6, 3 models (Sonnet, GPT-4o, Haiku), tool_use condition. 6 combos, 3K instances, ~$27. ETA: 2-4h."
+    status: complete
+    notes: "Complete. B5+B6, 3 models (Sonnet, GPT-4o, Haiku), tool_use condition. 6 files, ~3K instances. Results downloaded to local."
   budget_sweep_eval:
-    status: in-progress
-    notes: "Launched 2026-03-18 on VPS. B2+B3, 3 models × 5 multipliers (0.25x-4.0x), budget_cot condition. 30 combos, 3K instances, ~$8. ETA: 4-8h."
+    status: complete
+    notes: "Complete. B2+B3, 3 models × 5 multipliers (0.25x-4.0x), budget_cot condition. 24 files, ~3K instances. Results downloaded to local."
   paper_writing:
     status: in-progress
     notes: "Updated to 12-model data with Opus 4.6. NeurIPS 2026 format. All tables/figures regenerated. B8 reframed as calibration. Real-world mapping section added. Song et al. differentiation strengthened. Opus within-family scaling subsection added. Counts updated: twelve models, 159,162 instances. Pending: tool-use results integration, budget sweep integration, submission polish."

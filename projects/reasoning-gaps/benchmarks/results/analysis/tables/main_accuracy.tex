@@ -1,21 +1,16 @@
-\begin{table}[t]
-\centering
-\caption{Overall accuracy by task and model.}
-\label{tab:main-accuracy}
-\small
+\setlength{\tabcolsep}{2pt}
 \begin{tabular}{lcccccccccccc}
 \toprule
- & claude-haiku-4-5-20251001 & claude-opus-4-6 & claude-sonnet-4-20250514 & gpt-4o & gpt-4o-mini & meta-llama/llama-3.1-70b-instruct & meta-llama/llama-3.1-8b-instruct & mistralai/ministral-8b-2512 & mistralai/mistral-small-24b-instruct-2501 & o3 & qwen/qwen-2.5-72b-instruct & qwen/qwen-2.5-7b-instruct \\
+ & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{Sonnet 4.6} & \rotatebox{70}{Opus 4.6} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{o3} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 7B} & \rotatebox{70}{Qwen 72B} \\
 \midrule
-B1: Majority & 0.63 & 0.70 & 0.68 & 0.78 & 0.72 & 0.68 & 0.55 & 0.72 & 0.72 & 0.13 & \textbf{0.81} & 0.67 \\
-B2: Bool Eval & 0.80 & 0.83 & 0.72 & \textbf{0.88} & 0.83 & 0.84 & 0.67 & 0.81 & 0.80 & 0.50 & 0.84 & 0.74 \\
-B3: Perm Comp & 0.58 & \textbf{0.81} & 0.47 & 0.69 & 0.58 & 0.60 & 0.27 & 0.62 & 0.57 & 0.25 & 0.62 & 0.31 \\
-B4: State Track & 0.71 & \textbf{0.79} & 0.74 & 0.55 & 0.62 & 0.69 & 0.48 & 0.66 & 0.68 & 0.35 & 0.72 & 0.52 \\
-B5: Graph Reach & 0.79 & 0.79 & 0.69 & \textbf{0.84} & 0.79 & 0.70 & 0.51 & 0.78 & 0.65 & 0.46 & 0.83 & 0.66 \\
-B6: LIS & 0.31 & \textbf{0.62} & 0.33 & 0.38 & 0.30 & 0.24 & 0.21 & 0.24 & 0.22 & -- & 0.35 & 0.28 \\
-B7: 3-SAT & 0.37 & 0.56 & 0.41 & \textbf{0.67} & 0.63 & 0.34 & 0.32 & 0.42 & 0.51 & 0.12 & 0.61 & 0.56 \\
-B8: Reversal & 1.00 & \textbf{1.00} & \textbf{1.00} & 0.99 & 0.94 & 1.00 & 0.97 & 0.99 & 0.98 & 0.74 & 0.99 & 0.95 \\
-B9: Negation & 0.73 & \textbf{0.79} & 0.78 & 0.57 & 0.54 & 0.74 & 0.50 & 0.56 & 0.57 & 0.31 & 0.75 & 0.59 \\
+B1: Majority & .63 & .68 & .70 & .72 & .78 & .13 & .55 & .68 & .72 & .72 & .67 & \textbf{.81} \\
+B2: Bool Eval & .80 & .72 & .83 & .83 & .82 & .50 & .67 & \textbf{.84} & .81 & .80 & .74 & .84 \\
+B3: Perm Comp & .41 & .30 & \textbf{.81} & .58 & .53 & .25 & .27 & .60 & .62 & .57 & .31 & .62 \\
+B4: State Track & .71 & .74 & \textbf{.79} & .62 & .55 & .35 & .48 & .69 & .66 & .68 & .52 & .72 \\
+B5: Graph Reach & .79 & .72 & .79 & .79 & .83 & .46 & .51 & .70 & .78 & .65 & .66 & \textbf{.83} \\
+B6: LIS & .48 & .50 & \textbf{.62} & .30 & .37 & -- & .21 & .24 & .24 & .22 & .28 & .35 \\
+B7: 3-SAT & .37 & .41 & .56 & .63 & \textbf{.67} & .12 & .32 & .34 & .42 & .51 & .56 & .61 \\
+B8: Reversal & 1.00 & \textbf{1.00} & \textbf{1.00} & .94 & .99 & .74 & .97 & 1.00 & .99 & .98 & .95 & .99 \\
+B9: Negation & .73 & .78 & \textbf{.79} & .54 & .57 & .31 & .50 & .74 & .56 & .57 & .59 & .75 \\
 \bottomrule
 \end{tabular}
-\end{table}

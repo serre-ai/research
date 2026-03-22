@@ -1,18 +1,12 @@
-\begin{table}[t]
-\centering
-\caption{CoT lift (accuracy improvement over direct) by gap type.}
-\label{tab:cot-lift}
-\small
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \toprule
- & short\_cot & budget\_cot \\
+ & Short CoT & Budget CoT & Tool Use \\
 \midrule
-Type 1: Sensitivity & 0.132 & 0.001 \\
-Type 2: Depth & 0.199 & 0.109 \\
-Type 3: Serial & 0.502 & 0.390 \\
-Type 4: Algorithmic & 0.148 & 0.043 \\
-Type 5: Intractability & 0.003 & -0.120 \\
-Type 6: Architectural & 0.144 & 0.068 \\
+Type 1: Sensitivity & +0.132 & +0.001 & -- \\
+Type 2: Depth & +0.199 & +0.109 & +0.144 \\
+Type 3: Serial & +0.502 & +0.390 & -- \\
+Type 4: Algorithmic & +0.148 & +0.043 & +0.626 \\
+Type 5: Intractability & +0.003 & -0.120 & -- \\
+Type 6: Architectural & +0.144 & +0.068 & -- \\
 \bottomrule
 \end{tabular}
-\end{table}
