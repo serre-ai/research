@@ -57,8 +57,9 @@ ssh deepwork-vps-root "systemctl restart deepwork-daemon"
 ### Git
 - **Conventional commits**: `type(scope): description`
 - Types: `paper`, `research`, `code`, `data`, `feat`, `fix`, `docs`, `chore`
-- Branch naming: `research/<project>`, `paper/<project>/<version>`, `feature/<desc>`
-- All merges to `main` via PR
+- All work happens on `main`. See `docs/GIT-WORKFLOW.md` for the full workflow.
+- Agent worktree branches are ephemeral — created and deleted within a single session.
+- No long-lived feature branches.
 - **No co-authored-by trailers** — keep commits clean
 - Commit frequently, push after every commit
 - Create PRs to `main` at milestones

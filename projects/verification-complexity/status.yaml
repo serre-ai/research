@@ -163,7 +163,7 @@ key_references:
   - "Eldridge et al. 2004 — Design effects in cluster surveys, IJQHC"
 
 git:
-  branch: "research/verification-complexity"
+  branch: "main"
   latest_commit: ""
   open_prs: []
 
