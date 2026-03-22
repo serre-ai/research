@@ -23,6 +23,7 @@ import { LiteratureScanner } from "./literature-scanner.js";
 import { LiteratureMonitor } from "./literature-monitor.js";
 import { ArxivClient } from "./arxiv.js";
 import { SemanticScholarClient } from "./semantic-scholar.js";
+import { LinearClient } from "./linear.js";
 
 /** Agent sequences for multi-step phases. After one agent finishes, the next in the sequence runs. */
 const PHASE_SEQUENCES: Record<string, string[]> = {
@@ -127,6 +128,7 @@ export class Daemon {
   private verifier: ClaimVerifier | null = null;
   private literatureScanner: LiteratureScanner | null = null;
   private literatureMonitor: LiteratureMonitor | null = null;
+  private linearClient: LinearClient | null = null;
   private lastMaintenanceAt = 0;
   private lastLiteratureScanAt = 0;
 
@@ -191,6 +193,15 @@ export class Daemon {
       );
     }
 
+    // Linear integration
+    if (process.env.LINEAR_API_KEY && process.env.LINEAR_TEAM_ID) {
+      this.linearClient = new LinearClient(
+        process.env.LINEAR_API_KEY,
+        process.env.LINEAR_TEAM_ID,
+      );
+      console.log("Linear integration enabled");
+    }
+
     // Research planner (feature flag: USE_RESEARCH_PLANNER=1)
     if (process.env.USE_RESEARCH_PLANNER === "1") {
       this.planner = new ResearchPlanner(
@@ -199,6 +210,7 @@ export class Daemon {
         this.knowledgeGraph,
         this.budgetTracker,
         this.backlogManager,
+        this.linearClient,
       );
       console.log("Research planner enabled");
     }
@@ -246,6 +258,10 @@ export class Daemon {
 
   getVerifier(): ClaimVerifier | null {
     return this.verifier;
+  }
+
+  getLinearClient(): LinearClient | null {
+    return this.linearClient;
   }
 
   /**
@@ -550,6 +566,16 @@ export class Daemon {
 
         console.log("Planner: launching " + brief.agentType + " for " + brief.projectName + " (strategy: " + brief.strategy + ", pri=" + brief.priority + ")");
         console.log("  Objective: " + brief.objective.slice(0, 120));
+
+        // Transition Linear issue to "In Progress" when starting
+        if (brief.strategy === "linear_driven" && this.linearClient && brief.context.supplementary) {
+          const issueIdMatch = brief.context.supplementary.match(/Linear issue ID: ([a-f0-9-]+)/);
+          if (issueIdMatch) {
+            this.linearClient.transitionIssue(issueIdMatch[1], "In Progress").catch((err) => {
+              console.error(`[Linear] Failed to transition issue to In Progress:`, err);
+            });
+          }
+        }
 
         await this.logger.log({
           type: "session_start",
@@ -986,6 +1012,44 @@ export class Daemon {
             commits: session.result.commitsCreated.length,
           },
         });
+      }
+
+      // Linear issue update (if linear_driven)
+      if (brief.strategy === "linear_driven" && this.linearClient && brief.context.supplementary) {
+        const issueIdMatch = brief.context.supplementary.match(/Linear issue ID: ([a-f0-9-]+)/);
+        if (issueIdMatch) {
+          const linearIssueId = issueIdMatch[1];
+          const commitCount = session.result?.commitsCreated.length ?? 0;
+          const cost = session.result?.costUsd?.toFixed(2) ?? "0.00";
+          const duration = session.result?.durationMs
+            ? Math.round(session.result.durationMs / 60000) + "min"
+            : "unknown";
+
+          try {
+            // Transition to Done if session completed successfully with commits
+            const targetState = commitCount > 0 ? "Done" : "In Review";
+            await this.linearClient.transitionIssue(linearIssueId, targetState);
+
+            // Add comment with session summary
+            const comment = [
+              `**Session completed** (${brief.agentType})`,
+              "",
+              `- Quality: ${quality.score}/100`,
+              `- Commits: ${commitCount}`,
+              `- Cost: $${cost}`,
+              `- Duration: ${duration}`,
+              commitCount > 0
+                ? `- Commits: ${session.result?.commitsCreated.map((c) => `\`${c.slice(0, 7)}\``).join(", ")}`
+                : "",
+              "",
+              `State → **${targetState}**`,
+            ].filter(Boolean).join("\n");
+
+            await this.linearClient.addComment(linearIssueId, comment);
+          } catch (err) {
+            console.error(`[Linear] Failed to update issue ${linearIssueId}:`, err);
+          }
+        }
       }
 
       // Notification

@@ -6,6 +6,7 @@ import type { BudgetTracker } from "./budget-tracker.js";
 import type { BacklogManager } from "./backlog.js";
 import { type AgentType, PHASE_TO_AGENT, type SessionResult } from "./session-runner.js";
 import type { SessionSignals } from "./session-manager.js";
+import { LinearClient } from "./linear.js";
 
 // ============================================================
 // Types
@@ -18,7 +19,8 @@ export type PlanningStrategy =
   | "deadline_driven"
   | "quality_improvement"
   | "collective_action"
-  | "literature_driven";
+  | "literature_driven"
+  | "linear_driven";
 
 export interface SessionBrief {
   id: string;
@@ -98,6 +100,7 @@ const DEFAULT_STRATEGY_WEIGHTS: Record<PlanningStrategy, number> = {
   "risk_mitigation": 1.5,
   "contradiction_resolution": 1.4,
   "deadline_driven": 1.3,
+  "linear_driven": 1.2,
   "literature_driven": 1.2,
   "collective_action": 1.1,
   "gap_filling": 1.0,
@@ -120,6 +123,7 @@ export class ResearchPlanner {
   private kg: KnowledgeGraph | null;
   private budgetTracker: BudgetTracker;
   private backlogManager: BacklogManager | null;
+  private linearClient: LinearClient | null;
   private strategyWeights: Map<PlanningStrategy, number>;
   private evaluationHistory: SessionEvaluation[] = [];
   private lastPlanCycleAt: string | null = null;
@@ -131,12 +135,14 @@ export class ResearchPlanner {
     kg: KnowledgeGraph | null,
     budgetTracker: BudgetTracker,
     backlogManager?: BacklogManager | null,
+    linearClient?: LinearClient | null,
   ) {
     this.pool = pool;
     this.projectManager = projectManager;
     this.kg = kg;
     this.budgetTracker = budgetTracker;
     this.backlogManager = backlogManager ?? null;
+    this.linearClient = linearClient ?? null;
     this.strategyWeights = new Map(
       Object.entries(DEFAULT_STRATEGY_WEIGHTS) as [PlanningStrategy, number][],
     );
@@ -237,6 +243,19 @@ export class ResearchPlanner {
         } catch (err) {
           console.error(`Planner: failed to plan for ${project.project}:`, err);
         }
+      }
+    }
+
+    // Linear-driven briefs (human-created issues from Linear)
+    if (this.linearClient) {
+      try {
+        const linearBriefs = await this.linearDrivenBriefs(budgetStatus.dailyRemaining);
+        if (linearBriefs.length > 0) {
+          console.log("  Planner: " + linearBriefs.length + " Linear-driven brief(s)");
+        }
+        candidates.push(...linearBriefs);
+      } catch (err) {
+        console.error("Planner: Linear-driven planning failed:", err);
       }
     }
 
@@ -629,6 +648,59 @@ export class ResearchPlanner {
       }];
     } catch (err) {
       console.error(`Planner: literature strategy failed for ${project.project}:`, err);
+      return [];
+    }
+  }
+
+  // --------------------------------------------------------
+  // Strategy: Linear-driven (human-created issues from Linear)
+  // --------------------------------------------------------
+
+  private async linearDrivenBriefs(budgetUsd: number): Promise<SessionBrief[]> {
+    if (!this.linearClient) return [];
+
+    try {
+      const todoIssues = await this.linearClient.getTodoIssues();
+      if (todoIssues.length === 0) return [];
+
+      const briefs: SessionBrief[] = [];
+
+      for (const issue of todoIssues) {
+        // Map Linear project to DW project
+        const dwProject = issue.project
+          ? LinearClient.projectNameToDW(issue.project.name)
+          : null;
+        if (!dwProject) continue;
+
+        const mapped = this.linearClient.issueToBrief(issue, dwProject);
+
+        briefs.push({
+          id: randomUUID().slice(0, 8),
+          projectName: mapped.projectName,
+          agentType: mapped.agentType as AgentType,
+          objective: mapped.objective,
+          context: {
+            claims: [],
+            contradictions: [],
+            files: dwProject === "_platform"
+              ? ["orchestrator/src/"]
+              : [`projects/${dwProject}/status.yaml`, `projects/${dwProject}/BRIEF.md`],
+            recentDecisions: [],
+            supplementary: `Linear issue: ${mapped.linearIdentifier} (${issue.url})\nLinear issue ID: ${mapped.linearIssueId}`,
+          },
+          constraints: this.buildConstraints(mapped.agentType as AgentType, budgetUsd),
+          deliverables: [
+            { description: issue.title, type: "commit", verificationMethod: "commit_count" },
+          ],
+          priority: mapped.priority,
+          reasoning: `Human-created Linear issue ${mapped.linearIdentifier}: "${issue.title}" (priority ${issue.priority}).`,
+          strategy: "linear_driven",
+        });
+      }
+
+      return briefs;
+    } catch (err) {
+      console.error("Planner: Linear query failed:", err);
       return [];
     }
   }

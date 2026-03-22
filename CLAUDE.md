@@ -86,6 +86,23 @@ This is an npm workspace. Root `package.json` lists `orchestrator`, `cli`, `site
 - Update `status.yaml` after significant progress
 - Make decisions autonomously and log them in `status.yaml`
 
+### Destructive & External Operations — MANDATORY RULES
+**NEVER perform destructive or state-changing operations on external services without explicit user confirmation.** This includes but is not limited to:
+- Archiving, deleting, or modifying issues/projects/cycles in Linear, GitHub, or any other external tool
+- Sending messages to Slack, email, or any communication platform
+- Modifying DNS records, server configurations, or cloud resources
+- Dropping or altering database tables on production/VPS
+
+**Even if a plan says to do it, STOP and ask first.** Plans are proposals, not authorization. The user must explicitly approve each destructive action before execution.
+
+This applies to ALL teams, workspaces, and accounts — not just DeepWork. Never assume data in external services is "debris" or safe to delete.
+
+### Linear Workspace
+- The Linear workspace contains multiple teams. **Only operate on the DW (DeepWork) team** unless explicitly told otherwise.
+- The **EV team is a separate project** — never archive, delete, or modify EV issues, projects, or cycles.
+- DW Team ID: `77e7bcae-30d7-4257-b043-6f0b004abc65`
+- EV Team ID: `8513b969-e338-4196-97f9-1a15bcaf9962` — **DO NOT TOUCH**
+
 ### Decision Protocol
 All decisions are made autonomously by Claude. No human escalation required.
 
