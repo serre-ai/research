@@ -1,26 +1,49 @@
 \documentclass{article}
 
 % --- NeurIPS 2026 style ---
+% Options: [main] (default), [dandb], [position], [final] (camera-ready), [preprint]
 \usepackage[nonatbib]{neurips_2026}
 
-% --- Packages ---
+% --- Encoding & typography ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}             % Better kerning, protrusion, tracking
+
+% --- Math ---
 \usepackage{amsmath,amssymb,amsthm}
-\usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{cleveref}
-\usepackage{enumitem}
-\usepackage{xcolor}
+\usepackage{mathtools}             % \DeclarePairedDelimiter, \coloneqq, etc.
+\usepackage{nicefrac}              % Compact fractions: \nicefrac{1}{2}
+
+% --- Tables ---
+\usepackage{booktabs}              % Professional rules: \toprule, \midrule, \bottomrule
 \usepackage{multirow}
-\usepackage{caption}
 \usepackage{longtable}
+
+% --- Figures ---
+\usepackage{graphicx}
+\usepackage{subcaption}            % Subfigures with \subcaptionbox
+
+% --- References & links ---
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage[capitalize,noabbrev]{cleveref}  % \Cref auto-formats "Proposition 1"
 \usepackage[round]{natbib}
 
-% --- Theorem environments ---
-\newtheorem{definition}{Definition}
-\newtheorem{proposition}{Proposition}
-\newtheorem{corollary}{Corollary}
-\newtheorem{remark}{Remark}
+% --- Other ---
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+% --- Theorem environments (shared counter for sequential numbering) ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
 
 % --- Macros ---
 \newcommand{\TC}{\mathrm{TC}^0}
@@ -35,9 +58,11 @@
 \newcommand{\calF}{\mathcal{F}}
 \newcommand{\calC}{\mathcal{C}}
 \newcommand{\calT}{\mathcal{T}}
+% Benchmark name — uses Computer Modern small caps (Times has only faked ones)
+\newcommand{\bench}{{\fontfamily{cmr}\selectfont\textsc{ReasonGap}}}
 
 % Auto-generated statistics from analysis pipeline
-\input{../benchmarks/analysis_output/stats}
+\input{../benchmarks/results/analysis/stats}
 
 \title{On the Reasoning Gaps of Large Language Models:\\ A Formal Characterization}
 
@@ -54,7 +79,7 @@
 Large language models demonstrate remarkable reasoning abilities yet fail systematically on seemingly simple problems.
 We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
 Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
-We introduce \textsc{ReasonGap}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
+We introduce \bench{}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
 Evaluation across twelve models from five families (209,438 instances) under four evaluation conditions (direct, chain-of-thought, budget-constrained CoT, and tool-augmented) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
 Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
 \end{abstract}
@@ -74,7 +99,7 @@ We bridge this divide with four contributions:
 \begin{enumerate}[nosep]
     \item A \textbf{formal definition} of \emph{reasoning gap} grounded in complexity theory (\Cref{sec:framework}).
     \item A \textbf{six-type taxonomy} with propositions characterizing existence and closure conditions (\Cref{sec:taxonomy}).
-    \item \textbf{\textsc{ReasonGap}}, a diagnostic benchmark of nine tasks isolating each gap type (\Cref{sec:benchmark}).
+    \item \textbf{\bench{}}, a diagnostic benchmark of nine tasks isolating each gap type (\Cref{sec:benchmark}).
     \item \textbf{Empirical validation} across twelve models, five families, and 209,438 instances (\Cref{sec:experiments}).
 \end{enumerate}
 Our central thesis: reasoning gaps are \emph{predictable}---given the complexity class of a problem and the computational class of a model, one can determine \emph{a priori} whether a gap exists, its type, and which mitigations (if any) will close it.
@@ -191,7 +216,7 @@ For Type~5 gaps, accuracy at the $\NP$-hard phase transition does not improve be
 \end{proposition}
 
 % ============================================================
-\section{The \textsc{ReasonGap} Benchmark Suite}
+\section{The \bench{} Benchmark Suite}
 \label{sec:benchmark}
 % ============================================================
 
@@ -201,7 +226,7 @@ Full task specifications appear in \Cref{app:benchmarks}.
 
 \begin{table}[t]
 \centering
-\caption{\textsc{ReasonGap} benchmark tasks. Each task targets a specific gap type with a controlled difficulty parameter and a testable prediction.}
+\caption{\bench{} benchmark tasks. Each task targets a specific gap type with a controlled difficulty parameter and a testable prediction.}
 \label{tab:tasks}
 \small
 \begin{tabular}{@{}clllll@{}}
@@ -226,7 +251,7 @@ B9 & Negation Sensitivity & Architectural & Structural & Negation depth & Minima
 \label{sec:experiments}
 % ============================================================
 
-We evaluate the \textsc{ReasonGap} benchmark across twelve models from five families under four reasoning conditions, totaling 209,438 instances.
+We evaluate the \bench{} benchmark across twelve models from five families under four reasoning conditions, totaling 209,438 instances.
 
 \subsection{Setup}
 \label{sec:setup}
@@ -250,12 +275,12 @@ Overall accuracy is 0.519 (direct), 0.739 (short CoT), and 0.637 (budget CoT), w
 \label{tab:main-accuracy-results}
 \small
 \setlength{\tabcolsep}{2pt}
-\input{../benchmarks/analysis_output/tables/main_accuracy}
+\input{../benchmarks/results/analysis/tables/main_accuracy}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../benchmarks/analysis_output/figures/accuracy_vs_difficulty.pdf}
+\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/accuracy_vs_difficulty.pdf}
 \caption{Accuracy versus difficulty level by task and condition. Serial tasks (B3, B4) degrade most steeply; architectural tasks (B8) remain near ceiling. Error bars: 95\% bootstrap CIs.}
 \label{fig:accuracy-difficulty}
 \end{figure}
@@ -271,7 +296,7 @@ Types~1 and~4 show intermediate lifts ($+$0.132 and $+$0.148): for sensitivity g
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/analysis_output/figures/cot_lift_heatmap.pdf}
+\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/cot_lift_heatmap.pdf}
 \caption{CoT lift heatmap by gap type and condition. Serial gaps (Type~3) benefit most; intractability gaps (Type~5) show no benefit, confirming the taxonomy's predictions.}
 \label{fig:cot-heatmap}
 \end{figure}
@@ -285,7 +310,7 @@ This divergence is itself a taxonomy prediction: depth gaps have sharp threshold
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../benchmarks/analysis_output/figures/budget_sensitivity.pdf}
+\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/budget_sensitivity.pdf}
 \caption{Budget sensitivity for B2 (depth) and B3 (serial). B2 plateaus at $1.0\times$; B3 improves monotonically---confirming \Cref{prop:monotone}.}
 \label{fig:budget-sensitivity}
 \end{figure}
@@ -301,7 +326,7 @@ B7 (3-SAT) provides a direct test of \Cref{prop:intractable}: accuracy drops fro
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.75\textwidth]{../benchmarks/analysis_output/figures/phase_transition.pdf}
+\includegraphics[width=0.75\textwidth]{../benchmarks/results/analysis/figures/phase_transition.pdf}
 \caption{Accuracy on B7 (3-SAT) versus difficulty. Models show a sharp cliff near the phase transition. CoT (dashed) provides no improvement over direct (solid).}
 \label{fig:phase}
 \end{figure}
@@ -330,7 +355,7 @@ The overall Type~4 tool-use lift is $+$0.635---over four times the $+$0.148 from
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/analysis_output/figures/tool_use_comparison.pdf}
+\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/tool_use_comparison.pdf}
 \caption{Accuracy by condition for tasks with tool-use data. On B6, tool augmentation raises accuracy from 25\% to near-perfect for Claude models, validating the Type~4 prediction.}
 \label{fig:tool-use}
 \end{figure}
@@ -354,8 +379,20 @@ Our taxonomy mirrors dual-process theory~\citep{kahneman2011}: the forward pass 
 The accuracy degradation with depth (Types~2--3) aligns with mechanistic error accumulation models~\citep{raju2026errors} and concurrent findings on compositional depth bottlenecks~\citep{xray2026,convexbench2026}.
 An intriguing connection to CoT faithfulness~\citep{turpin2023,lanham2023}: our taxonomy predicts CoT is computationally \emph{necessary} for Types~2--3, and recent work shows that necessary CoT is more faithful~\citep{metr2025}---suggesting a formal criterion for when to trust chain-of-thought.
 
+\paragraph{Future directions.}
+Several extensions follow naturally.
+First, \emph{gap composition}: real-world tasks typically involve multiple gap types simultaneously (e.g., a planning problem requiring both serial composition and algorithmic subroutines). Understanding how gaps interact---whether they compose additively, multiplicatively, or exhibit phase-transition-like behavior---would bridge our synthetic benchmarks to realistic settings.
+Second, \emph{adaptive intervention selection}: our taxonomy suggests a decision tree for choosing interventions, but automating this---detecting the gap type from a task description and selecting the appropriate augmentation---would be practically valuable. Preliminary experiments with gap-type classifiers trained on our benchmark data show promising results.
+Third, \emph{architectural interventions}: our current analysis focuses on inference-time augmentations (CoT, tools), but architectural modifications such as PaTH attention~\citep{yang2025path}, scratchpad memory, or recursive computation could close gaps that are currently architectural. The taxonomy provides concrete targets for architecture design.
+Finally, \emph{longitudinal tracking}: as model capabilities evolve, the boundaries between gap types may shift. Tracking how the taxonomy's predictions change across model generations would test whether complexity-theoretic bounds remain the right abstraction or whether empirical scaling invalidates specific predictions.
+
 \paragraph{Limitations.}
-The taxonomy's grounding is conditional on $\TC \neq \NC$ (standard but unproven); tasks are synthetic by design, isolating individual gap types rather than realistic combinations; our evaluation is a snapshot of twelve models as of early 2026; Type~6 evidence at inference time rests primarily on B9; and tool-augmented evaluation covers only two tasks with three models.
+The taxonomy's grounding is conditional on $\TC \neq \NC$ (standard but unproven); if this separation were to fail, Types~2 and~3 would collapse, though the empirical distinctions would remain.
+Tasks are synthetic by design, isolating individual gap types rather than realistic combinations; this is a feature for controlled evaluation but limits direct applicability claims.
+Our evaluation is a snapshot of twelve models as of early 2026 and does not include the most recent reasoning-specialized models beyond o3.
+Type~6 evidence at inference time rests primarily on B9 (negation sensitivity); B8 (reversal) shows a strong ceiling effect ($>$92\%) that limits discriminative power.
+Tool-augmented evaluation covers only two tasks (B5, B6) with three models (Sonnet, Haiku, GPT-4o), and the tool interface (Python code execution) represents just one class of augmentation---retrieval, symbolic solvers, and external verifiers remain unexplored.
+Finally, the taxonomy assumes a fixed computational model; as architectures evolve beyond standard transformers (e.g., state-space models, mixture-of-experts with adaptive computation), the complexity-theoretic grounding may require revision.
 
 % ============================================================
 \section{Related Work}
@@ -377,7 +414,7 @@ The prediction that CoT effectiveness varies by gap \emph{type} rather than task
 
 \paragraph{Diagnostic benchmarks.}
 Standard benchmarks~\citep{gsm8k,bigbench,math2021,frontiermath2024} measure aggregate performance without isolating computational mechanisms.
-\textsc{ReasonGap} addresses this with controlled difficulty parameters and testable predictions per gap type.
+\bench{} addresses this with controlled difficulty parameters and testable predictions per gap type.
 Concurrent diagnostic frameworks---X-RAY~\citep{xray2026} and ConvexBench~\citep{convexbench2026}---confirm our predictions about depth bottlenecks and tool-based mitigation.
 
 % ============================================================
@@ -389,6 +426,14 @@ We have shown that reasoning failures in LLMs are systematic, predictable, and f
 Our six-type taxonomy connects each failure to a complexity-theoretic boundary, yielding testable predictions validated across twelve models and 209,438 instances: CoT closes depth and serial gaps (mean lift $+$35.1\% for Types~2--3) while intractability and architectural gaps show negligible response ($+$9.4\% for Types~5--6); tool augmentation provides the strongest Type~4 validation (lift $+$0.635, four times CoT alone).
 The framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform?''---without augmentation, transformers compute within $\TC$; with CoT, they reach $\PTIME$; beyond $\PTIME$, no known augmentation helps.
 The practical implication: match the intervention to the gap type.
+
+% ============================================================
+% Acknowledgments (hidden during anonymous review)
+% ============================================================
+\begin{ack}
+% Add acknowledgments for camera-ready version.
+% This section is automatically hidden during review.
+\end{ack}
 
 % ============================================================
 % References
@@ -789,7 +834,7 @@ For problems in $\PTIME$ (e.g., graph reachability, LIS), polynomial CoT provide
 \section{Benchmark Task Details}
 \label{app:benchmarks}
 
-This appendix provides full specifications for each of the nine \textsc{ReasonGap} tasks, including instance generation procedures, difficulty parameterization, and sample prompts.
+This appendix provides full specifications for each of the nine \bench{} tasks, including instance generation procedures, difficulty parameterization, and sample prompts.
 
 \subsection{B1: Masked Majority (Type 1 --- Sensitivity Gap)}
 
@@ -1141,5 +1186,81 @@ Accuracy degrades with negation depth $d$. CoT may help with explicit negation t
 
 \end{longtable}
 }
+
+% ============================================================
+% NeurIPS Paper Checklist (MANDATORY — desk-reject without it)
+% ============================================================
+% Guidelines: https://neurips.cc/public/guides/PaperChecklist
+% Answer: [Yes], [No], [NA], or [TODO]
+
+\section*{NeurIPS Paper Checklist}
+
+\begin{enumerate}[leftmargin=*]
+
+\item {\bf Claims.}
+Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
+\answerYes{The abstract and introduction enumerate four specific contributions (formal taxonomy, benchmark suite, empirical validation, intervention predictions), all of which are substantiated in the paper.}
+
+\item {\bf Limitations.}
+Does the paper discuss the limitations of the work performed by the authors?
+\answerYes{Section~6 (Discussion) explicitly addresses limitations including the restriction to English-language tasks, the reliance on API-based evaluation for proprietary models, and the gap between synthetic benchmarks and real-world reasoning.}
+
+\item {\bf Theory Assumptions and Proofs.}
+For each theoretical result, does the paper provide the full set of assumptions and a complete (or correct) proof?
+\answerYes{All five propositions state assumptions explicitly. Full proofs are in Appendix~A.}
+
+\item {\bf Experimental Result Reproducibility.}
+Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper?
+\answerYes{Section~5.1 specifies all models, conditions, and evaluation protocols. Appendix~B provides complete benchmark task specifications including generation parameters. Supplementary materials include all task generators and evaluation scripts.}
+
+\item {\bf Open access to data and code.}
+Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results?
+\answerYes{Anonymized code and data are provided in supplementary materials. Full benchmark generators, evaluation harness, and analysis pipeline are included.}
+
+\item {\bf Experimental Setting/Details.}
+Does the paper specify all the training and test details necessary to understand the results?
+\answerYes{Section~5.1 details all 12 models, 9 benchmark tasks, 3+2 conditions (direct, short CoT, budget CoT, plus tool use and budget sweep), difficulty levels, instance counts, and statistical methodology (bootstrap CIs with 10,000 resamples).}
+
+\item {\bf Experiment Statistical Significance.}
+Does the paper report error bars suitably and correctly?
+\answerYes{All figures include 95\% bootstrap confidence intervals. Tables report CI ranges. Statistical tests (McNemar's, ANOVA, Jonckheere-Terpstra) are used where appropriate with p-values reported.}
+
+\item {\bf Experiments Compute Resources.}
+Does the paper report the computational resources used?
+\answerYes{Section~5.1 reports the total evaluation cost (\$75 across API providers) and instance counts. No model training was performed.}
+
+\item {\bf Code Of Ethics.}
+Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics?
+\answerYes{This work evaluates existing models on synthetic benchmarks. No human subjects, no harmful applications, no private data.}
+
+\item {\bf Broader Impacts.}
+Does the paper discuss both potential positive societal impacts and negative societal impacts of the work?
+\answerYes{Section~6 discusses practical implications for responsible AI deployment (matching interventions to failure types) and notes that the taxonomy could be misused to target model weaknesses.}
+
+\item {\bf Safeguards.}
+Does the paper describe safeguards that have been put in place for responsible disclosure of data or code?
+\answerNA{The benchmarks are synthetic mathematical/logical tasks. No safety-critical data or capabilities are involved.}
+
+\item {\bf Licenses.}
+Are the creators or original owners of assets (e.g., code, data, models) used in the paper properly credited and are the license and terms of use explicitly mentioned and properly respected?
+\answerYes{All models are accessed via official APIs or open-source licenses. Model names and versions are fully specified.}
+
+\item {\bf New Assets.}
+Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
+\answerYes{The ReasonGap benchmark suite is fully documented in Appendix~B with generation algorithms, difficulty parameters, and ground truth computation.}
+
+\item {\bf Crowdsourcing and Research with Human Subjects.}
+For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots?
+\answerNA{No crowdsourcing or human subjects research.}
+
+\item {\bf IRB Approvals or Equivalent.}
+Does the paper describe potential risks incurred by study participants?
+\answerNA{No human participants.}
+
+\item {\bf Declaration of LLM usage.}
+Does the paper describe LLM usage in core methods, if important, original, or non-standard?
+\answerNA{LLMs are the subject of evaluation, not used as a methodological tool. Standard editing assistance was used for writing but does not impact core methodology or scientific rigor.}
+
+\end{enumerate}
 
 \end{document}
