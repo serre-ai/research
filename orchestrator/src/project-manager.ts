@@ -104,7 +104,7 @@ export class ProjectManager {
       next_steps: ["Survey existing literature", "Identify research gap", "Draft methodology"],
       decisions_pending: [],
       git: {
-        branch: `research/${config.name}`,
+        branch: "main",
         latest_commit: "",
         open_prs: [],
       },
