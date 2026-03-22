@@ -2,10 +2,10 @@
 
 ## Dataset Overview
 
-- **Instances**: 159,162
+- **Instances**: 176,477
 - **Tasks**: 9
 - **Models**: 12
-- **Conditions**: 3
+- **Conditions**: 4 (direct, short_cot, budget_cot, tool_use)
 - **Models evaluated**: claude-haiku-4-5-20251001, claude-opus-4-6, claude-sonnet-4-20250514, gpt-4o, gpt-4o-mini, meta-llama/llama-3.1-70b-instruct, meta-llama/llama-3.1-8b-instruct, mistralai/ministral-8b-2512, mistralai/mistral-small-24b-instruct-2501, o3, qwen/qwen-2.5-72b-instruct, qwen/qwen-2.5-7b-instruct
 
 ## Overall Accuracy by Condition

@@ -80,7 +80,7 @@ Large language models demonstrate remarkable reasoning abilities yet fail system
 We show these failures are not random but correspond to \emph{reasoning gaps}---problem classes that fall outside the computational boundary of the model's architecture.
 Building on transformer expressiveness results that place fixed-depth log-precision transformers within $\TC$ (constant-depth threshold circuits), we develop a six-type taxonomy of reasoning gaps, each grounded in a specific complexity-theoretic boundary: \emph{sensitivity} ($\AC$), \emph{depth} ($\TC/\NC$), \emph{serial composition} (linear depth), \emph{algorithmic} ($\PTIME$), \emph{intractability} ($\NP$), and \emph{architectural} (autoregressive constraints).
 We introduce \bench{}, a diagnostic benchmark suite of nine tasks designed to isolate each gap type, with testable predictions about when chain-of-thought reasoning, model scaling, and tool augmentation should close or fail to close each gap.
-Evaluation across twelve models from five families (209,438 instances) under four evaluation conditions (direct, chain-of-thought, budget-constrained CoT, and tool-augmented) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
+Evaluation across twelve models from five families (\statTotalInstances{} instances) under four evaluation conditions (direct, chain-of-thought, budget-constrained CoT, and tool-augmented) validates the taxonomy: chain-of-thought closes depth and serial gaps as predicted by complexity theory, tool use dominates for algorithmic gaps, and architectural gaps persist regardless of intervention.
 Our framework provides both explanatory power for why models fail and practical guidance for which mitigation strategies to apply.
 \end{abstract}
 
@@ -100,7 +100,7 @@ We bridge this divide with four contributions:
     \item A \textbf{formal definition} of \emph{reasoning gap} grounded in complexity theory (\Cref{sec:framework}).
     \item A \textbf{six-type taxonomy} with propositions characterizing existence and closure conditions (\Cref{sec:taxonomy}).
     \item \textbf{\bench{}}, a diagnostic benchmark of nine tasks isolating each gap type (\Cref{sec:benchmark}).
-    \item \textbf{Empirical validation} across twelve models, five families, and 209,438 instances (\Cref{sec:experiments}).
+    \item \textbf{Empirical validation} across twelve models, five families, and \statTotalInstances{} instances (\Cref{sec:experiments}).
 \end{enumerate}
 Our central thesis: reasoning gaps are \emph{predictable}---given the complexity class of a problem and the computational class of a model, one can determine \emph{a priori} whether a gap exists, its type, and which mitigations (if any) will close it.
 
@@ -251,7 +251,7 @@ B9 & Negation Sensitivity & Architectural & Structural & Negation depth & Minima
 \label{sec:experiments}
 % ============================================================
 
-We evaluate the \bench{} benchmark across twelve models from five families under four reasoning conditions, totaling 209,438 instances.
+We evaluate the \bench{} benchmark across twelve models from five families under four reasoning conditions, totaling \statTotalInstances{} instances.
 
 \subsection{Setup}
 \label{sec:setup}
@@ -423,7 +423,7 @@ Concurrent diagnostic frameworks---X-RAY~\citep{xray2026} and ConvexBench~\citep
 % ============================================================
 
 We have shown that reasoning failures in LLMs are systematic, predictable, and formally characterizable.
-Our six-type taxonomy connects each failure to a complexity-theoretic boundary, yielding testable predictions validated across twelve models and 209,438 instances: CoT closes depth and serial gaps (mean lift $+$35.1\% for Types~2--3) while intractability and architectural gaps show negligible response ($+$9.4\% for Types~5--6); tool augmentation provides the strongest Type~4 validation (lift $+$0.635, four times CoT alone).
+Our six-type taxonomy connects each failure to a complexity-theoretic boundary, yielding testable predictions validated across twelve models and \statTotalInstances{} instances: CoT closes depth and serial gaps (mean lift $+$35.1\% for Types~2--3) while intractability and architectural gaps show negligible response ($+$9.4\% for Types~5--6); tool augmentation provides the strongest Type~4 validation (lift $+$0.635, four times CoT alone).
 The framework reframes the question from ``can LLMs reason?'' to ``what \emph{class} of reasoning can a given model perform?''---without augmentation, transformers compute within $\TC$; with CoT, they reach $\PTIME$; beyond $\PTIME$, no known augmentation helps.
 The practical implication: match the intervention to the gap type.
 
