@@ -15,6 +15,7 @@ export interface SessionSignals {
   experimentSpecCreated?: boolean;
   experimentSpecPath?: string;
   experimentSpecApproved?: boolean;
+  experimentSpecRevisionRequested?: boolean;
 }
 
 export interface Session {
@@ -252,6 +253,10 @@ export class SessionManager {
                 const reviewStatus = reviewStatusInBlock[1];
                 if (reviewStatus === "approved") {
                   signals.experimentSpecApproved = true;
+                  signals.experimentSpecPath = relativePath;
+                }
+                if (reviewStatus === "revision_requested") {
+                  signals.experimentSpecRevisionRequested = true;
                   signals.experimentSpecPath = relativePath;
                 }
               }

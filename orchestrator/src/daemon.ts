@@ -1190,6 +1190,20 @@ export class Daemon {
       return;
     }
 
+    // Critic requested revision on experiment spec → chain back to experimenter
+    if (agentType === "critic" && signals.experimentSpecRevisionRequested) {
+      this.followUpQueue.push({
+        projectName,
+        agentType: "experimenter",
+        chainId,
+        reason: "Experiment spec revision requested by critic — update spec and resubmit",
+        queuedAt: Date.now(),
+        chainDepth: chainDepth + 1,
+      });
+      console.log("  Chaining: critic REVISE spec → queued experimenter revision for " + projectName);
+      return;
+    }
+
     // Critic verdict drives follow-up
     if (agentType === "critic" && signals.criticVerdict === "REVISE") {
       this.followUpQueue.push({
