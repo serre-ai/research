@@ -1,0 +1,75 @@
+# Experiment Pre-Registration Spec
+# Every experiment estimated at >$2 must have this file completed
+# before execution. The three-phase pipeline is:
+#   1. Experimenter creates spec (status: draft)
+#   2. Critic reviews spec (status: reviewed → approved/rejected)
+#   3. Experimenter runs canary, then full experiment (status: running → complete)
+
+# Human-readable name for this experiment
+name: ""
+
+# Current lifecycle status
+# draft → reviewed → approved → running → complete | failed
+status: draft
+
+# What this experiment tests — a falsifiable statement
+hypothesis: ""
+
+# Measurable predictions that follow from the hypothesis
+# Each prediction should specify direction and expected magnitude
+predictions:
+  - metric: ""
+    direction: "increase"  # increase | decrease | no_change
+    expected_magnitude: ""  # e.g., ">0.15 Cohen's d"
+
+# Experimental design
+design:
+  # Conditions being compared (must align with paper's theoretical assumptions)
+  conditions: []
+  # Control variables held constant across conditions
+  controls: []
+  # Independent variable(s) being manipulated
+  independent_vars: []
+  # Dependent variable(s) being measured
+  dependent_vars: []
+  # Number of instances per condition
+  instances_per_condition: 0
+  # Models to evaluate
+  models: []
+
+# Canary run configuration — a small-scale test before the full run
+# Purpose: catch bugs, validate pipeline, estimate real costs
+canary:
+  # Number of instances per condition for canary (typically 5-10)
+  instances: 5
+  # Diagnostic checks to run on canary results
+  diagnostics:
+    # Does the pipeline produce valid output for every instance?
+    - name: "pipeline_completion"
+      check: "all instances produce parseable results"
+    # Are accuracy rates in a plausible range (not 0% or 100%)?
+    - name: "accuracy_sanity"
+      check: "0 < accuracy < 1 for non-trivial conditions"
+    # Is the actual cost within 2x of estimated per-instance cost?
+    - name: "cost_within_budget"
+      check: "actual cost per instance < 2x estimated"
+
+# Budget and resource estimates
+budget:
+  # Estimated total cost for the full experiment (USD)
+  estimated_total_usd: 0
+  # Estimated cost per instance (USD)
+  estimated_per_instance_usd: 0
+  # Maximum allowed cost — hard stop if exceeded (USD)
+  max_allowed_usd: 0
+
+# Review tracking — populated by the critic agent
+review:
+  status: pending  # pending | approved | revision_requested | rejected
+  reviewer: ""
+  date: ""
+  verdict_file: ""  # path to the full review document
+
+# Timestamps
+created_at: ""
+updated_at: ""

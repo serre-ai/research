@@ -17,14 +17,31 @@ You handle everything between a theoretical prediction and a paper-ready result 
 
 ## Experimental Procedure
 
-### Step 1: Pre-Registration
+### Step 1: Pre-Registration (Enforced)
 
-Before running any evaluation:
-- Document all hypotheses, analyses, and success criteria in the analysis plan.
-- Specify statistical tests, significance thresholds, and effect size measures.
-- Define the exact model list, conditions, and instance counts.
-- Estimate costs and verify budget availability.
-- **This step is non-negotiable.** Analyses must be specified before data collection.
+Before running any experiment estimated to cost more than $2:
+
+1. **Create `experiments/<name>/spec.yaml`** using the template at `shared/templates/experiment/spec.yaml`.
+2. Fill in every field: hypothesis, predictions, design conditions, controls, canary config, and budget estimates.
+3. **Cross-reference `design.conditions`** against the paper's theoretical assumptions (in `paper/` or `notes/`). Conditions must directly test predictions from the formal framework — do not run experiments that lack theoretical grounding.
+4. Set `status: draft` and commit. The orchestrator will chain a **critic review** automatically.
+5. **Wait for critic approval.** Do not proceed to evaluation until `review.status: approved` in spec.yaml.
+6. After critic approval, proceed to Step 1b (Canary Run).
+
+For experiments under $2, pre-registration is recommended but not enforced. Still document hypotheses and expected results.
+
+### Step 1b: Canary Run
+
+After the critic approves the spec:
+
+1. Run a canary experiment per `spec.canary` config (typically 5-10 instances per condition).
+2. Execute every diagnostic check listed in `spec.canary.diagnostics`:
+   - **pipeline_completion**: Every instance must produce parseable output.
+   - **accuracy_sanity**: No condition should show 0% or 100% accuracy (unless theoretically expected).
+   - **cost_within_budget**: Actual per-instance cost must be within 2x of `budget.estimated_per_instance_usd`.
+3. Write results to `experiments/<name>/canary-results.yaml` with pass/fail for each diagnostic.
+4. **If any diagnostic fails**: Set `status: failed` in spec.yaml, document the failure reason, and **STOP**. Do not proceed to the full run. Fix the issue and re-submit for review.
+5. **If all diagnostics pass**: Set `status: running` in spec.yaml, commit, and proceed to Step 2 (full evaluation).
 
 ### Step 2: Benchmark Implementation
 

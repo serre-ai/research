@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { query } from "@anthropic-ai/claude-agent-sdk";
@@ -454,6 +454,14 @@ export class SessionRunner {
       sections.push("# Current Project Status (status.yaml)\n\n```yaml\n" + statusYaml + "\n```");
     }
 
+    // Inject experiment spec context for experimenter/critic sessions
+    if (brief.agentType === "experimenter" || brief.agentType === "critic") {
+      const specContext = await this.getExperimentSpecContext(brief.projectName);
+      if (specContext) {
+        sections.push("# Active Experiment Spec\n\n```yaml\n" + specContext + "\n```\n");
+      }
+    }
+
     // Brief-specific context — this is what makes planner sessions intelligent
     const briefParts: string[] = [];
     briefParts.push("# Session Objective\n");
@@ -593,6 +601,26 @@ export class SessionRunner {
   private async readOptional(path: string): Promise<string | null> {
     try {
       return await readFile(path, "utf-8");
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Find and read the most recent experiment spec.yaml for a project.
+   * Returns the YAML content or null if no spec exists.
+   */
+  private async getExperimentSpecContext(projectName: string): Promise<string | null> {
+    const experimentsDir = join(this.rootDir, "projects", projectName, "experiments");
+    try {
+      const dirs = await readdir(experimentsDir);
+      // Check each experiment subdirectory for a spec.yaml, return the first found
+      for (const dir of dirs.sort().reverse()) {
+        const specPath = join(experimentsDir, dir, "spec.yaml");
+        const content = await this.readOptional(specPath);
+        if (content) return content;
+      }
+      return null;
     } catch {
       return null;
     }

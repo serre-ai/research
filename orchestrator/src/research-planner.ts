@@ -759,6 +759,13 @@ export class ResearchPlanner {
     const objective = PHASE_OBJECTIVES[project.phase]
       ?? `Progress ${project.phase} phase. Focus: ${project.current_focus || project.next_steps?.[0] || "continue current work"}.`;
 
+    // For experimenter sessions in empirical phases, remind about pre-registration requirement
+    const supplementary = agentType === "experimenter"
+      ? "NOTE: Experiments estimated at >$2 require a pre-registration spec (experiments/<name>/spec.yaml) before execution. " +
+        "Check if a spec already exists. If not, create one using the template at shared/templates/experiment/spec.yaml. " +
+        "The spec must be reviewed by the critic before the full experiment can proceed."
+      : undefined;
+
     return {
       id: randomUUID().slice(0, 8),
       projectName: project.project,
@@ -769,6 +776,7 @@ export class ResearchPlanner {
         contradictions: [],
         files: this.phaseFiles(project),
         recentDecisions: project.next_steps?.slice(0, 3) ?? [],
+        supplementary,
       },
       constraints: this.buildConstraints(agentType, budgetUsd),
       deliverables: [

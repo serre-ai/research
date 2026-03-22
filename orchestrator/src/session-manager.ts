@@ -12,6 +12,9 @@ export interface SessionSignals {
   commitsCreated: number;
   statusYamlChanged: boolean;
   paperFilesChanged: boolean;
+  experimentSpecCreated?: boolean;
+  experimentSpecPath?: string;
+  experimentSpecApproved?: boolean;
 }
 
 export interface Session {
@@ -219,6 +222,39 @@ export class SessionManager {
       }
     } catch {
       // No reviews directory — expected for non-critic sessions
+    }
+
+    // Check for experiment spec files in experiments/ subdirectories
+    try {
+      const experimentsDir = join(worktreePath, "experiments");
+      const expDirs = await readdir(experimentsDir);
+      for (const dir of expDirs) {
+        try {
+          const specPath = join(experimentsDir, dir, "spec.yaml");
+          const specContent = await readFile(specPath, "utf-8");
+          const statusMatch = specContent.match(/^status:\s*(\S+)/m);
+          const reviewStatusMatch = specContent.match(/^\s+status:\s*(\S+)/m);
+          if (statusMatch) {
+            const specStatus = statusMatch[1];
+            const relativePath = `experiments/${dir}/spec.yaml`;
+            if (specStatus === "draft") {
+              signals.experimentSpecCreated = true;
+              signals.experimentSpecPath = relativePath;
+            }
+            if (reviewStatusMatch) {
+              const reviewStatus = reviewStatusMatch[1];
+              if (reviewStatus === "approved" || specStatus === "approved") {
+                signals.experimentSpecApproved = true;
+                signals.experimentSpecPath = relativePath;
+              }
+            }
+          }
+        } catch {
+          // No spec.yaml in this experiment directory — expected
+        }
+      }
+    } catch {
+      // No experiments directory — expected for non-experiment projects
     }
 
     // Check which files were modified by this session

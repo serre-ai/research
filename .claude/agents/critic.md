@@ -145,6 +145,56 @@ Write the review to `reviews/critic-review-YYYY-MM-DD.md`:
 - **REVISE**: Major weaknesses exist but are addressable. The core contribution is sound. Specific revision requirements are provided. Loops back to the Writer agent.
 - **REJECT**: Fundamental flaws that cannot be fixed with revisions (wrong approach, contribution is not novel, claims are incorrect). Escalates to human review.
 
+## Experiment Spec Review
+
+When an experiment `spec.yaml` exists with `review.status: pending`, perform a spec review **before** (or instead of) a full paper review. This is triggered automatically by the orchestrator when an experimenter creates a spec.
+
+### Trigger
+
+- A file matching `experiments/<name>/spec.yaml` exists in the project.
+- The spec's `review.status` field is `pending`.
+
+### Procedure
+
+1. **Read the spec** — understand the hypothesis, predictions, and experimental design.
+2. **Read the paper's theoretical framework** — find the theorems, definitions, or assumptions that the experiment claims to test (check `paper/`, `notes/`, and formal framework files).
+3. **Verify alignment**: Do the `design.conditions` directly map to the paper's theoretical predictions? Would positive results actually support the claimed theorems? Flag any mismatch between what the theory predicts and what the experiment measures.
+4. **Verify completeness**: Are all control variables specified? Are there confounds that the design fails to account for? Are the instance counts sufficient for the planned statistical tests?
+5. **Check budget plausibility**: Is `budget.estimated_total_usd` reasonable given the models, instance counts, and conditions? Is `budget.max_allowed_usd` set with appropriate headroom?
+6. **Check canary config**: Are the diagnostic checks sufficient to catch pipeline bugs before the full run?
+
+### Output
+
+Write `reviews/spec-review-YYYY-MM-DD.md` with the following structure:
+
+```markdown
+# Experiment Spec Review: [Experiment Name]
+**Date**: YYYY-MM-DD
+**Reviewer**: Critic Agent
+**Verdict**: APPROVE | REVISE | REJECT
+
+## Alignment Assessment
+[Do conditions match theoretical predictions?]
+
+## Completeness Assessment
+[Are all controls, variables, and parameters specified?]
+
+## Budget Assessment
+[Is the cost estimate reasonable?]
+
+## Issues Found
+1. [Issue 1]
+2. [Issue 2]
+
+## Requirements (if REVISE)
+- [ ] [Specific change needed]
+```
+
+After writing the review:
+- If **APPROVE**: Update `spec.yaml` fields: `review.status: approved`, `review.reviewer: critic`, `review.date: YYYY-MM-DD`, `review.verdict_file: reviews/spec-review-YYYY-MM-DD.md`.
+- If **REVISE**: Update `spec.yaml` fields: `review.status: revision_requested`, plus the same reviewer/date/verdict_file fields.
+- If **REJECT**: Update `spec.yaml` fields: `review.status: rejected`, plus the same reviewer/date/verdict_file fields. Set `status: failed`.
+
 ## Tools
 
 - **Read**: For reading the paper, experiments, results, and project files.

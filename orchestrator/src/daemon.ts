@@ -1,4 +1,4 @@
-import { writeFile, readFile } from "node:fs/promises";
+import { writeFile, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import pg from "pg";
@@ -30,6 +30,7 @@ const PHASE_SEQUENCES: Record<string, string[]> = {
   "paper-finalization": ["writer", "critic", "editor"],
   "revision": ["writer", "critic"],
   "analysis": ["experimenter", "writer"],
+  "experiment-validation": ["experimenter", "critic", "experimenter"],
 };
 
 export interface DaemonConfig {
@@ -987,6 +988,15 @@ export class Daemon {
       return this.runCollectiveSession(brief);
     }
 
+    // Budget gate: experimenter sessions with estimated cost >$2 require an approved spec
+    if (brief.agentType === "experimenter" && brief.constraints.maxBudgetUsd > 2) {
+      const specState = await this.checkExperimentSpec(brief.projectName);
+      if (specState === "needs_review") {
+        console.log("  Budget gate: experiment spec for " + brief.projectName + " needs review — skipping execution");
+        return;
+      }
+    }
+
     const chainId = randomUUID();
     try {
       const session = await this.sessionManager.startProjectWithBrief(brief);
@@ -1135,6 +1145,34 @@ export class Daemon {
     chainId: string,
     chainDepth: number = 0,
   ): void {
+    // Experiment spec created → chain to critic for review
+    if (agentType === "experimenter" && signals.experimentSpecCreated) {
+      this.followUpQueue.push({
+        projectName,
+        agentType: "critic",
+        chainId,
+        reason: "Experiment spec needs critic review before execution",
+        queuedAt: Date.now(),
+        chainDepth: chainDepth + 1,
+      });
+      console.log("  Chaining: experimenter spec → queued critic review for " + projectName);
+      return;
+    }
+
+    // Critic approved experiment spec → chain to experimenter for execution
+    if (agentType === "critic" && signals.experimentSpecApproved) {
+      this.followUpQueue.push({
+        projectName,
+        agentType: "experimenter",
+        chainId,
+        reason: "Experiment spec approved — proceed to canary and full run",
+        queuedAt: Date.now(),
+        chainDepth: chainDepth + 1,
+      });
+      console.log("  Chaining: critic approved spec → queued experimenter execution for " + projectName);
+      return;
+    }
+
     // Critic verdict drives follow-up
     if (agentType === "critic" && signals.criticVerdict === "REVISE") {
       this.followUpQueue.push({
@@ -1188,6 +1226,48 @@ export class Daemon {
     // Check cached phase from last scoring cycle
     // This avoids async reads during signal processing
     return this.lastKnownPhases.get(projectName);
+  }
+
+  /**
+   * Check whether a project's experiment spec is in a state that allows execution.
+   * Returns:
+   * - "needs_spec": No spec found — experimenter should create one
+   * - "needs_review": Spec exists but not yet reviewed
+   * - "approved": Spec approved — experimenter can proceed
+   * - "not_required": No experiments directory or not an experiment-oriented project
+   */
+  async checkExperimentSpec(
+    projectName: string,
+  ): Promise<"needs_spec" | "needs_review" | "approved" | "not_required"> {
+    const experimentsDir = join(this.config.rootDir, "projects", projectName, "experiments");
+    try {
+      const dirs = await readdir(experimentsDir);
+      for (const dir of dirs) {
+        try {
+          const specPath = join(experimentsDir, dir, "spec.yaml");
+          const content = await readFile(specPath, "utf-8");
+          const statusMatch = content.match(/^status:\s*(\S+)/m);
+          const reviewStatusMatch = content.match(/^\s+status:\s*(\S+)/m);
+          if (statusMatch) {
+            const specStatus = statusMatch[1];
+            if (specStatus === "approved" || specStatus === "running" || specStatus === "complete") {
+              return "approved";
+            }
+            if (reviewStatusMatch) {
+              const reviewStatus = reviewStatusMatch[1];
+              if (reviewStatus === "approved") return "approved";
+              if (reviewStatus === "pending" || reviewStatus === "revision_requested") return "needs_review";
+            }
+            if (specStatus === "draft") return "needs_review";
+          }
+        } catch {
+          // No spec.yaml in this directory
+        }
+      }
+      return "not_required";
+    } catch {
+      return "not_required";
+    }
   }
 
   private assessQuality(session: Session, agentType: string): SessionQuality {
