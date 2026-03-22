@@ -2,11 +2,11 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-21
-last_verified: 2026-03-21
+updated: 2026-03-22
+last_verified: 2026-03-22
 
-phase: submission-prep
-status: complete
+phase: awaiting-portal
+status: ready
 
 progress:
   literature_review:
@@ -36,6 +36,9 @@ progress:
   paper_compilation:
     status: complete
     notes: "Paper compiled successfully with tectonic (2026-03-21). 19 pages, 314 KB PDF. Clean compilation with only cosmetic warnings (underfull boxes). SUBMISSION_README.md created with complete checklist and reproducibility instructions."
+  submission_preparation:
+    status: complete
+    notes: "Submission guides created 2026-03-22. OPENREVIEW_SUBMISSION_GUIDE.md provides complete step-by-step instructions for portal upload. SUBMISSION_QUICK_START.md provides 5-minute quick reference. Portal URL: https://openreview.net/group?id=NeurIPS.cc/2026/Conference. Portal opens April 5, 2026. Deadline: May 6, 2026 (abstract May 4). All materials ready: main.pdf (315 KB, 19 pages), submission.zip (1.5 MB). Awaiting portal opening."
 
 decisions_pending: []
 
@@ -94,6 +97,9 @@ decisions_made:
   - date: 2026-03-21
     decision: "Mark submission-prep phase complete after final verification"
     rationale: "Final verification session confirmed all submission materials intact and ready. Verified: submission.zip (1.5 MB) contains all required files, main.pdf (314 KB, 19 pages) compiles cleanly, anonymization correct, all figures/tables included, documentation complete. All progress items complete: literature review, formal framework, benchmark design, analysis infrastructure, empirical evaluation (12 models, 209,438 instances), tool-use eval, budget sweep, paper writing, compilation. Ready for immediate upload to NeurIPS 2026 portal. Deadline: 45 days from today."
+  - date: 2026-03-22
+    decision: "Create comprehensive submission guides for OpenReview portal"
+    rationale: "Cannot directly submit to OpenReview (requires human authentication). Created two guides: OPENREVIEW_SUBMISSION_GUIDE.md (comprehensive step-by-step with metadata, troubleshooting) and SUBMISSION_QUICK_START.md (5-minute quick reference). Documented portal URL (opens April 5), deadlines (abstract May 4, full paper May 6), required metadata (title, abstract, keywords, subject areas), and file upload procedure. All submission materials verified ready. Phase changed to 'awaiting-portal' until April 5 when upload becomes possible."
 
 key_terms:
   - "reasoning gaps"
@@ -119,13 +125,28 @@ key_references:
   - "Yang et al., PaTH Attention: Position Encoding via Accumulating Householder Transformations, NeurIPS 2025"
 
 next_steps:
-  - "Upload to NeurIPS submission portal"
-  - "Monitor submission status"
+  - "Wait for portal opening (April 5, 2026)"
+  - "Upload to NeurIPS OpenReview portal (by May 6, 2026)"
+  - "Monitor submission status during review"
   - "Prepare rebuttal materials (if needed)"
+
+submission_info:
+  portal_url: "https://openreview.net/group?id=NeurIPS.cc/2026/Conference"
+  portal_opens: "2026-04-05"
+  abstract_deadline: "2026-05-04"
+  submission_deadline: "2026-05-06"
+  days_until_deadline: 45
+  conference_dates: "2026-12-06 to 2026-12-12"
+  files_ready:
+    - "main.pdf (315 KB, 19 pages)"
+    - "submission.zip (1.5 MB, complete package)"
+  guides_created:
+    - "paper/OPENREVIEW_SUBMISSION_GUIDE.md (comprehensive)"
+    - "paper/SUBMISSION_QUICK_START.md (quick reference)"
 
 notes: "12 models evaluated with 209,438 instances total. Opus 4.6 added 2026-03-18 (~$272). Tool-use (~$27) and budget sweep (~$8) evals complete and integrated. Paper at 19 pages (main + appendix). Submission polish complete 2026-03-21. LaTeX compilation successful 2026-03-21 (tectonic, 314 KB PDF). submission.zip package ready (1.5 MB). SUBMISSION_README.md created with complete checklist."
 
 metrics:
   deadline_epoch: 1777939200000
 
-current_activity: "Submission-prep complete. Paper verified ready for NeurIPS 2026 portal upload. All requirements met: 19 pages (9 main + 10 appendix), 314 KB PDF, anonymized, clean compilation. Submission package (submission.zip, 1.5 MB) contains main.pdf, main.tex, neurips_2026.sty, and all figures/tables. Final verification complete 2026-03-21 afternoon. Next: Upload to conference portal (deadline in 45 days)."
+current_activity: "Awaiting OpenReview portal opening (April 5, 2026). Submission materials fully prepared and verified. Created comprehensive submission guides (OPENREVIEW_SUBMISSION_GUIDE.md, SUBMISSION_QUICK_START.md) with step-by-step instructions for portal upload. Paper ready: 19 pages (9 main + 10 appendix), 315 KB PDF, anonymized, clean compilation. Submission package ready: submission.zip (1.5 MB) with all required files. Portal URL: https://openreview.net/group?id=NeurIPS.cc/2026/Conference. Deadlines: Abstract May 4, Full paper May 6 (45 days remaining). Next action: Upload when portal opens."
