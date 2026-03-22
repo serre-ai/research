@@ -65,7 +65,7 @@ progress:
 
   empirical_validation:
     status: in_progress
-    notes: "Experimental design complete with 4 benchmarks (GSM8K, MATH, 3-SAT, PlanBench-HTN) × 3 models × N ∈ {1,4,8,16,32}. Evaluation infrastructure built (self-consistency evaluator). Minimal pilot results collected (3 instances). Full experiment run pending (~$100 budget, ~10K API calls). Results section structured with placeholder tables and analysis paragraphs."
+    notes: "Redesigned around B1-B9 reasoning-gaps benchmarks (not GSM8K/MATH/PlanBench). Theorem 2c refined: error correlation tracks shared structural bottlenecks, not VC class. Between-model analysis (DW-121) shows B6 rho=0.42 (highest), B7 rho=0.06 (lowest). Predictions inverted: SC should help most on B7 (low rho), least on B6 (high rho). Validation run (T=0.7, N=9, short_cot) showed 96-99% agreement — insufficient diversity. Next: test T=1.0 (DW-126), then full run (~$92)."
 
   paper_writing:
     status: complete_pending_experiments

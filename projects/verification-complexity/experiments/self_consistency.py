@@ -73,15 +73,15 @@ TASK_FILES = {
 
 # Verification complexity classification
 VC_CLASS = {
-    "B1": "P",       # Type 1: Sensitivity — trivial to verify
-    "B2": "P",       # Type 2: Depth — evaluate boolean expression
-    "B3": "P",       # Type 3: Serial — trace permutation composition
-    "B4": "P",       # Type 3: Serial — simulate state machine
-    "B5": "P",       # Type 2: Depth — check graph path
-    "B6": "P",       # Type 4: Algorithmic — verify subsequence is increasing
-    "B7": "P/coNP",  # Type 5: Intractability — feasibility P, optimality coNP
-    "B8": "Arch",    # Type 6: Architectural — no clean V(x,y)
-    "B9": "Arch",    # Type 6: Architectural — no clean V(x,y)
+    "B1": "P",       # Type 1: Sensitivity — rho=0.22
+    "B2": "P",       # Type 2: Depth — rho=0.22
+    "B3": "P",       # Type 3: Serial — rho=0.31
+    "B4": "P",       # Type 3: Serial — rho=0.22
+    "B5": "P",       # Type 2/4: Depth/Algo — rho=0.11
+    "B6": "P",       # Type 4: Algorithmic — rho=0.42 (highest, shared bottleneck)
+    "B7": "P/coNP",  # Type 5: Intractability — rho=0.06 (lowest, stochastic)
+    "B8": "Arch",    # Type 6: Architectural — rho=0.15 (ceiling effect)
+    "B9": "Arch",    # Type 6: Architectural — rho=0.07
 }
 
 MODEL_CONFIGS = {
@@ -317,8 +317,8 @@ def main():
                         help="Comma-separated model keys")
     parser.add_argument("--num-samples", type=int, default=5,
                         help="Number of samples per instance for majority voting")
-    parser.add_argument("--temperature", type=float, default=0.7,
-                        help="Sampling temperature (needs >0 for diversity)")
+    parser.add_argument("--temperature", type=float, default=1.0,
+                        help="Sampling temperature (1.0 recommended for diversity; 0.7 showed 96-99%% agreement)")
     parser.add_argument("--difficulties", default="1,2,3,4,5",
                         help="Comma-separated difficulty levels")
     parser.add_argument("--instances-per-difficulty", type=int, default=50,
