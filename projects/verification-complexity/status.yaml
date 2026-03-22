@@ -2,15 +2,16 @@ project: verification-complexity
 title: "The Computational Complexity of Verifying LLM Outputs Across Reasoning Domains"
 status: active
 phase: paper_writing
-confidence: 0.75
+confidence: 0.85
 created: "2026-03-21"
-updated: "2026-03-22T00:00:00Z"
-venue: "NeurIPS 2026 (primary) / ICLR 2027 (fallback)"
+updated: "2026-03-22T14:30:00Z"
+venue: "ICLR 2027"
+submission_deadline: "2026-09-25"
 draft_version: "v0.2"
 
 collaborators: []
 
-current_focus: "Complete experimental validation and prepare ICLR 2027 submission materials"
+current_focus: "ICLR 2027 preparation: complete experimental validation, add Theorem 4 (Oversight Ceiling), write case studies"
 
 # NeurIPS 2026 Path (Deadline: May 6, 2026)
 neurips_next_steps:
@@ -114,6 +115,10 @@ decisions_made:
   - date: 2026-03-22
     decision: "Expand discussion section beyond standard limitations paragraph"
     rationale: "ICLR reviewers expect deeper reflection on scope boundaries, average-case vs worst-case gap, and connections to related problems. Extended discussion (scope boundaries, model-complexity idealization, empirical coverage, detailed future work) positions paper for top-tier venue regardless of NeurIPS vs ICLR path."
+
+  - date: 2026-03-22
+    decision: "Target ICLR 2027 as primary venue, not NeurIPS 2026"
+    rationale: "Linear issue DW-59 required choosing between NeurIPS 2026 (May 6 deadline, 45 days away) and ICLR 2027 (September deadline, 170 days away). Decision: ICLR 2027. Reasoning: (1) Experimental validation is incomplete—only 3 pilot instances run, all results tables are placeholders. (2) 45 days is enough to run experiments but not enough for quality: statistical analysis, figure generation, handling unexpected results, polish. (3) Project's own guidance (status.yaml 2026-03-21): 'Better to submit a strong theory paper late than a weak one on time.' (4) ICLR is equally prestigious for theory-practice bridge papers. (5) 170 days allows significant enhancements: Theorem 4 (Oversight Ceiling), interactive verification extension, case studies, multiple revision cycles. (6) Risk mitigation: if experiments contradict predictions, we need time to understand and revise. (7) Quality over speed: strong ICLR paper > rushed NeurIPS paper. Will post arXiv preprint August 2026 to establish priority before ICLR submission."
 
 key_references:
   - "Shamir 1992 — IP = PSPACE"
