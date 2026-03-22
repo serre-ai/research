@@ -1,0 +1,262 @@
+# Conference Configuration Registry
+# Used by pub_style.py (figures) and build scripts (LaTeX) to adapt
+# to different venue requirements.
+#
+# Usage in paper.yaml:
+#   conference: neurips2026
+#   track: main
+#   mode: submission
+
+conferences:
+
+  # =====================================================================
+  neurips2026:
+    name: "NeurIPS 2026"
+    full_name: "39th Conference on Neural Information Processing Systems"
+    style_file: neurips_2026.sty
+    style_options:
+      submission: []                    # anonymous, line numbers
+      preprint: [preprint]
+      camera_ready: [main, final]
+    tracks: [main, dandb, position, creativeai, sglblindworkshop, dblblindworkshop]
+
+    # Page geometry
+    layout: single_column
+    paper_size: letter                  # NOT A4
+    text_width_in: 5.5
+    text_height_in: 9.0
+    margin_top_in: 1.0
+
+    # Page limits
+    page_limit_submission: 9            # content only (figs/tables count)
+    page_limit_camera_ready: 10
+    refs_count: false                   # references don't count
+    appendix_count: false               # appendix doesn't count
+    checklist_required: true            # desk-reject without it
+    file_size_limit_mb: 50
+
+    # Typography
+    body_font: times                    # ptm = Times Roman
+    body_size_pt: 10
+    heading_style: bold_lowercase       # lowercase except first word + proper nouns
+    title_size_pt: 17
+    title_style: bold_centered
+
+    # Figures
+    figure_caption_position: below
+    table_caption_position: above
+    figure_col_width_in: 5.5           # single column = full width
+    figure_full_width_in: 5.5
+
+    # Bibliography
+    bib_system: natbib
+    bib_style: plainnat
+    citation_style: author_year         # but numeric also accepted
+
+    # Mandatory sections
+    mandatory:
+      - checklist                       # NeurIPS Paper Checklist (16 questions)
+      - ack                             # Acknowledgments (hidden during review)
+    optional:
+      - impact_statement                # via checklist question, not separate section
+
+    # Anonymization
+    double_blind: true
+    hide_ack_in_review: true            # \begin{ack} auto-hidden
+
+    # Figure sizing for pub_style.py
+    pub_style:
+      col_width: 5.5                   # single column
+      full_width: 5.5
+      font_size: 8
+      title_size: 9
+      tick_size: 7
+      legend_size: 7
+
+  # =====================================================================
+  icml2025:
+    name: "ICML 2025"
+    full_name: "42nd International Conference on Machine Learning"
+    style_file: icml2025.sty
+    style_options:
+      submission: [accepted]            # ICML uses [accepted] for camera-ready
+      camera_ready: [accepted]
+    tracks: [main]
+
+    layout: double_column
+    paper_size: letter
+    text_width_in: 6.75
+    col_width_in: 3.25
+    col_sep_in: 0.25
+
+    page_limit_submission: 8
+    page_limit_camera_ready: 9
+    refs_count: false
+    appendix_count: false
+    checklist_required: false           # has impact statement instead
+    file_size_limit_mb: 10
+
+    body_font: times
+    body_size_pt: 10
+    heading_style: bold_lowercase
+    title_size_pt: 14
+    title_style: bold_centered
+
+    figure_caption_position: below
+    table_caption_position: above
+    figure_col_width_in: 3.25
+    figure_full_width_in: 6.75
+
+    bib_system: natbib
+    bib_style: icml2025               # custom .bst
+    citation_style: author_year
+
+    mandatory:
+      - impact_statement              # "Broader Impact" section required
+    double_blind: true
+
+    pub_style:
+      col_width: 3.25
+      full_width: 6.75
+      font_size: 8
+      title_size: 9
+      tick_size: 7
+      legend_size: 6
+
+  # =====================================================================
+  iclr2026:
+    name: "ICLR 2026"
+    full_name: "International Conference on Learning Representations 2026"
+    style_file: iclr2026_conference.sty
+    style_options:
+      submission: []
+      camera_ready: [final]
+
+    layout: single_column
+    paper_size: letter
+    text_width_in: 5.5
+    text_height_in: 9.0
+
+    page_limit_submission: 10
+    page_limit_camera_ready: 10
+    refs_count: false
+    appendix_count: false
+    checklist_required: false
+    file_size_limit_mb: 50
+
+    body_font: times
+    body_size_pt: 10
+    heading_style: smallcaps           # ICLR uses small caps headings
+    title_size_pt: 17
+    title_style: smallcaps_centered
+
+    figure_caption_position: below
+    table_caption_position: above
+    figure_col_width_in: 5.5
+    figure_full_width_in: 5.5
+
+    bib_system: natbib
+    bib_style: plainnat
+    citation_style: author_year
+
+    mandatory: []
+    double_blind: true
+
+    pub_style:
+      col_width: 5.5
+      full_width: 5.5
+      font_size: 8
+      title_size: 9
+      tick_size: 7
+      legend_size: 7
+
+  # =====================================================================
+  acl2025:
+    name: "ACL 2025"
+    full_name: "63rd Annual Meeting of the Association for Computational Linguistics"
+    style_file: acl2025.sty
+    style_options:
+      submission: [review, anonymize]
+      camera_ready: []
+
+    layout: double_column
+    paper_size: a4                     # ACL uses A4 (not letter!)
+    text_width_in: 6.3
+    col_width_in: 3.0
+    col_sep_in: 0.3
+
+    page_limit_submission: 8           # long paper
+    page_limit_short: 4               # short paper
+    page_limit_camera_ready: 9
+    refs_count: false
+    appendix_count: false
+    checklist_required: true           # ARR responsible NLP checklist
+    file_size_limit_mb: 50
+
+    body_font: times
+    body_size_pt: 11                   # ACL uses 11pt!
+    heading_style: bold_titlecase
+    title_size_pt: 15
+    title_style: bold_centered
+
+    figure_caption_position: below
+    table_caption_position: above
+    figure_col_width_in: 3.0
+    figure_full_width_in: 6.3
+
+    bib_system: natbib
+    bib_style: acl_natbib
+    citation_style: author_year
+
+    mandatory:
+      - limitations                   # Limitations section required
+      - ethics_statement              # If applicable
+    double_blind: true
+
+    pub_style:
+      col_width: 3.0
+      full_width: 6.3
+      font_size: 8
+      title_size: 9
+      tick_size: 7
+      legend_size: 6
+
+  # =====================================================================
+  aaai2026:
+    name: "AAAI 2026"
+    full_name: "40th AAAI Conference on Artificial Intelligence"
+    style_file: aaai26.sty
+
+    layout: double_column
+    paper_size: letter
+    text_width_in: 6.75
+    col_width_in: 3.3
+    col_sep_in: 0.15
+
+    page_limit_submission: 7           # varies by track
+    page_limit_camera_ready: 8
+    refs_count: true                   # AAAI counts refs!
+    appendix_count: false
+
+    body_font: times
+    body_size_pt: 10
+    heading_style: bold_mixed
+    title_size_pt: 16
+    title_style: bold_centered
+
+    figure_col_width_in: 3.3
+    figure_full_width_in: 6.75
+
+    bib_system: custom
+    bib_style: aaai26
+    citation_style: author_year
+
+    double_blind: true
+
+    pub_style:
+      col_width: 3.3
+      full_width: 6.75
+      font_size: 8
+      title_size: 9
+      tick_size: 7
+      legend_size: 6

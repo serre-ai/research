@@ -1,0 +1,54 @@
+% ============================================================
+% Base preamble — shared across all conference targets
+% Load AFTER the conference style file.
+% ============================================================
+
+% --- Encoding & typography ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+
+% --- Math ---
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{nicefrac}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{multirow}
+
+% --- Figures ---
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% --- References & links ---
+\usepackage{hyperref}
+\usepackage{url}
+
+% --- Other ---
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+% --- Theorem environments (shared counter) ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% --- Common math macros ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% --- Editing macros (strip before submission with \renewcommand) ---
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+\newcommand{\note}[1]{\textcolor{blue}{\textbf{Note:} #1}}
