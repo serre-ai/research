@@ -389,6 +389,13 @@ Our taxonomy mirrors dual-process theory~\citep{kahneman2011}: the forward pass 
 The accuracy degradation with depth (Types~2--3) aligns with mechanistic error accumulation models~\citep{raju2026errors} and concurrent findings on compositional depth bottlenecks~\citep{xray2026,convexbench2026}.
 An intriguing connection to CoT faithfulness~\citep{turpin2023,lanham2023}: our taxonomy predicts CoT is computationally \emph{necessary} for Types~2--3, and recent work shows that necessary CoT is more faithful~\citep{metr2025}---suggesting a formal criterion for when to trust chain-of-thought.
 
+\paragraph{Error correlation patterns.}
+Between-model error correlation analysis reveals that failure universality varies sharply by gap type.
+Algorithmic gaps (B6) show the highest pairwise error correlation ($\rho = 0.42$): at difficulty~5, 98\% of instances are unanimously wrong across all twelve models, confirming a shared knowledge bottleneck---no model has learned patience sorting or dynamic programming.
+In contrast, intractability gaps (B7) show the \emph{lowest} correlation ($\rho = 0.06$): models fail on different 3-SAT instances, reflecting model-specific heuristics rather than a shared structural limitation.
+Serial gaps (B3: $\rho = 0.31$) and depth gaps (B2: $\rho = 0.22$) fall in between, consistent with partially shared computational bottlenecks.
+This distinction---shared bottlenecks (high $\rho$, Types~2--4) versus instance-specific hardness (low $\rho$, Type~5)---has implications for ensemble methods: majority voting is most effective precisely where error correlation is lowest.
+
 \paragraph{Future directions.}
 Several extensions follow naturally.
 First, \emph{gap composition}: real-world tasks typically involve multiple gap types simultaneously (e.g., a planning problem requiring both serial composition and algorithmic subroutines). Understanding how gaps interact---whether they compose additively, multiplicatively, or exhibit phase-transition-like behavior---would bridge our synthetic benchmarks to realistic settings.
