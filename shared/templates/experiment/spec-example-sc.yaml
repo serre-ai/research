@@ -1,0 +1,64 @@
+# Example: Self-consistency voting experiment for verification-complexity project
+
+name: self-consistency-voting
+status: draft
+
+hypothesis: >
+  Majority voting over N independent CoT samples improves accuracy on
+  verification-easy tasks (VC=P, Types 1-4) but provides diminishing returns
+  on verification-hard tasks (VC=coNP/Arch, Types 5-6), as predicted by
+  Theorem 2 (Self-Consistency Condition).
+
+predictions:
+  - tasks: [B1, B2, B3, B4, B5, B6]
+    metric: mv_lift_at_n17
+    direction: positive
+    min_effect: 0.05
+  - tasks: [B7]
+    metric: mv_lift_at_n17
+    direction: small_positive
+    max_effect: 0.05
+  - tasks: [B8, B9]
+    metric: mv_lift_at_n17
+    direction: near_zero
+    max_effect: 0.03
+
+design:
+  condition: short_cot
+  temperature: 0.7
+  models: [claude-haiku-4-5-20251001]
+  tasks: [B1, B2, B3, B4, B5, B6, B7, B8, B9]
+  num_samples: 17
+  instances_per_difficulty: 30
+  difficulties: [1, 2, 3, 4, 5]
+
+canary:
+  tasks: [B2, B7]
+  instances_per_difficulty: 5
+  num_samples: 5
+  diagnostics:
+    - check: extraction_failure_rate
+      max: 0.05
+    - check: mean_agreement
+      max: 0.95
+      min: 0.40
+    - check: baseline_accuracy
+      min: 0.10
+      max: 0.99
+    - check: cost_per_instance
+      max_multiple_of_estimate: 2.0
+
+budget:
+  estimated_total_usd: 46.00
+  estimated_per_instance_usd: 0.034
+  canary_cost_usd: 2.00
+  max_allowed_usd: 60.00
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: ""
+updated_at: ""
