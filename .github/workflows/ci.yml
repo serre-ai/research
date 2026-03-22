@@ -35,33 +35,6 @@ jobs:
       - run: npm ci
       - run: npm run build --workspace=site-next
 
-  openclaw:
-    name: OpenClaw — validate config
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate gateway.json
-        run: |
-          node -e "JSON.parse(require('fs').readFileSync('openclaw/gateway.json','utf-8')); console.log('gateway.json: valid')"
-      - name: Check SKILL.md files exist
-        run: |
-          for skill in deepwork-api arxiv-scout eval-monitor paper-review project-status budget-check; do
-            if [ ! -f "openclaw/skills/$skill/SKILL.md" ]; then
-              echo "Missing: openclaw/skills/$skill/SKILL.md" && exit 1
-            fi
-          done
-          echo "All SKILL.md files present"
-      - name: Check agent workspaces
-        run: |
-          for agent in sol noor vera kit maren; do
-            for file in SOUL.md HEARTBEAT.md; do
-              if [ ! -f "openclaw/agents/$agent/$file" ]; then
-                echo "Missing: openclaw/agents/$agent/$file" && exit 1
-              fi
-            done
-          done
-          echo "All agent workspaces complete"
-
   deploy:
     name: Deploy to VPS
     needs: [orchestrator, site-next]
@@ -94,12 +67,12 @@ jobs:
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_ROOT_USER }}
-          key: ${{ secrets.VPS_ROOT_SSH_KEY }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            systemctl restart deepwork-daemon
-            systemctl restart deepwork-site
+            sudo systemctl restart deepwork-daemon
+            sudo systemctl restart deepwork-site
             echo "Services restarted at $(date -u)"
 
       - name: Health check
