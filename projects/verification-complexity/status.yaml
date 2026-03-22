@@ -4,7 +4,7 @@ status: active
 phase: paper_writing
 confidence: 0.85
 created: "2026-03-21"
-updated: "2026-03-22T16:30:00Z"
+updated: "2026-03-22T18:45:00Z"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
 draft_version: "v0.2 (appendix proofs expanded)"
@@ -57,7 +57,7 @@ iclr_preparation:
 progress:
   literature_review:
     status: complete
-    notes: "~60 papers surveyed across classical complexity (IP, PCP, AM), LLM verification (self-consistency, reward models, GenRM), scalable oversight (debate, W2S), and domain-specific verification (planning, code, math). Key gap identified: no unified framework connecting classical verification complexity to LLM capability hierarchy. Synthesis at literature/synthesis.md"
+    notes: "~75 papers surveyed across classical complexity (IP, PCP, AM), LLM verification (self-consistency, reward models, GenRM), scalable oversight (debate, W2S), domain-specific verification (planning, code, math), Condorcet Jury Theorem extensions, and statistical design effect theory. Key gap identified: no unified framework connecting classical verification complexity to LLM capability hierarchy. Synthesis at literature/synthesis.md. Self-consistency foundations documented at literature/02-self-consistency-condition-foundations.md"
 
   formal_framework:
     status: complete
@@ -128,12 +128,19 @@ decisions_made:
     decision: "Identify and document citation error in Theorem 3: Behnke 2015 not 2024, NP-complete not coNP-complete"
     rationale: "Linear issue DW-49 asks to prove GV-Gap collapse for planning tasks. Theorem 3 already exists in paper draft but cites 'Behnke, Höller & Biundo 2024, coNP-hard.' Literature search reveals: (1) Actual paper is Behnke et al. ICAPS 2015, not 2024. (2) Result is NP-completeness for HTN plan verification, not coNP-completeness. (3) The NP-completeness holds even for severely restricted HTN problems. (4) Empirical validation from Kambhampati (ICML 2024) and Stechly (arXiv 2024) confirms LLMs cannot self-verify plans. Decision: Document finding in literature/01-htn-planning-verification-complexity.md with comprehensive survey of 8 papers (2015-2025). Flag issue for Theorist to resolve: either (a) correct citation to Behnke 2015 + NP-complete, or (b) find legitimate coNP-complete result for plan optimality verification. Theorem 3 validity is NOT affected: whether verification is NP-complete or coNP-complete, the key claim holds—no polynomial-time verifier exists, so GV-gap collapses relative to P-time verifiers."
 
+  - date: 2026-03-22
+    decision: "Survey literature foundations for Self-Consistency Condition theorem (DW-48)"
+    rationale: "Linear issue DW-48 asks to 'prove Self-Consistency Condition theorem.' As Researcher agent, my role is to provide literature grounding, not develop proofs (Theorist's role). Theorem 2 already exists in paper with complete proofs (main text + appendix), but lacks comprehensive citation support. Conducted literature survey across three streams: (1) LLM self-consistency empirics (Wang 2023, Tao 2024, Consensus 2026) showing when method works/fails, (2) Condorcet Jury Theorem extensions to correlated voting (Ladha 1992, Berg 1994, Boland 2008) providing mathematical foundations, (3) Statistical design effect theory (Kerry & Bland 1998, cluster sampling literature) for effective sample size formula N_eff = N / (1 + (N-1)ρ). Key finding: The theorem's three components are individually well-established, but nobody has synthesized them into a complexity-theoretic framework. Our novelty is the connection in part (c): VC(F) ⊄ cap(M) → computational bottleneck → correlated errors ρ > 0. Documented at literature/02-self-consistency-condition-foundations.md with ~15 key references. Recommendations for Writer: add citations to Tao 2024 (positional bias), Consensus 2026 (shared blind spots), Kerry & Bland 1998 (design effect), Ladha 1992 (CJT under correlation) to strengthen empirical grounding."
+
 key_references:
   - "Shamir 1992 — IP = PSPACE"
   - "Arora et al. 1998 — PCP theorem"
   - "Merrill & Sabharwal 2022-2024 — transformer expressiveness hierarchy"
   - "Song et al. 2024 — Mind the Gap (GV-Gap definition), ICLR 2025"
   - "Wang et al. 2023 — Self-Consistency, ICLR 2023"
+  - "Tao et al. 2024 — Self-Consistency Falls Short (positional bias), arXiv 2411.01101"
+  - "Anonymous 2026 — Consensus is Not Verification (shared blind spots), arXiv 2603.06612"
+  - "Tan et al. 2025 — Too Consistent to Detect (self-consistent errors), arXiv 2505.17656"
   - "Lightman et al. 2023 — Let's Verify Step by Step, ICLR 2024"
   - "Jia et al. 2025 — Process vs Outcome supervision equivalence, ICML 2025"
   - "Brown-Cohen et al. 2024 — Doubly-Efficient Debate, ICML 2024"
@@ -149,6 +156,11 @@ key_references:
   - "Kambhampati et al. 2024 — LLMs Can't Plan, ICML 2024"
   - "Lauer et al. 2025 — Lifted HTN Verification PSPACE-complete, ICAPS 2025"
   - "Lin et al. 2024 — Plan Verification Complexity (grounded vs lifted), Uni Ulm 2024"
+  - "Ladha 1992 — CJT under correlation, AJPS"
+  - "Berg 1994 — Correlated voting (hypergeometric), Journal of Economic Behavior & Organization"
+  - "Boland et al. 2008 — Aggregation of correlated votes, Theory and Decision"
+  - "Kerry & Bland 1998 — Intraclass correlation and design effect, BMJ"
+  - "Eldridge et al. 2004 — Design effects in cluster surveys, IJQHC"
 
 git:
   branch: "research/verification-complexity"
@@ -161,10 +173,10 @@ metrics:
   lemmas_outlined: 2
   experiments_designed: 4
   experiments_run: 0
-  papers_reviewed: 68
+  papers_reviewed: 83
   draft_pages: 22
-  todos_addressed: 8
-  literature_notes_written: 1
+  todos_addressed: 9
+  literature_notes_written: 2
 
 paper_status:
   sections_complete:
