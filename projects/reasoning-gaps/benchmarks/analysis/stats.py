@@ -108,6 +108,40 @@ def generate_stats_tex(df: pd.DataFrame, output_path: str) -> None:
             _cmd(f"CotLift{suffix}Pct", f"{abs(lift) * 100:.1f}")
 
     # -----------------------------------------------------------------------
+    # CoT lift per individual gap type (for Type 5/6 split in paper)
+    # -----------------------------------------------------------------------
+    for gap_type, suffix in [
+        ("Type 1: Sensitivity", "TypeOne"),
+        ("Type 2: Depth", "TypeTwo"),
+        ("Type 3: Serial", "TypeThree"),
+        ("Type 4: Algorithmic", "TypeFour"),
+        ("Type 5: Intractability", "TypeFive"),
+        ("Type 6: Architectural", "TypeSix"),
+    ]:
+        gt_df = df[df["gap_type"] == gap_type]
+        if gt_df.empty:
+            continue
+        gt_cond = gt_df.groupby("condition")["correct"].mean()
+        if "direct" in gt_cond.index and "short_cot" in gt_cond.index:
+            lift = gt_cond["short_cot"] - gt_cond["direct"]
+            sign = "+" if lift >= 0 else ""
+            _cmd(f"CotLift{suffix}", f"{sign}{lift:.3f}")
+
+    # -----------------------------------------------------------------------
+    # CoT lift per task (for B8/B9 individual reporting)
+    # -----------------------------------------------------------------------
+    for task in TASK_ORDER:
+        task_df = df[df["task"] == task]
+        if task_df.empty:
+            continue
+        task_safe = _safe_name(task)
+        task_cond = task_df.groupby("condition")["correct"].mean()
+        if "direct" in task_cond.index and "short_cot" in task_cond.index:
+            lift = task_cond["short_cot"] - task_cond["direct"]
+            sign = "+" if lift >= 0 else ""
+            _cmd(f"CotLift{task_safe}", f"{sign}{lift:.3f}")
+
+    # -----------------------------------------------------------------------
     # Tool use lift for Type 4 (Algorithmic)
     # -----------------------------------------------------------------------
     type4_df = df[df["gap_type"] == "Type 4: Algorithmic"]
