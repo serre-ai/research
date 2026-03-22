@@ -183,14 +183,28 @@ budget_allocated: 1000.0  # Monthly platform budget, shared across projects
 sessions:
   - date: 2026-03-22
     agent: Writer
-    turns_used: 12  # estimated
+    turns_used: 20  # actual
+    budget_used: 1.80  # estimated
     objective: "Initialize project in response to DW-91"
-    outcome: "Created project structure, BRIEF.md, status.yaml, paper template"
+    outcome: "Complete initialization: project structure, documentation, LaTeX template, roadmap"
     linear_issue: DW-91
+    deliverables:
+      - BRIEF.md (comprehensive project brief)
+      - status.yaml (project tracking)
+      - CLAUDE.md (agent instructions)
+      - README.md (project overview)
+      - paper/main.tex (LaTeX template)
+      - paper/iclr2027.sty (style file)
+      - notes/NEXT-STEPS-THEORIST.md (detailed theory roadmap)
+      - reviews/writer-session-2026-03-22.md (session report)
+      - SESSION-REPORT-2026-03-22-sil-revision-DW-91.md (issue investigation)
     notes: |
       Linear issue DW-91 requested revision of non-existent paper. Chose to initialize
       project instead to create foundation for future work. Documented the issue
-      thoroughly in SESSION-REPORT-2026-03-22-sil-revision-DW-91.md.
+      thoroughly. Total: 1,447 lines of documentation created.
+
+      Project now ready for next phase: Literature survey (Researcher) then theory
+      development (Theorist).
 
 # Links
 linear_issues:
