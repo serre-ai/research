@@ -991,8 +991,25 @@ export class Daemon {
     // Budget gate: experimenter sessions with estimated cost >$2 require an approved spec
     if (brief.agentType === "experimenter" && brief.constraints.maxBudgetUsd > 2) {
       const specState = await this.checkExperimentSpec(brief.projectName);
-      if (specState === "needs_review") {
-        console.log("  Budget gate: experiment spec for " + brief.projectName + " needs review — skipping execution");
+      if (specState === "needs_spec") {
+        // Redirect to spec-writing mode
+        brief.objective = `Create experiment pre-registration spec for: ${brief.objective}. ` +
+          `Write experiments/<name>/spec.yaml using the template at shared/templates/experiment/spec.yaml. ` +
+          `Cross-reference design conditions against the paper's theoretical framework.`;
+        brief.deliverables = [
+          { description: "Create experiment spec.yaml", type: "file" as const, verificationMethod: "file_exists" as const },
+          { description: "Update status.yaml", type: "status_update" as const, verificationMethod: "status_changed" as const },
+        ];
+        console.log("  Budget gate: no spec found for " + brief.projectName + " — redirecting to spec-writing mode");
+      } else if (specState === "needs_review") {
+        console.log("  Budget gate: experiment spec for " + brief.projectName + " needs review — queuing critic");
+        this.followUpQueue.push({
+          projectName: brief.projectName,
+          agentType: "critic" as AgentType,
+          chainId: randomUUID(),
+          reason: "Experiment spec pending review",
+          queuedAt: Date.now(),
+        });
         return;
       }
     }
@@ -1247,16 +1264,20 @@ export class Daemon {
           const specPath = join(experimentsDir, dir, "spec.yaml");
           const content = await readFile(specPath, "utf-8");
           const statusMatch = content.match(/^status:\s*(\S+)/m);
-          const reviewStatusMatch = content.match(/^\s+status:\s*(\S+)/m);
           if (statusMatch) {
             const specStatus = statusMatch[1];
             if (specStatus === "approved" || specStatus === "running" || specStatus === "complete") {
               return "approved";
             }
-            if (reviewStatusMatch) {
-              const reviewStatus = reviewStatusMatch[1];
-              if (reviewStatus === "approved") return "approved";
-              if (reviewStatus === "pending" || reviewStatus === "revision_requested") return "needs_review";
+            // Parse the review block to find review.status
+            const reviewBlock = content.match(/^review:\s*\n((?:\s+.*\n?)*)/m);
+            if (reviewBlock) {
+              const reviewStatusInBlock = reviewBlock[1].match(/status:\s*(\S+)/);
+              if (reviewStatusInBlock) {
+                const reviewStatus = reviewStatusInBlock[1];
+                if (reviewStatus === "approved") return "approved";
+                if (reviewStatus === "pending" || reviewStatus === "revision_requested") return "needs_review";
+              }
             }
             if (specStatus === "draft") return "needs_review";
           }
