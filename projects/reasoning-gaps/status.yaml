@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-22
+updated: 2026-03-22T14:30:00Z
 
 phase: submission-prep
 status: in-progress
@@ -32,10 +32,16 @@ progress:
   paper_writing:
     status: in-progress
     notes: "Updated to 12-model data with Opus 4.6. NeurIPS 2026 format. All tables/figures regenerated. B8 reframed as calibration. Real-world mapping section added. Song et al. differentiation strengthened. Opus within-family scaling subsection added. Counts updated: twelve models, 159,162 instances. Pending: tool-use results integration, budget sweep integration, submission polish."
+  rebuttal_preparation:
+    status: complete
+    notes: "Comprehensive rebuttal materials prepared (reviews/rebuttal-prep.md). 12 anticipated criticisms addressed: benchmark scope, model selection, complexity assumptions, experimental rigor, results anomalies, Type 6 specificity, prior work comparison, reproducibility. Includes 5 ready-to-run experiments, decision tree for responses, and template with paper references. Ready for reviewer response phase."
 
 decisions_pending: []
 
 decisions_made:
+  - date: 2026-03-22
+    decision: "Prepare comprehensive rebuttal materials pre-submission"
+    rationale: "Proactive preparation of responses to anticipated reviewer criticisms enables rapid, high-quality rebuttals during review period. Identified 12 likely criticism areas (scope, models, assumptions, rigor, results, prior work, impact, reproducibility) with evidence-backed responses. Includes 5 ready-to-run experiments ($0.50-$400 range) if reviewers request additional validation. Template approach ensures consistent, concrete responses with paper references."
   - date: 2026-03-07
     decision: "Target NeurIPS 2026 as venue"
     rationale: "Strong fit for work bridging theory and empirical LLM evaluation"
@@ -112,6 +118,7 @@ next_steps:
   - "Download and integrate tool-use eval results (when complete)"
   - "Download and integrate budget sweep results (when complete)"
   - "NeurIPS submission polish: checklist, anonymization, page check"
+  - "Rebuttal materials ready at reviews/rebuttal-prep.md for reviewer response phase"
 
 notes: "12 models evaluated with 159,162 instances. Opus 4.6 added 2026-03-18 (~$272). Tool-use and budget sweep evals running on VPS (~$35). Paper revised: B8 reframing, real-world mapping, Song et al. differentiation, Opus subsection."
 
