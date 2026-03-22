@@ -7,11 +7,11 @@ backup_venue: NeurIPS 2026
 
 # Project lifecycle phases:
 # initialization -> literature_survey -> theory_development -> drafting -> revision -> submission
-current_phase: drafting
-phase_progress: 80%
+current_phase: revision
+phase_progress: 10%  # Internal review complete, revision plan created
 
 # Overall project progress (estimated)
-overall_progress: 40%
+overall_progress: 45%  # Draft complete, now entering revision phase
 
 # Version tracking
 draft_version: v0.1
@@ -55,11 +55,84 @@ supplementary_materials:
   status: complete_pending_experiments
 
 # Review and feedback
-critic_reviews: []
+critic_reviews:
+  - date: 2026-03-22
+    type: internal_simulation
+    file: reviews/internal-review-simulation-2026-03-22.md
+    num_reviews: 5
+    average_score: 5.26
+    scores:
+      - reviewer: "Theory Purist (MIT)"
+        score: 5.0
+        verdict: "Borderline"
+      - reviewer: "Empiricist (DeepMind)"
+        score: 4.3
+        verdict: "Reject"
+      - reviewer: "Practitioner (Anthropic)"
+        score: 6.2
+        verdict: "Borderline"
+      - reviewer: "Complexity Theorist (Berkeley)"
+        score: 6.5
+        verdict: "Accept"
+      - reviewer: "Skeptical Senior (Stanford)"
+        score: 4.3
+        verdict: "Reject"
+
 critic_requirements_addressed: []
-critic_requirements_remaining: []
-predicted_acceptance_score: null
-target_acceptance_score: 7.5
+critic_requirements_remaining:
+  - priority: FATAL
+    issue: "Hypothetical experiments presented as results"
+    reviewers: "All 5 reviewers"
+    fix: "Either conduct experiments OR remove Section 5"
+    estimated_effort: "2-4 weeks"
+  - priority: FATAL
+    issue: "Incomplete and circular proofs"
+    reviewers: "R1, R4, R5"
+    fix: "Add Lemmas A.1-A.X with complete proofs, characterize f(g_D), formalize definitions"
+    estimated_effort: "2-4 weeks"
+  - priority: FATAL
+    issue: "Uncharacterized slack term ε"
+    reviewers: "R4, R5"
+    fix: "Add Corollary 1.1 bounding ε"
+    estimated_effort: "3-5 days"
+  - priority: MAJOR
+    issue: "Misleading 'impossibility result' framing"
+    reviewers: "R5, implied by R1"
+    fix: "Retitle paper, reframe abstract/intro"
+    estimated_effort: "1-2 days"
+  - priority: MAJOR
+    issue: "No validation against published results"
+    reviewers: "R2, R3, R5"
+    fix: "Add Section 5.X analyzing STaR, ReST, Constitutional AI, AlphaZero"
+    estimated_effort: "1 week"
+  - priority: MAJOR
+    issue: "Poor operationalization for practitioners"
+    reviewers: "R3"
+    fix: "Add practitioner's guide with measurement protocols"
+    estimated_effort: "3-5 days"
+  - priority: MAJOR
+    issue: "Overclaimed safety implications"
+    reviewers: "R2, R3, R5"
+    fix: "Add caveats to Section 6.2"
+    estimated_effort: "1 day"
+  - priority: MODERATE
+    issue: "Missing convergence rate analysis"
+    reviewers: "R4"
+    fix: "Add Theorem 1' with convergence rate (optional)"
+    estimated_effort: "1 week"
+  - priority: MODERATE
+    issue: "Missing related work citations"
+    reviewers: "R4, R5"
+    fix: "Add Tian et al., Shen & Sanghavi, Wei et al., Xu & Raginsky"
+    estimated_effort: "2-3 days"
+  - priority: LOW
+    issue: "Notation and presentation issues"
+    reviewers: "R1, R4"
+    fix: "Clean up notation, clarify definitions"
+    estimated_effort: "1 day"
+
+predicted_acceptance_score: 5.26  # Current v0.1 (Reject to Borderline)
+target_acceptance_score: 7.5  # After full revision
 
 # Literature survey status
 literature_survey:
@@ -235,47 +308,115 @@ decisions_made:
       f(g_D) monotonically decreasing, with f(∞) → 0 and f(0) = small constant.
     agent: Researcher
 
+  - date: 2026-03-22
+    decision: "Run internal review simulation to identify weaknesses before submission"
+    rationale: |
+      Linear issue DW-85 requested internal review simulation. Generated 5 synthetic reviews
+      from different personas (theory purist, empiricist, practitioner, complexity theorist,
+      skeptical senior). Predicted acceptance score: 5.26/10 (Reject to Borderline), well
+      below target of 7.5+. Identified 3 FATAL issues (hypothetical experiments, incomplete
+      proofs, uncharacterized bounds) and 7 major issues. Created comprehensive revision
+      roadmap requiring 6-8 weeks of work across Theorist, Experimenter, Researcher, and
+      Writer agents. Decision: Target ICLR 2027 (6 months) rather than rushing to NeurIPS
+      2026 (2 months). Prioritize: (1) complete proofs rigorously, (2) conduct actual
+      experiments on GSM8K/HumanEval, (3) validate against published results (STaR, ReST,
+      AlphaZero). This honest assessment prevents premature submission and increases
+      acceptance probability.
+    agent: Writer
+
 # Blockers and issues
-blockers: []
+blockers:
+  - issue: "Draft v0.1 has FATAL issues preventing acceptance"
+    severity: critical
+    details: "Internal review predicts 5.26/10 (Reject). Must address incomplete proofs, hypothetical experiments, and uncharacterized bounds before submission."
+    resolution: "Follow revision roadmap (6-8 weeks): complete proofs, conduct experiments, validate theory"
+    blocked_until: "2026-06-03"
 
-# Next steps
+# Next steps (updated post-review simulation 2026-03-22)
 next_steps:
+  - agent: ALL
+    task: "DECISION: Choose experiment option (A: conduct, B: remove, C: reframe)"
+    priority: CRITICAL
+    deadline: "2026-03-29"
+    estimated_effort: "N/A (decision only)"
+    notes: |
+      FATAL issue #1 must be resolved before proceeding. Three options:
+      A) Conduct actual experiments (GSM8K, HumanEval) - 2-4 weeks, $200-500
+      B) Remove Section 5 entirely - 1 day, submit as pure theory
+      C) Reframe as predictions - 2 days, minimal impact
+      RECOMMENDED: Option A if resources available.
+
+  - agent: Theorist
+    task: "Complete all proofs rigorously (FATAL issue #2)"
+    priority: CRITICAL
+    estimated_effort: "15-20 sessions (2-4 weeks)"
+    notes: |
+      Must complete before any submission:
+      1. Add Lemma A.1: Verification boundedness (prove Δ is bounded)
+      2. Characterize f(g_D): Derive explicit form f(g) = C/(1+αg) with proof
+      3. Formalize Definition 5: Objective outcome property (formal definition)
+      4. Add Corollary 1.1: Characterize slack term ε
+      5. Justify Assumption 2: Cite Wei et al. (2021) or weaken statement
+      6. Prove or weaken Assumption 3: Convergence existence
+      See: reviews/revision-roadmap-2026-03-22.md Tasks 1.1a-1.1f
+
+  - agent: Experimenter
+    task: "Conduct empirical validation (if Option A chosen)"
+    priority: CRITICAL (conditional on decision)
+    estimated_effort: "10-15 sessions (1-2 weeks)"
+    notes: |
+      Implement self-training on 2-3 tasks:
+      - GSM8K (math, moderate gap)
+      - HumanEval (code, small gap)
+      - WritingPrompts (creative, large gap)
+      Measure γ_t, ν_t over 10 iterations, generate figures, run statistics.
+      Budget: $200-500 for API calls.
+      See: reviews/revision-roadmap-2026-03-22.md Task 1.2
+
   - agent: Researcher
-    task: "Conduct comprehensive literature survey"
-    priority: high
-    estimated_effort: "3-5 sessions"
+    task: "Validate against published results (MAJOR issue #5)"
+    priority: HIGH
+    estimated_effort: "5-8 sessions (1 week)"
     notes: |
-      Survey three areas: (1) self-improvement methods in LLMs (STaR, ReST, Constitutional AI),
-      (2) verification and evaluation without ground truth, (3) impossibility results and
-      negative results in learning theory. Identify gaps and position the contribution.
-
-  - agent: Theorist
-    task: "Develop formal framework for self-improvement"
-    priority: high
-    estimated_effort: "8-12 sessions"
-    notes: |
-      Formalize self-training, self-refinement, and self-play as iterative processes.
-      Define verification capability, generation capability, and the gap between them.
-      Develop mathematical framework suitable for proving convergence and bounds.
-
-  - agent: Theorist
-    task: "Prove core impossibility theorems"
-    priority: high
-    estimated_effort: "8-12 sessions"
-    notes: |
-      Prove: (1) Fixed-point convergence for self-improvement without verification,
-      (2) Bounds on capability gains as function of verification-generation gap,
-      (3) Conditions under which self-play provides verification.
-      All proofs must be rigorous and complete.
+      Add Section 5.X analyzing published self-improvement results:
+      1. STaR (Zelikman et al., 2022): Extract γ_t, check plateau
+      2. ReST (Gulcehre et al., 2023): Compare self-training vs external reward
+      3. Constitutional AI (Bai et al., 2022): Self-refinement analysis
+      4. AlphaZero (Silver et al., 2017): Objective outcomes validation
+      See: reviews/revision-roadmap-2026-03-22.md Task 1.3
 
   - agent: Writer
-    task: "Draft paper incorporating theoretical framework"
-    priority: medium
-    estimated_effort: "5-8 sessions"
+    task: "Reframe paper to avoid overclaiming (MAJOR issue #4)"
+    priority: HIGH
+    estimated_effort: "2-3 sessions (1-2 days)"
     notes: |
-      Only begin after theoretical framework and proofs are complete. Integrate formal
-      results into narrative, provide intuitions, include examples. Target: clear
-      presentation accessible to ML researchers without heavy theory background.
+      1. Retitle: Remove "impossibility" → "Theoretical Bounds on..."
+      2. Revise abstract: Replace "we prove impossibility" → "we derive bounds"
+      3. Revise intro: Add comparison to true impossibility results
+      See: reviews/revision-roadmap-2026-03-22.md Task 2.1
+
+  - agent: Writer
+    task: "Add practitioner's guide (MAJOR issue #6)"
+    priority: MEDIUM
+    estimated_effort: "8-12 sessions (3-5 days)"
+    notes: |
+      Add Section 6.X with:
+      - Measurement protocols for Ver_M, Gen_M, g_D
+      - Worked example (GSM8K)
+      - Decision tree: "Should I use self-training?"
+      See: reviews/revision-roadmap-2026-03-22.md Task 2.2
+
+  - agent: Researcher
+    task: "Expand related work (MODERATE issue #9)"
+    priority: MEDIUM
+    estimated_effort: "3-5 sessions (2-3 days)"
+    notes: |
+      Add missing citations:
+      - Tian et al. (2025) - Solver-verifier gap model
+      - Shen & Sanghavi (2024) - Reciprocal learning convergence
+      - Wei et al. (2021) - Self-training theory
+      - Xu & Raginsky (2017) - Iterative algorithm bounds
+      See: reviews/revision-roadmap-2026-03-22.md Task 2.3
 
 # Budget tracking (inherited from platform)
 budget_used: 0.0
@@ -511,11 +652,63 @@ sessions:
       actual proofs (Theorist role). This note provides all mathematical tools, references,
       and strategy needed for rigorous proof development.
 
+  - date: 2026-03-22
+    agent: Writer
+    turns_used: 35
+    budget_used: 3.50
+    objective: "Internal review simulation (DW-85)"
+    outcome: "Generated 5 synthetic reviews, comprehensive synthesis, and revision roadmap"
+    linear_issue: DW-85
+    deliverables:
+      - reviews/internal-review-simulation-2026-03-22.md (~15,000 words, 5 detailed reviews)
+      - reviews/review-synthesis-2026-03-22.md (~6,500 words, comprehensive weakness analysis)
+      - reviews/revision-roadmap-2026-03-22.md (~5,000 words, 6-week revision plan)
+      - status.yaml (updated with review results, blockers, and revised next steps)
+    notes: |
+      Conducted comprehensive internal review simulation with 5 diverse personas:
+      1. Theory Purist (MIT): 5.0/10 - Borderline (incomplete proofs, hypothetical experiments)
+      2. Empiricist (DeepMind): 4.3/10 - Reject (fabricated results, no validation)
+      3. Practitioner (Anthropic): 6.2/10 - Borderline (high relevance but missing validation)
+      4. Complexity Theorist (Berkeley): 6.5/10 - Accept (sound ideas, fixable gaps)
+      5. Skeptical Senior (Stanford): 4.3/10 - Reject (vacuous bounds, overclaiming)
+
+      Average predicted score: 5.26/10 (well below target of 7.5+)
+
+      Identified 3 FATAL issues:
+      1. Hypothetical experiments presented as results (Section 5)
+      2. Incomplete and circular proofs (Theorems 1-4)
+      3. Uncharacterized slack terms (ε in Theorems 1-2)
+
+      Identified 7 major issues:
+      4. Misleading "impossibility result" framing
+      5. No validation against published results (STaR, ReST, AlphaZero)
+      6. Poor operationalization for practitioners
+      7. Overclaimed safety implications
+      8. Missing convergence rate analysis
+      9. Missing related work citations
+      10. Notation and presentation issues
+
+      Created comprehensive revision roadmap:
+      - Phase 1 (4-6 weeks): Address FATAL issues - complete proofs, conduct experiments,
+        validate against published results → Expected score: 6.5-7.0
+      - Phase 2 (1-2 weeks): Strengthen presentation - add practitioner's guide, reframe
+        to avoid overclaiming, expand related work → Expected score: 7.5-8.0
+
+      Key decisions:
+      - CRITICAL: Must choose experiment option by 2026-03-29 (conduct, remove, or reframe)
+      - RECOMMENDATION: Target ICLR 2027 (6 months) rather than NeurIPS 2026 (2 months)
+      - RECOMMENDATION: Conduct actual experiments (Option A) if resources available
+
+      This honest self-assessment prevents premature submission (would likely be rejected
+      at 5.26/10) and provides clear roadmap to strong acceptance (7.5+/10). Total revision
+      effort: 38-55 agent sessions over 6 weeks, ~$200-500 for experiments.
+
 # Links
 linear_issues:
   - DW-91  # Paper revision (premature - paper doesn't exist)
   - DW-98  # Submission to ICLR (premature - paper doesn't exist)
   - DW-92  # Supplementary materials preparation (completed)
+  - DW-85  # Internal review simulation (completed)
 
 related_projects:
   - reasoning-gaps  # "What can't LLMs do?"
