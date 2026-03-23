@@ -100,7 +100,58 @@ Score each candidate 1-5:
 - **Distinctiveness**: Does it stand out from existing AI labs?
 - **Versatility**: Does it work for papers, a website, and casual reference?
 
-## New Discoveries (2026-03-23 sweep)
+## Confirmed Available (GoDaddy verified 2026-03-23)
+
+59 domains confirmed purchasable. Everything else from previous sweeps was taken.
+
+### Tier 0 — Top picks
+
+| Domain | What | Byline |
+|--------|------|--------|
+| **gentzen.ai** | Gerhard Gentzen — invented proof theory | "Oddur Sigurdsson, Gentzen AI" |
+| **verisig.ai** | Verify + Sigurdsson | "Oddur Sigurdsson, VeriSig AI" |
+| **grundlagen.ai** | Hilbert's "Foundations" — the formalization bible | "Oddur Sigurdsson, Grundlagen AI" |
+| **homotopy.ai** | Homotopy type theory — math-CS frontier | "Oddur Sigurdsson, Homotopy AI" |
+| **hausdorff.ai** | Felix Hausdorff — topology, measure theory | "Oddur Sigurdsson, Hausdorff AI" |
+| **dedekind.ai** | Richard Dedekind — foundations of algebra | "Oddur Sigurdsson, Dedekind AI" |
+| **serre.ai** | Jean-Pierre Serre — Fields + Abel Prize | "Oddur Sigurdsson, Serre AI" |
+| **atiyah.ai** | Michael Atiyah — Fields + Abel Prize | "Oddur Sigurdsson, Atiyah AI" |
+| **milnor.ai** | John Milnor — Fields Medal, exotic spheres | "Oddur Sigurdsson, Milnor AI" |
+
+### Tier 1 — Strong
+
+| Domain | What |
+|--------|------|
+| satisfiable.ai | SAT — the foundational NP-complete problem |
+| oddur.ai | Your name. Simplest option. |
+| auton.ai | Autonomous — what the platform is |
+| sigil.ai | A symbol with power (DNS said available, GoDaddy didn't list — recheck) |
+| aufbau.ai | German: "building up" — constructive foundations |
+| theorai.ai | Theory + AI blend |
+| diophantine.ai | Diophantine equations — number theory |
+| periapse.ai | Closest orbital approach |
+
+### Tier 2 — SIG compounds (all confirmed available)
+
+verisig.ai, sigproof.ai, sigverify.ai, sigwitness.ai, sigdecide.ai, sigbound.ai, sigspace.ai, sigprism.ai, sigdeep.ai, sigpolar.ai, sigml.ai, sigmath.ai, siglogic.ai, sigops.ai, sigroot.ai, sigform.ai, siginfer.ai, sigderive.ai
+
+### Tier 3 — Nordic / Icelandic (all confirmed available)
+
+nordsig.ai, nordai.ai, northsig.ai, polarsig.ai, nordproof.ai, oddur.ai, oddworks.ai, odsig.ai, osig.ai, sannreyna.ai, hugruna.ai, djupvit.ai, logmal.ai
+
+### Tier 4 — Proof theory legends (all confirmed available)
+
+gentzen.ai, prawitz.ai, takeuti.ai, schutte.ai, birkhoff.ai, henkin.ai, fraenkel.ai, glivenko.ai, mostowski.ai, kolm.ai
+
+### Other confirmed available
+
+presig.ai, prosig.ai, cogsig.ai, starproof.ai, menkib.ai, celaeno.ai (DNS said available, check GoDaddy)
+
+## Removed (taken per GoDaddy)
+
+cantor.ai, shannon.ai, euler.ai, erdos.ai, polaris.ai, refine.ai, aeon.ai, deepnorth.ai, adjoint.ai, parallax.ai, sextant.ai, converge.ai, noesis.ai, truenorth.ai, sapient.ai, borealis.ai, brink.ai, clade.ai, quartz.ai, stele.ai, tidal.ai, cogna.ai, paxos.ai, burnside.ai, lebesgue.ai, thresh.ai, eigenvec.ai, darkreach.ai, sigworks.ai, konig.ai, carnap.ai
+
+## Previous Discoveries (2026-03-23 sweep)
 
 ### Tier 1 — Strongest candidates (available, checked via DNS)
 
