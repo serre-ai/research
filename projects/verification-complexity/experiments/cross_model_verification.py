@@ -362,15 +362,19 @@ def main():
                     for idx, inst in enumerate(remaining):
                         try:
                             # Build verification prompt based on variant
+                            # Extract prompt from metadata if nested
+                            prompt_sent = inst.get("prompt_sent") or inst.get("metadata", {}).get("prompt_sent", "")
+                            model_response = inst.get("model_response") or inst.get("metadata", {}).get("model_response", "")
+
                             if args.prompt_variant == "answer_only":
                                 prompt = prompt_template.format(
-                                    prompt=inst["prompt_sent"],
+                                    prompt=prompt_sent,
                                     answer=inst["extracted_answer"],
                                 )
                             else:
                                 prompt = prompt_template.format(
-                                    prompt=inst["prompt_sent"],
-                                    response=inst["model_response"],
+                                    prompt=prompt_sent,
+                                    response=model_response,
                                 )
 
                             # Query verifier
