@@ -3,6 +3,8 @@
  * Supports Voyage AI (preferred) and OpenAI (fallback).
  */
 
+import { retry } from "./utils/retry.js";
+
 export type EmbedFn = (text: string) => Promise<number[]>;
 
 /**
@@ -29,51 +31,67 @@ export function getEmbeddingDimension(): number {
 
 function createVoyageEmbedFn(apiKey: string): EmbedFn {
   return async (text: string): Promise<number[]> => {
-    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "voyage-3-lite",
-        input: [text],
-        input_type: "document",
-      }),
+    return retry(async () => {
+      const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "voyage-3-lite",
+          input: [text],
+          input_type: "document",
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        const error: Error & { status?: number } = new Error(`Voyage embedding failed (${res.status}): ${body}`);
+        error.status = res.status;
+        throw error;
+      }
+
+      const json = await res.json() as { data: Array<{ embedding: number[] }> };
+      return json.data[0].embedding;
+    }, {
+      maxAttempts: 3,
+      initialDelayMs: 1000,
+      maxDelayMs: 10000,
     });
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Voyage embedding failed (${res.status}): ${body}`);
-    }
-
-    const json = await res.json() as { data: Array<{ embedding: number[] }> };
-    return json.data[0].embedding;
   };
 }
 
 function createOpenAIEmbedFn(apiKey: string): EmbedFn {
   return async (text: string): Promise<number[]> => {
-    const res = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "text-embedding-3-small",
-        input: text,
-        dimensions: 1024, // Match Voyage/pgvector column size
-      }),
+    return retry(async () => {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "text-embedding-3-small",
+          input: text,
+          dimensions: 1024, // Match Voyage/pgvector column size
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        const error: Error & { status?: number } = new Error(`OpenAI embedding failed (${res.status}): ${body}`);
+        error.status = res.status;
+        throw error;
+      }
+
+      const json = await res.json() as { data: Array<{ embedding: number[] }> };
+      return json.data[0].embedding;
+    }, {
+      maxAttempts: 3,
+      initialDelayMs: 1000,
+      maxDelayMs: 10000,
     });
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`OpenAI embedding failed (${res.status}): ${body}`);
-    }
-
-    const json = await res.json() as { data: Array<{ embedding: number[] }> };
-    return json.data[0].embedding;
   };
 }
 

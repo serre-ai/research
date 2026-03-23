@@ -3,6 +3,8 @@
  * No SDK — matches codebase convention of minimal dependencies.
  */
 
+import { retry } from "./utils/retry.js";
+
 const LINEAR_API = "https://api.linear.app/graphql";
 
 // ============================================================
@@ -66,27 +68,35 @@ export class LinearClient {
   // --------------------------------------------------------
 
   private async query<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-    const res = await fetch(LINEAR_API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: this.apiKey,
-      },
-      body: JSON.stringify({ query, variables }),
+    return retry(async () => {
+      const res = await fetch(LINEAR_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: this.apiKey,
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      if (!res.ok) {
+        const error: Error & { status?: number } = new Error(`Linear API ${res.status}: ${await res.text()}`);
+        error.status = res.status;
+        throw error;
+      }
+
+      const json = (await res.json()) as GraphQLResponse<T>;
+      if (json.errors?.length) {
+        throw new Error(`Linear GraphQL: ${json.errors.map((e) => e.message).join(", ")}`);
+      }
+      if (!json.data) {
+        throw new Error("Linear API returned no data");
+      }
+      return json.data;
+    }, {
+      maxAttempts: 3,
+      initialDelayMs: 1000,
+      maxDelayMs: 10000,
     });
-
-    if (!res.ok) {
-      throw new Error(`Linear API ${res.status}: ${await res.text()}`);
-    }
-
-    const json = (await res.json()) as GraphQLResponse<T>;
-    if (json.errors?.length) {
-      throw new Error(`Linear GraphQL: ${json.errors.map((e) => e.message).join(", ")}`);
-    }
-    if (!json.data) {
-      throw new Error("Linear API returned no data");
-    }
-    return json.data;
   }
 
   // --------------------------------------------------------

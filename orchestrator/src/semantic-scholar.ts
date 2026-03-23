@@ -4,6 +4,8 @@
  * Docs: https://api.semanticscholar.org/api-docs/
  */
 
+import { retry } from "./utils/retry.js";
+
 const BASE_URL = "https://api.semanticscholar.org/graph/v1";
 const RECS_URL = "https://api.semanticscholar.org/recommendations/v1";
 const MIN_REQUEST_INTERVAL_MS = 1050; // just over 1 req/sec for unauthenticated
@@ -163,30 +165,25 @@ export class SemanticScholarClient {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async get(url: string, attempt = 0): Promise<any> {
-    await this.rateLimit();
-    const res = await fetch(url, { headers: this.headers() });
+  private async get(url: string): Promise<any> {
+    return retry(async () => {
+      await this.rateLimit();
+      const res = await fetch(url, { headers: this.headers() });
 
-    if (res.status === 429) {
-      if (attempt >= 3) {
-        throw new Error("S2 rate limited after 3 retries");
+      if (res.status === 404) return null;
+
+      if (!res.ok) {
+        const error: Error & { status?: number } = new Error(`S2 error: ${res.status} ${res.statusText}`);
+        error.status = res.status;
+        throw error;
       }
-      const backoff = Math.max(
-        parseInt(res.headers.get("retry-after") ?? "0") * 1000,
-        (attempt + 1) * 3000,
-      );
-      console.warn(`[S2] Rate limited, retry ${attempt + 1}/3 in ${backoff}ms`);
-      await new Promise((r) => setTimeout(r, backoff));
-      this.lastRequestAt = Date.now();
-      return this.get(url, attempt + 1);
-    }
 
-    if (res.status === 404) return null;
-
-    if (!res.ok) {
-      throw new Error(`S2 error: ${res.status} ${res.statusText}`);
-    }
-
-    return res.json();
+      return res.json();
+    }, {
+      maxAttempts: 3,
+      initialDelayMs: 2000,
+      maxDelayMs: 15000,
+      retryableStatusCodes: [408, 429, 500, 502, 503, 504],
+    });
   }
 }

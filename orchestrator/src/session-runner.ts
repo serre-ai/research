@@ -117,6 +117,7 @@ export class SessionRunner {
           ],
           permissionMode: "acceptEdits",
           maxTurns,
+          maxBudgetUsd: 5.0, // Per-session hard limit to prevent runaway costs
           abortController,
           systemPrompt: {
             type: "preset",
@@ -228,6 +229,7 @@ export class SessionRunner {
           ],
           permissionMode: "acceptEdits",
           maxTurns,
+          maxBudgetUsd: brief.constraints.maxBudgetUsd, // Budget enforced per brief
           abortController,
           systemPrompt: {
             type: "preset",
@@ -322,6 +324,7 @@ export class SessionRunner {
           allowedTools: ["Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch"],
           permissionMode: "acceptEdits",
           maxTurns: brief.constraints.maxTurns,
+          maxBudgetUsd: brief.constraints.maxBudgetUsd, // Budget enforced for collective actions
           abortController,
           systemPrompt: { type: "preset", preset: "claude_code", append: prompt },
         },
@@ -371,7 +374,6 @@ export class SessionRunner {
 
   /** Build prompt for a collective action session — API-driven, no git. */
   private async buildCollectivePrompt(brief: SessionBrief): Promise<string> {
-    const apiKey = process.env.DEEPWORK_API_KEY ?? "";
     const apiPort = process.env.API_PORT ?? "3001";
     const baseUrl = `http://localhost:${apiPort}`;
 
@@ -388,11 +390,11 @@ export class SessionRunner {
     if (brief.reasoning) sections.push("\n## Why\n\n" + brief.reasoning);
     if (brief.context.supplementary) sections.push("\n## Context\n\n" + brief.context.supplementary);
 
-    // API reference
+    // API reference - DO NOT include API key in prompt (security issue)
     sections.push(
       "# API Reference\n\n" +
       `Base URL: ${baseUrl}\n` +
-      `Auth header: X-API-Key: ${apiKey}\n\n` +
+      `Auth: Use X-API-Key header with value from $DEEPWORK_API_KEY environment variable\n\n` +
       "## Available endpoints:\n\n" +
       "### Forum\n" +
       "- `GET /api/forum/threads` — list all threads\n" +
@@ -413,7 +415,8 @@ export class SessionRunner {
       "- `POST /api/triggers/:id/ack` — acknowledge a trigger\n\n" +
       "## Rules\n\n" +
       "- Use `curl` with the Bash tool to call APIs\n" +
-      "- Always include `-H 'X-API-Key: " + apiKey + "'` and `-H 'Content-Type: application/json'`\n" +
+      "- Always include `-H 'X-API-Key: $DEEPWORK_API_KEY'` and `-H 'Content-Type: application/json'`\n" +
+      "- The API key is available in the environment variable $DEEPWORK_API_KEY\n" +
       "- Include verifiable data in forum posts (numbers, citations, dates)\n" +
       "- Act as the agent specified in the objective\n" +
       "- Today's date: " + new Date().toISOString().split("T")[0] + "\n",

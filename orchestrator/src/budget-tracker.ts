@@ -1,9 +1,10 @@
-import { appendFile, readFile, mkdir } from "node:fs/promises";
+import { readFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { parse } from "yaml";
 import pg from "pg";
 import { ActivityLogger } from "./logger.js";
 import { Notifier } from "./notifier.js";
+import { atomicAppendJsonl } from "./utils/atomic-write.js";
 
 export interface SpendingRecord {
   timestamp: string;
@@ -65,6 +66,7 @@ export class BudgetTracker {
 
   /**
    * Record a spending event. Writes to JSONL (immediate) and DB (best-effort).
+   * Uses atomic append to prevent corruption during crashes.
    */
   async record(record: Omit<SpendingRecord, "timestamp">): Promise<void> {
     await this.ensureDir();
@@ -73,8 +75,8 @@ export class BudgetTracker {
       ...record,
     };
 
-    // JSONL — immediate, always works
-    await appendFile(this.spendingFile, JSON.stringify(entry) + "\n", "utf-8");
+    // JSONL — atomic append prevents corruption during crashes
+    await atomicAppendJsonl(this.spendingFile, JSON.stringify(entry));
 
     // DB — best-effort
     if (this.pool) {
