@@ -147,8 +147,8 @@ def create_client(provider: str, model_name: str, temperature: float = 0.7):
     # Wrap query to inject temperature — keeps retry, rate limiting, cost tracking
     _original_query = client.query
 
-    def query_with_temp(prompt, system_prompt="", max_tokens=512):
-        return _original_query(prompt, system_prompt, max_tokens, temperature=temperature)
+    def query_with_temp(prompt, system_prompt="", max_tokens=512, **kwargs):
+        return _original_query(prompt, system_prompt, max_tokens, temperature=temperature, **kwargs)
 
     client.query = query_with_temp
     return client
@@ -318,9 +318,15 @@ def main():
             completed_ids = set()
             if args.resume and output_file.exists():
                 with open(output_file) as f:
-                    for line in f:
-                        r = json.loads(line)
-                        completed_ids.add(r["instance_id"])
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            r = json.loads(line)
+                            completed_ids.add(r["instance_id"])
+                        except json.JSONDecodeError:
+                            logger.warning(f"  Corrupt line {line_num} in {output_file}, skipping")
                 logger.info(f"  Resuming: {len(completed_ids)} already done")
 
             remaining = [i for i in instances if i["id"] not in completed_ids]

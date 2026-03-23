@@ -17,8 +17,8 @@ from typing import Any
 def atomic_jsonl_append(path: Path | str, data: dict) -> None:
     """Append a single JSON line to a JSONL file with fsync.
 
-    Serializes to string first (catches ValueError/TypeError before
-    touching the file). Uses O_APPEND for write atomicity.
+    Serializes to string first to avoid partial writes.
+    Uses O_APPEND for write atomicity.
     """
     line = json.dumps(data, default=str) + "\n"
     encoded = line.encode("utf-8")

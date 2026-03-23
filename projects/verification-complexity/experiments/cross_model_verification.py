@@ -346,9 +346,15 @@ def main():
             completed_ids = set()
             if args.resume and output_file.exists():
                 with open(output_file) as f:
-                    for line in f:
-                        r = json.loads(line)
-                        completed_ids.add(r["instance_id"])
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            r = json.loads(line)
+                            completed_ids.add(r["instance_id"])
+                        except json.JSONDecodeError:
+                            logger.warning(f"    Corrupt line {line_num} in {output_file}, skipping")
                 logger.info(f"    Resuming: {len(completed_ids)} already done")
 
             for task_key in tasks:
