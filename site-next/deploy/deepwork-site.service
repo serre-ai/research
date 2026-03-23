@@ -1,0 +1,36 @@
+[Unit]
+Description=Deepwork Dashboard — Next.js
+Documentation=https://github.com/oddurs/deepwork
+After=network-online.target deepwork-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deepwork
+Group=deepwork
+WorkingDirectory=/opt/deepwork/site-next/.next/standalone/site-next
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+
+# Environment
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+EnvironmentFile=/opt/deepwork/site-next/.env.local
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/deepwork
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=deepwork-site
+
+[Install]
+WantedBy=multi-user.target

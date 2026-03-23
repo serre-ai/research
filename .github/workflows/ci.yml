@@ -68,8 +68,12 @@ jobs:
             npm ci
             npm run build --workspace=orchestrator
 
-            # Build site-next
+            # Build site-next and prepare standalone output
             npm run build --workspace=site-next
+            STANDALONE_DIR=site-next/.next/standalone/site-next
+            cp -r site-next/public "$STANDALONE_DIR/public" 2>/dev/null || true
+            cp -r site-next/.next/static "$STANDALONE_DIR/.next/static"
+            ln -sf /opt/deepwork/site-next/.env.local "$STANDALONE_DIR/.env.local"
 
             echo "Build complete: $(git rev-parse --short HEAD) at $(date -u)"
 
@@ -180,6 +184,12 @@ jobs:
               npm ci
               npm run build --workspace=orchestrator
               npm run build --workspace=site-next
+
+              # Prepare standalone output
+              STANDALONE_DIR=site-next/.next/standalone/site-next
+              cp -r site-next/public "$STANDALONE_DIR/public" 2>/dev/null || true
+              cp -r site-next/.next/static "$STANDALONE_DIR/.next/static"
+              ln -sf /opt/deepwork/site-next/.env.local "$STANDALONE_DIR/.env.local"
 
               # Restart services
               sudo systemctl restart deepwork-daemon

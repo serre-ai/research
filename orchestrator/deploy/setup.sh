@@ -113,12 +113,18 @@ fi
 
 chown -R ${SERVICE_USER}:${SERVICE_USER} "${INSTALL_DIR}"
 
-# Install Node.js dependencies
-cd "${INSTALL_DIR}/orchestrator"
-sudo -u ${SERVICE_USER} npm install
+# Install Node.js dependencies (workspace-aware)
+cd "${INSTALL_DIR}"
+sudo -u ${SERVICE_USER} npm ci
 
-# Build TypeScript
-sudo -u ${SERVICE_USER} npm run build
+# Build orchestrator
+sudo -u ${SERVICE_USER} npm run build --workspace=orchestrator
+
+# Build site-next and prepare standalone output
+sudo -u ${SERVICE_USER} npm run build --workspace=site-next
+STANDALONE_DIR="${INSTALL_DIR}/site-next/.next/standalone/site-next"
+sudo -u ${SERVICE_USER} cp -r "${INSTALL_DIR}/site-next/public" "${STANDALONE_DIR}/public" 2>/dev/null || true
+sudo -u ${SERVICE_USER} cp -r "${INSTALL_DIR}/site-next/.next/static" "${STANDALONE_DIR}/.next/static"
 
 # Install Python dependencies for eval + backfill
 cd "${INSTALL_DIR}"
@@ -145,6 +151,7 @@ echo "[8/8] Installing services..."
 # Copy systemd units
 cp "${INSTALL_DIR}/orchestrator/deploy/deepwork-daemon.service" /etc/systemd/system/
 cp "${INSTALL_DIR}/orchestrator/deploy/deepwork-eval@.service" /etc/systemd/system/
+cp "${INSTALL_DIR}/site-next/deploy/deepwork-site.service" /etc/systemd/system/
 
 # Create .env template if it doesn't exist
 if [ ! -f "${INSTALL_DIR}/.env" ]; then
@@ -186,6 +193,26 @@ ENVEOF
     echo "  Created .env template — fill in API keys!"
 fi
 
+# Create site-next .env.local template if it doesn't exist
+if [ ! -f "${INSTALL_DIR}/site-next/.env.local" ]; then
+    SITE_API_KEY=$(grep DEEPWORK_API_KEY "${INSTALL_DIR}/.env" | cut -d= -f2)
+    cat > "${INSTALL_DIR}/site-next/.env.local" << ENVEOF
+AUTH_SECRET=$(openssl rand -base64 32)
+AUTH_GITHUB_ID=
+AUTH_GITHUB_SECRET=
+AUTH_ALLOWED_USERS=oddurs
+AUTH_TRUST_HOST=true
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}
+VPS_API_URL=http://localhost:3001
+VPS_API_KEY=${SITE_API_KEY}
+ENVEOF
+    chown ${SERVICE_USER}:${SERVICE_USER} "${INSTALL_DIR}/site-next/.env.local"
+    chmod 600 "${INSTALL_DIR}/site-next/.env.local"
+    # Symlink into standalone
+    ln -sf "${INSTALL_DIR}/site-next/.env.local" "${STANDALONE_DIR}/.env.local"
+    echo "  Created site-next .env.local — fill in GitHub OAuth credentials!"
+fi
+
 # nginx config
 cp "${INSTALL_DIR}/orchestrator/deploy/nginx.conf" /etc/nginx/sites-available/deepwork-api
 ln -sf /etc/nginx/sites-available/deepwork-api /etc/nginx/sites-enabled/
@@ -197,6 +224,7 @@ nginx -t
 # Reload services
 systemctl daemon-reload
 systemctl enable deepwork-daemon
+systemctl enable deepwork-site
 systemctl restart nginx
 
 echo ""
@@ -206,10 +234,15 @@ echo "=========================================="
 echo ""
 echo "Next steps:"
 echo "  1. Edit /opt/deepwork/.env with your API keys"
-echo "  2. Set up SSL:  certbot --nginx -d api.deepwork.site"
-echo "  3. Start daemon: systemctl start deepwork-daemon"
-echo "  4. Check status:  systemctl status deepwork-daemon"
-echo "  5. View logs:     journalctl -u deepwork-daemon -f"
+echo "  2. Create GitHub OAuth App at https://github.com/settings/developers"
+echo "     Homepage URL: https://research.oddurs.com"
+echo "     Callback URL: https://research.oddurs.com/api/auth/callback/github"
+echo "  3. Edit /opt/deepwork/site-next/.env.local with OAuth credentials"
+echo "  4. Set up SSL:  certbot --nginx -d research.oddurs.com"
+echo "  5. Start services: systemctl start deepwork-daemon deepwork-site"
+echo "  6. Check status:   systemctl status deepwork-daemon deepwork-site"
+echo "  7. View logs:      journalctl -u deepwork-daemon -f"
+echo "                     journalctl -u deepwork-site -f"
 echo "  6. Backfill eval data:"
 echo "     cd /opt/deepwork && .venv/bin/python orchestrator/sql/backfill_checkpoints.py"
 echo ""

@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 # Deploy site-next to VPS
-# Usage: ./deploy.sh
+# Usage: ./deploy.sh (from site-next/ directory)
 set -euo pipefail
 
 VPS_USER="deepwork-vps"
 VPS_ROOT="deepwork-vps-root"
-REMOTE_DIR="~/deepwork/site-next"
-STANDALONE_DIR="${REMOTE_DIR}/.next/standalone/site-next"
-
-echo "==> Building locally..."
-npm run build
+REMOTE_DIR="~/deepwork"
 
 echo "==> Pushing latest code..."
 git push
@@ -18,23 +14,23 @@ echo "==> Pulling on VPS..."
 ssh "$VPS_USER" "cd $REMOTE_DIR && git pull"
 
 echo "==> Building on VPS..."
-ssh "$VPS_USER" "cd $REMOTE_DIR && npm run build"
+ssh "$VPS_USER" "cd $REMOTE_DIR && npm ci && npm run build --workspace=site-next"
 
-echo "==> Copying static assets into standalone..."
-ssh "$VPS_USER" "cp -r ${REMOTE_DIR}/public ${STANDALONE_DIR}/public 2>/dev/null || true"
-ssh "$VPS_USER" "cp -r ${REMOTE_DIR}/.next/static ${STANDALONE_DIR}/.next/static 2>/dev/null || true"
+echo "==> Preparing standalone output..."
+ssh "$VPS_USER" "cd $REMOTE_DIR && \
+  STANDALONE_DIR=site-next/.next/standalone/site-next && \
+  cp -r site-next/public \$STANDALONE_DIR/public 2>/dev/null || true && \
+  cp -r site-next/.next/static \$STANDALONE_DIR/.next/static && \
+  ln -sf /opt/deepwork/site-next/.env.local \$STANDALONE_DIR/.env.local"
 
-echo "==> Symlinking .env.local..."
-ssh "$VPS_USER" "ln -sf ${REMOTE_DIR}/.env.local ${STANDALONE_DIR}/.env.local"
-
-echo "==> Restarting Next.js service..."
-ssh "$VPS_ROOT" "systemctl restart deepwork-next"
+echo "==> Restarting deepwork-site service..."
+ssh "$VPS_ROOT" "systemctl restart deepwork-site"
 
 echo "==> Verifying..."
-sleep 2
-STATUS=$(ssh "$VPS_USER" "curl -s -o /dev/null -w '%{http_code}' https://research.oddurs.com/sign-in")
+sleep 3
+STATUS=$(ssh "$VPS_USER" "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000")
 if [ "$STATUS" = "200" ]; then
   echo "==> Deploy successful! (HTTP $STATUS)"
 else
-  echo "==> WARNING: Got HTTP $STATUS — check logs with: ssh $VPS_ROOT journalctl -u deepwork-next -n 50"
+  echo "==> WARNING: Got HTTP $STATUS — check logs with: ssh $VPS_ROOT journalctl -u deepwork-site -n 50"
 fi
