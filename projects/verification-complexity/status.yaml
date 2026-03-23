@@ -7,7 +7,7 @@ created: "2026-03-21"
 updated: "2026-03-23"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
-draft_version: "v0.3 (Theorem 2c refined, SC experiment abandoned, cross-model verification designed)"
+draft_version: "v0.3 (Theorem 2c identified as incomplete, Definition 7 and Lemma 3 needed)"
 
 collaborators: []
 
@@ -136,6 +136,10 @@ decisions_made:
     decision: "Approve cross-model verification canary results and proceed to full experiment (DW-143)"
     rationale: "Canary tested answer_only verification (Haiku→Haiku) on B4 (state machine, P-class) and B7 (3-SAT, coNP-class) with 25 instances per task. Results: B4 100% accuracy (16/16 correct confirmed, 9/9 incorrect detected), B7 64% accuracy (36pp gap). Both gate criteria passed: (1) VC signal exists (B4 > B7), (2) extraction failures 0% < 10%. Error analysis on B7 validates theory: 8/9 errors are false positives where verifier attempted to find satisfying assignment, failed, and incorrectly confirmed generator's UNSAT claim. This is expected behavior for coNP-complete verification. Pipeline validated end-to-end with clean structured output. Cost: $0.10 for 50 verifications = $0.002 per call, within estimates. Decision: proceed to full experiment (3 generators × 3 verifiers × 9 tasks × 50 instances = 4,050 verifications, ~$38 estimated). Full_cot variant abandoned: reasoning-gaps results don't store model_response field, only extracted_answer. Answer_only variant is more theoretically important anyway since it tests actual verification computation, not just reasoning trace consistency checking."
 
+  - date: 2026-03-23
+    decision: "Identify proof gap in Theorem 2c requiring Definition 7 and Lemma 3 (DW-142)"
+    rationale: "Linear issue DW-142 asks for critic review of 'revised Theorem 2c + Lemma 3' and whether 'Definition 7 is circular.' Investigation reveals: (1) Theorem 2c exists (part c of Self-Consistency Condition theorem), (2) Definition 7 does NOT exist in paper (only Definitions 1-6), (3) Lemma 3 does NOT exist in paper (only Lemmas 1-2 in appendix). Critical assessment of Theorem 2c finds: (a) Statement is informal compared to parts (a) and (b), (b) Key term 'bottleneck structure' is undefined, (c) Proof has a gap: Extended Proof asserts 'VC ⊄ cap(M) → bottleneck exists → ρ > 0' but only Lemma 2 proves 'bottleneck → ρ > 0', the connection 'VC ⊄ cap(M) → bottleneck exists' is not proved. (d) Claim 'regardless of VC class' contradicts empirical findings—correlation is not independent of VC, just not monotonic (Type 4 algorithmic gap has ρ=0.42 despite VC=P, Type 5 intractability has ρ=0.06 despite VC⊇coNP). Decision: Flag for Theorist to develop (1) Definition 7 (Computational Bottleneck) to formalize shared vs stochastic bottleneck structure, (2) Lemma 3 (Verification Hardness Produces Bottleneck) to prove VC ⊄ cap(M) → bottleneck exists with Pr[B]=q>0, (3) Revised Theorem 2c statement to be formally precise. Without these, Theorem 2c is not publication-ready—a hostile theory reviewer would flag it as incomplete. Documented full critique at reviews/critic-review-2026-03-23-theorem-2c.md."
+
 key_references:
   - "Shamir 1992 — IP = PSPACE"
   - "Arora et al. 1998 — PCP theorem"
@@ -187,8 +191,8 @@ paper_status:
     - "Abstract (refined, ready for submission)"
     - "Introduction (strong motivation, clear contributions)"
     - "Background (transformer expressiveness, complexity theory, LLM verification)"
-    - "Framework (6 definitions: task, VC, GC, GV-gap, capability class, effective verification)"
-    - "Theorems (3 main results with complete proofs)"
+    - "Framework (6 definitions: task, VC, GC, GV-gap, capability class, effective verification) - NEEDS Definition 7 (Computational Bottleneck)"
+    - "Theorems (Theorems 1 and 3 complete; Theorem 2 parts a,b complete; Theorem 2c needs revision)"
     - "Taxonomy (Table 1: verification complexity by gap type)"
     - "Scalable Oversight (tractability boundaries)"
     - "Related Work (comprehensive, includes 2025 work)"
@@ -196,11 +200,12 @@ paper_status:
     - "Conclusion (contributions summary)"
     - "Bibliography (40+ references, properly formatted)"
     - "NeurIPS Checklist (complete)"
-    - "Appendix A.1 (proof details complete - Lemma 1, Lemma 2, Extended Theorem 2, Gap Collapse Sharpness all fully expanded)"
+    - "Appendix A.1 (Lemma 1, Lemma 2 complete; needs Lemma 3 to close proof gap; Extended Theorem 2 needs revision)"
 
   sections_partial:
     - "Experiments (setup and predictions complete, results pending - Table 2 has placeholders, figures not generated)"
     - "Appendix A.2 (experimental design complete, supplementary results tables pending)"
+    - "Theorem 2c (Self-Consistency Condition part c) - statement informal, needs Definition 7 and Lemma 3 to close proof gap"
 
   sections_for_iclr_extension:
     - "Interactive Verification (debate, recursive RM) - new section"
@@ -208,4 +213,4 @@ paper_status:
     - "Case Studies - 3 detailed examples"
     - "Average-Case Analysis - new subsection in framework"
 
-notes: "Draft v0.2 complete and ready for experimental results integration. Theoretical framework is publication-ready. ICLR preparation complete at scaffold level: all enhancements identified, discussion expanded, appendices structured. Timeline: if NeurIPS experiments complete by April 25, submit May 6; otherwise pivot to ICLR with extended version (Theorem 4, interactive verification, additional benchmarks). Confidence: 0.75 for NeurIPS acceptance (strong theory, experiments pending), 0.85 for ICLR acceptance (more time for polish + extensions)."
+notes: "Draft v0.3 with identified proof gap in Theorem 2c. Critic review (DW-142, 2026-03-23) finds: Theorems 1 and 3 are publication-ready, Theorem 2 parts (a) and (b) are excellent, but Theorem 2 part (c) has proof gap requiring Definition 7 (Computational Bottleneck) and Lemma 3 (Verification Hardness Produces Bottleneck). Current proof asserts 'VC ⊄ cap(M) → bottleneck exists' without proving this connection. Statement is informal compared to other theorem parts. Needs Theorist to formalize bottleneck structure and prove the missing lemma. Without these fixes, Theorem 2c is vulnerable to hostile review. Timeline: complete Definition 7 + Lemma 3 by June 2026, integrate experimental results by July 2026, submit ICLR September 2026. Confidence: 0.70 for ICLR acceptance (strong theory overall, one theorem needs revision, experiments pending)."
