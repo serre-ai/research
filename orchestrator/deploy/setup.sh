@@ -139,9 +139,10 @@ fi
 # -----------------------------------------------
 # 7. Apply database schema
 # -----------------------------------------------
-echo "[7/8] Applying database schema..."
-PGPASSWORD="${DB_PASS}" psql -h localhost -U "${DB_USER}" -d "${DB_NAME}" \
-    -f "${INSTALL_DIR}/orchestrator/sql/001_initial_schema.sql"
+echo "[7/8] Running database migrations..."
+cd "${INSTALL_DIR}"
+DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}" \
+    sudo -u ${SERVICE_USER} node orchestrator/dist/migrate.js
 
 # -----------------------------------------------
 # 8. Install systemd services and nginx

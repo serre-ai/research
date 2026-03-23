@@ -76,6 +76,12 @@ async function main() {
         });
       }
 
+      // Run database migrations before starting daemon
+      if (dbPool) {
+        const { runMigrations } = await import("./migrate.js");
+        await runMigrations(dbPool);
+      }
+
       const daemon = new Daemon(config, dbPool);
 
       let closeApi: (() => Promise<void>) | undefined;
