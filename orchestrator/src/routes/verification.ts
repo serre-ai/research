@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from "express";
 import type { ClaimVerifier } from "../verification.js";
+import { isValidProjectName } from "../path-validation.js";
 
 export function verificationRoutes(verifier: ClaimVerifier | null): express.Router {
   const router = express.Router();
@@ -8,6 +9,10 @@ export function verificationRoutes(verifier: ClaimVerifier | null): express.Rout
   router.get("/:id/verification", async (req: Request, res: Response) => {
     if (!verifier) {
       res.status(503).json({ error: "Verifier not available" });
+      return;
+    }
+    if (!isValidProjectName(req.params.id as string)) {
+      res.status(400).json({ error: "Invalid project name" });
       return;
     }
     const report = await verifier.getLatestReport(req.params.id as string);
@@ -22,6 +27,10 @@ export function verificationRoutes(verifier: ClaimVerifier | null): express.Rout
   router.post("/:id/verification", async (req: Request, res: Response) => {
     if (!verifier) {
       res.status(503).json({ error: "Verifier not available" });
+      return;
+    }
+    if (!isValidProjectName(req.params.id as string)) {
+      res.status(400).json({ error: "Invalid project name" });
       return;
     }
     try {
@@ -42,6 +51,10 @@ export function verificationRoutes(verifier: ClaimVerifier | null): express.Rout
   router.get("/:id/verification/history", async (req: Request, res: Response) => {
     if (!verifier) {
       res.status(503).json({ error: "Verifier not available" });
+      return;
+    }
+    if (!isValidProjectName(req.params.id as string)) {
+      res.status(400).json({ error: "Invalid project name" });
       return;
     }
     const limitParam = req.query["limit"];

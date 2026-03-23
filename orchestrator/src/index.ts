@@ -82,7 +82,7 @@ async function main() {
 
       if (apiKey && databaseUrl) {
         const { broadcast, close } = createApi(
-          { port: apiPort, apiKey, databaseUrl, pool: dbPool },
+          { port: apiPort, apiKey, databaseUrl, pool: dbPool, corsOrigin: process.env.CORS_ORIGIN },
           daemon.getEvalManager(),
           daemon.getLogger(),
           (project) => daemon.getQualityHistory(project),

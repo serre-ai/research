@@ -1,6 +1,7 @@
 import { createServer, type Server as HttpServer } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import { join, basename } from "node:path";
+import { isValidProjectName, isValidId, isValidTaskName, assertContained } from "./path-validation.js";
 import { freemem, totalmem, cpus } from "node:os";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { WebSocketServer, type WebSocket } from "ws";
@@ -471,6 +472,11 @@ function evalControlRoutes(
       return;
     }
 
+    if (!isValidTaskName(model) || !isValidTaskName(task) || !isValidTaskName(condition)) {
+      res.status(400).json({ error: "Invalid model, task, or condition name" });
+      return;
+    }
+
     try {
       const job = await evalManager.enqueue({ model, task, condition, project });
 
@@ -773,6 +779,11 @@ function dispatchRoutes(daemon?: Daemon): express.Router {
 
     if (!project || !agent_type || !reason || !triggered_by) {
       res.status(400).json({ error: "Required: project, agent_type, reason, triggered_by" });
+      return;
+    }
+
+    if (!isValidProjectName(project) && project !== "_platform") {
+      res.status(400).json({ error: "Invalid project name" });
       return;
     }
 
@@ -1084,6 +1095,10 @@ function projectStatusRoutes(): express.Router {
   // PATCH /api/projects/:id/status — update project status.yaml
   router.patch("/:id/status", async (req: Request, res: Response) => {
     const projectId = req.params.id as string;
+    if (!isValidProjectName(projectId)) {
+      res.status(400).json({ error: "Invalid project name" });
+      return;
+    }
     const updates = req.body as Record<string, unknown>;
 
     if (!updates || Object.keys(updates).length === 0) {
@@ -1096,7 +1111,9 @@ function projectStatusRoutes(): express.Router {
       const { join } = await import("node:path");
       const { parse, stringify } = await import("yaml");
 
-      const statusPath = join(process.cwd(), "projects", projectId, "status.yaml");
+      const projectsRoot = join(process.cwd(), "projects");
+      const statusPath = join(projectsRoot, projectId, "status.yaml");
+      assertContained(statusPath, projectsRoot);
       const content = await readFile(statusPath, "utf-8");
       const status = parse(content) as Record<string, unknown>;
 
@@ -1200,6 +1217,10 @@ function sessionDetailRoutes(): express.Router {
 
   // GET /api/sessions/:id/transcript — paginated transcript lines
   router.get("/:id/transcript", async (req: Request, res: Response) => {
+    if (!isValidId(req.params.id as string)) {
+      res.status(400).json({ error: "Invalid session ID" });
+      return;
+    }
     const offset = Math.max(parseInt(req.query["offset"] as string) || 0, 0);
     const limit = Math.min(Math.max(parseInt(req.query["limit"] as string) || 50, 1), 500);
 
@@ -1216,7 +1237,9 @@ function sessionDetailRoutes(): express.Router {
       }
 
       const project = rows[0].project as string;
-      const transcriptPath = join(process.cwd(), "projects", project, "sessions", `${req.params.id}.jsonl`);
+      const projectsRoot = join(process.cwd(), "projects");
+      const transcriptPath = join(projectsRoot, project, "sessions", `${req.params.id}.jsonl`);
+      assertContained(transcriptPath, projectsRoot);
 
       let content: string;
       try {
@@ -1250,10 +1273,16 @@ function projectPhaseRoutes(): express.Router {
 
   // GET /api/projects/:id/phases — structured phase data from status.yaml
   router.get("/:id/phases", async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+    if (!isValidProjectName(projectId)) {
+      res.status(400).json({ error: "Invalid project name" });
+      return;
+    }
     try {
       const { parse } = await import("yaml");
-      const projectId = req.params.id as string;
-      const statusPath = join(process.cwd(), "projects", projectId, "status.yaml");
+      const projectsRoot = join(process.cwd(), "projects");
+      const statusPath = join(projectsRoot, projectId, "status.yaml");
+      assertContained(statusPath, projectsRoot);
 
       let content: string;
       try {
@@ -1517,16 +1546,31 @@ export function createApi(
   const app = express();
   app.use(express.json());
 
-  // CORS
+  // CORS — fail closed: only allow explicitly configured origins
   app.use((_req: Request, res: Response, next: NextFunction) => {
-    const origin = config.corsOrigin ?? "*";
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Api-Key");
-    if (_req.method === "OPTIONS") {
-      res.sendStatus(204);
+    if (config.corsOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", config.corsOrigin);
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Api-Key");
+      if (_req.method === "OPTIONS") {
+        res.sendStatus(204);
+        return;
+      }
+    } else if (_req.method === "OPTIONS") {
+      // No CORS origin configured — reject preflight
+      res.sendStatus(403);
       return;
     }
+    next();
+  });
+
+  // Security headers (defense-in-depth — nginx is primary)
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     next();
   });
 
