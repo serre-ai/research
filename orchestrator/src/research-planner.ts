@@ -1095,24 +1095,48 @@ export class ResearchPlanner {
     budgetUsd: number,
     highStakes: boolean = false,
   ): BriefConstraints {
-    // Model selection based on agent type and stakes
-    let model = "claude-sonnet-4-6";
-    if (highStakes || agentType === "critic") {
-      model = "claude-sonnet-4-6"; // Opus too expensive for routine; use Sonnet even for high-stakes
+    // Tiered model selection:
+    // Tier 1 — Opus ($15/$75): theory, first-draft writing, final critic review
+    // Tier 2 — Sonnet ($3/$15): research, engineering, experiment design, revisions
+    // Tier 3 — Haiku ($0.80/$4): scanning, auditing, script execution, polish
+
+    let model = "claude-sonnet-4-6"; // Tier 2 default
+    let maxBudget = 5;
+
+    // Tier 1 — Opus for the work where quality matters most
+    if (agentType === "theorist") {
+      model = "claude-opus-4-6";
+      maxBudget = 15;
     }
-    if (agentType === "scout") {
-      model = "claude-haiku-4-5-20251001";
+    if (agentType === "writer") {
+      model = "claude-opus-4-6"; // first drafts set the quality bar
+      maxBudget = 15;
+    }
+    if (agentType === "critic" && highStakes) {
+      model = "claude-opus-4-6"; // final paper review
+      maxBudget = 10;
     }
 
-    // Budget-aware downgrade
-    if (budgetUsd < 3) {
+    // Tier 3 — Haiku for high-volume, low-reasoning tasks
+    if (agentType === "scout" || agentType === "strategist" || agentType === "editor") {
       model = "claude-haiku-4-5-20251001";
+      maxBudget = 2;
+    }
+
+    // Budget-aware downgrades
+    if (budgetUsd < 10 && model.includes("opus")) {
+      model = "claude-sonnet-4-6"; // can't afford Opus, use Sonnet
+      maxBudget = 5;
+    }
+    if (budgetUsd < 3) {
+      model = "claude-haiku-4-5-20251001"; // emergency: everything on Haiku
+      maxBudget = 2;
     }
 
     return {
       maxTurns: agentType === "editor" ? 20 : agentType === "experimenter" ? 80 : 40,
       maxDurationMs: 45 * 60 * 1000,
-      maxBudgetUsd: Math.min(budgetUsd, 5),
+      maxBudgetUsd: Math.min(budgetUsd, maxBudget),
       model,
     };
   }
