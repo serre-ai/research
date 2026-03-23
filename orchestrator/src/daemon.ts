@@ -380,6 +380,7 @@ export class Daemon {
 
     // Detect orphaned sessions from previous crash
     await this.detectOrphanedSessions();
+    await this.recoverOrphanedSessions();
 
     // Sync filesystem projects to DB before first cycle
     await this.syncProjectsToDb();
@@ -1629,6 +1630,62 @@ export class Daemon {
       uptimeMs: Date.now() - this.startedAt,
     };
     await writeFile(heartbeatPath, JSON.stringify(data, null, 2), "utf-8");
+
+    // Persist active sessions to DB for crash recovery
+    await this.persistActiveSessions();
+  }
+
+  private async persistActiveSessions(): Promise<void> {
+    if (!this.dbPool) return;
+    const sessions = Array.from(this.activeSessions.entries()).map(([name, tracker]) => ({
+      projectName: name,
+      startedAt: tracker.startedAt,
+    }));
+    try {
+      await this.dbPool.query(
+        `INSERT INTO daemon_state (key, value, updated_at)
+         VALUES ('active_sessions', $1, NOW())
+         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+        [JSON.stringify(sessions)],
+      );
+    } catch {
+      // Best effort — don't crash the daemon for state persistence
+    }
+  }
+
+  private async recoverOrphanedSessions(): Promise<void> {
+    if (!this.dbPool) return;
+    try {
+      const { rows } = await this.dbPool.query(
+        `SELECT value FROM daemon_state WHERE key = 'active_sessions'`,
+      );
+      if (rows.length === 0) return;
+
+      const sessions = rows[0].value as Array<{ projectName: string; startedAt: number }>;
+      if (!Array.isArray(sessions) || sessions.length === 0) return;
+
+      console.log(`Found ${sessions.length} orphaned session(s) from previous run`);
+      for (const session of sessions) {
+        try {
+          await this.gitEngine.cleanupProjectWorktree(session.projectName);
+          console.log(`  Cleaned up orphaned worktree for ${session.projectName}`);
+        } catch {
+          console.log(`  No worktree to clean for ${session.projectName}`);
+        }
+        await this.logger.log({
+          type: "session_error",
+          project: session.projectName,
+          data: { error: "Session orphaned by daemon crash/restart", startedAt: session.startedAt },
+        });
+      }
+
+      // Clear persisted state
+      await this.dbPool.query(
+        `UPDATE daemon_state SET value = '[]', updated_at = NOW() WHERE key = 'active_sessions'`,
+      );
+    } catch (err) {
+      console.error("Failed to recover orphaned sessions:", err);
+    }
   }
 
   private async shutdown(signal: string): Promise<void> {
@@ -1653,8 +1710,11 @@ export class Daemon {
         Array.from(this.activeSessions.values()).map((t) => t.promise),
       );
 
-      // 30 second timeout for draining (matches systemd TimeoutStopSec default)
-      const timeout = new Promise((resolve) => setTimeout(resolve, 30000));
+      // 90 second timeout — must fit within systemd TimeoutStopSec (120s)
+      const timeout = new Promise((resolve) => {
+        const timer = setTimeout(resolve, 90_000);
+        timer.unref(); // don't keep process alive for this timer
+      });
 
       await Promise.race([drainPromise, timeout]);
 
@@ -1670,6 +1730,13 @@ export class Daemon {
       } else {
         console.log("All sessions drained successfully (" + (drainDuration / 1000).toFixed(1) + "s)");
       }
+    }
+
+    // Clear persisted active sessions on clean shutdown
+    if (this.dbPool) {
+      await this.dbPool.query(
+        `UPDATE daemon_state SET value = '[]', updated_at = NOW() WHERE key = 'active_sessions'`,
+      ).catch(() => {});
     }
 
     console.log("Shutdown signal handling complete");

@@ -41,6 +41,7 @@ export interface ApiConfig {
   apiKey: string;
   databaseUrl: string;
   corsOrigin?: string;
+  pool?: pg.Pool; // shared pool from daemon — avoids creating a duplicate
 }
 
 interface WsClient {
@@ -1427,17 +1428,17 @@ export function createApi(
 } {
   const startedAt = Date.now();
 
-  // Initialize database pool
-  pool = new Pool({
+  // Use shared pool if provided, else create own
+  const ownPool = !config.pool;
+  pool = config.pool ?? new Pool({
     connectionString: config.databaseUrl,
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
 
-  // Handle pool errors to prevent unhandled rejections
   pool.on("error", (err) => {
-    console.error("[DB Pool] Unexpected error on idle client:", err);
+    console.error("[API] Unexpected DB pool error:", err.message);
   });
 
   // Express app
@@ -1538,9 +1539,22 @@ export function createApi(
 
   const close = async (): Promise<void> => {
     clearInterval(healthInterval);
+
+    // Close all WebSocket connections
+    for (const client of wss.clients) {
+      client.close(1001, "Server shutting down");
+    }
     wss.close();
-    server.close();
-    await pool.end();
+
+    // Wait for HTTP server to finish serving in-flight requests
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+
+    // Only close pool if we created it (not shared from daemon)
+    if (ownPool) {
+      await pool.end();
+    }
   };
 
   return { app, server, broadcast, close };

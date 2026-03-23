@@ -78,26 +78,42 @@ async function main() {
 
       const daemon = new Daemon(config, dbPool);
 
+      let closeApi: (() => Promise<void>) | undefined;
+
       if (apiKey && databaseUrl) {
-        const { broadcast } = createApi(
-          { port: apiPort, apiKey, databaseUrl },
+        const { broadcast, close } = createApi(
+          { port: apiPort, apiKey, databaseUrl, pool: dbPool },
           daemon.getEvalManager(),
           daemon.getLogger(),
           (project) => daemon.getQualityHistory(project),
           daemon,
         );
+        closeApi = close;
 
         // Wire activity logger → WebSocket broadcast
         daemon.getLogger().setBroadcast((event) => broadcast("logs", event));
-
-        console.log(`API server listening on port ${apiPort}`);
       } else {
         console.log("API server skipped (DEEPWORK_API_KEY or DATABASE_URL not set)");
       }
 
-      // Start daemon loop
+      // Start daemon loop (blocks until shutdown signal)
       await daemon.start();
-      break;
+
+      // Daemon loop exited — clean up all resources keeping the event loop alive
+      console.log("Cleaning up resources...");
+
+      if (closeApi) {
+        await closeApi();
+        console.log("  API server closed");
+      }
+
+      if (dbPool) {
+        await dbPool.end();
+        console.log("  DB pool closed");
+      }
+
+      console.log("All resources released. Exiting.");
+      process.exit(0);
     }
 
     case "start": {

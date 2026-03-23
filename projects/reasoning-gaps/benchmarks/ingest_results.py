@@ -10,8 +10,7 @@ Usage:
     python ingest_results.py [--results-dir PATH] [--dry-run]
 
 Environment:
-    DATABASE_URL  PostgreSQL connection string
-                  Default: postgresql://deepwork:3db364c531740cb97cb02577dc2d40df@localhost:5432/deepwork
+    DATABASE_URL  PostgreSQL connection string (required)
 """
 
 from __future__ import annotations
@@ -26,8 +25,9 @@ from pathlib import Path
 import psycopg2
 import psycopg2.extras
 
-DEFAULT_DATABASE_URL = (
-    "postgresql://deepwork:3db364c531740cb97cb02577dc2d40df@localhost:5432/deepwork"
+DEFAULT_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://deepwork:deepwork@localhost:5432/deepwork",
 )
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"

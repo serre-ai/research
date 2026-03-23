@@ -5,13 +5,16 @@ Archives EV debris and creates DW projects, cycles, labels, and issues.
 """
 
 import json
+import os
 import time
 import sys
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 API_URL = "https://api.linear.app/graphql"
-API_KEY = "lin_api_ZCwlcAxQuTRdeoUHmoOhAx8q91RrqzdgNQMM9vFR"
+API_KEY = os.environ.get("LINEAR_API_KEY")
+if not API_KEY:
+    sys.exit("ERROR: LINEAR_API_KEY environment variable not set")
 DW_TEAM_ID = "77e7bcae-30d7-4257-b043-6f0b004abc65"
 EV_TEAM_ID = "8513b969-e338-4196-97f9-1a15bcaf9962"
 
