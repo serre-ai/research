@@ -245,7 +245,10 @@ export class ResearchPlanner {
     }
 
     // Linear-driven briefs (human-created issues from Linear)
-    if (this.linearClient) {
+    // DISABLED: daemon should not autonomously execute Linear issues.
+    // Use POST /api/sessions/run-issue for manual triggers.
+    // Strategist manages the backlog (read-only) on a daily schedule.
+    if (false && this.linearClient) {
       try {
         const linearBriefs = await this.linearDrivenBriefs(budgetStatus.dailyRemaining);
         if (linearBriefs.length > 0) {
