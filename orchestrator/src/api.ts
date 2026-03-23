@@ -11,15 +11,6 @@ import { ActivityLogger, type EventType } from "./logger.js";
 import type { Daemon } from "./daemon.js";
 import type { BacklogManager } from "./backlog.js";
 import type { DigestStore } from "./digest-store.js";
-import { forumRoutes } from "./routes/forum.js";
-import { messageRoutes } from "./routes/messages.js";
-import { predictionRoutes } from "./routes/predictions.js";
-import { agentStateRoutes } from "./routes/agent-state.js";
-import { ritualRoutes } from "./routes/rituals.js";
-import { governanceRoutes } from "./routes/governance.js";
-import { collectiveContextRoutes } from "./routes/collective-context.js";
-import { triggerRoutes } from "./routes/triggers.js";
-import { CollectiveSlack } from "./collective-slack.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
 import { eventRoutes } from "./routes/events.js";
 import { KnowledgeGraph } from "./knowledge-graph.js";
@@ -1436,85 +1427,6 @@ function agentDefinitionRoutes(): express.Router {
   return router;
 }
 
-// ============================================================
-// Collective health route (GET /api/collective/health)
-// ============================================================
-
-function collectiveHealthRoutes(): express.Router {
-  const router = express.Router();
-
-  // GET /api/collective/health — aggregated collective health summary
-  router.get("/health", async (_req: Request, res: Response) => {
-    const result: {
-      status: string;
-      agents: { total: number; active: number };
-      forum: { posts: number; threads: number };
-      proposals: { active: number };
-      last_activity: string | null;
-    } = {
-      status: "operational",
-      agents: { total: 0, active: 0 },
-      forum: { posts: 0, threads: 0 },
-      proposals: { active: 0 },
-      last_activity: null,
-    };
-
-    // Agent counts
-    try {
-      const { rows } = await pool.query(
-        `SELECT COUNT(*) AS total,
-                COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '24 hours') AS active
-         FROM agent_state`,
-      );
-      result.agents.total = parseInt(rows[0].total);
-      result.agents.active = parseInt(rows[0].active);
-    } catch {
-      // Table may not exist yet
-    }
-
-    // Forum post/thread counts
-    try {
-      const { rows } = await pool.query(
-        `SELECT COUNT(*) AS posts,
-                COUNT(DISTINCT thread_id) AS threads
-         FROM forum_posts`,
-      );
-      result.forum.posts = parseInt(rows[0].posts);
-      result.forum.threads = parseInt(rows[0].threads);
-    } catch {
-      // Table may not exist yet
-    }
-
-    // Active proposals
-    try {
-      const { rows } = await pool.query(
-        `SELECT COUNT(*) AS active
-         FROM proposals
-         WHERE status = 'open' OR status = 'voting'`,
-      );
-      result.proposals.active = parseInt(rows[0].active);
-    } catch {
-      // Table may not exist yet
-    }
-
-    // Last activity timestamp
-    try {
-      const { rows } = await pool.query(
-        `SELECT MAX(created_at) AS last_activity FROM forum_posts`,
-      );
-      result.last_activity = rows[0].last_activity
-        ? new Date(rows[0].last_activity).toISOString()
-        : null;
-    } catch {
-      // Table may not exist yet
-    }
-
-    res.json(result);
-  });
-
-  return router;
-}
-
 export function createApi(
   config: ApiConfig,
   evalManager?: EvalJobManager,
@@ -1604,19 +1516,6 @@ export function createApi(
   app.use("/api/memory/digest", digestRoutes(daemon?.getDigestStore()));
   app.use("/api/daemon/health", daemonHealthRoutes(daemon));
 
-  // Collective routes (Sprints 2-3)
-  const collectiveSlack = new CollectiveSlack();
-  app.use("/api/forum", forumRoutes(pool, collectiveSlack));
-  app.use("/api/messages", messageRoutes(pool));
-  app.use("/api/predictions", predictionRoutes(pool));
-  app.use("/api/agents", agentStateRoutes(pool));
-  app.use("/api/rituals", ritualRoutes(pool));
-  app.use("/api/governance", governanceRoutes(pool, collectiveSlack));
-
-  // Collective integration routes (Sprint 9)
-  app.use("/api/collective", collectiveContextRoutes(pool));
-  app.use("/api/triggers", triggerRoutes(pool));
-
   // Research planner (Sprint 4)
   app.use("/api/planner", plannerRoutes(() => daemon?.getPlanner() ?? null));
 
@@ -1635,7 +1534,6 @@ export function createApi(
   app.use("/api/projects", projectPhaseRoutes());
   app.use("/api/budget", budgetDailyHistoryRoutes());
   app.use("/api/agents", agentDefinitionRoutes());
-  app.use("/api/collective", collectiveHealthRoutes());
 
   // Start listening
   server.listen(config.port, () => {

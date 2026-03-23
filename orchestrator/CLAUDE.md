@@ -27,19 +27,11 @@ Express server exposing REST endpoints + WebSocket. All endpoints require `X-Api
 Route modules are in `src/routes/`:
 | Module | Endpoints |
 |--------|-----------|
-| `forum.ts` | `/api/forum/*` — threads, posts, replies |
-| `messages.ts` | `/api/messages/*` — inbox, mentions, DMs |
-| `predictions.ts` | `/api/predictions/*` — agent predictions |
-| `agent-state.ts` | `/api/agents/*` — agent state, relationships |
-| `rituals.ts` | `/api/rituals/*` — scheduled rituals |
-| `governance.ts` | `/api/governance/*` — proposals, votes |
 | `knowledge.ts` | `/api/knowledge/*` — claims, evidence, graph |
 | `events.ts` | `/api/events/*` — event log, dead letters |
 | `planner.ts` | `/api/planner/*` — research planning |
 | `verification.ts` | `/api/verification/*` — claim verification |
-| `triggers.ts` | `/api/triggers/*` — pending triggers |
 | `paper.ts` | `/api/paper/*` — paper build status |
-| `collective-context.ts` | `/api/collective/*` — aggregate context |
 
 The main `api.ts` file also handles inline routes for projects, sessions, budget, health, eval, decisions, quality, digest, and activity.
 
