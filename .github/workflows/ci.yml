@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   orchestrator:
-    name: Orchestrator — typecheck & build
+    name: Orchestrator — build & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,9 +22,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build --workspace=orchestrator
+      - run: npm run test --workspace=orchestrator -- --passWithNoTests
 
   site-next:
-    name: Site-Next — build
+    name: Site-Next — build & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +35,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build --workspace=site-next
+      - run: npm run test:coverage --workspace=site-next
+
+  python-tests:
+    name: Python — reasoning-gaps tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r projects/reasoning-gaps/benchmarks/requirements.txt
+      - run: cd projects/reasoning-gaps/benchmarks && python -m pytest tests/ -x -m "not integration" --tb=short
 
   deploy:
     name: Deploy to VPS
-    needs: [orchestrator, site-next]
+    needs: [orchestrator, site-next, python-tests]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

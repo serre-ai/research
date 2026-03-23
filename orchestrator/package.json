@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "node dist/migrate.js",
-    "migrate:baseline": "node dist/migrate.js --baseline"
+    "migrate:baseline": "node dist/migrate.js --baseline",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.77",
@@ -22,7 +25,9 @@
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.0",
     "@types/ws": "^8.5.0",
+    "@vitest/coverage-v8": "^4.1.1",
     "tsx": "^4.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.1"
   }
 }

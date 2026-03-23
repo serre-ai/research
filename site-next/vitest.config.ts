@@ -16,6 +16,12 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/__tests__/**', 'src/test/**', 'src/**/*.test.{ts,tsx}'],
+    },
     server: {
       deps: {
         // Inline @tanstack/react-query so Vite resolves its `react` import
