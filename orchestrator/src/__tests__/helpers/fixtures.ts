@@ -1,6 +1,9 @@
 /**
  * Test data factories for orchestrator tests.
+ * All timestamps are fixed for deterministic assertions.
  */
+
+const FIXED_TIMESTAMP = "2026-03-15T00:00:00.000Z";
 
 export function createMockProject(overrides: Record<string, unknown> = {}) {
   return {
@@ -10,7 +13,7 @@ export function createMockProject(overrides: Record<string, unknown> = {}) {
     phase: "analysis",
     status: "active",
     confidence: 0.8,
-    updated: new Date().toISOString(),
+    updated: FIXED_TIMESTAMP,
     next_steps: ["Run final evaluation"],
     metrics: {},
     git: { branch: "main" },
@@ -24,7 +27,7 @@ export function createMockSession(overrides: Record<string, unknown> = {}) {
     project: "reasoning-gaps",
     agent_type: "researcher",
     status: "completed",
-    started_at: new Date().toISOString(),
+    started_at: FIXED_TIMESTAMP,
     duration_s: 300,
     cost_usd: 1.5,
     turns: 25,
@@ -41,7 +44,7 @@ export function createMockEvalJob(overrides: Record<string, unknown> = {}) {
     condition: "direct",
     project: "reasoning-gaps",
     status: "queued",
-    created_at: new Date().toISOString(),
+    created_at: FIXED_TIMESTAMP,
     ...overrides,
   };
 }

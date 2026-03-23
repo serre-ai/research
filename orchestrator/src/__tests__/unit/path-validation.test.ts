@@ -48,6 +48,11 @@ describe("isValidProjectName", () => {
     expect(isValidProjectName("foo/bar")).toBe(false);
     expect(isValidProjectName("foo\\bar")).toBe(false);
   });
+
+  it("rejects null bytes", () => {
+    expect(isValidProjectName("project\x00/../etc")).toBe(false);
+    expect(isValidProjectName("foo\x00")).toBe(false);
+  });
 });
 
 describe("isValidId", () => {
@@ -106,6 +111,16 @@ describe("isValidTaskName", () => {
 
   it("rejects empty", () => {
     expect(isValidTaskName("")).toBe(false);
+  });
+
+  it("rejects .. embedded in colon-separated parts", () => {
+    expect(isValidTaskName("model:..")).toBe(false);
+    expect(isValidTaskName("provider:..:model")).toBe(false);
+    expect(isValidTaskName("..:..:..")).toBe(false);
+  });
+
+  it("rejects null bytes", () => {
+    expect(isValidTaskName("task\x00")).toBe(false);
   });
 });
 

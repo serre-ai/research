@@ -76,4 +76,10 @@ describe("calculateCost", () => {
     expect(cost).toBeGreaterThan(0);
     expect(Number.isFinite(cost)).toBe(true);
   });
+
+  it("returns negative cost for negative tokens (no guard)", () => {
+    // Documents current behavior — caller is responsible for non-negative input
+    const cost = calculateCost("gpt-4o", -1_000_000, 0);
+    expect(cost).toBeLessThan(0);
+  });
 });
