@@ -117,7 +117,7 @@ export class SessionRunner {
           ],
           permissionMode: "acceptEdits",
           maxTurns,
-          maxBudgetUsd: 5.0, // Per-session hard limit to prevent runaway costs
+          // maxBudgetUsd not supported by SDK — budget enforced via prompt instructions
           abortController,
           systemPrompt: {
             type: "preset",
@@ -229,7 +229,7 @@ export class SessionRunner {
           ],
           permissionMode: "acceptEdits",
           maxTurns,
-          maxBudgetUsd: brief.constraints.maxBudgetUsd, // Budget enforced per brief
+          // maxBudgetUsd not supported by SDK — budget enforced via prompt instructions
           abortController,
           systemPrompt: {
             type: "preset",
@@ -324,7 +324,7 @@ export class SessionRunner {
           allowedTools: ["Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch"],
           permissionMode: "acceptEdits",
           maxTurns: brief.constraints.maxTurns,
-          maxBudgetUsd: brief.constraints.maxBudgetUsd, // Budget enforced for collective actions
+          // maxBudgetUsd not supported by SDK — budget enforced via prompt instructions
           abortController,
           systemPrompt: { type: "preset", preset: "claude_code", append: prompt },
         },
