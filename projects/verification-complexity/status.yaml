@@ -4,14 +4,14 @@ status: active
 phase: empirical-evaluation
 confidence: 0.80
 created: "2026-03-21"
-updated: "2026-03-22"
+updated: "2026-03-23"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
 draft_version: "v0.3 (Theorem 2c refined, SC experiment abandoned, cross-model verification designed)"
 
 collaborators: []
 
-current_focus: "ICLR 2027 — deferred from NeurIPS to build comprehensive empirical validation. Three experiment streams: cross-model verification (built, needs full run), reward model verification (design needed), Theorem 4 interactive protocols (theory needed)."
+current_focus: "ICLR 2027 — deferred from NeurIPS to build comprehensive empirical validation. Three experiment streams: cross-model verification (canary PASSED, ready for full run), reward model verification (design needed), Theorem 4 interactive protocols (theory needed)."
 
 # NeurIPS 2026 Path (Deadline: May 6, 2026)
 neurips_next_steps:
@@ -65,7 +65,7 @@ progress:
 
   empirical_validation:
     status: in_progress
-    notes: "Redesigned around B1-B9 reasoning-gaps benchmarks (not GSM8K/MATH/PlanBench). Theorem 2c refined: error correlation tracks shared structural bottlenecks, not VC class. Between-model analysis (DW-121) shows B6 rho=0.42 (highest), B7 rho=0.06 (lowest). Predictions inverted: SC should help most on B7 (low rho), least on B6 (high rho). Validation run (T=0.7, N=9, short_cot) showed 96-99% agreement — insufficient diversity. Next: test T=1.0 (DW-126), then full run (~$92)."
+    notes: "Cross-model verification canary complete (DW-143, 2026-03-23): B4 (P-class) 100% accuracy, B7 (coNP-class) 64% accuracy, 36pp gap confirms VC signal. Gate PASSED. Key finding: 8/9 B7 errors are false positives where verifier failed to find satisfying assignment for SAT instances. Pipeline validated: 0% extraction failures, $0.10 cost for 50 verifications. Ready for full experiment (3 generators × 3 verifiers × 9 tasks × 50 instances = 4,050 verifications, ~$38). Full_cot variant not viable: reasoning-gaps results lack model_response field. SC experiments abandoned (DW-121): insufficient diversity at T=0.7, correlation analysis shows rho varies by task not VC class."
 
   paper_writing:
     status: complete_pending_experiments
@@ -131,6 +131,10 @@ decisions_made:
   - date: 2026-03-22
     decision: "Survey literature foundations for Self-Consistency Condition theorem (DW-48)"
     rationale: "Linear issue DW-48 asks to 'prove Self-Consistency Condition theorem.' As Researcher agent, my role is to provide literature grounding, not develop proofs (Theorist's role). Theorem 2 already exists in paper with complete proofs (main text + appendix), but lacks comprehensive citation support. Conducted literature survey across three streams: (1) LLM self-consistency empirics (Wang 2023, Tao 2024, Consensus 2026) showing when method works/fails, (2) Condorcet Jury Theorem extensions to correlated voting (Ladha 1992, Berg 1994, Boland 2008) providing mathematical foundations, (3) Statistical design effect theory (Kerry & Bland 1998, cluster sampling literature) for effective sample size formula N_eff = N / (1 + (N-1)ρ). Key finding: The theorem's three components are individually well-established, but nobody has synthesized them into a complexity-theoretic framework. Our novelty is the connection in part (c): VC(F) ⊄ cap(M) → computational bottleneck → correlated errors ρ > 0. Documented at literature/02-self-consistency-condition-foundations.md with ~15 key references. Recommendations for Writer: add citations to Tao 2024 (positional bias), Consensus 2026 (shared blind spots), Kerry & Bland 1998 (design effect), Ladha 1992 (CJT under correlation) to strengthen empirical grounding."
+
+  - date: 2026-03-23
+    decision: "Approve cross-model verification canary results and proceed to full experiment (DW-143)"
+    rationale: "Canary tested answer_only verification (Haiku→Haiku) on B4 (state machine, P-class) and B7 (3-SAT, coNP-class) with 25 instances per task. Results: B4 100% accuracy (16/16 correct confirmed, 9/9 incorrect detected), B7 64% accuracy (36pp gap). Both gate criteria passed: (1) VC signal exists (B4 > B7), (2) extraction failures 0% < 10%. Error analysis on B7 validates theory: 8/9 errors are false positives where verifier attempted to find satisfying assignment, failed, and incorrectly confirmed generator's UNSAT claim. This is expected behavior for coNP-complete verification. Pipeline validated end-to-end with clean structured output. Cost: $0.10 for 50 verifications = $0.002 per call, within estimates. Decision: proceed to full experiment (3 generators × 3 verifiers × 9 tasks × 50 instances = 4,050 verifications, ~$38 estimated). Full_cot variant abandoned: reasoning-gaps results don't store model_response field, only extracted_answer. Answer_only variant is more theoretically important anyway since it tests actual verification computation, not just reasoning trace consistency checking."
 
 key_references:
   - "Shamir 1992 — IP = PSPACE"
