@@ -465,6 +465,43 @@ export class SessionRunner {
       }
     }
 
+    // Inject strategist-specific context: Linear access, session evaluations, scripts
+    if (brief.agentType === "strategist") {
+      // Inject Linear API key for CLI tool usage
+      const linearKey = process.env.LINEAR_API_KEY;
+      if (linearKey) {
+        sections.push(
+          "# Linear API Access\n\n" +
+          "The LINEAR_API_KEY environment variable is set. " +
+          "Use `python3 scripts/linear-cli.py` commands to interact with Linear.\n" +
+          "Team ID: 77e7bcae-30d7-4257-b043-6f0b004abc65 (DW team only)\n" +
+          "NEVER operate on the EV team."
+        );
+      }
+
+      // Inject recent session evaluations
+      try {
+        const evalQuery = "SELECT project, agent_type, quality_score, objective, cost_usd, created_at FROM session_evaluations ORDER BY created_at DESC LIMIT 20";
+        const pool = this.dbPool;
+        if (pool) {
+          const { rows } = await pool.query(evalQuery);
+          if (rows.length > 0) {
+            const evalLines = rows.map((r: Record<string, unknown>) =>
+              `- [${(r.created_at as Date)?.toISOString?.()?.slice(0, 10) || "?"}] ${r.project} (${r.agent_type}): ${r.quality_score}/100, $${(r.cost_usd as number)?.toFixed(2) || "?"} — ${((r.objective as string) || "").slice(0, 80)}`
+            );
+            sections.push("# Recent Session Evaluations (last 20)\n\n" + evalLines.join("\n"));
+          }
+        }
+      } catch {}
+
+      sections.push(
+        "# Available Scripts\n\n" +
+        "- `python3 scripts/linear-cli.py` — Manage Linear issues (list, create, update, comment, set-blocked-by, create-sub-issue)\n" +
+        "- `python3 scripts/codebase-audit.py` — Run codebase health scan (JSON output)\n" +
+        "- Run `python3 scripts/linear-cli.py --help` for usage details"
+      );
+    }
+
     // Brief-specific context — this is what makes planner sessions intelligent
     const briefParts: string[] = [];
     briefParts.push("# Session Objective\n");

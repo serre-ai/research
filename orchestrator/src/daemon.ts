@@ -568,6 +568,22 @@ export class Daemon {
 
     if (availableSlots <= 0) return;
 
+    // Daily strategist session
+    try {
+      const lastRun = await this.getLastStrategistRun();
+      const hoursSince = (Date.now() - lastRun) / (1000 * 60 * 60);
+      if (hoursSince > 24 && availableSlots > 0) {
+        console.log("[Daemon] Scheduling daily strategist session (" + Math.round(hoursSince) + "h since last)");
+        await this.runStrategistSession();
+        await this.setLastStrategistRun();
+        availableSlots--;
+      }
+    } catch (err) {
+      console.error("[Daemon] Strategist scheduling error:", err);
+    }
+
+    if (availableSlots <= 0) return;
+
     if (this.planner) {
       // ---- Planner path ----
       const activeSet = new Set(this.activeSessions.keys());
@@ -904,6 +920,66 @@ export class Daemon {
       );
     } else if (this.literatureScanner) {
       await this.literatureScanner.scan(activeProjects);
+    }
+  }
+
+  private async getLastStrategistRun(): Promise<number> {
+    if (!this.dbPool) return 0;
+    try {
+      const { rows } = await this.dbPool.query(
+        "SELECT value FROM planner_state WHERE project = '_platform' AND key = 'strategist:last_run'"
+      );
+      if (rows.length > 0) {
+        const data = JSON.parse(rows[0].value as string);
+        return data.timestamp || 0;
+      }
+    } catch {}
+    return 0;
+  }
+
+  private async setLastStrategistRun(): Promise<void> {
+    if (!this.dbPool) return;
+    await this.dbPool.query(
+      `INSERT INTO planner_state (project, key, value, updated_at)
+       VALUES ('_platform', 'strategist:last_run', $1, NOW())
+       ON CONFLICT (project, key) DO UPDATE SET value = $1, updated_at = NOW()`,
+      [JSON.stringify({ timestamp: Date.now() })]
+    ).catch(() => {});
+  }
+
+  private async runStrategistSession(): Promise<void> {
+    const brief: SessionBrief = {
+      id: randomUUID().slice(0, 8),
+      projectName: "_platform",
+      agentType: "strategist",
+      objective: "Daily backlog audit: review Linear issues, check codebase health, analyze session quality, create/update issues as needed.",
+      context: {
+        claims: [],
+        contradictions: [],
+        files: ["CLAUDE.md", "docs/GIT-WORKFLOW.md"],
+        recentDecisions: [],
+      },
+      constraints: {
+        maxTurns: 30,
+        maxDurationMs: 30 * 60 * 1000,
+        maxBudgetUsd: 3,
+        model: "claude-sonnet-4-6",
+      },
+      deliverables: [
+        { description: "Audit backlog and create/update Linear issues", type: "status_update" as const, verificationMethod: "manual" as const },
+      ],
+      priority: 60,
+      reasoning: "Scheduled daily strategist session for backlog health",
+      strategy: "quality_improvement" as const,
+    };
+
+    // Run via session manager
+    const session = await this.sessionManager.startProjectWithBrief(brief);
+
+    // Log the result
+    console.log("  Strategist session: " + (session.status === "completed" ? "completed" : "failed"));
+    if (session.result) {
+      console.log("  Turns: " + session.result.turnsUsed + " | Cost: $" + session.result.costUsd.toFixed(2));
     }
   }
 
