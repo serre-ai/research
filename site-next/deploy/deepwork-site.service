@@ -23,8 +23,10 @@ EnvironmentFile=/opt/deepwork/site-next/.env.local
 # Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/opt/deepwork
+# ProtectHome=no because /opt/deepwork is a symlink to /home/deepwork/deepwork
+# and ProtectHome=true blocks symlink resolution even with ReadWritePaths
+ProtectHome=no
+ReadWritePaths=/opt/deepwork /home/deepwork/deepwork
 PrivateTmp=true
 
 # Logging
