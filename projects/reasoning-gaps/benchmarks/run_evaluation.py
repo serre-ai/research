@@ -35,6 +35,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from io_utils import atomic_json_write
+
 # ---------------------------------------------------------------------------
 # Evaluation matrix
 # ---------------------------------------------------------------------------
@@ -574,14 +576,10 @@ def write_progress_file(
         ],
     }
 
-    # Atomic write: write to temp file then rename
-    tmp_path = progress_path.with_suffix(".tmp")
     try:
-        with open(tmp_path, "w") as f:
-            json.dump(data, f, indent=2)
-        tmp_path.rename(progress_path)
-    except OSError:
-        pass
+        atomic_json_write(progress_path, data)
+    except Exception:
+        pass  # Progress file is best-effort; don't crash the batch
 
 
 # ---------------------------------------------------------------------------

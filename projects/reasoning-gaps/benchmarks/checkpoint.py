@@ -50,14 +50,29 @@ class CheckpointManager:
     def save(self, result: Any) -> None:
         """Append a single EvalResult to the appropriate checkpoint file.
 
-        Uses file locking and fsync for crash safety.
+        Uses file locking and fsync for crash safety. Updates the in-memory
+        cache before writing to prevent duplicate writes from concurrent
+        coroutines. Rolls back the cache entry if the write fails.
 
         Args:
             result: An EvalResult dataclass instance (or any object with
                     model, task, condition, instance_id attributes).
         """
-        path = self._checkpoint_path(result.model, result.task, result.condition)
         data = asdict(result) if hasattr(result, '__dataclass_fields__') else result
+        instance_id = result.instance_id if hasattr(result, 'instance_id') else data["instance_id"]
+        cache_key = self._cache_key(result.model, result.task, result.condition)
+
+        # Check if already saved (prevents duplicate writes)
+        if cache_key in self._completed_cache and instance_id in self._completed_cache[cache_key]:
+            return
+
+        # Update cache FIRST to prevent concurrent duplicate writes
+        if cache_key not in self._completed_cache:
+            self._completed_cache[cache_key] = set()
+        self._completed_cache[cache_key].add(instance_id)
+
+        # Write to file
+        path = self._checkpoint_path(result.model, result.task, result.condition)
         line = json.dumps(data, default=str) + "\n"
 
         fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
@@ -66,16 +81,12 @@ class CheckpointManager:
             os.write(fd, line.encode("utf-8"))
             os.fsync(fd)
             fcntl.flock(fd, fcntl.LOCK_UN)
+        except Exception:
+            # Roll back cache on write failure
+            self._completed_cache[cache_key].discard(instance_id)
+            raise
         finally:
             os.close(fd)
-
-        # Update in-memory cache
-        cache_key = self._cache_key(result.model, result.task, result.condition)
-        if cache_key not in self._completed_cache:
-            self._completed_cache[cache_key] = set()
-        self._completed_cache[cache_key].add(
-            result.instance_id if hasattr(result, 'instance_id') else data["instance_id"]
-        )
 
     def load(self, model: str, task: str, condition: str) -> list[dict]:
         """Load all results from a checkpoint file.

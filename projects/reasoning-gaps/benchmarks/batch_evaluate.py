@@ -123,6 +123,13 @@ async def evaluate_batch(
     executor.shutdown(wait=False)
 
     elapsed = time.monotonic() - start_time
+
+    if error_count > 0:
+        logger.warning(
+            "Batch had %d failed instances (out of %d). "
+            "Failed instances were not saved and will need to be re-run.",
+            error_count, total,
+        )
     logger.info(
         "Batch complete: %d/%d succeeded, %d errors, %.1f seconds",
         completed_count,

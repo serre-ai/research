@@ -144,10 +144,11 @@ class OpenAIClient(ModelClient):
         prompt: str,
         system_prompt: str = "",
         max_tokens: int = 512,
+        temperature: float | None = None,
     ) -> tuple[str, float]:
         """Send prompt to OpenAI and return (response_text, latency_ms)."""
         self._wait_for_rate_limit()
-        return self._query_with_retry(prompt, system_prompt, max_tokens)
+        return self._query_with_retry(prompt, system_prompt, max_tokens, temperature=temperature)
 
     def query_with_tools(
         self,
@@ -248,12 +249,13 @@ class OpenAIClient(ModelClient):
         prompt: str,
         system_prompt: str,
         max_tokens: int,
+        temperature: float | None = None,
     ) -> tuple[str, float]:
         """Inner query with tenacity retry on transient errors."""
         is_reasoning = self.model_name in REASONING_MODELS
 
         if is_reasoning:
-            # Reasoning models (o3) don't support system messages;
+            # Reasoning models (o3) don't support system messages or temperature;
             # fold the system prompt into the user message.
             combined = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
             messages = [{"role": "user", "content": combined}]
@@ -272,6 +274,8 @@ class OpenAIClient(ModelClient):
                 "messages": messages,
                 "max_tokens": max_tokens,
             }
+            if temperature is not None:
+                kwargs["temperature"] = temperature
 
         start = time.perf_counter()
         response = self._client.chat.completions.create(**kwargs)

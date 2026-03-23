@@ -43,6 +43,7 @@ sys.path.insert(0, str(BENCHMARKS_DIR / "clients"))
 
 from evaluate import evaluate_instance, EvalResult  # noqa: E402
 from answer_extraction import extract_answer  # noqa: E402
+from io_utils import atomic_jsonl_append  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -126,106 +127,31 @@ class EnsembleResult:
 # ---------------------------------------------------------------------------
 
 def create_client(provider: str, model_name: str, temperature: float = 0.7):
-    """Create a model client with the specified temperature."""
+    """Create a model client with the specified temperature.
+
+    Uses the native client temperature parameter, preserving retry logic,
+    rate limiting, and cost tracking from the base client classes.
+    """
     if provider == "anthropic":
         from anthropic_client import AnthropicClient
         client = AnthropicClient(model_name)
-        # Patch the query method to use temperature
-        original_query = client._query_with_retry
-
-        def query_with_temp(prompt, system_prompt="", max_tokens=512):
-            """Wrapper that injects temperature into the API call."""
-            import anthropic
-            messages = [{"role": "user", "content": prompt}]
-            kwargs = {
-                "model": client.model_name,
-                "max_tokens": max_tokens,
-                "messages": messages,
-                "temperature": temperature,
-            }
-            if system_prompt:
-                kwargs["system"] = system_prompt
-
-            start = time.perf_counter()
-            response = client._client.messages.create(**kwargs)
-            latency_ms = (time.perf_counter() - start) * 1000
-
-            text_parts = []
-            for block in response.content:
-                if hasattr(block, "text"):
-                    text_parts.append(block.text)
-            return "\n".join(text_parts), latency_ms
-
-        client.query = query_with_temp
-        return client
-
     elif provider == "openai":
         from openai_client import OpenAIClient
         client = OpenAIClient(model_name)
-        original_query = client._query_with_retry
-
-        def query_with_temp(prompt, system_prompt="", max_tokens=512):
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-
-            kwargs = {
-                "model": client.model_name,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            }
-
-            start = time.perf_counter()
-            response = client._client.chat.completions.create(**kwargs)
-            latency_ms = (time.perf_counter() - start) * 1000
-
-            choice = response.choices[0]
-            return choice.message.content or "", latency_ms
-
-        client.query = query_with_temp
-        return client
-
     elif provider == "openrouter":
         from openrouter_client import OpenRouterClient
         client = OpenRouterClient(model_name)
-        original_query = client._query_with_retry
-
-        def query_with_temp(prompt, system_prompt="", max_tokens=512):
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-
-            import httpx
-            payload = {
-                "model": client.model_name,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            }
-            headers = {
-                "Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
-                "Content-Type": "application/json",
-            }
-
-            start = time.perf_counter()
-            resp = httpx.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                json=payload, headers=headers, timeout=60,
-            )
-            latency_ms = (time.perf_counter() - start) * 1000
-            resp.raise_for_status()
-            data = resp.json()
-            text = data["choices"][0]["message"]["content"] or ""
-            return text, latency_ms
-
-        client.query = query_with_temp
-        return client
-
     else:
         raise ValueError(f"Unknown provider: {provider}")
+
+    # Wrap query to inject temperature — keeps retry, rate limiting, cost tracking
+    _original_query = client.query
+
+    def query_with_temp(prompt, system_prompt="", max_tokens=512):
+        return _original_query(prompt, system_prompt, max_tokens, temperature=temperature)
+
+    client.query = query_with_temp
+    return client
 
 
 # ---------------------------------------------------------------------------
@@ -404,28 +330,26 @@ def main():
 
             logger.info(f"  {task}: {len(remaining)} instances × {args.num_samples} samples")
 
-            with open(output_file, "a") as f:
-                for idx, instance in enumerate(remaining):
-                    try:
-                        result = evaluate_ensemble(
-                            instance, client, args.num_samples, args.temperature,
-                            condition=args.condition,
-                        )
-                        f.write(json.dumps(asdict(result)) + "\n")
-                        f.flush()
+            for idx, instance in enumerate(remaining):
+                try:
+                    result = evaluate_ensemble(
+                        instance, client, args.num_samples, args.temperature,
+                        condition=args.condition,
+                    )
+                    atomic_jsonl_append(output_file, asdict(result))
 
-                        status = "✓" if result.majority_correct else "✗"
-                        if (idx + 1) % 10 == 0 or idx == 0:
-                            ext_warn = f" ext_fail={result.extraction_failures}" if result.extraction_failures else ""
-                            logger.info(
-                                f"    [{idx+1}/{len(remaining)}] {status} "
-                                f"agree={result.agreement:.0%} "
-                                f"single={'✓' if result.single_correct else '✗'}"
-                                f"{ext_warn}"
-                            )
-                    except Exception as e:
-                        logger.error(f"    [{idx+1}] {instance['id']}: {e}")
-                        continue
+                    status = "✓" if result.majority_correct else "✗"
+                    if (idx + 1) % 10 == 0 or idx == 0:
+                        ext_warn = f" ext_fail={result.extraction_failures}" if result.extraction_failures else ""
+                        logger.info(
+                            f"    [{idx+1}/{len(remaining)}] {status} "
+                            f"agree={result.agreement:.0%} "
+                            f"single={'✓' if result.single_correct else '✗'}"
+                            f"{ext_warn}"
+                        )
+                except Exception as e:
+                    logger.error(f"    [{idx+1}] {instance['id']}: {e}")
+                    continue
 
             logger.info(f"  {task}: done → {output_file}")
 

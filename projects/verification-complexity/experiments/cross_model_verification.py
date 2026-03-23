@@ -39,6 +39,8 @@ BENCHMARKS_DIR = Path(__file__).resolve().parents[2] / "reasoning-gaps" / "bench
 sys.path.insert(0, str(BENCHMARKS_DIR))
 sys.path.insert(0, str(BENCHMARKS_DIR / "clients"))
 
+from io_utils import atomic_jsonl_append  # noqa: E402
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -349,86 +351,83 @@ def main():
                         completed_ids.add(r["instance_id"])
                 logger.info(f"    Resuming: {len(completed_ids)} already done")
 
-            with open(output_file, "a") as f:
-                for task_key in tasks:
-                    instances = gen_results.get(task_key, [])
-                    remaining = [r for r in instances if r["instance_id"] not in completed_ids]
+            for task_key in tasks:
+                instances = gen_results.get(task_key, [])
+                remaining = [r for r in instances if r["instance_id"] not in completed_ids]
 
-                    if not remaining:
+                if not remaining:
+                    continue
+
+                logger.info(f"    {task_key}: {len(remaining)} instances")
+
+                for idx, inst in enumerate(remaining):
+                    try:
+                        # Build verification prompt based on variant
+                        prompt_sent = inst.get("prompt_sent") or inst.get("metadata", {}).get("prompt_sent", "")
+                        model_response = inst.get("model_response") or inst.get("metadata", {}).get("model_response", "")
+
+                        if args.prompt_variant == "answer_only":
+                            prompt = prompt_template.format(
+                                prompt=prompt_sent,
+                                answer=inst["extracted_answer"],
+                            )
+                        else:
+                            prompt = prompt_template.format(
+                                prompt=prompt_sent,
+                                response=model_response,
+                            )
+
+                        # Query verifier
+                        start = time.perf_counter()
+                        response, latency = client.query(
+                            prompt,
+                            system_prompt="You are a careful reasoning evaluator.",
+                            max_tokens=2048,
+                        )
+                        actual_latency = (time.perf_counter() - start) * 1000
+
+                        # Extract judgment
+                        judgment = extract_verification_judgment(response)
+
+                        # Determine if verification is accurate
+                        gen_correct = inst["correct"]
+                        if judgment == "Correct":
+                            verification_accurate = gen_correct
+                        elif judgment == "Incorrect":
+                            verification_accurate = not gen_correct
+                        else:
+                            verification_accurate = False  # extraction failure
+
+                        result = VerificationResult(
+                            instance_id=inst["instance_id"],
+                            task=inst["task"],
+                            difficulty=inst["difficulty"],
+                            prompt_variant=args.prompt_variant,
+                            generator_model=gen_model,
+                            generator_answer=inst["extracted_answer"],
+                            generator_correct=gen_correct,
+                            verifier_model=ver_model,
+                            verifier_response=response[:1500],
+                            verifier_judgment=judgment,
+                            verification_accurate=verification_accurate,
+                            ground_truth=inst["ground_truth"],
+                            vc_class=VC_CLASS.get(task_key, "?"),
+                            latency_ms=actual_latency,
+                        )
+
+                        atomic_jsonl_append(output_file, asdict(result))
+
+                        if (idx + 1) % 10 == 0 or idx == 0:
+                            status = "accurate" if verification_accurate else "wrong"
+                            logger.info(
+                                f"      [{idx+1}/{len(remaining)}] {status} "
+                                f"gen={inst['extracted_answer']} "
+                                f"verdict={judgment}"
+                            )
+
+                    except Exception as e:
+                        logger.error(f"      [{idx+1}] {inst['instance_id']}: {e}")
                         continue
-
-                    logger.info(f"    {task_key}: {len(remaining)} instances")
-
-                    for idx, inst in enumerate(remaining):
-                        try:
-                            # Build verification prompt based on variant
-                            # Extract prompt from metadata if nested
-                            prompt_sent = inst.get("prompt_sent") or inst.get("metadata", {}).get("prompt_sent", "")
-                            model_response = inst.get("model_response") or inst.get("metadata", {}).get("model_response", "")
-
-                            if args.prompt_variant == "answer_only":
-                                prompt = prompt_template.format(
-                                    prompt=prompt_sent,
-                                    answer=inst["extracted_answer"],
-                                )
-                            else:
-                                prompt = prompt_template.format(
-                                    prompt=prompt_sent,
-                                    response=model_response,
-                                )
-
-                            # Query verifier
-                            start = time.perf_counter()
-                            response, latency = client.query(
-                                prompt,
-                                system_prompt="You are a careful reasoning evaluator.",
-                                max_tokens=2048,
-                            )
-                            actual_latency = (time.perf_counter() - start) * 1000
-
-                            # Extract judgment
-                            judgment = extract_verification_judgment(response)
-
-                            # Determine if verification is accurate
-                            gen_correct = inst["correct"]
-                            if judgment == "Correct":
-                                verification_accurate = gen_correct
-                            elif judgment == "Incorrect":
-                                verification_accurate = not gen_correct
-                            else:
-                                verification_accurate = False  # extraction failure
-
-                            result = VerificationResult(
-                                instance_id=inst["instance_id"],
-                                task=inst["task"],
-                                difficulty=inst["difficulty"],
-                                prompt_variant=args.prompt_variant,
-                                generator_model=gen_model,
-                                generator_answer=inst["extracted_answer"],
-                                generator_correct=gen_correct,
-                                verifier_model=ver_model,
-                                verifier_response=response[:1500],  # keep enough for debugging
-                                verifier_judgment=judgment,
-                                verification_accurate=verification_accurate,
-                                ground_truth=inst["ground_truth"],
-                                vc_class=VC_CLASS.get(task_key, "?"),
-                                latency_ms=actual_latency,
-                            )
-
-                            f.write(json.dumps(asdict(result)) + "\n")
-                            f.flush()
-
-                            if (idx + 1) % 10 == 0 or idx == 0:
-                                status = "accurate" if verification_accurate else "wrong"
-                                logger.info(
-                                    f"      [{idx+1}/{len(remaining)}] {status} "
-                                    f"gen={inst['extracted_answer']} "
-                                    f"verdict={judgment}"
-                                )
-
-                        except Exception as e:
-                            logger.error(f"      [{idx+1}] {inst['instance_id']}: {e}")
-                            continue
 
             logger.info(f"    Done → {output_file}")
 

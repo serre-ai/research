@@ -26,6 +26,8 @@ from pathlib import Path
 import psycopg2
 import psycopg2.extras
 
+from io_utils import atomic_json_write
+
 DEFAULT_DATABASE_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql://deepwork:deepwork@localhost:5432/deepwork",
@@ -154,8 +156,7 @@ def export(args: argparse.Namespace) -> None:
             filename = f"{model_safe}_{task}_{condition}.json"
             filepath = output_dir / filename
 
-            with open(filepath, "w") as f:
-                json.dump(data, f, indent=2)
+            atomic_json_write(filepath, data)
 
             files_written += 1
             total_instances += len(results)

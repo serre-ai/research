@@ -136,10 +136,11 @@ class AnthropicClient(ModelClient):
         prompt: str,
         system_prompt: str = "",
         max_tokens: int = 512,
+        temperature: float | None = None,
     ) -> tuple[str, float]:
         """Send prompt to Anthropic Claude and return (response_text, latency_ms)."""
         self._wait_for_rate_limit()
-        return self._query_with_retry(prompt, system_prompt, max_tokens)
+        return self._query_with_retry(prompt, system_prompt, max_tokens, temperature=temperature)
 
     def query_with_tools(
         self,
@@ -245,6 +246,7 @@ class AnthropicClient(ModelClient):
         prompt: str,
         system_prompt: str,
         max_tokens: int,
+        temperature: float | None = None,
     ) -> tuple[str, float]:
         """Inner query with tenacity retry on transient errors."""
         messages = [{"role": "user", "content": prompt}]
@@ -256,6 +258,8 @@ class AnthropicClient(ModelClient):
         }
         if system_prompt:
             kwargs["system"] = system_prompt
+        if temperature is not None:
+            kwargs["temperature"] = temperature
 
         start = time.perf_counter()
         response = self._client.messages.create(**kwargs)
