@@ -100,6 +100,43 @@ Score each candidate 1-5:
 - **Distinctiveness**: Does it stand out from existing AI labs?
 - **Versatility**: Does it work for papers, a website, and casual reference?
 
+## New Discoveries (2026-03-23 sweep)
+
+### Tier 1 — Strongest candidates (available, checked via DNS)
+
+| Domain | Concept | Byline | Why it works |
+|--------|---------|--------|-------------|
+| **verisig.ai** | Verify + Sigurdsson | "Oddur Sigurdsson, VeriSig AI" | Your name + your research (verification complexity). Sounds institutional. Like VeriSign but for AI research. |
+| **sigil.ai** | A symbol with power | "Oddur Sigurdsson, Sigil AI" | Short, mysterious, SIG embedded. A sigil is a mark of authority. |
+| **euler.ai** | Leonhard Euler | "Oddur Sigurdsson, Euler AI" | One of history's greatest mathematicians. Signals formal/theoretical ML. Instantly recognized by the field. Bold claim but you're publishing proofs. |
+| **polaris.ai** | The North Star | "Oddur Sigurdsson, Polaris AI" | Navigation, guidance, northern. Icelandic connection (north). Authoritative — Polaris is what you orient by. |
+| **refine.ai** | Iterative refinement | "Oddur Sigurdsson, Refine AI" | What research literally is. Clean single word. Verb that becomes a noun. |
+| **aeon.ai** | An age, an era | "Oddur Sigurdsson, Aeon AI" | Deep time. Long-term research vision. Short, memorable. |
+| **deepnorth.ai** | Deep research + Nordic | "Oddur Sigurdsson, Deep North AI" | Two words but evocative. Your identity in the name. |
+
+### Tier 2 — Strong but niche
+
+| Domain | Concept | Notes |
+|--------|---------|-------|
+| sigmath.ai | SIG + mathematics | Very on-brand for theory papers |
+| siglogic.ai | SIG + logic | Formal methods feel |
+| sigprove.ai | SIG + prove | You literally prove theorems |
+| borealis.ai | Aurora borealis | Northern, beautiful, but maybe too poetic |
+| cogna.ai | Cognition (Latin root) | Clean, short, academic |
+| auton.ai | Autonomous | Literally what the platform is |
+| sapient.ai | Wisdom/intelligence | Available. Strong but might feel overreaching |
+| rök.ai | Icelandic "reasoning/argument" | Available. 3 chars. Literally means reasoning. |
+| hugar.ai | Icelandic "to think" | Available. Less known but distinctive |
+| oddur.ai | Your name | Available. Personal brand. Simplest option. |
+
+### Tier 3 — SIG compound variants (all available)
+
+sigcore.ai, sigwork.ai, sigfield.ai, siground.ai, sigver.ai, sigveri.ai, sigworks.ai, nordsig.ai, islandsig.ai, osig.ai, oddsig.ai, sigthink.ai
+
+### Notable unavailable (for reference)
+sigma.ai, sigurd.ai, signet.ai, axiom.ai, theorem.ai, rigor.ai, lemma.ai, conjecture.ai, derive.ai, manifold.ai, fathom.ai, cipher.ai, aegis.ai, thule.ai
+
 ## Decision Log
 - 2026-03-22: darkreach.ai selected as placeholder. Camera-ready blocks prepared.
 - 2026-03-23: Reopened for broader exploration. This document tracks candidates.
+- 2026-03-23: Broad sweep completed — 3 waves, ~120 domains checked. Tier 1 shortlist: verisig, sigil, euler, polaris, refine, aeon, deepnorth.
