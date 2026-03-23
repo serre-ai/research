@@ -663,9 +663,23 @@ export class ResearchPlanner {
       const todoIssues = await this.linearClient.getTodoIssues();
       if (todoIssues.length === 0) return [];
 
+      // Filter out blocked issues
+      const unblockedIssues = [];
+      for (const issue of todoIssues) {
+        try {
+          if (!(await this.linearClient.isBlocked(issue.id))) {
+            unblockedIssues.push(issue);
+          } else {
+            console.log("  [Planner] Skipping blocked issue: " + issue.identifier);
+          }
+        } catch {
+          unblockedIssues.push(issue); // Don't block on relation check failure
+        }
+      }
+
       const briefs: SessionBrief[] = [];
 
-      for (const issue of todoIssues) {
+      for (const issue of unblockedIssues) {
         // Map Linear project to DW project
         const dwProject = issue.project
           ? LinearClient.projectNameToDW(issue.project.name)
@@ -686,7 +700,7 @@ export class ResearchPlanner {
               ? ["orchestrator/src/"]
               : [`projects/${dwProject}/status.yaml`, `projects/${dwProject}/BRIEF.md`],
             recentDecisions: [],
-            supplementary: `Linear issue: ${mapped.linearIdentifier} (${issue.url})\nLinear issue ID: ${mapped.linearIssueId}`,
+            supplementary: mapped.supplementary,
           },
           constraints: this.buildConstraints(mapped.agentType as AgentType, budgetUsd),
           deliverables: [
@@ -703,6 +717,61 @@ export class ResearchPlanner {
       console.error("Planner: Linear query failed:", err);
       return [];
     }
+  }
+
+  // --------------------------------------------------------
+  // Linear quality gate: retry + critic review tracking
+  // --------------------------------------------------------
+
+  async shouldRetry(projectName: string, linearIdentifier: string, quality: number): Promise<boolean> {
+    if (quality >= 40) return false;
+    if (!this.pool) return false;
+    try {
+      const { rows } = await this.pool.query(
+        "SELECT value FROM planner_state WHERE project = $1 AND key = $2",
+        [projectName, "retry:" + linearIdentifier],
+      );
+      return rows.length === 0;
+    } catch { return false; }
+  }
+
+  async markRetried(projectName: string, linearIdentifier: string, quality: number): Promise<void> {
+    if (!this.pool) return;
+    try {
+      await this.pool.query(
+        `INSERT INTO planner_state (project, key, value, updated_at) VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (project, key) DO UPDATE SET value = $3, updated_at = NOW()`,
+        [projectName, "retry:" + linearIdentifier, JSON.stringify({ retried: true, quality, ts: Date.now() })],
+      );
+    } catch { /* ignore */ }
+  }
+
+  async storePendingCriticReview(projectName: string, linearIssueId: string, linearIdentifier: string): Promise<void> {
+    if (!this.pool) return;
+    await this.pool.query(
+      `INSERT INTO planner_state (project, key, value, updated_at) VALUES ($1, 'pending_critic_review', $2, NOW())
+       ON CONFLICT (project, key) DO UPDATE SET value = $2, updated_at = NOW()`,
+      [projectName, JSON.stringify({ linearIssueId, linearIdentifier })],
+    ).catch(() => {});
+  }
+
+  async getPendingCriticReview(projectName: string): Promise<{ linearIssueId: string; linearIdentifier: string } | null> {
+    if (!this.pool) return null;
+    try {
+      const { rows } = await this.pool.query(
+        "SELECT value FROM planner_state WHERE project = $1 AND key = 'pending_critic_review'",
+        [projectName],
+      );
+      return rows.length > 0 ? JSON.parse(rows[0].value as string) : null;
+    } catch { return null; }
+  }
+
+  async clearPendingCriticReview(projectName: string): Promise<void> {
+    if (!this.pool) return;
+    await this.pool.query(
+      "DELETE FROM planner_state WHERE project = $1 AND key = 'pending_critic_review'",
+      [projectName],
+    ).catch(() => {});
   }
 
   // --------------------------------------------------------

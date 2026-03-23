@@ -29,6 +29,7 @@ import { verificationRoutes } from "./routes/verification.js";
 import { ClaimVerifier } from "./verification.js";
 import { paperRoutes } from "./routes/paper.js";
 import { literatureRoutes } from "./routes/literature.js";
+import { LinearClient } from "./linear.js";
 
 const { Pool } = pg;
 
@@ -805,6 +806,77 @@ function dispatchRoutes(daemon?: Daemon): express.Router {
       queue: daemon.getDispatchQueue(),
       recent: daemon.getDispatchLog().slice(-20),
     });
+  });
+
+  // POST /api/sessions/run-issue — trigger a session for a specific Linear issue
+  router.post("/run-issue", async (req: Request, res: Response) => {
+    const { identifier } = req.body as { identifier?: string };
+    if (!identifier || typeof identifier !== "string") {
+      res.status(400).json({ error: "identifier required (e.g., 'DW-141')" });
+      return;
+    }
+
+    const linear = daemon?.getLinearClient();
+    if (!linear) {
+      res.status(503).json({ error: "Linear not configured" });
+      return;
+    }
+
+    try {
+      const issue = await linear.getIssueByIdentifier(identifier);
+      if (!issue) {
+        res.status(404).json({ error: "Issue " + identifier + " not found" });
+        return;
+      }
+
+      const dwProject = LinearClient.projectNameToDW(issue.project?.name ?? "");
+      if (!dwProject) {
+        res.status(400).json({ error: "No project mapping for " + (issue.project?.name || "unknown") });
+        return;
+      }
+
+      if (await linear.isBlocked(issue.id)) {
+        const blockers = await linear.getBlockingIssues(issue.id);
+        res.status(409).json({
+          error: "Issue is blocked",
+          blockedBy: blockers.map((b) => ({ identifier: b.identifier, title: b.title })),
+        });
+        return;
+      }
+
+      const briefData = linear.issueToBrief(issue, dwProject);
+
+      if (!daemon) {
+        res.status(503).json({ error: "Daemon not available" });
+        return;
+      }
+
+      const result = await daemon.queueSession({
+        project: briefData.projectName,
+        agent_type: briefData.agentType as any,
+        priority: "critical",
+        reason: "Manual trigger: " + identifier,
+        triggered_by: "run-issue-api",
+      });
+
+      await linear.transitionIssue(issue.id, "In Progress");
+
+      res.json({
+        status: "queued",
+        identifier,
+        title: issue.title,
+        project: dwProject,
+        agentType: briefData.agentType,
+        dispatchId: result.id,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Internal error";
+      if (msg.includes("Rate limit") || msg.includes("Budget") || msg.includes("active session")) {
+        res.status(429).json({ error: msg });
+      } else {
+        res.status(500).json({ error: msg });
+      }
+    }
   });
 
   return router;

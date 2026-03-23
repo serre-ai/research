@@ -272,6 +272,7 @@ export class LinearClient {
     agentType: string;
     linearIssueId: string;
     linearIdentifier: string;
+    supplementary: string;
   } {
     // Priority mapping: Linear 1=urgent→95, 2=high→75, 3=medium→55, 4=low→35, 0=none→45
     const priorityMap: Record<number, number> = {
@@ -301,6 +302,12 @@ export class LinearClient {
       agentType,
       linearIssueId: issue.id,
       linearIdentifier: issue.identifier,
+      supplementary: JSON.stringify({
+        linearIssueId: issue.id,
+        linearIdentifier: issue.identifier,
+        linearUrl: issue.url,
+        labels: issue.labels.nodes.map((l) => l.name),
+      }),
     };
   }
 
@@ -477,8 +484,95 @@ export class LinearClient {
   }
 
   // --------------------------------------------------------
+  // Dependency queries
+  // --------------------------------------------------------
+
+  /** Get issues that this issue is blocking (uncompleted/uncanceled). */
+  async getBlockingIssues(issueId: string): Promise<LinearIssue[]> {
+    const data = await this.query<{
+      issue: {
+        relations: {
+          nodes: {
+            type: string;
+            relatedIssue: {
+              id: string;
+              identifier: string;
+              title: string;
+              state: { id: string; name: string; type: string };
+            };
+          }[];
+        };
+      };
+    }>(
+      `query($issueId: String!) {
+        issue(id: $issueId) {
+          relations {
+            nodes {
+              type
+              relatedIssue {
+                id identifier title
+                state { id name type }
+              }
+            }
+          }
+        }
+      }`,
+      { issueId },
+    );
+
+    return data.issue.relations.nodes
+      .filter(
+        (r) =>
+          r.type === "blocks" &&
+          r.relatedIssue.state.type !== "completed" &&
+          r.relatedIssue.state.type !== "canceled",
+      )
+      .map((r) => ({
+        id: r.relatedIssue.id,
+        identifier: r.relatedIssue.identifier,
+        title: r.relatedIssue.title,
+        description: null,
+        priority: 0,
+        state: { id: r.relatedIssue.state.id, name: r.relatedIssue.state.name },
+        labels: { nodes: [] },
+        project: null,
+        assignee: null,
+        cycle: null,
+        url: "",
+        createdAt: "",
+        updatedAt: "",
+      }));
+  }
+
+  /** Check if an issue has unresolved blocking relations. */
+  async isBlocked(issueId: string): Promise<boolean> {
+    return (await this.getBlockingIssues(issueId)).length > 0;
+  }
+
+  /** Look up a single issue by its identifier (e.g. "DW-141"). */
+  async getIssueByIdentifier(identifier: string): Promise<LinearIssue | null> {
+    const data = await this.query<{
+      issueSearch: { nodes: LinearIssue[] };
+    }>(
+      `query($query: String!) {
+        issueSearch(query: $query, first: 10) {
+          nodes { ${this.ISSUE_FRAGMENT} }
+        }
+      }`,
+      { query: identifier },
+    );
+
+    return data.issueSearch.nodes.find((i) => i.identifier === identifier) ?? null;
+  }
+
+  // --------------------------------------------------------
   // Project-to-DW-project mapping
   // --------------------------------------------------------
+
+  /** Map a Linear project name to a DW project directory name (instance wrapper). */
+  projectNameToDW(linearProjectName: string): string | null {
+    return LinearClient.projectNameToDW(linearProjectName);
+  }
 
   /** Map a Linear project name to a DW project directory name. */
   static projectNameToDW(linearProjectName: string): string | null {

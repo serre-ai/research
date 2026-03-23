@@ -585,11 +585,21 @@ export class Daemon {
 
         // Transition Linear issue to "In Progress" when starting
         if (brief.strategy === "linear_driven" && this.linearClient && brief.context.supplementary) {
-          const issueIdMatch = brief.context.supplementary.match(/Linear issue ID: ([a-f0-9-]+)/);
-          if (issueIdMatch) {
-            this.linearClient.transitionIssue(issueIdMatch[1], "In Progress").catch((err) => {
-              console.error(`[Linear] Failed to transition issue to In Progress:`, err);
-            });
+          try {
+            const meta = JSON.parse(brief.context.supplementary);
+            if (meta.linearIssueId) {
+              this.linearClient.transitionIssue(meta.linearIssueId, "In Progress").catch((err) => {
+                console.error(`[Linear] Failed to transition issue to In Progress:`, err);
+              });
+            }
+          } catch {
+            // Legacy format — try regex fallback
+            const issueIdMatch = brief.context.supplementary.match(/Linear issue ID: ([a-f0-9-]+)/);
+            if (issueIdMatch) {
+              this.linearClient.transitionIssue(issueIdMatch[1], "In Progress").catch((err) => {
+                console.error(`[Linear] Failed to transition issue to In Progress:`, err);
+              });
+            }
           }
         }
 
@@ -1050,7 +1060,7 @@ export class Daemon {
 
     // Session chaining: determine and queue follow-up based on signals
     if (session?.signals && session.status === "completed") {
-      this.processSessionSignals(projectName, agentType, session.signals, currentChainId, chainDepth);
+      await this.processSessionSignals(projectName, agentType, session.signals, currentChainId, chainDepth);
 
       // Emit paper.edited if paper files changed
       if (session.signals.paperFilesChanged && this.eventBus) {
@@ -1103,8 +1113,9 @@ export class Daemon {
       if (session.result) await this.persistSession(session.result, brief.constraints.model);
 
       // Planner evaluation
+      let evaluation: import("./research-planner.js").SessionEvaluation | undefined;
       if (this.planner && session.result) {
-        const evaluation = await this.planner.evaluateSession(brief, session.result, session.signals);
+        evaluation = await this.planner.evaluateSession(brief, session.result, session.signals);
         await this.logger.log({
           type: "session_end",
           project: brief.projectName,
@@ -1123,39 +1134,70 @@ export class Daemon {
       }
 
       // Linear issue update (if linear_driven)
-      if (brief.strategy === "linear_driven" && this.linearClient && brief.context.supplementary) {
-        const issueIdMatch = brief.context.supplementary.match(/Linear issue ID: ([a-f0-9-]+)/);
-        if (issueIdMatch) {
-          const linearIssueId = issueIdMatch[1];
-          const commitCount = session.result?.commitsCreated.length ?? 0;
-          const cost = session.result?.costUsd?.toFixed(2) ?? "0.00";
-          const duration = session.result?.durationMs
-            ? Math.round(session.result.durationMs / 60000) + "min"
-            : "unknown";
+      if (brief.strategy === "linear_driven" && this.linearClient) {
+        let meta: Record<string, unknown> = {};
+        try { meta = JSON.parse(brief.context.supplementary || "{}"); } catch {}
 
-          try {
-            // Transition to Done if session completed successfully with commits
-            const targetState = commitCount > 0 ? "Done" : "In Review";
-            await this.linearClient.transitionIssue(linearIssueId, targetState);
+        const issueId = meta.linearIssueId as string | undefined;
+        const identifier = (meta.linearIdentifier as string) || "?";
+        const labels: string[] = (meta.labels as string[]) || [];
 
-            // Add comment with session summary
-            const comment = [
-              `**Session completed** (${brief.agentType})`,
-              "",
-              `- Quality: ${quality.score}/100`,
-              `- Commits: ${commitCount}`,
-              `- Cost: $${cost}`,
-              `- Duration: ${duration}`,
-              commitCount > 0
-                ? `- Commits: ${session.result?.commitsCreated.map((c) => `\`${c.slice(0, 7)}\``).join(", ")}`
-                : "",
-              "",
-              `State → **${targetState}**`,
-            ].filter(Boolean).join("\n");
+        if (issueId && this.planner) {
+          const evalQuality = evaluation?.qualityScore ?? quality.score;
 
-            await this.linearClient.addComment(linearIssueId, comment);
-          } catch (err) {
-            console.error(`[Linear] Failed to update issue ${linearIssueId}:`, err);
+          // Quality gate: retry once if below threshold
+          if (evalQuality < 40 && await this.planner.shouldRetry(brief.projectName, identifier, evalQuality)) {
+            try {
+              await this.linearClient.transitionIssue(issueId, "Todo");
+              await this.linearClient.addComment(issueId,
+                "Session scored " + evalQuality + "/100 — below threshold. Retrying next cycle.\n\n" +
+                "Issues: " + (evaluation?.reasoning || ""),
+              );
+              await this.planner.markRetried(brief.projectName, identifier, evalQuality);
+              console.log("  Quality gate: " + identifier + " scored " + evalQuality + "/100 — retry queued");
+            } catch (err) {
+              console.error("[Linear] Quality gate update failed:", err);
+            }
+            // Skip notification below — will retry
+          } else {
+            // Critic chaining for Paper/Research issues
+            const needsCritic = labels.some((l: string) => l === "Paper" || l === "Research");
+
+            if (needsCritic && evalQuality >= 40 && session?.result?.commitsCreated?.length) {
+              this.followUpQueue.push({
+                projectName: brief.projectName,
+                agentType: "critic" as AgentType,
+                chainId: randomUUID(),
+                reason: "Review " + identifier + ": " + brief.objective.slice(0, 100),
+                queuedAt: Date.now(),
+                chainDepth: 1,
+              });
+              try {
+                await this.planner.storePendingCriticReview(brief.projectName, issueId, identifier);
+                await this.linearClient.transitionIssue(issueId, "In Review");
+                await this.linearClient.addComment(issueId,
+                  "Session completed (" + evalQuality + "/100). Critic review queued.\n" +
+                  "Commits: " + session.result.commitsCreated.length + "\n" +
+                  "Cost: $" + (session.result.costUsd?.toFixed(2) ?? "?"),
+                );
+              } catch (err) {
+                console.error("[Linear] Critic chain update failed:", err);
+              }
+              console.log("  Chaining: " + identifier + " → critic review");
+            } else {
+              // Standard completion
+              const target = (session?.result?.commitsCreated?.length ?? 0) > 0 ? "Done" : "In Review";
+              try {
+                await this.linearClient.transitionIssue(issueId, target);
+                await this.linearClient.addComment(issueId,
+                  "Session completed (" + evalQuality + "/100).\n" +
+                  "Commits: " + (session?.result?.commitsCreated?.length ?? 0) + "\n" +
+                  "Cost: $" + (session?.result?.costUsd?.toFixed(2) ?? "?"),
+                );
+              } catch (err) {
+                console.error("[Linear] Completion update failed:", err);
+              }
+            }
           }
         }
       }
@@ -1174,7 +1216,7 @@ export class Daemon {
 
       // Session chaining
       if (session.signals && session.status === "completed") {
-        this.processSessionSignals(brief.projectName, brief.agentType, session.signals, chainId, 0);
+        await this.processSessionSignals(brief.projectName, brief.agentType, session.signals, chainId, 0);
 
         if (session.signals.paperFilesChanged && this.eventBus) {
           await this.eventBus.emit("paper.edited", {
@@ -1236,13 +1278,36 @@ export class Daemon {
     }
   }
 
-  private processSessionSignals(
+  private async processSessionSignals(
     projectName: string,
     agentType: AgentType,
     signals: SessionSignals,
     chainId: string,
     chainDepth: number = 0,
-  ): void {
+  ): Promise<void> {
+    // Critic completed — check if reviewing a Linear issue
+    if (agentType === "critic" && this.planner && this.linearClient) {
+      const pending = await this.planner.getPendingCriticReview(projectName);
+      if (pending) {
+        const { linearIssueId, linearIdentifier } = pending;
+        if (signals.criticVerdict === "ACCEPT") {
+          await this.linearClient.transitionIssue(linearIssueId, "Done");
+          await this.linearClient.addComment(linearIssueId, "Critic review: ACCEPT. Moving to Done.");
+          console.log("  Linear: " + linearIdentifier + " → Done (critic accepted)");
+        } else if (signals.criticVerdict === "REVISE") {
+          await this.linearClient.transitionIssue(linearIssueId, "Todo");
+          await this.linearClient.addComment(linearIssueId, "Critic review: REVISE. Re-queued for revision.");
+          console.log("  Linear: " + linearIdentifier + " → Todo (critic wants revision)");
+        } else if (signals.criticVerdict === "REJECT") {
+          await this.linearClient.transitionIssue(linearIssueId, "In Review");
+          await this.linearClient.addComment(linearIssueId, "Critic review: REJECT. Needs human attention.");
+          console.log("  Linear: " + linearIdentifier + " → In Review (critic rejected)");
+        }
+        await this.planner.clearPendingCriticReview(projectName);
+        return; // Don't process generic critic verdict handling
+      }
+    }
+
     // Experiment spec created → chain to critic for review
     if (agentType === "experimenter" && signals.experimentSpecCreated) {
       this.followUpQueue.push({
