@@ -36,6 +36,7 @@ export interface LinearCreateIssueInput {
   labelIds?: string[];
   cycleId?: string;
   stateId?: string;
+  parentId?: string;
 }
 
 export interface LinearTeamState {
@@ -250,11 +251,56 @@ export class LinearClient {
           labelIds: input.labelIds,
           cycleId: input.cycleId,
           stateId: input.stateId,
+          parentId: input.parentId,
         },
       },
     );
 
     return data.issueCreate.success ? data.issueCreate.issue : null;
+  }
+
+  async createRelation(
+    issueId: string,
+    relatedIssueId: string,
+    type: "blocks" | "related" = "blocks",
+  ): Promise<boolean> {
+    const data = await this.query<{
+      issueRelationCreate: { success: boolean };
+    }>(
+      `mutation($input: IssueRelationCreateInput!) {
+        issueRelationCreate(input: $input) { success }
+      }`,
+      { input: { issueId, relatedIssueId, type } },
+    );
+    return data.issueRelationCreate.success;
+  }
+
+  async updateIssue(
+    issueId: string,
+    updates: {
+      title?: string;
+      description?: string;
+      priority?: number;
+      labelIds?: string[];
+      stateId?: string;
+    },
+  ): Promise<boolean> {
+    const data = await this.query<{
+      issueUpdate: { success: boolean };
+    }>(
+      `mutation($id: String!, $input: IssueUpdateInput!) {
+        issueUpdate(id: $id, input: $input) { success }
+      }`,
+      { id: issueId, input: updates },
+    );
+    return data.issueUpdate.success;
+  }
+
+  async createSubIssue(
+    parentId: string,
+    input: { title: string; description?: string; priority?: number; labelIds?: string[] },
+  ): Promise<LinearIssue | null> {
+    return this.createIssue({ ...input, parentId, teamId: this.teamId });
   }
 
   // --------------------------------------------------------
