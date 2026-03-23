@@ -140,3 +140,44 @@ sigma.ai, sigurd.ai, signet.ai, axiom.ai, theorem.ai, rigor.ai, lemma.ai, conjec
 - 2026-03-22: darkreach.ai selected as placeholder. Camera-ready blocks prepared.
 - 2026-03-23: Reopened for broader exploration. This document tracks candidates.
 - 2026-03-23: Broad sweep completed — 3 waves, ~120 domains checked. Tier 1 shortlist: verisig, sigil, euler, polaris, refine, aeon, deepnorth.
+- 2026-03-23: Agent-driven sweep — 200+ domains across CS, math, astronomy. Major finds below.
+
+## Agent Sweep Results (2026-03-23)
+
+### Tier 0 — The absolute standouts (available, verified)
+
+| Domain | What | Why it's special |
+|--------|------|-----------------|
+| **cantor.ai** | Georg Cantor — father of set theory | Proved different infinities exist. Foundational to all of mathematics. Short, authoritative, universally recognized in the field. "A Cantor AI paper." |
+| **shannon.ai** | Claude Shannon — father of information theory | Founded the field that makes AI possible. Bold, undeniable authority. Same first name as Claude (the model). |
+| **euler.ai** | Leonhard Euler — most prolific mathematician ever | Already on our Tier 1 list. Confirmed available. |
+| **erdos.ai** | Paul Erdős — collaborative mathematics | Known for co-authoring with everyone. Fitting for an AI lab that collaborates with models. The Erdős number is a famous concept. |
+| **gentzen.ai** | Gerhard Gentzen — invented proof theory | Natural deduction, sequent calculus. If your lab proves theorems, this is the patron saint. Deep cut that signals serious formal methods knowledge. |
+| **polaris.ai** | The North Star | Already on Tier 1. Confirmed still available. |
+
+### Tier 1 — Strong new finds (available)
+
+| Domain | What | Byline |
+|--------|------|--------|
+| **adjoint.ai** | Adjoint functors (category theory) | Deeply mathematical. Short. "Adjoint AI" sounds like an institution. |
+| **homotopy.ai** | Homotopy type theory | Cutting edge math-CS intersection. Signals depth. |
+| **serre.ai** | Jean-Pierre Serre — Fields Medal, Abel Prize | One of the greatest living mathematicians. |
+| **atiyah.ai** | Michael Atiyah — Fields Medal, Abel Prize | Bridged math and physics. |
+| **milnor.ai** | John Milnor — Fields Medal | Differential topology, exotic spheres. |
+| **dedekind.ai** | Richard Dedekind — foundations of algebra | Dedekind cuts, ideal theory. |
+| **parallax.ai** | Stellar distance measurement | Shift in perspective — how you see depends on where you stand. |
+| **sextant.ai** | Navigation instrument | Precision measurement. Finding your position. |
+| **satisfiable.ai** | SAT — the foundational NP-complete problem | Your work literally involves satisfiability. |
+
+### Icelandic science (available)
+
+| Domain | Meaning |
+|--------|---------|
+| **sannreyna.ai** | "To verify" in Icelandic — literally your research |
+| **hugruna.ai** | "To reason deeply" in Icelandic |
+| **djupvit.ai** | "Deep knowledge" in Icelandic |
+| **logmal.ai** | "Logical measure" in Icelandic |
+
+### SIG compounds (all available)
+
+sigproof.ai, sigverify.ai, sigwitness.ai, sigdecide.ai, sigbound.ai, sigspace.ai, sigprism.ai, sigdeep.ai, sigpolar.ai, nordsig.ai, signadir.ai, sigzenith.ai
