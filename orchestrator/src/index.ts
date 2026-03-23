@@ -69,6 +69,11 @@ async function main() {
       if (databaseUrl) {
         const pg = await import("pg");
         dbPool = new pg.default.Pool({ connectionString: databaseUrl, max: 10 });
+
+        // Handle pool errors to prevent unhandled rejections
+        dbPool.on("error", (err) => {
+          console.error("[DB Pool] Unexpected error on idle client:", err);
+        });
       }
 
       const daemon = new Daemon(config, dbPool);

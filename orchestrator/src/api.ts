@@ -1435,6 +1435,11 @@ export function createApi(
     connectionTimeoutMillis: 5000,
   });
 
+  // Handle pool errors to prevent unhandled rejections
+  pool.on("error", (err) => {
+    console.error("[DB Pool] Unexpected error on idle client:", err);
+  });
+
   // Express app
   const app = express();
   app.use(express.json());

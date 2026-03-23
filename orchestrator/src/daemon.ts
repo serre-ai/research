@@ -360,6 +360,10 @@ export class Daemon {
     this.startedAt = Date.now();
     this.abortController = new AbortController();
 
+    // Register shutdown handlers early
+    process.on("SIGTERM", () => this.shutdown("SIGTERM"));
+    process.on("SIGINT", () => this.shutdown("SIGINT"));
+
     await this.logger.log({
       type: "daemon_start",
       data: {
@@ -374,6 +378,9 @@ export class Daemon {
       await this.eventBus.start();
     }
 
+    // Detect orphaned sessions from previous crash
+    await this.detectOrphanedSessions();
+
     // Sync filesystem projects to DB before first cycle
     await this.syncProjectsToDb();
 
@@ -381,9 +388,6 @@ export class Daemon {
     console.log("  Poll interval: " + Math.round(this.config.pollIntervalMs / 60000) + "m");
     console.log("  Max concurrent: " + this.config.maxConcurrentSessions);
     console.log("  Daily budget: $" + this.config.dailyBudgetUsd);
-
-    process.on("SIGTERM", () => this.shutdown("SIGTERM"));
-    process.on("SIGINT", () => this.shutdown("SIGINT"));
 
     while (this.running) {
       try {
@@ -400,13 +404,23 @@ export class Daemon {
       await this.sleep(this.config.pollIntervalMs);
     }
 
+    // Graceful shutdown sequence
+    console.log("Shutting down daemon...");
+
     // Stop event bus
     if (this.eventBus) {
+      console.log("Stopping event bus...");
       await this.eventBus.stop();
     }
 
+    // Close database pool
+    if (this.dbPool) {
+      console.log("Closing database pool...");
+      await this.dbPool.end();
+    }
+
     await this.logger.log({ type: "daemon_stop", data: { cyclesCompleted: this.cycleCount } });
-    console.log("Deepwork daemon stopped");
+    console.log("Deepwork daemon stopped cleanly");
   }
 
   async getHealth() {
@@ -730,6 +744,60 @@ export class Daemon {
     }
   }
 
+  /** Detect sessions that were still running when daemon crashed. */
+  private async detectOrphanedSessions(): Promise<void> {
+    if (!this.dbPool) return;
+
+    try {
+      // Find sessions marked as 'running' that started more than 2 hours ago
+      // These are likely orphaned from a previous daemon crash
+      const { rows } = await this.dbPool.query(
+        `SELECT session_id, project, agent_type, started_at
+         FROM sessions
+         WHERE status = 'running'
+           AND started_at < NOW() - INTERVAL '2 hours'`,
+      );
+
+      if (rows.length > 0) {
+        console.log(`[Recovery] Found ${rows.length} orphaned session(s) from previous crash`);
+
+        for (const row of rows) {
+          const sessionId = row.session_id as string;
+          const project = row.project as string;
+          const agentType = row.agent_type as string;
+          const startedAt = new Date(row.started_at as string);
+
+          console.log(`  - ${sessionId} (${project}/${agentType}, started ${startedAt.toISOString()})`);
+
+          // Mark as failed in DB
+          await this.dbPool.query(
+            `UPDATE sessions
+             SET status = 'failed',
+                 error = 'Orphaned session from daemon crash',
+                 duration_s = EXTRACT(EPOCH FROM (NOW() - started_at))
+             WHERE session_id = $1`,
+            [sessionId],
+          );
+
+          await this.logger.log({
+            type: "session_error",
+            project,
+            agent: agentType,
+            data: {
+              sessionId,
+              error: "Orphaned session from daemon crash",
+              recovered: true,
+            },
+          });
+        }
+
+        console.log(`[Recovery] Marked ${rows.length} orphaned session(s) as failed`);
+      }
+    } catch (err) {
+      console.error("[Recovery] Failed to detect orphaned sessions:", err);
+    }
+  }
+
   /** Sync filesystem projects to the DB on startup so FK references never break. */
   private async syncProjectsToDb(): Promise<void> {
     if (!this.dbPool) return;
@@ -854,6 +922,18 @@ export class Daemon {
     const currentChainId = chainId ?? randomUUID();
 
     const attempt = async (): Promise<Session> => {
+      // Mark session as running in DB (for crash recovery)
+      if (this.dbPool) {
+        try {
+          await this.dbPool.query(
+            `UPDATE sessions SET status = 'running' WHERE session_id = $1`,
+            [currentChainId],
+          );
+        } catch {
+          // Session record may not exist yet, will be created by persistSession
+        }
+      }
+
       // startProject sets up worktree, runs agent, and returns session info
       const session = await this.sessionManager.startProject(projectName, agentType);
 
@@ -1552,15 +1632,47 @@ export class Daemon {
   }
 
   private async shutdown(signal: string): Promise<void> {
-    console.log("\nReceived " + signal + " -- shutting down gracefully...");
+    console.log("\n========================================");
+    console.log("Received " + signal + " -- initiating graceful shutdown");
+    console.log("========================================");
+
+    await this.logger.log({
+      type: "daemon_shutdown",
+      data: { signal, activeSessions: this.activeSessions.size },
+    });
+
     this.running = false;
     this.abortController?.abort();
+
     if (this.activeSessions.size > 0) {
-      console.log("Waiting for " + this.activeSessions.size + " active session(s) to finish...");
-      await Promise.allSettled(
+      console.log("Draining " + this.activeSessions.size + " active session(s)...");
+      const startDrain = Date.now();
+
+      // Wait for all active sessions to finish, with timeout
+      const drainPromise = Promise.allSettled(
         Array.from(this.activeSessions.values()).map((t) => t.promise),
       );
+
+      // 30 second timeout for draining (matches systemd TimeoutStopSec default)
+      const timeout = new Promise((resolve) => setTimeout(resolve, 30000));
+
+      await Promise.race([drainPromise, timeout]);
+
+      const drainDuration = Date.now() - startDrain;
+      const remaining = this.activeSessions.size;
+
+      if (remaining > 0) {
+        console.log("Warning: " + remaining + " session(s) still active after " + (drainDuration / 1000).toFixed(1) + "s timeout");
+        await this.logger.log({
+          type: "daemon_shutdown",
+          data: { incomplete_sessions: remaining, drain_duration_ms: drainDuration },
+        });
+      } else {
+        console.log("All sessions drained successfully (" + (drainDuration / 1000).toFixed(1) + "s)");
+      }
     }
+
+    console.log("Shutdown signal handling complete");
   }
 
   private sleep(ms: number): Promise<void> {
