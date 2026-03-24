@@ -190,13 +190,17 @@ def load_topic_taxonomy(root: Path) -> dict[str, list[str]]:
     if not path.exists():
         return {}
     data = load_yaml(path)
-    topics = data.get("topics", {})
-    result = {}
-    for key, info in topics.items():
-        if isinstance(info, dict):
-            result[key] = [kw.lower() for kw in info.get("keywords", [])]
-        else:
-            result[key] = []
+    topics = data.get("topics", [])
+    result: dict[str, list[str]] = {}
+    # topics is a list of dicts: [{name: "...", keywords: ["...", ...]}, ...]
+    if isinstance(topics, list):
+        for entry in topics:
+            if isinstance(entry, dict) and "name" in entry:
+                result[entry["name"]] = [kw.lower() for kw in entry.get("keywords", [])]
+    elif isinstance(topics, dict):
+        for key, info in topics.items():
+            if isinstance(info, dict):
+                result[key] = [kw.lower() for kw in info.get("keywords", [])]
     return result
 
 
@@ -438,6 +442,8 @@ def format_text(matches_by_project: dict[str, list[dict]], today: date) -> str:
 
     for project_name, matches in matches_by_project.items():
         lines.append(project_name)
+        # Sort by stars (descending), then deadline proximity (ascending, None last)
+        matches.sort(key=lambda m: (-m["stars"], m["days_to_deadline"] if m["days_to_deadline"] is not None else 9999))
         for m in matches:
             dl_str = ""
             if m["deadline"]:

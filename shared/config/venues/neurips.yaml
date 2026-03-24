@@ -10,11 +10,12 @@ deadlines:
     camera_ready: "2026-10-15"
     conference: "2026-12-09"
   2027:
+    estimated: true
     abstract: "2027-05-03"  # estimated
     paper: "2027-05-05"  # estimated
 
 acceptance_rate: 0.25
-submissions_per_year: ~13000
+submissions_per_year: 13000  # approximate
 
 topic_fit:
   llm_reasoning: high

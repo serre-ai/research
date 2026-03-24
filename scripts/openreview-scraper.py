@@ -57,8 +57,8 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _api_get(path: str, params: dict | None = None) -> dict:
-    """Make a GET request to the OpenReview API and return parsed JSON."""
+def _api_get(path: str, params: dict | None = None, retries: int = 3) -> dict:
+    """Make a GET request to the OpenReview API with retry logic."""
     url = f"{API_BASE}{path}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
@@ -68,15 +68,27 @@ def _api_get(path: str, params: dict | None = None) -> dict:
         # data.  An empty Bearer token grants guest-level read access.
         "Authorization": "Bearer ",
     })
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as exc:
-        log.error("HTTP %d for %s: %s", exc.code, url, exc.reason)
-        raise
-    except urllib.error.URLError as exc:
-        log.error("URL error for %s: %s", url, exc.reason)
-        raise
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as exc:
+            if exc.code in (429, 500, 502, 503, 504) and attempt < retries - 1:
+                delay = (attempt + 1) * 2
+                log.warning("HTTP %d for %s — retrying in %ds (attempt %d/%d)", exc.code, url, delay, attempt + 1, retries)
+                time.sleep(delay)
+                continue
+            log.error("HTTP %d for %s: %s", exc.code, url, exc.reason)
+            raise
+        except urllib.error.URLError as exc:
+            if attempt < retries - 1:
+                delay = (attempt + 1) * 2
+                log.warning("URL error for %s — retrying in %ds", url, delay)
+                time.sleep(delay)
+                continue
+            log.error("URL error for %s: %s", url, exc.reason)
+            raise
+    return {}  # unreachable, but satisfies type checker
 
 
 def _extract_paper(note: dict, venue: str, year: int) -> dict | None:

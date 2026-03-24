@@ -8,10 +8,11 @@ deadlines:
     notification: "2026-05-01"
     conference: "2026-07-13"
   2027:
+    estimated: true
     paper: "2027-01-29"  # estimated
 
 acceptance_rate: 0.27
-submissions_per_year: ~10000
+submissions_per_year: 10000  # approximate
 
 topic_fit:
   llm_reasoning: high

@@ -7,10 +7,11 @@ deadlines:
     paper: "2026-03-15"  # estimated
     conference: "2026-10-10"  # estimated
   2027:
+    estimated: true
     paper: "2027-03-15"  # estimated
 
 acceptance_rate: 0.30
-submissions_per_year: ~2000
+submissions_per_year: 2000  # approximate
 
 topic_fit:
   llm_reasoning: high
