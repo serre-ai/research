@@ -1,0 +1,64 @@
+{
+  "summary": {
+    "task": "B7_3sat",
+    "model": "claude-haiku-4-5-20251001",
+    "condition": "short_cot",
+    "total_instances": 3,
+    "correct": 1,
+    "accuracy": 0.3333333333333333,
+    "accuracy_by_difficulty": {
+      "1": 0.3333333333333333
+    },
+    "mean_latency_ms": 4817.595402661634
+  },
+  "results": [
+    {
+      "instance_id": "B7_3sat_d1_0000",
+      "task": "B7_3sat",
+      "difficulty": 1,
+      "condition": "short_cot",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Determine if the following 3-SAT formula is satisfiable.\n\nVariables: x1, x2, x3, x4\nFormula: (x2 v x1 v x4) ^ (x4 v x2 v ~x1) ^ (~x4 v x2 v ~x1) ^ (~x4 v x3 v x1) ^ (~x1 v x2 v ~x3) ^ (~x4 v ~x1 v ~x3) ^ (x2 v ~x1 v x3) ^ (~x2 v ~x3 v x4) ^ (~x2 v ~x4 v x1) ^ (x2 v ~x1 v ~x4) ^ (~x3 v ~x4 v ~x2) ^ (x4 v x3 v ~x2) ^ (x2 v x1 v x4) ^ (x2 v x4 v x3) ^ (~x4 v x3 v ~x1) ^ (x4 v ~x1 v x3) ^ (x3 v x2 v x4)\n\nWhere 'v' means OR, '^' means AND, and '~' means NOT.\nIs this formula satisfiable? Answer with just 'Yes' or 'No'.",
+      "model_response": "I need to determine if there's an assignment of truth values to x1, x2, x3, x4 that satisfies all 17 clauses.\n\nLet me try x2 = true, as it appears positively in many clauses.\n\nWith x2 = true:\n- Clauses 1, 2, 5, 7, 10, 13, 14, 17 are automatically satisfied (contain x2)\n- Remaining clauses to check: 3, 4, 6, 8, 9, 11, 12, 15, 16\n\nClause 3: (~x4 v x2 v ~x1) = true \u2713\nClause 4: (~x4 v x3 v x1)\nClause 6: (~x4 v ~x1 v ~x3)\nClause 8: (~x2 v ~x3 v x4) = (~x3 v x4)\nClause 9: (~x2 v ~x4 v x1) = (~x4 v x1)\nClause 11: (~x3 v ~x4 v ~x2) = (~x3 v ~x4)\nClause 12: (x4 v x3 v ~x2) = (x4 v x3)\nClause 15: (~x4 v x3 v ~x1)\nClause 16: (x4 v ~x1 v x3)\n\nLet me try x2 = true, x4 = true:\nClause 8: (~x3 v x4) = true \u2713\nClause 9: (~x4 v x1) = x1, needs x1 = true\nClause 11: (~x3 v ~x4) = ~x3, needs x3 = false\nClause 12: (x4 v x3) = true \u2713\n\nWith x2 = true, x4 = true, x1 = true, x3 = false:\nClause 4: (~x4 v x3 v x1) = (false v false v true) = true \u2713\nClause 6: (~x4 v ~x1 v ~x3) = (false v false v true) = true \u2713\nClause 15: (~x4 v x3 v ~x1) = (false v false v false) = false \u2717\n\nLet me try x2 = true, x4 = false:\nClause 12: (x4 v x3) = x3, needs x3 = true\nClause 8: (~x3 v x4) = false \u2717\n\nLet me try x2 = true, x1 = false:\nClause 9: (~x4 v x1) = ~x4, needs x4 = false\nClause 4: (~x4 v x3 v x1) = (true v x3 v false) = true \u2713\nClause 6: (~x4 v ~x1 v ~x3) = (true v true v ~x3) = true \u2713\nClause 11: (~x3 v ~x4) = true \u2713\nClause 12: (x4 v x3) = x3, needs x3 = true\nClause 8: (~x3 v x4) = (false v false) = false \u2717\n\nLet me try x2 = true, x1 = true, x3 = true:\nClause 6: (~x4 v ~x1 v ~x3) = (~x4 v false v false) = ~x4, needs x4 = false\nClause 8: (~x3 v x4) = (false v false) = false \u2717\n\nLet me try x2 = true, x1 = true, x3 = false, x4 = false:\nClause 4: (~x4 v x3 v x1) = (true v false v true) = true \u2713\nClause 6: (~x4 v ~x1 v ~x3) = (true v false v true) = true \u2713\nClause 8: (~x3 v x4) = (true v false) = true \u2713\nClause 9: (~",
+      "extracted_answer": "Clause 9: (~",
+      "ground_truth": "Yes",
+      "correct": false,
+      "latency_ms": 5604.819583008066,
+      "metadata": {
+        "is_refusal": false
+      }
+    },
+    {
+      "instance_id": "B7_3sat_d1_0001",
+      "task": "B7_3sat",
+      "difficulty": 1,
+      "condition": "short_cot",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Determine if the following 3-SAT formula is satisfiable.\n\nVariables: x1, x2, x3, x4\nFormula: (x3 v x1 v ~x2) ^ (~x2 v ~x1 v ~x3) ^ (x3 v ~x2 v ~x4) ^ (~x3 v x2 v ~x4) ^ (~x4 v x1 v x2) ^ (~x2 v x3 v ~x4) ^ (x4 v ~x2 v x1) ^ (x4 v x3 v x2) ^ (x3 v x2 v x1) ^ (x3 v ~x2 v x1) ^ (x4 v ~x3 v x2) ^ (x1 v x4 v ~x3) ^ (~x4 v x3 v ~x1) ^ (~x2 v ~x3 v ~x4) ^ (x3 v ~x1 v ~x4) ^ (x2 v ~x4 v ~x3) ^ (~x2 v x4 v ~x3)\n\nWhere 'v' means OR, '^' means AND, and '~' means NOT.\nIs this formula satisfiable? Answer with just 'Yes' or 'No'.",
+      "model_response": "I need to determine if there's an assignment of truth values to x1, x2, x3, x4 that satisfies all 17 clauses.\n\nLet me try some assignments systematically.\n\n**Try x1=T, x2=F, x3=T, x4=F:**\n\n1. (T v T v T) = T \u2713\n2. (T v F v F) = T \u2713\n3. (T v T v T) = T \u2713\n4. (F v F v T) = T \u2713\n5. (T v T v F) = T \u2713\n6. (T v T v T) = T \u2713\n7. (F v T v T) = T \u2713\n8. (F v T v F) = T \u2713\n9. (T v F v T) = T \u2713\n10. (T v T v T) = T \u2713\n11. (F v F v F) = F \u2717\n\nThis fails clause 11.\n\n**Try x1=T, x2=F, x3=T, x4=T:**\n\n1. (T v T v T) = T \u2713\n2. (T v F v F) = T \u2713\n3. (T v T v F) = T \u2713\n4. (F v F v F) = F \u2717\n\nThis fails clause 4.\n\n**Try x1=T, x2=T, x3=T, x4=F:**\n\n1. (T v T v F) = T \u2713\n2. (F v F v F) = F \u2717\n\nThis fails clause 2.\n\n**Try x1=F, x2=F, x3=T, x4=F:**\n\n1. (T v F v T) = T \u2713\n2. (T v T v F) = T \u2713\n3. (T v T v T) = T \u2713\n4. (F v F v T) = T \u2713\n5. (T v F v F) = T \u2713\n6. (T v T v T) = T \u2713\n7. (F v T v F) = T \u2713\n8. (F v T v F) = T \u2713\n9. (T v F v F) = T \u2713\n10. (T v T v F) = T \u2713\n11. (F v F v F) = F \u2717\n\nFails clause 11.\n\n**Try x1=T, x2=F, x3=F, x4=T:**\n\n1. (F v T v T) = T \u2713\n2. (T v F v T) = T \u2713\n3. (F v T v F) = T \u2713\n4. (T v F v F) = T \u2713\n5. (F v T v F) = T \u2713\n6. (T v F v F) = T \u2713\n7. (T v T v T) = T \u2713\n8. (T v F v F) = T \u2713\n9. (F v F v T) = T \u2713\n10. (F v T v T) = T \u2713\n11. (T v T v F) = T \u2713\n12. (T v T v T) = T \u2713\n13. (F v F v F) = F \u2717\n\nFails clause 13.\n\n**Try x1=F, x2=F, x3=F, x4=T:**\n\n1. (F v F v T) = T \u2713\n2. (T v T v T) = T \u2713\n3. (F v T v F) = T \u2713\n4. (T v F v F) = T \u2713\n5. (F v F v F) = F \u2717\n\nFails clause 5.\n\n**Try x1=T, x2=T, x3=F, x4=T:**\n\n1. (F v T v F) = T \u2713\n2. (F v F v T) = T \u2713\n3. (F v F v F) = F \u2717\n\nFails clause 3.\n\n**Try x1=F, x2=T, x3=T, x4=F:**\n\n1. (T v F v F) = T",
+      "extracted_answer": "1. (T v F v F) = T",
+      "ground_truth": "Yes",
+      "correct": false,
+      "latency_ms": 5091.68154100189,
+      "metadata": {
+        "is_refusal": false
+      }
+    },
+    {
+      "instance_id": "B7_3sat_d1_0002",
+      "task": "B7_3sat",
+      "difficulty": 1,
+      "condition": "short_cot",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Determine if the following 3-SAT formula is satisfiable.\n\nVariables: x1, x2, x3, x4\nFormula: (x1 v ~x4 v ~x3) ^ (~x1 v ~x3 v x2) ^ (x4 v ~x2 v x1) ^ (x3 v ~x1 v x4) ^ (x3 v ~x2 v ~x4) ^ (~x1 v ~x4 v ~x3) ^ (x2 v ~x3 v x4) ^ (~x1 v ~x2 v ~x4) ^ (~x3 v ~x2 v ~x1) ^ (x1 v x4 v ~x3) ^ (~x1 v ~x2 v ~x3) ^ (x4 v ~x3 v x2) ^ (~x4 v ~x1 v x3) ^ (x2 v ~x3 v ~x4) ^ (x3 v ~x1 v ~x4) ^ (x3 v x2 v x4) ^ (~x3 v ~x4 v ~x2)\n\nWhere 'v' means OR, '^' means AND, and '~' means NOT.\nIs this formula satisfiable? Answer with just 'Yes' or 'No'.",
+      "model_response": "I need to determine if there's an assignment of truth values to x1, x2, x3, x4 that satisfies all 17 clauses.\n\nLet me try some assignments systematically.\n\nLet me try x1=F, x2=F, x3=F, x4=F:\n1. (F v T v T) = T \u2713\n2. (T v T v F) = T \u2713\n3. (F v T v F) = T \u2713\n4. (F v T v F) = T \u2713\n5. (F v T v T) = T \u2713\n6. (T v T v T) = T \u2713\n7. (F v T v F) = T \u2713\n8. (T v T v T) = T \u2713\n9. (T v T v T) = T \u2713\n10. (F v F v T) = T \u2713\n11. (T v T v T) = T \u2713\n12. (F v T v F) = T \u2713\n13. (T v T v F) = T \u2713\n14. (F v T v T) = T \u2713\n15. (F v T v T) = T \u2713\n16. (F v F v F) = F \u2717\n\nLet me try x1=F, x2=T, x3=F, x4=F:\n1. (F v T v T) = T \u2713\n2. (T v T v T) = T \u2713\n3. (F v F v F) = F \u2717\n\nLet me try x1=F, x2=F, x3=F, x4=T:\n1. (F v F v T) = T \u2713\n2. (T v T v F) = T \u2713\n3. (T v T v F) = T \u2713\n4. (F v T v T) = T \u2713\n5. (F v T v F) = T \u2713\n6. (T v F v T) = T \u2713\n7. (F v T v T) = T \u2713\n8. (T v T v F) = T \u2713\n9. (T v T v T) = T \u2713\n10. (F v T v T) = T \u2713\n11. (T v T v T) = T \u2713\n12. (T v T v F) = T \u2713\n13. (F v T v F) = T \u2713\n14. (F v T v F) = T \u2713\n15. (F v T v F) = T \u2713\n16. (F v F v T) = T \u2713\n17. (T v F v T) = T \u2713\n\nAll clauses are satisfied with x1=F, x2=F, x3=F, x4=T!\n\nYes",
+      "extracted_answer": "Yes",
+      "ground_truth": "Yes",
+      "correct": true,
+      "latency_ms": 3756.2850839749444,
+      "metadata": {
+        "is_refusal": false
+      }
+    }
+  ]
+}

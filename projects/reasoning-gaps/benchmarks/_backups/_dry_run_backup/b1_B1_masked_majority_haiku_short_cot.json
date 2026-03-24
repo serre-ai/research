@@ -1,0 +1,64 @@
+{
+  "summary": {
+    "task": "B1_masked_majority",
+    "model": "claude-haiku-4-5-20251001",
+    "condition": "short_cot",
+    "total_instances": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "accuracy_by_difficulty": {
+      "1": 1.0
+    },
+    "mean_latency_ms": 1081.995263666613
+  },
+  "results": [
+    {
+      "instance_id": "B1_masked_majority_d1_0000",
+      "task": "B1_masked_majority",
+      "difficulty": 1,
+      "condition": "short_cot",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Consider the binary string: 0010111?1?\nThe '?' characters are masked and should be ignored.\nAmong the visible (unmasked) bits, is the majority 0 or 1?\nAnswer with just '0' or '1'.",
+      "model_response": "Let me count the visible (unmasked) bits in: 0010111?1?\n\nVisible bits: 0, 0, 1, 0, 1, 1, 1, 1\n\nCount of 0s: 2\nCount of 1s: 5\n\nThe majority is 1.\n\n1",
+      "extracted_answer": "1",
+      "ground_truth": "1",
+      "correct": true,
+      "latency_ms": 1037.2965410060715,
+      "metadata": {
+        "is_refusal": false
+      }
+    },
+    {
+      "instance_id": "B1_masked_majority_d1_0001",
+      "task": "B1_masked_majority",
+      "difficulty": 1,
+      "condition": "short_cot",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Consider the binary string: 0001100?1?\nThe '?' characters are masked and should be ignored.\nAmong the visible (unmasked) bits, is the majority 0 or 1?\nAnswer with just '0' or '1'.",
+      "model_response": "Let me count the visible bits in the string: 0001100?1?\n\nVisible bits: 0, 0, 0, 1, 1, 0, 0, 1\n\nCount:\n- 0s: 5\n- 1s: 3\n\nThe majority is 0.\n\n0",
+      "extracted_answer": "0",
+      "ground_truth": "0",
+      "correct": true,
+      "latency_ms": 1114.8902919958346,
+      "metadata": {
+        "is_refusal": false
+      }
+    },
+    {
+      "instance_id": "B1_masked_majority_d1_0002",
+      "task": "B1_masked_majority",
+      "difficulty": 1,
+      "condition": "short_cot",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Consider the binary string: 00100??100\nThe '?' characters are masked and should be ignored.\nAmong the visible (unmasked) bits, is the majority 0 or 1?\nAnswer with just '0' or '1'.",
+      "model_response": "Let me count the visible bits in the string: 00100??100\n\nVisible bits: 0, 0, 1, 0, 0, 1, 0, 0\n(ignoring the two '?' characters)\n\nCount of 0s: 6\nCount of 1s: 2\n\nThe majority is 0.\n\n0",
+      "extracted_answer": "0",
+      "ground_truth": "0",
+      "correct": true,
+      "latency_ms": 1093.798957997933,
+      "metadata": {
+        "is_refusal": false
+      }
+    }
+  ]
+}
