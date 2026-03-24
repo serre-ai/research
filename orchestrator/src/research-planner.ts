@@ -719,28 +719,17 @@ export class ResearchPlanner {
         "SELECT value FROM planner_state WHERE project = $1 AND key = $2",
         [projectName, "retry:" + linearIdentifier],
       );
-      if (rows.length === 0) return true; // first retry
-      const data = JSON.parse(rows[0].value as string);
-      const attempts = data.attempts || 1;
-      return attempts < 3; // allow up to 3 attempts total
+      return rows.length === 0;
     } catch { return false; }
   }
 
   async markRetried(projectName: string, linearIdentifier: string, quality: number): Promise<void> {
     if (!this.pool) return;
     try {
-      // Get current attempt count
-      const { rows } = await this.pool.query(
-        "SELECT value FROM planner_state WHERE project = $1 AND key = $2",
-        [projectName, "retry:" + linearIdentifier],
-      );
-      const prevAttempts = rows.length > 0 ? (JSON.parse(rows[0].value as string).attempts || 1) : 0;
-
       await this.pool.query(
         `INSERT INTO planner_state (project, key, value, updated_at) VALUES ($1, $2, $3, NOW())
          ON CONFLICT (project, key) DO UPDATE SET value = $3, updated_at = NOW()`,
-        [projectName, "retry:" + linearIdentifier,
-         JSON.stringify({ attempts: prevAttempts + 1, lastQuality: quality, ts: Date.now() })],
+        [projectName, "retry:" + linearIdentifier, JSON.stringify({ retried: true, quality, ts: Date.now() })],
       );
     } catch { /* ignore */ }
   }
