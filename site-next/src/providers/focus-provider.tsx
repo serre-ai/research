@@ -36,8 +36,6 @@ interface FocusContextType {
   registerPanel: (reg: PanelRegistration) => () => void;
   updatePanel: (id: string, updates: Partial<Omit<PanelRegistration, 'id'>>) => void;
   focusPanel: (panelId: string) => void;
-  focusItem: (panelId: string, itemIndex: number) => void;
-  focusFirstAfter: (minOrder: number) => void;
   activeKeyHints: KeyHint[];
   globalKeyHints: KeyHint[];
 }
@@ -57,8 +55,6 @@ const FocusContext = createContext<FocusContextType>({
   registerPanel: () => () => {},
   updatePanel: () => {},
   focusPanel: () => {},
-  focusItem: () => {},
-  focusFirstAfter: () => {},
   activeKeyHints: [],
   globalKeyHints: GLOBAL_HINTS,
 });
@@ -116,21 +112,6 @@ export function FocusProvider({ children }: { children: ReactNode }) {
   const focusPanel = useCallback((panelId: string) => {
     if (panelsRef.current.has(panelId)) {
       setState({ activePanelId: panelId, activeItemIndex: 0 });
-    }
-  }, []);
-
-  const focusItem = useCallback((panelId: string, itemIndex: number) => {
-    if (panelsRef.current.has(panelId)) {
-      setState({ activePanelId: panelId, activeItemIndex: itemIndex });
-    }
-  }, []);
-
-  const focusFirstAfter = useCallback((minOrder: number) => {
-    const sorted = Array.from(panelsRef.current.entries())
-      .filter(([, reg]) => reg.order >= minOrder)
-      .sort(([, a], [, b]) => a.order - b.order);
-    if (sorted.length > 0) {
-      setState({ activePanelId: sorted[0][0], activeItemIndex: 0 });
     }
   }, []);
 
@@ -215,8 +196,6 @@ export function FocusProvider({ children }: { children: ReactNode }) {
         registerPanel,
         updatePanel,
         focusPanel,
-        focusItem,
-        focusFirstAfter,
         activeKeyHints: activePanel?.keyHints ?? [],
         globalKeyHints: GLOBAL_HINTS,
       }}

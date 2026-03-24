@@ -203,37 +203,3 @@
 .tui-panel--active .tui-panel__body::-webkit-scrollbar-thumb {
   background: var(--color-text-muted);
 }
-
-/* --- List: keyboard-navigable items --- */
-
-.tui-list__item {
-  display: flex;
-  align-items: baseline;
-  cursor: pointer;
-  padding: 0.125em 0;
-}
-
-.tui-list__item:hover {
-  background: var(--color-bg-hover);
-}
-
-.tui-list__item--active {
-  background: var(--color-bg-hover);
-}
-
-.tui-list__cursor {
-  flex-shrink: 0;
-  width: 2ch;
-  color: var(--color-accent-primary);
-  user-select: none;
-}
-
-.tui-list__content {
-  flex: 1;
-  min-width: 0;
-}
-
-.tui-list__empty {
-  color: var(--color-text-muted);
-  padding: 0.5em 0;
-}

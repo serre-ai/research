@@ -77,11 +77,6 @@ Read all project `status.yaml` files. Identify:
   - **Within 14 days**: add a comment to any Todo issue for that project: "Deadline in X days — is this still needed for submission?"
   - **Passed**: flag remaining Todo issues as candidates for deprioritization.
 
-**Venue matching**: Run `python3 scripts/venue-matcher.py` to see which venues best match each project. Use this to:
-- Verify deadline priorities are correct
-- Identify alternative venues if a deadline passes
-- Flag projects that don't match any upcoming venue well
-
 ## Tools
 
 - **`python3 scripts/linear-cli.py`** — Your primary tool. Create issues, update them, add comments, set relations, create sub-issues.
