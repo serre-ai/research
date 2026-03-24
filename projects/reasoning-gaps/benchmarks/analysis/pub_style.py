@@ -504,7 +504,7 @@ CAPTION_TEMPLATES: dict[str, str] = {
 
 
 def generate_caption(figure_type: str, **kwargs) -> str:
-    """Generate a caption from template. Missing keys are left blank.
+    """Generate a caption from template. Missing keys produce clean output.
 
     Usage:
         caption = generate_caption("comparison_bar",
@@ -514,16 +514,28 @@ def generate_caption(figure_type: str, **kwargs) -> str:
         )
     """
     template = CAPTION_TEMPLATES.get(figure_type, "{finding}")
-    # Fill known keys, leave unknown as empty
     filled = {}
     for key in ["metric", "grouping", "finding", "variable", "conditions",
                  "rows", "columns", "transition", "x_metric", "y_metric",
                  "groups", "correlation"]:
         filled[key] = kwargs.get(key, "")
     try:
-        return template.format(**filled)
+        raw = template.format(**filled)
     except KeyError:
-        return kwargs.get("finding", "")
+        raw = kwargs.get("finding", "")
+    # Clean up artefacts from missing fields
+    import re as _re
+    # Remove segments like " by ", " for ", " vs ", " across ", " near " that are
+    # left dangling when their adjacent fields are empty
+    raw = _re.sub(r"\s*(by|for|vs|across|near|of)\s+(\.|,|\s|$)", r" ", raw)
+    # Remove "Distribution of  across  and ." type patterns
+    raw = _re.sub(r"(Distribution|Distribution of)\s+\.", "", raw)
+    raw = _re.sub(r"\s+and\s*\.", ".", raw)
+    # Collapse multiple spaces, dots, leading dots/spaces
+    raw = _re.sub(r"\s{2,}", " ", raw)
+    raw = _re.sub(r"\.(\s*\.)+", ".", raw)
+    raw = _re.sub(r"^\.\s*", "", raw)
+    return raw.strip().rstrip("."  ) + "." if raw.strip() else ""
 
 
 # ---------------------------------------------------------------------------
@@ -568,7 +580,8 @@ def comparison_bar(
         elif all(h in GAP_TYPE_COLORS for h in unique_hues):
             palette = {h: GAP_TYPE_COLORS[h] for h in unique_hues}
 
-    sns.barplot(data=data, x=x, y=y, hue=hue, ci=ci, palette=palette, ax=ax, **kwargs)
+    sns.barplot(data=data, x=x, y=y, hue=hue, errorbar=("ci", ci),
+                palette=palette, ax=ax, **kwargs)
 
     if y_is_proportion:
         percent_formatter(ax, "y")
@@ -677,8 +690,6 @@ def phase_plot(
 
     Use for: 3-SAT accuracy vs clause ratio, difficulty threshold effects.
     """
-    import seaborn as sns
-
     setup()
     fig, ax = figure(width=width)
 

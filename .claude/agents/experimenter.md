@@ -107,7 +107,7 @@ Generate publication-ready figures:
    - **Phase transition** (accuracy near threshold) → `pub_style.phase_plot(data, x, y, conditions)`
    - **Correlation/scatter** → use `pub_style.figure()` + standard matplotlib scatter
 3. Generate caption with takeaway: `pub_style.generate_caption("comparison_bar", metric="Accuracy", grouping="task", finding="B4 > B7")`
-4. Save in both formats: `pub_style.savefig(fig, "path/to/figure")` (produces PDF + PNG)
+4. Save in both formats: `pub_style.savefig(fig, "path/to/figure")` (produces PDF + PNG). **Path must have NO extension** — savefig adds `.pdf` and `.png` automatically. Don't pass `"figure.pdf"` or you'll get `figure.pdf.pdf`.
 
 ### Figure Quality Checklist
 
