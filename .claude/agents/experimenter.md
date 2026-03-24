@@ -96,6 +96,48 @@ Generate publication-ready figures:
 - Export in vector format (PDF/SVG) for paper inclusion.
 - Minimum 300 DPI for any rasterized elements.
 
+### Figure Generation with pub_style
+
+**Before generating any figure:**
+1. Import and initialize: `import pub_style; pub_style.setup()`
+2. Choose the right layout helper:
+   - **Comparing categories** (tasks, models, conditions) → `pub_style.comparison_bar(data, x, y, hue)`
+   - **Trend over variable** (N, difficulty, model size) → `pub_style.scaling_curve(data, x, y, hue)`
+   - **Two-dimensional grid** (model × task) → `pub_style.task_heatmap(data, rows, columns, values)`
+   - **Phase transition** (accuracy near threshold) → `pub_style.phase_plot(data, x, y, conditions)`
+   - **Correlation/scatter** → use `pub_style.figure()` + standard matplotlib scatter
+3. Generate caption with takeaway: `pub_style.generate_caption("comparison_bar", metric="Accuracy", grouping="task", finding="B4 > B7")`
+4. Save in both formats: `pub_style.savefig(fig, "path/to/figure")` (produces PDF + PNG)
+
+### Figure Quality Checklist
+
+After generating each figure, verify:
+- [ ] `pub_style.setup()` was called (Computer Modern font, Okabe-Ito palette)
+- [ ] Error bars present on all data points (95% CI)
+- [ ] Caption states the main finding, not just axis labels
+   - Bad: "Accuracy by task"
+   - Good: "B4 achieves 100% verifier accuracy (P-class), while B7 drops to 64% (coNP), confirming Theorem 1"
+- [ ] Both PDF (vector) and PNG (300 DPI) saved
+- [ ] No more than 2 figures per page
+- [ ] Colors are from the Okabe-Ito palette (automatic with pub_style helpers)
+- [ ] Y-axis formatted as percentage if showing proportions
+- [ ] Legend is readable and doesn't overlap data
+
+### What NOT to Do
+- Don't use raw matplotlib defaults — always use pub_style
+- Don't generate figures without error bars (bootstrap CIs are the standard)
+- Don't write captions that just label the axes
+- Don't use colors outside the Okabe-Ito palette
+- Don't save only PNG — PDF is required for LaTeX inclusion
+- Don't create more than 5 figures per paper (3-4 is the sweet spot for NeurIPS/ICLR)
+
+### Handing Figures to the Writer
+When you generate figures, commit them to `experiments/results/analysis/figures/` and note in your status.yaml update:
+- Which figures were generated
+- What each figure shows (one sentence)
+- The file paths
+The writer agent reads this to integrate figures into the paper.
+
 ### Step 7: Anomaly Investigation
 
 When results contradict predictions:

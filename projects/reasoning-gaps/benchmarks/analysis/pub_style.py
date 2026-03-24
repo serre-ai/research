@@ -487,3 +487,217 @@ def integer_ticks(ax: plt.Axes, axis: str = "x") -> None:
         ax.xaxis.set_major_locator(loc)
     if axis in ("y", "both"):
         ax.yaxis.set_major_locator(loc)
+
+
+# ---------------------------------------------------------------------------
+# Caption templates — every figure gets a takeaway, not just axis labels
+# ---------------------------------------------------------------------------
+
+CAPTION_TEMPLATES: dict[str, str] = {
+    "comparison_bar": "{metric} by {grouping}. {finding}. Error bars: 95\\% bootstrap CIs.",
+    "scaling_curve": "{metric} vs {variable} for {conditions}. {finding}.",
+    "heatmap": "{metric} across {rows} and {columns}. {finding}.",
+    "phase_transition": "{metric} near {transition}. {finding}.",
+    "scatter": "{x_metric} vs {y_metric} across {groups}. {finding}.",
+    "distribution": "Distribution of {metric} across {grouping}. {finding}.",
+}
+
+
+def generate_caption(figure_type: str, **kwargs) -> str:
+    """Generate a caption from template. Missing keys are left blank.
+
+    Usage:
+        caption = generate_caption("comparison_bar",
+            metric="Verifier accuracy",
+            grouping="task and VC class",
+            finding="P-class tasks show 95%+ accuracy while coNP tasks drop to 64%",
+        )
+    """
+    template = CAPTION_TEMPLATES.get(figure_type, "{finding}")
+    # Fill known keys, leave unknown as empty
+    filled = {}
+    for key in ["metric", "grouping", "finding", "variable", "conditions",
+                 "rows", "columns", "transition", "x_metric", "y_metric",
+                 "groups", "correlation"]:
+        filled[key] = kwargs.get(key, "")
+    try:
+        return template.format(**filled)
+    except KeyError:
+        return kwargs.get("finding", "")
+
+
+# ---------------------------------------------------------------------------
+# Standard figure layout helpers
+# ---------------------------------------------------------------------------
+
+
+def comparison_bar(
+    data,
+    x: str,
+    y: str,
+    hue: str | None = None,
+    ci: float = 95,
+    y_is_proportion: bool = True,
+    title: str | None = None,
+    width: str = "full",
+    **kwargs,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Grouped bar chart for comparing discrete categories.
+
+    Use for: tasks vs accuracy, models vs score, conditions vs lift.
+
+    Args:
+        data: DataFrame with columns x, y, and optionally hue.
+        x: Column for x-axis categories.
+        y: Column for y-axis values.
+        hue: Column for grouping (colored bars).
+        ci: Confidence interval level (default 95).
+        y_is_proportion: If True, format y-axis as percentage.
+    """
+    import seaborn as sns
+
+    setup()
+    fig, ax = figure(width=width)
+
+    palette = None
+    if hue:
+        # Try to match hue values to known palettes
+        unique_hues = sorted(data[hue].unique())
+        if all(h in FAMILY_COLORS for h in unique_hues):
+            palette = {h: FAMILY_COLORS[h] for h in unique_hues}
+        elif all(h in GAP_TYPE_COLORS for h in unique_hues):
+            palette = {h: GAP_TYPE_COLORS[h] for h in unique_hues}
+
+    sns.barplot(data=data, x=x, y=y, hue=hue, ci=ci, palette=palette, ax=ax, **kwargs)
+
+    if y_is_proportion:
+        percent_formatter(ax, "y")
+
+    if title:
+        ax.set_title(title)
+
+    ax.set_xlabel(ax.get_xlabel() or x)
+    ax.set_ylabel(ax.get_ylabel() or y)
+
+    return fig, ax
+
+
+def scaling_curve(
+    data,
+    x: str,
+    y: str,
+    hue: str | None = None,
+    style: str | None = None,
+    y_is_proportion: bool = True,
+    logx: bool = False,
+    title: str | None = None,
+    width: str = "full",
+    **kwargs,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Line chart for trends over a continuous variable.
+
+    Use for: accuracy vs N (sample count), accuracy vs difficulty, cost vs model size.
+
+    Args:
+        data: DataFrame with columns x, y, and optionally hue/style.
+        logx: If True, use log scale on x-axis.
+    """
+    import seaborn as sns
+
+    setup()
+    fig, ax = figure(width=width)
+
+    sns.lineplot(data=data, x=x, y=y, hue=hue, style=style,
+                 marker="o", ax=ax, **kwargs)
+
+    if y_is_proportion:
+        percent_formatter(ax, "y")
+    if logx:
+        ax.set_xscale("log", base=2)
+        integer_ticks(ax, "x")
+
+    if title:
+        ax.set_title(title)
+
+    return fig, ax
+
+
+def task_heatmap(
+    data,
+    rows: str,
+    columns: str,
+    values: str,
+    vmin: float = 0,
+    vmax: float = 1,
+    fmt: str = ".2f",
+    title: str | None = None,
+    width: str = "full",
+    **kwargs,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Heatmap for two-dimensional grids.
+
+    Use for: model x task accuracy, condition x gap type lift.
+
+    Args:
+        data: DataFrame that will be pivoted to rows x columns.
+        rows: Column to use as row index.
+        columns: Column to use as column headers.
+        values: Column containing the values to display.
+    """
+    import seaborn as sns
+
+    setup()
+
+    pivot = data.pivot_table(index=rows, columns=columns, values=values, aggfunc="mean")
+    aspect = max(0.4, len(pivot.columns) / max(len(pivot.index), 1) * 0.5)
+    fig, ax = figure(width=width, aspect=aspect)
+
+    cmap = diverging_cmap() if vmin < 0 else "YlOrRd"
+    sns.heatmap(pivot, annot=True, fmt=fmt, cmap=cmap,
+                vmin=vmin, vmax=vmax, linewidths=0.5,
+                cbar_kws={"shrink": 0.8}, ax=ax, **kwargs)
+
+    if title:
+        ax.set_title(title)
+
+    return fig, ax
+
+
+def phase_plot(
+    data,
+    x: str,
+    y: str,
+    conditions: str | None = None,
+    y_is_proportion: bool = True,
+    title: str | None = None,
+    width: str = "col",
+    **kwargs,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Specialized plot for phase transition behavior.
+
+    Use for: 3-SAT accuracy vs clause ratio, difficulty threshold effects.
+    """
+    import seaborn as sns
+
+    setup()
+    fig, ax = figure(width=width)
+
+    if conditions:
+        for cond in sorted(data[conditions].unique()):
+            subset = data[data[conditions] == cond]
+            color = CONDITION_COLORS.get(cond, None)
+            label = CONDITION_LABELS.get(cond, cond)
+            ls = "--" if "cot" in str(cond).lower() else "-"
+            ax.plot(subset[x], subset[y], marker="o", color=color,
+                    linestyle=ls, label=label, **kwargs)
+        ax.legend()
+    else:
+        ax.plot(data[x], data[y], marker="o", **kwargs)
+
+    if y_is_proportion:
+        percent_formatter(ax, "y")
+
+    if title:
+        ax.set_title(title)
+
+    return fig, ax
