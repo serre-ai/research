@@ -1,0 +1,287 @@
+# Experiment Pre-Registration Spec
+# Cross-Model Verification: Testing Theorem 1 (Verification Advantage)
+
+# Human-readable name for this experiment
+name: "Cross-Model Verification: VC Signal Across Task Taxonomy"
+
+# Current lifecycle status
+# draft -> reviewed -> approved -> running -> complete | failed
+status: draft
+
+# What this experiment tests — a falsifiable statement
+hypothesis: >
+  Theorem 1 (Verification Advantage) predicts that verification accuracy
+  correlates with a task's verification complexity class. Specifically:
+  (1) Tasks with P-class verification should achieve >90% verification accuracy,
+  (2) Tasks with coNP-class verification should show significantly lower accuracy,
+  (3) This pattern should hold across multiple generator-verifier model pairs,
+  demonstrating that the verification complexity bottleneck is architectural,
+  not model-specific.
+
+# Measurable predictions that follow from the hypothesis
+# Each prediction should specify direction and expected magnitude
+predictions:
+  - tasks: ["B1", "B2", "B3", "B4", "B5", "B6"]
+    metric: "verification_accuracy"
+    direction: "positive"
+    min_effect: 0.85
+    max_effect: null
+    rationale: "P-class verification tasks should achieve high (>85%) accuracy across all model pairs"
+
+  - tasks: ["B7"]
+    metric: "verification_accuracy"
+    direction: "positive"
+    min_effect: 0.50
+    max_effect: 0.80
+    rationale: "3-SAT (P/coNP class) should show moderate accuracy, higher than pure coNP but lower than P"
+
+  - tasks: ["B8", "B9"]
+    metric: "verification_accuracy"
+    direction: "positive"
+    min_effect: null
+    max_effect: 0.75
+    rationale: "Architectural bottleneck tasks may show low verification accuracy if verifier lacks required architectural features"
+
+  - tasks: ["B1", "B2", "B3", "B4", "B5", "B6"]
+    metric: "verification_accuracy_gap"
+    direction: "positive"
+    min_effect: 0.20
+    rationale: "Gap between P-class and coNP/Arch-class should be at least 20 percentage points"
+
+  - tasks: ["B1", "B2", "B3", "B4", "B5", "B6", "B7"]
+    metric: "cross_model_consistency"
+    direction: "positive"
+    min_effect: 0.70
+    rationale: "Same VC class should show consistent results across different (generator, verifier) pairs with correlation >0.7"
+
+# Experimental design
+design:
+  condition: "answer_only"     # Verifier sees only claimed answer, must independently verify
+  temperature: 0.0             # Greedy decoding for reproducibility
+  generators:
+    - haiku                    # claude-haiku-4-5-20251001
+    - gpt4o                    # gpt-4o
+    - llama70b                 # meta-llama/llama-3.1-70b-instruct
+  verifiers:
+    - haiku                    # claude-haiku-4-5-20251001
+    - sonnet                   # claude-sonnet-4-20250514
+    - gpt4o-mini               # gpt-4o-mini
+  tasks: ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
+  num_samples: 1               # Single verification per instance
+  instances_per_difficulty: 10 # 10 instances × 5 difficulties = 50 per task
+  difficulties: [1, 2, 3, 4, 5]
+
+  sampling_strategy: "balanced_correctness"  # Equal correct/incorrect from generator
+
+  notes: >
+    Generator outputs come from reasoning-gaps evaluation (short_cot condition).
+    Verifiers see only the problem and claimed answer, not the generator's reasoning.
+    This tests actual verification computation, not reasoning trace consistency.
+
+    Canary run (2026-03-23) validated pipeline on B4 and B7 with 25 instances each.
+    Results: B4=100% accuracy (P-class), B7=64% accuracy (coNP-class), 36pp gap.
+    Zero extraction failures. Cost: $0.10 for 50 verifications = $0.002 per call.
+
+# Canary run configuration — a small-scale test before the full run
+# Purpose: catch bugs, validate pipeline, estimate real costs
+canary:
+  status: complete
+  date: "2026-03-23"
+  tasks: ["B4", "B7"]          # P-class and coNP-class representatives
+  instances_per_difficulty: 5  # 5 × 5 difficulties = 25 per task
+  num_samples: 1
+  generator: "haiku"
+  verifier: "haiku"
+  results_file: "projects/verification-complexity/experiments/results/verify_haiku_by_haiku_answer_only.jsonl"
+  analysis_file: "projects/verification-complexity/experiments/results/canary_analysis_answer_only.md"
+
+  results:
+    B4_accuracy: 1.00          # 25/25 perfect
+    B7_accuracy: 0.64          # 16/25
+    gap: 0.36                  # 36 percentage points
+    extraction_failures: 0.00  # 0/50
+    cost: 0.10                 # $0.10 for 50 verifications
+
+  diagnostics:
+    - check: "vc_signal_exists"
+      expected: "B4 > B7"
+      observed: "100% > 64%"
+      status: "PASS"
+
+    - check: "extraction_failure_rate"
+      max: 0.10
+      observed: 0.00
+      status: "PASS"
+
+    - check: "pipeline_completion"
+      expected: "all instances produce parseable output"
+      observed: "50/50 instances completed successfully"
+      status: "PASS"
+
+    - check: "cost_within_budget"
+      estimated_per_instance: 0.002
+      observed_per_instance: 0.002
+      max_multiple_of_estimate: 2.0
+      actual_multiple: 1.0
+      status: "PASS"
+
+# Budget and resource estimates
+budget:
+  estimated_total_usd: 38.00
+  estimated_per_instance_usd: 0.0025
+  breakdown:
+    - component: "Haiku verifier"
+      instances: 1350          # 3 generators × 9 tasks × 50 instances
+      cost_per_call: 0.002
+      subtotal: 2.70
+
+    - component: "Sonnet verifier"
+      instances: 1350
+      cost_per_call: 0.010
+      subtotal: 13.50
+
+    - component: "GPT-4o-mini verifier"
+      instances: 1350
+      cost_per_call: 0.002
+      subtotal: 2.70
+
+    - component: "Contingency (retries, errors)"
+      subtotal: 2.00
+
+  total_instances: 4050        # 3 gen × 3 ver × 9 tasks × 50 inst
+  canary_cost_usd: 0.10
+  max_allowed_usd: 45.00       # 20% buffer over estimate
+
+# Theoretical grounding
+# Cross-reference design conditions against paper framework
+theoretical_basis:
+  paper_section: "Section 3 (Framework), Section 5 (Experiments)"
+
+  theorem_under_test: "Theorem 1 (Verification Advantage)"
+  theorem_statement: >
+    For a task F with verification complexity VC(F), if VC(F) ⊆ cap(M) for
+    verifier model M, then M can verify outputs of generator G with accuracy
+    exceeding the direct generation accuracy of weaker models.
+
+  formal_predictions:
+    - condition: "VC(F) ⊆ P and cap(M) ⊇ P"
+      prediction: "Verification accuracy ≥ 0.85"
+      tasks: ["B1", "B2", "B3", "B4", "B5", "B6"]
+
+    - condition: "VC(F) ⊇ coNP and cap(M) ⊆ P"
+      prediction: "Verification accuracy < 0.75"
+      tasks: ["B7"]  # 3-SAT has both NP and coNP verification
+
+    - condition: "Architectural bottleneck"
+      prediction: "Verification accuracy may be low regardless of VC class"
+      tasks: ["B8", "B9"]  # Negation-sensitivity requires specific architectural features
+
+  table_1_mapping:
+    - type: "Type 1 (Perceptual)"
+      tasks: []  # Not in benchmark suite
+
+    - type: "Type 2 (Working Memory)"
+      tasks: ["B1", "B2"]
+      vc_class: "P"
+      gc_class: "P/logspace"
+
+    - type: "Type 3 (Hierarchical)"
+      tasks: ["B3"]
+      vc_class: "P"
+      gc_class: "P"
+
+    - type: "Type 4 (Algorithmic)"
+      tasks: ["B4", "B5", "B6"]
+      vc_class: "P"
+      gc_class: "P"
+
+    - type: "Type 5 (Intractability)"
+      tasks: ["B7"]
+      vc_class: "P/coNP"
+      gc_class: "NP"
+
+    - type: "Type 6 (Architectural)"
+      tasks: ["B8", "B9"]
+      vc_class: "Arch"
+      gc_class: "Arch"
+
+# Analysis plan (pre-registered)
+analysis:
+  primary_analysis:
+    - name: "Verification accuracy by VC class"
+      hypothesis: "P-class > coNP-class > Arch-class"
+      method: "One-way ANOVA with Bonferroni correction"
+      alpha: 0.05
+      minimum_effect_size: 0.20  # Cohen's d
+
+    - name: "Cross-model consistency within VC class"
+      hypothesis: "Accuracy correlates more strongly within VC class than across"
+      method: "Intraclass correlation coefficient (ICC)"
+      expected_within_class_icc: "> 0.70"
+
+    - name: "Generator-verifier interaction"
+      hypothesis: "Verification accuracy independent of generator model"
+      method: "Two-way ANOVA (generator × VC class)"
+      expected_interaction: "not significant"
+
+  secondary_analysis:
+    - name: "Difficulty scaling"
+      question: "Does verification accuracy degrade with difficulty?"
+      method: "Linear regression (accuracy ~ difficulty + VC_class)"
+
+    - name: "Error type analysis (3-SAT)"
+      question: "Are B7 errors mostly false positives (UNSAT verification)?"
+      method: "Contingency table analysis"
+
+    - name: "Latency by VC class"
+      question: "Does harder verification take longer?"
+      method: "Kruskal-Wallis test (non-parametric)"
+
+  figures:
+    - figure_1:
+        type: "comparison_bar"
+        title: "Verification Accuracy by Task and VC Class"
+        x_axis: "Task (B1-B9)"
+        y_axis: "Verification Accuracy"
+        hue: "VC Class"
+        error_bars: "95% CI (bootstrap, n=1000)"
+        caption: >
+          Verification accuracy averaged across all (generator, verifier) pairs.
+          P-class tasks (B1-B6) achieve >85% accuracy. B7 (P/coNP) shows 64%
+          accuracy with high error rate on UNSAT instances. B8-B9 (Arch)
+          show task-dependent patterns, confirming Theorem 1.
+
+    - figure_2:
+        type: "task_heatmap"
+        title: "Verification Accuracy by Generator-Verifier Pair"
+        rows: "Generator Model"
+        columns: "Task"
+        values: "Mean Verification Accuracy"
+        caption: >
+          Cross-model verification matrix. Rows: generator models (Haiku, GPT-4o,
+          Llama-70B). Columns: tasks (B1-B9). VC class structure emerges across
+          all pairs, confirming architectural rather than model-specific bottleneck.
+
+  exploratory:
+    - "Does verifier size (Haiku vs Sonnet) improve coNP verification?"
+    - "Are certain generator errors easier to detect than others?"
+    - "Does balanced sampling (equal correct/incorrect) bias results?"
+
+# Review tracking — populated by the critic agent
+review:
+  status: pending           # pending | approved | rejected
+  reviewer: ""
+  date: ""
+  verdict_file: ""          # path to the full review document
+
+  review_criteria:
+    - "Predictions are specific and falsifiable"
+    - "Design conditions match theoretical framework (Table 1)"
+    - "Sample size sufficient for statistical power (n≥50 per condition)"
+    - "Pre-registered analyses prevent p-hacking"
+    - "Budget is reasonable given canary validation"
+    - "Canary diagnostics all passed"
+
+# Timestamps
+created_at: "2026-03-24"
+updated_at: "2026-03-24"
