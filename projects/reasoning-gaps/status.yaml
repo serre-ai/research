@@ -2,7 +2,7 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-22T14:30:00Z
+updated: 2026-03-24T10:00:00Z
 
 phase: submission-prep
 status: in-progress
@@ -35,6 +35,9 @@ progress:
   rebuttal_preparation:
     status: complete
     notes: "Comprehensive rebuttal materials prepared (reviews/rebuttal-prep.md). 12 anticipated criticisms addressed: benchmark scope, model selection, complexity assumptions, experimental rigor, results anomalies, Type 6 specificity, prior work comparison, reproducibility. Includes 5 ready-to-run experiments, decision tree for responses, and template with paper references. Ready for reviewer response phase."
+  evidence_verification:
+    status: in-progress
+    notes: "Verifying unsupported claims from knowledge graph (177 total). First verification complete: Haiku 4.5 B1 direct accuracy 0.5860 (n=500) - VERIFIED with complete evidence chain. Documentation at notes/evidence-haiku-b1-direct-accuracy.md. Establishes verification workflow for remaining claims."
 
 decisions_pending: []
 
