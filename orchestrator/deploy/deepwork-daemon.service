@@ -23,7 +23,7 @@ ProtectSystem=strict
 # ProtectHome=no because /opt/deepwork and /opt/deepwork-agent are symlinks
 # into /home/deepwork/ which ProtectHome=true blocks
 ProtectHome=no
-ReadWritePaths=/opt/deepwork /opt/deepwork-agent /home/deepwork
+ReadWritePaths=/opt/deepwork /opt/deepwork-agent /home/deepwork/deepwork /home/deepwork/deepwork-agent
 PrivateTmp=true
 
 # Logging

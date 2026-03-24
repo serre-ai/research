@@ -71,15 +71,22 @@ export class GitEngine {
 
   // ── Sync operations ──────────────────────────────────────
 
-  /** Fetch from origin and fast-forward the local branch to match remote. */
+  /** Fetch from origin and fast-forward the local branch ref to match remote.
+   *  Uses update-ref instead of checkout+reset to avoid conflicts with worktrees
+   *  and to avoid destroying any uncommitted changes in the working tree. */
   async syncToRemote(branch: string = "main"): Promise<void> {
     await this.git("fetch", "origin", branch);
-    try {
-      await this.git("checkout", branch);
-    } catch {
-      // May already be on the branch
+
+    // Check for uncommitted changes — skip reset if working tree is dirty
+    const status = await this.git("status", "--porcelain");
+    if (status.length > 0) {
+      console.log(`[GitEngine] Working tree dirty (${status.split("\n").length} files) — skipping reset`);
+      return;
     }
-    await this.git("reset", "--hard", `origin/${branch}`);
+
+    // Update the local branch ref without needing to be on that branch
+    // (avoids "already checked out in worktree" errors)
+    await this.git("update-ref", `refs/heads/${branch}`, `origin/${branch}`);
   }
 
   // ── Worktree operations ────────────────────────────────────

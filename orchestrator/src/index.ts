@@ -5,7 +5,7 @@ import { SessionManager } from "./session-manager.js";
 import { GitEngine } from "./git-engine.js";
 import { Daemon, type DaemonConfig } from "./daemon.js";
 import { createApi } from "./api.js";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 function loadEnv(): void {
@@ -31,12 +31,19 @@ function loadEnv(): void {
 async function main() {
   loadEnv();
 
-  const projectManager = new ProjectManager();
-  const gitEngine = new GitEngine();
-  const sessionManager = new SessionManager(projectManager, gitEngine);
-
   const args = process.argv.slice(2);
   const command = args[0];
+
+  // Parse --root-dir early so all subcommands can use it
+  let cliRootDir: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--root-dir" && args[i + 1]) { cliRootDir = args[i + 1]; break; }
+  }
+  const baseRootDir = cliRootDir ?? process.env.DAEMON_ROOT_DIR ?? process.cwd();
+
+  const projectManager = new ProjectManager(baseRootDir);
+  const gitEngine = new GitEngine(baseRootDir);
+  const sessionManager = new SessionManager(projectManager, gitEngine, baseRootDir);
 
   switch (command) {
     case "run": {
@@ -45,19 +52,19 @@ async function main() {
       let maxSessions = Number(process.env.MAX_CONCURRENT_SESSIONS) || 2;
       let budget = Number(process.env.DAILY_BUDGET_USD) || 40;
 
-      let rootDir = process.env.DAEMON_ROOT_DIR || process.cwd();
+      const rootDir = baseRootDir;
 
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--interval" && args[i + 1]) interval = Number(args[++i]);
         if (args[i] === "--max-sessions" && args[i + 1]) maxSessions = Number(args[++i]);
         if (args[i] === "--budget" && args[i + 1]) budget = Number(args[++i]);
-        if (args[i] === "--root-dir" && args[i + 1]) rootDir = args[++i];
       }
 
       // Validate parsed values
       if (interval < 1) { console.error("--interval must be >= 1 (minutes)"); process.exit(1); }
       if (maxSessions < 1) { console.error("--max-sessions must be >= 1"); process.exit(1); }
       if (budget < 1) { console.error("--budget must be >= 1 (USD)"); process.exit(1); }
+      if (!existsSync(rootDir)) { console.error("--root-dir does not exist:", rootDir); process.exit(1); }
 
       const config: DaemonConfig = {
         pollIntervalMs: interval * 60 * 1000,

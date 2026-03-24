@@ -95,9 +95,11 @@ jobs:
               echo "Syncing agent clone..."
               cd /opt/deepwork-agent
               git fetch origin main
-              git reset --hard origin/main
-              echo "Agent clone synced to $(git rev-parse --short HEAD)"
+              git update-ref refs/heads/main origin/main
+              echo "Agent clone synced to $(git rev-parse --short origin/main)"
               cd ~/deepwork
+            else
+              echo "WARNING: Agent clone not found at /opt/deepwork-agent — daemon will use stale data"
             fi
 
             echo "Build complete: $(git rev-parse --short HEAD) at $(date -u)"
