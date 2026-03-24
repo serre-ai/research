@@ -51,6 +51,11 @@ async function main() {
         if (args[i] === "--budget" && args[i + 1]) budget = Number(args[++i]);
       }
 
+      // Validate parsed values
+      if (interval < 1) { console.error("--interval must be >= 1 (minutes)"); process.exit(1); }
+      if (maxSessions < 1) { console.error("--max-sessions must be >= 1"); process.exit(1); }
+      if (budget < 1) { console.error("--budget must be >= 1 (USD)"); process.exit(1); }
+
       const config: DaemonConfig = {
         pollIntervalMs: interval * 60 * 1000,
         maxConcurrentSessions: maxSessions,
@@ -74,6 +79,17 @@ async function main() {
         dbPool.on("error", (err) => {
           console.error("[DB Pool] Unexpected error on idle client:", err);
         });
+      }
+
+      // Verify database connection before proceeding
+      if (dbPool) {
+        try {
+          await dbPool.query("SELECT 1");
+          console.log("Database connection verified");
+        } catch (err) {
+          console.error("Failed to connect to database:", err instanceof Error ? err.message : err);
+          process.exit(1);
+        }
       }
 
       // Run database migrations before starting daemon

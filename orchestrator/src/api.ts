@@ -655,8 +655,8 @@ function healthRoute(startedAt: number, kg?: KnowledgeGraph): express.Router {
       }
     }
 
-    res.json({
-      status: "ok",
+    const payload = {
+      status: dbOk ? "ok" : "degraded",
       uptime_s: Math.round((Date.now() - startedAt) / 1000),
       started_at: new Date(startedAt).toISOString(),
       memory: mem,
@@ -664,7 +664,14 @@ function healthRoute(startedAt: number, kg?: KnowledgeGraph): express.Router {
       database: dbOk ? "connected" : "unavailable",
       knowledge_graph: knowledgeGraph,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    if (!dbOk) {
+      res.status(503).json(payload);
+      return;
+    }
+
+    res.json(payload);
   });
 
   return router;
