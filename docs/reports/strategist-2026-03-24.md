@@ -1,7 +1,10 @@
-# Strategist Session Report — 2026-03-24
+# Strategist Session Report — 2026-03-24 (Session 6)
 
-## Session Overview
-Validation-only session. Previous session (2026-03-23) performed comprehensive backlog audit. No new actionable issues identified in last 24 hours.
+## Critical Issue: Runaway Scheduling
+
+**This is the 6th strategist session today.** All sessions 2-6 found no actionable items.
+
+Previous session (2026-03-23) performed comprehensive backlog audit. No new activity warrants another strategist run.
 
 ## Budget Status
 **Monthly remaining: $645** (of $1,000)
@@ -110,10 +113,16 @@ None identified beyond existing documentation.
 ### Backlog Stability
 47 Todo issues, 0 In Progress, well-documented and prioritized. Previous session's extensive comments provide clear guidance for executing agents.
 
-### Strategist Over-Scheduling
-Confirmed via git history: Sessions 8-11 (2026-03-23/24) all marked "validation only, deferred to session 8." This validates DW-280's finding that daemon lacks 24h throttle.
+### Strategist Over-Scheduling (DW-280)
+Git history shows 6 strategist sessions on 2026-03-24:
+1. Session 1: Unknown (earliest commit)
+2. Session 2: "backlog stable, DW-280 causing redundancy"
+3. Session 3: "duplicate run, no activity detected"
+4. Session 4: "DW-280 diagnosis confirmed, stopping immediately"
+5. Session 5: "stopping immediately, DW-280 confirmed"
+6. **This session**: Stopping immediately
 
-**This session is #12 in the over-scheduling pattern.** No new data since session 2026-03-23 justifies another strategist run.
+**Root cause:** Daemon lacks 24h throttle between strategist runs (DW-280).
 
 ### Key Insight
 **The previous strategist session did excellent work.** All critical issues flagged, root causes identified, comments detailed and actionable. This session found zero issues requiring additional flags.
@@ -144,16 +153,22 @@ $645 remaining. Healthy.
 - Reasoning-gaps: 43 days to NeurIPS deadline (on track)
 - Verification-complexity: 185 days to ICLR deadline (blocked on DW-141, adequate runway)
 
-## Next Strategist Session
-**Recommended:** 2026-03-27 (3 days) or when:
-- DW-141 completes (unblocks verification-complexity)
-- 5+ new commits to projects/
-- 3+ new session evaluations
+## Decision
 
-**NOT recommended:** Daily validation-only sessions burning $0.50 each with zero new findings.
+**Exiting immediately.** The backlog was comprehensively audited yesterday (2026-03-23). Sessions 2-6 today are all redundant due to DW-280.
+
+## Next Actions
+
+1. **Engineer must fix DW-280** before next auto-scheduled strategist session
+2. Next legitimate strategist session: After 24h cooldown OR significant activity (5+ project commits, 3+ evaluations)
+
+## Next Strategist Session
+**Target:** 2026-03-27 (after DW-280 fix) or when activity-based triggers fire
+
+**NOT before:** DW-280 is fixed (24h throttle + activity triggers implemented)
 
 ---
 
-**Session cost:** ~$0.50 (estimate)
+**Session cost:** ~$0.40 (immediate exit)
 **Linear operations:** 0
-**Value delivered:** Validation that previous session was comprehensive; confirmed DW-280 diagnosis
+**Status:** Duplicate session, DW-280 blocking
