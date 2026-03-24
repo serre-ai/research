@@ -1,0 +1,205 @@
+/* ============================================
+   TUI FRAME & SCREEN
+   Full-viewport terminal with double-line border,
+   keyboard focus system, and panel management.
+   ============================================ */
+
+/* --- Screen: viewport lock --- */
+
+.tui-screen {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+/* Uniform font size — override everything */
+.tui-screen h1, .tui-screen h2, .tui-screen h3,
+.tui-screen h4, .tui-screen h5, .tui-screen h6,
+.tui-screen p, .tui-screen span, .tui-screen a,
+.tui-screen li, .tui-screen td, .tui-screen th,
+.tui-screen label, .tui-screen button, .tui-screen kbd {
+  font-size: inherit;
+  line-height: inherit;
+  font-family: inherit;
+}
+
+/* Override TUI metric value — no large text in true TUI mode */
+.tui-screen .tui-metric-value {
+  font-size: inherit;
+}
+
+/* --- Frame: double-line border --- */
+
+.tui-frame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  --frame-color: var(--color-border-strong);
+}
+
+/* Top / bottom / separator rows */
+.tui-frame__top,
+.tui-frame__bottom,
+.tui-frame__separator {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--frame-color);
+  user-select: none;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tui-frame__corner {
+  flex-shrink: 0;
+  color: var(--frame-color);
+}
+
+.tui-frame__hline {
+  border-bottom: 3px double var(--frame-color);
+  height: 0.5em;
+  min-width: 1ch;
+}
+
+.tui-frame__hline--fill {
+  flex: 1;
+}
+
+.tui-frame__title {
+  color: var(--color-text-bright);
+  font-weight: 600;
+  padding: 0 1ch;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+
+.tui-frame__title-right {
+  color: var(--color-text-muted);
+  padding: 0 1ch;
+  flex-shrink: 0;
+}
+
+/* Content body with double side borders */
+.tui-frame__body {
+  flex: 1;
+  min-height: 0;
+  border-left: 3px double var(--frame-color);
+  border-right: 3px double var(--frame-color);
+  margin-left: 0.25ch;
+  margin-right: 0.25ch;
+  overflow: hidden;
+}
+
+.tui-frame__content {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1ch;
+}
+
+/* Thin scrollbar */
+.tui-frame__content::-webkit-scrollbar { width: 1ch; }
+.tui-frame__content::-webkit-scrollbar-track { background: transparent; }
+.tui-frame__content::-webkit-scrollbar-thumb { background: var(--color-border-strong); }
+
+/* Key hints row */
+.tui-frame__hints-row {
+  flex-shrink: 0;
+  border-left: 3px double var(--frame-color);
+  border-right: 3px double var(--frame-color);
+  margin-left: 0.25ch;
+  margin-right: 0.25ch;
+}
+
+.tui-frame__hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2ch;
+  padding: 0.25em 1ch;
+  color: var(--color-text-muted);
+}
+
+.tui-frame__hint {
+  display: inline-flex;
+  gap: 0.5ch;
+}
+
+.tui-frame__hint-key {
+  color: var(--color-text-bright);
+}
+
+/* --- Panel: focusable region with single-line border --- */
+
+.tui-panel {
+  --panel-color: var(--color-border-strong);
+}
+
+.tui-panel--active {
+  --panel-color: var(--color-text-bright);
+}
+
+.tui-panel__top,
+.tui-panel__bottom {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--panel-color);
+  user-select: none;
+  line-height: 1;
+}
+
+.tui-panel__corner {
+  flex-shrink: 0;
+  color: var(--panel-color);
+}
+
+.tui-panel__hline {
+  border-bottom: 1px solid var(--panel-color);
+  height: 0.5em;
+  min-width: 1ch;
+}
+
+.tui-panel__hline--fill {
+  flex: 1;
+}
+
+.tui-panel__title {
+  color: var(--color-text-bright);
+  font-weight: 600;
+  padding: 0 0.5ch;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.tui-panel__body {
+  border-left: 1px solid var(--panel-color);
+  border-right: 1px solid var(--panel-color);
+  margin-left: 0.35ch;
+  margin-right: 0.35ch;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.tui-panel__body::-webkit-scrollbar { width: 1ch; }
+.tui-panel__body::-webkit-scrollbar-track { background: transparent; }
+.tui-panel__body::-webkit-scrollbar-thumb { background: var(--color-border-strong); }
+
+.tui-panel__content {
+  padding: 0.5em 1ch;
+}
+
+/* Active panel's scrollbar is brighter */
+.tui-panel--active .tui-panel__body::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+}

@@ -2,6 +2,7 @@
 @import "./tokens.css";
 @import "./tui.css";
 @import "./landing.css";
+@import "./tui-frame.css";
 
 @theme {
   --font-mono: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace;

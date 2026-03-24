@@ -6,3 +6,7 @@ export { TuiProgress } from './tui-progress';
 export { TuiSparkline } from './tui-sparkline';
 export { TuiMetric } from './tui-metric';
 export { TuiSkeleton } from './tui-skeleton';
+export { TuiScreen } from './tui-screen';
+export { TuiFrame } from './tui-frame';
+export { TuiPanel } from './tui-panel';
+export { TuiKeyHints } from './tui-key-hints';
