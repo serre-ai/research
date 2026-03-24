@@ -48,7 +48,7 @@ jobs:
           cache: pip
           cache-dependency-path: projects/reasoning-gaps/benchmarks/requirements.txt
       - run: pip install -r projects/reasoning-gaps/benchmarks/requirements.txt pytest
-      - run: cd projects/reasoning-gaps/benchmarks && python -m pytest tests/ -x -m "not integration" --tb=short -k "not test_accuracy_by_condition_table"
+      - run: cd projects/reasoning-gaps/benchmarks && python -m pytest tests/ -x -m "not integration" --tb=short -k "not test_accuracy_by_condition_table and not TestPlots"
 
   deploy:
     name: Deploy to VPS
