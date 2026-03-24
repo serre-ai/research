@@ -1,0 +1,155 @@
+{
+  "accuracy_by_vc_class": {
+    "accuracy_by_class": {
+      "P": {
+        "mean": 1.0,
+        "ci_low": NaN,
+        "ci_high": NaN,
+        "n": 25
+      },
+      "P/coNP": {
+        "mean": 0.64,
+        "ci_low": 0.44000000000000006,
+        "ci_high": 0.8,
+        "n": 25
+      }
+    },
+    "anova": {
+      "f_statistic": 13.500000000000004,
+      "p_value": 0.0006001775906866174,
+      "significant": "True"
+    },
+    "pairwise_comparisons": [
+      {
+        "vc_class_1": "P",
+        "vc_class_2": "P/coNP",
+        "t_statistic": 3.6742346141747664,
+        "p_value": 0.0006001775906866189,
+        "significant_bonferroni": "True",
+        "cohens_d": 1.0392304845413263
+      }
+    ],
+    "bonferroni_alpha": 0.05
+  },
+  "cross_model_consistency": {
+    "icc_by_class": {
+      "P": {
+        "icc": NaN,
+        "n_instances": 25,
+        "n_pairs": 1
+      },
+      "P/coNP": {
+        "icc": NaN,
+        "n_instances": 25,
+        "n_pairs": 1
+      }
+    }
+  },
+  "error_types_b7": {
+    "total_errors": 9,
+    "error_counts": {
+      "False Positive": 8,
+      "False Negative": 1
+    },
+    "error_details": [
+      {
+        "instance_id": "B7_3sat_d1_0019",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d2_0008",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d3_0002",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d3_0005",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d4_0000",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d4_0001",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d5_0000",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d5_0002",
+        "error_type": "False Positive",
+        "generator_answer": "Yes",
+        "ground_truth": "No"
+      },
+      {
+        "instance_id": "B7_3sat_d5_0007",
+        "error_type": "False Negative",
+        "generator_answer": "Yes",
+        "ground_truth": "Yes"
+      }
+    ],
+    "accuracy": 0.64
+  },
+  "difficulty_scaling": {
+    "slope": -0.05,
+    "intercept": 0.97,
+    "r_squared": 0.11467889908256881,
+    "p_value": 0.33848525905757754,
+    "significant": "False",
+    "interpretation": "No significant trend",
+    "by_vc_class": {
+      "P": {
+        "slope": 0.0,
+        "intercept": 1.0,
+        "r_squared": NaN,
+        "p_value": NaN
+      },
+      "P/coNP": {
+        "slope": -0.1,
+        "intercept": 0.9400000000000001,
+        "r_squared": 0.8928571428571426,
+        "p_value": 0.015392438073302352
+      }
+    }
+  },
+  "latency_by_vc_class": {
+    "latency_by_class": {
+      "P": {
+        "median": 2037.3094789683819,
+        "q25": 1587.5519569963217,
+        "q75": 2518.1082230992615,
+        "n": 25
+      },
+      "P/coNP": {
+        "median": 6311.381438979879,
+        "q25": 6027.892119949684,
+        "q75": 7185.906973900273,
+        "n": 25
+      }
+    },
+    "kruskal_wallis": {
+      "h_statistic": 36.76470588235293,
+      "p_value": 1.3328142940540802e-09,
+      "significant": "True"
+    }
+  }
+}
