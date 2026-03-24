@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
-import { auth, signOut } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { AppProviders } from '@/providers/app-providers';
 import { CommandPalette } from '@/components/command-palette';
 import { TuiScreen } from '@/components/tui/tui-screen';
 import { TuiFrame } from '@/components/tui/tui-frame';
+import { TuiAppShell } from '@/components/tui/tui-app-shell';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -20,7 +21,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           title="DEEPWORK"
           titleRight={session.user.name ?? session.user.email}
         >
-          {children}
+          <TuiAppShell>
+            {children}
+          </TuiAppShell>
         </TuiFrame>
       </TuiScreen>
     </AppProviders>

@@ -1,40 +1,31 @@
 'use client';
 
-import Link from 'next/link';
-import { useProjects, useBudget, useHealth, useDaemonHealth, useDecisions, usePendingTriggers, useAckTrigger } from '@/hooks';
+import { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  TuiBox,
-  TuiTable,
-  TuiBadge,
-  TuiStatusDot,
-  TuiProgress,
-  TuiMetric,
-  TuiSkeleton,
-} from '@/components/tui';
-import { TriggerCard } from '@/components/collective/trigger-card';
+  useProjects, useBudget, useHealth, useDaemonHealth,
+  useDecisions, usePendingTriggers, useAckTrigger,
+} from '@/hooks';
+import { TuiPanel, TuiList, TuiStatusDot, TuiBadge, TuiProgress } from '@/components/tui';
 import { mapStatusToKey, formatCurrency, formatDate } from '@/lib/dashboard-helpers';
 import type { Decision } from '@/lib/types';
 
-// Fetch decisions for up to 5 projects
 function useAllDecisions(projectIds: string[]) {
   const q1 = useDecisions(projectIds[0] ?? '');
   const q2 = useDecisions(projectIds[1] ?? '');
   const q3 = useDecisions(projectIds[2] ?? '');
   const q4 = useDecisions(projectIds[3] ?? '');
   const q5 = useDecisions(projectIds[4] ?? '');
-
   const queries = [q1, q2, q3, q4, q5];
   const isLoading = queries.some((q) => q.isLoading);
   const allDecisions: Decision[] = [];
-  for (const q of queries) {
-    if (q.data) allDecisions.push(...q.data);
-  }
+  for (const q of queries) { if (q.data) allDecisions.push(...q.data); }
   allDecisions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
   return { data: allDecisions, isLoading };
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const { data: budget, isLoading: budgetLoading } = useBudget();
   const { data: health, isLoading: healthLoading } = useHealth();
@@ -45,228 +36,120 @@ export default function DashboardPage() {
   const { data: triggers } = usePendingTriggers();
   const ackTrigger = useAckTrigger();
 
-  const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
-  // Budget limit = total + remaining (what's been spent + what's left)
+  const projectList = projects ?? [];
+  const decisionList = (decisions ?? []).slice(0, 8);
+  const triggerList = (triggers ?? []).slice(0, 8);
+  const activeCount = projectList.filter((p) => p.status === 'active').length;
   const budgetLimit = budget ? budget.total + budget.remaining : 1000;
   const budgetPct = budget ? Math.round((budget.total / budgetLimit) * 100) : 0;
 
+  const navigateToProject = useCallback(
+    (p: (typeof projectList)[number]) => router.push(`/projects/${p.name}`),
+    [router],
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="font-mono">
-        <h1 className="text-xl font-semibold text-text-bright">DEEPWORK</h1>
-        <span className="text-xs text-text-muted">Platform overview and project status</span>
+    <>
+      {/* Status line — not a panel */}
+      <div className="flex flex-wrap gap-x-6 gap-y-1 mb-3">
+        <span className="text-text-muted">
+          {projectsLoading ? '...' : `${activeCount} active / ${projectList.length} projects`}
+        </span>
+        <span className="flex items-center gap-1">
+          <TuiStatusDot status={daemon?.running ? 'ok' : 'idle'} />
+          <span className="text-text-secondary">
+            {daemonLoading ? '...' : daemon?.running ? 'daemon running' : 'daemon idle'}
+          </span>
+        </span>
+        {!budgetLoading && budget && (
+          <span className="flex items-center gap-1">
+            <span className="text-text-muted">SPEND</span>
+            <span className="text-text-secondary">{formatCurrency(budget.total)}</span>
+            <TuiProgress
+              value={budgetPct}
+              width={8}
+              showPercent={false}
+              color={budgetPct > 90 ? 'error' : budgetPct > 70 ? 'warn' : 'ok'}
+            />
+          </span>
+        )}
+        {!healthLoading && health && (
+          <span className="flex items-center gap-1">
+            <TuiStatusDot status={health.status === 'ok' ? 'ok' : 'error'} />
+            <span className="text-text-secondary">
+              API {health.status === 'ok' ? 'online' : 'degraded'}
+            </span>
+          </span>
+        )}
       </div>
 
-      {/* Metrics row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <TuiBox>
-          {projectsLoading ? (
-            <TuiSkeleton width={12} />
+      {/* Two columns: PROJECTS | HEALTH */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mb-3">
+        <TuiPanel
+          id="projects"
+          title="PROJECTS"
+          order={1}
+          itemCount={projectList.length}
+          onActivateItem={(idx) => navigateToProject(projectList[idx])}
+        >
+          {projectsError ? (
+            <span className="text-[--color-status-error]">
+              failed to load: {projectsError.message ?? 'error'}
+            </span>
           ) : (
-            <TuiMetric
-              label="Projects"
-              value={activeProjects.length}
-              unit={`/ ${projects?.length ?? 0}`}
+            <TuiList
+              panelId="projects"
+              items={projectList}
+              keyFn={(p) => p.id}
+              onActivate={navigateToProject}
+              emptyMessage={projectsLoading ? 'loading...' : 'no projects'}
+              renderItem={(p, _i, active) => (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <TuiStatusDot status={mapStatusToKey(p.status)} />
+                    <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                      {p.name}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <TuiBadge color="accent">{p.phase ?? p.status}</TuiBadge>
+                    {p.confidence != null && (
+                      <TuiProgress
+                        value={Math.round(p.confidence * 100)}
+                        width={6}
+                        showPercent={false}
+                        color={p.confidence > 0.7 ? 'ok' : p.confidence > 0.3 ? 'warn' : 'error'}
+                      />
+                    )}
+                  </span>
+                </div>
+              )}
             />
           )}
-        </TuiBox>
+        </TuiPanel>
 
-        <TuiBox variant={daemon?.running ? 'success' : undefined}>
-          {daemonLoading ? (
-            <TuiSkeleton width={12} />
-          ) : (
-            <div className="flex items-center gap-2">
-              <TuiStatusDot status={daemon?.running ? 'ok' : 'idle'} />
-              <TuiMetric
-                label="Daemon"
-                value={daemon?.running ? 'Running' : 'Idle'}
-              />
-            </div>
-          )}
-        </TuiBox>
-
-        <TuiBox>
-          {projectsLoading ? (
-            <TuiSkeleton width={12} />
-          ) : (
-            <TuiMetric label="Papers" value={projects?.length ?? 0} />
-          )}
-        </TuiBox>
-
-        <TuiBox>
-          {budgetLoading ? (
-            <TuiSkeleton width={12} />
-          ) : (
-            <div className="font-mono">
-              <TuiMetric
-                label="Monthly Spend"
-                value={budget ? formatCurrency(budget.total) : '$0'}
-                unit={`/ ${formatCurrency(budgetLimit)}`}
-              />
-              <TuiProgress
-                value={budgetPct}
-                width={16}
-                color={budgetPct > 90 ? 'error' : budgetPct > 70 ? 'warn' : 'ok'}
-                className="mt-1"
-              />
-            </div>
-          )}
-        </TuiBox>
-      </div>
-
-      {/* Projects table */}
-      <TuiBox title="Projects" variant={projectsError ? 'error' : undefined}>
-        {projectsError ? (
-          <span className="font-mono text-xs text-[--color-status-error]">
-            ✗ Failed to load projects: {projectsError.message ?? 'connection error'}
-          </span>
-        ) : projectsLoading ? (
-          <div className="space-y-2">
-            <TuiSkeleton width={40} />
-            <TuiSkeleton width={40} />
-            <TuiSkeleton width={40} />
-          </div>
-        ) : projects && projects.length > 0 ? (
-          <TuiTable<typeof projects[number]>
-            columns={[
-              {
-                key: 'name',
-                header: 'Name',
-                render: (row) => (
-                  <Link
-                    href={`/projects/${row.name}`}
-                    className="text-text-bright hover:text-[--color-accent-primary]"
-                  >
-                    {row.name}
-                  </Link>
-                ),
-              },
-              {
-                key: 'status',
-                header: '',
-                className: 'w-8',
-                render: (row) => (
-                  <TuiStatusDot status={mapStatusToKey(row.status)} />
-                ),
-              },
-              {
-                key: 'phase',
-                header: 'Phase',
-                render: (row) => (
-                  <TuiBadge color="accent">{row.phase ?? '—'}</TuiBadge>
-                ),
-              },
-              {
-                key: 'confidence',
-                header: 'Conf',
-                render: (row) => {
-                  const conf = row.confidence ?? 0;
-                  return (
-                    <TuiProgress
-                      value={Math.round(conf * 100)}
-                      width={8}
-                      showPercent={false}
-                      color={conf > 0.7 ? 'ok' : conf > 0.3 ? 'warn' : 'error'}
-                    />
-                  );
-                },
-              },
-              {
-                key: 'updated_at',
-                header: 'Updated',
-                className: 'text-text-muted',
-                render: (row) => formatDate(row.updated_at ?? ''),
-              },
-            ]}
-            data={projects}
-            rowKey={(r) => r.id}
-          />
-        ) : (
-          <span className="text-sm text-text-muted">No projects found</span>
-        )}
-      </TuiBox>
-
-      {/* Pending Triggers */}
-      {triggers && triggers.length > 0 && (
-        <TuiBox title="Pending Triggers" variant="warning">
-          <div className="divide-y divide-border">
-            {triggers.slice(0, 8).map((trigger) => (
-              <TriggerCard
-                key={trigger.id}
-                trigger={trigger}
-                onAck={(id) => ackTrigger.mutate(id)}
-                isAcking={ackTrigger.isPending}
-              />
-            ))}
-          </div>
-        </TuiBox>
-      )}
-
-      {/* Bottom row: Decisions + Health */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Recent Decisions */}
-        <TuiBox title="Decisions" className="lg:col-span-2">
-          {decisionsLoading ? (
-            <div className="space-y-2">
-              <TuiSkeleton width={48} />
-              <TuiSkeleton width={36} />
-              <TuiSkeleton width={48} />
-            </div>
-          ) : decisions && decisions.length > 0 ? (
-            <ul className="space-y-3">
-              {decisions.slice(0, 5).map((d) => (
-                <li key={`${d.date}-${d.decision?.slice(0, 30)}`} className="border-b border-border pb-2 font-mono last:border-0 last:pb-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="text-xs text-text">{d.decision}</span>
-                    <span className="shrink-0 text-[10px] text-text-muted">
-                      {formatDate(d.date)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[10px] text-text-muted">{d.rationale}</p>
-                  {d.project_id && (
-                    <TuiBadge color="muted" className="mt-1">{d.project_id}</TuiBadge>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <span className="text-xs text-text-muted">No decisions recorded</span>
-          )}
-        </TuiBox>
-
-        {/* System Health */}
-        <TuiBox title="Health">
+        <TuiPanel id="health" title="HEALTH" order={2} itemCount={0}>
           {healthLoading || daemonLoading ? (
-            <div className="space-y-2">
-              <TuiSkeleton width={20} />
-              <TuiSkeleton width={20} />
-              <TuiSkeleton width={20} />
-              <TuiSkeleton width={20} />
-            </div>
+            <span className="text-text-muted">loading...</span>
           ) : (
-            <ul className="space-y-2 font-mono text-xs">
-              <li className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <TuiStatusDot status={health?.status === 'ok' ? 'ok' : 'error'} />
                   <span className="text-text-secondary">API</span>
                 </span>
                 <span className="text-text-muted">{health ? 'online' : 'offline'}</span>
-              </li>
-
-              <li className="flex items-center justify-between">
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <TuiStatusDot status={health?.database?.connected ? 'ok' : 'error'} />
                   <span className="text-text-secondary">Database</span>
                 </span>
                 <span className="text-text-muted">
-                  {health?.database?.connected
-                    ? `${health.database.latency_ms}ms`
-                    : 'disconnected'}
+                  {health?.database?.connected ? `${health.database.latency_ms}ms` : 'down'}
                 </span>
-              </li>
-
-              <li className="flex items-center justify-between">
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <TuiStatusDot status={daemon?.running ? 'ok' : 'idle'} />
                   <span className="text-text-secondary">Daemon</span>
@@ -274,39 +157,77 @@ export default function DashboardPage() {
                 <span className="text-text-muted">
                   {daemon?.running ? 'running' : 'stopped'}
                 </span>
-              </li>
-
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <TuiStatusDot
-                    status={
-                      health?.memory
-                        ? health.memory.percentage > 90
-                          ? 'error'
-                          : health.memory.percentage > 70
-                            ? 'warn'
-                            : 'ok'
-                        : 'idle'
-                    }
-                  />
-                  <span className="text-text-secondary">Memory</span>
-                </span>
-                <span className="text-text-muted">
-                  {health?.memory
-                    ? `${Math.round(health.memory.percentage)}%`
-                    : '--'}
-                </span>
-              </li>
-
-              {daemon?.last_session && (
-                <li className="mt-2 border-t border-border pt-2 text-[10px] text-text-muted">
-                  Last session: {formatDate(daemon.last_session)}
-                </li>
+              </div>
+              {health?.memory && (
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <TuiStatusDot
+                      status={health.memory.percentage > 90 ? 'error' : health.memory.percentage > 70 ? 'warn' : 'ok'}
+                    />
+                    <span className="text-text-secondary">Memory</span>
+                  </span>
+                  <span className="text-text-muted">{Math.round(health.memory.percentage)}%</span>
+                </div>
               )}
-            </ul>
+              {daemon?.last_session && (
+                <div className="text-text-muted mt-2 pt-1 border-t border-border">
+                  last session: {formatDate(daemon.last_session)}
+                </div>
+              )}
+            </div>
           )}
-        </TuiBox>
+        </TuiPanel>
       </div>
-    </div>
+
+      {/* DECISIONS */}
+      <TuiPanel id="decisions" title="DECISIONS" order={3} itemCount={decisionList.length} className="mb-3">
+        <TuiList
+          panelId="decisions"
+          items={decisionList}
+          keyFn={(d, i) => `${d.date}-${i}`}
+          emptyMessage={decisionsLoading ? 'loading...' : 'no decisions'}
+          renderItem={(d, _i, active) => (
+            <div>
+              <div className="flex items-start justify-between gap-4">
+                <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                  {d.decision}
+                </span>
+                <span className="shrink-0 text-text-muted">{formatDate(d.date)}</span>
+              </div>
+              {d.rationale && <span className="text-text-muted">{d.rationale}</span>}
+              {d.project_id && <TuiBadge color="muted" className="ml-1">{d.project_id}</TuiBadge>}
+            </div>
+          )}
+        />
+      </TuiPanel>
+
+      {/* TRIGGERS — only when present */}
+      {triggerList.length > 0 && (
+        <TuiPanel
+          id="triggers"
+          title="TRIGGERS"
+          order={4}
+          itemCount={triggerList.length}
+          onActivateItem={(idx) => ackTrigger.mutate(triggerList[idx].id)}
+          keyHints={[{ key: 'Enter', label: 'Acknowledge' }]}
+        >
+          <TuiList
+            panelId="triggers"
+            items={triggerList}
+            keyFn={(t) => String(t.id)}
+            onActivate={(t) => ackTrigger.mutate(t.id)}
+            emptyMessage="no pending triggers"
+            renderItem={(t, _i, active) => (
+              <div className="flex items-center justify-between gap-2">
+                <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                  {t.trigger_type}
+                </span>
+                <TuiBadge color="warn">{t.agent}</TuiBadge>
+              </div>
+            )}
+          />
+        </TuiPanel>
+      )}
+    </>
   );
 }

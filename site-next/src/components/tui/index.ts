@@ -11,3 +11,5 @@ export { TuiFrame } from './tui-frame';
 export { TuiPanel } from './tui-panel';
 export { TuiKeyHints } from './tui-key-hints';
 export { TuiList } from './tui-list';
+export { TuiNavPanel } from './tui-nav-panel';
+export { TuiAppShell } from './tui-app-shell';
