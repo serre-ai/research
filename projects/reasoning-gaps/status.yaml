@@ -2,10 +2,10 @@ project: reasoning-gaps
 title: "On the Reasoning Gaps of Large Language Models: A Formal Characterization"
 venue: NeurIPS 2026
 created: 2026-03-07
-updated: 2026-03-24T17:30:00Z
+updated: 2026-03-24T20:15:00Z
 
 phase: submission-prep
-status: in-progress
+status: blocked
 
 progress:
   literature_review:
@@ -36,12 +36,23 @@ progress:
     status: complete
     notes: "Comprehensive rebuttal materials prepared (reviews/rebuttal-prep.md). 12 anticipated criticisms addressed: benchmark scope, model selection, complexity assumptions, experimental rigor, results anomalies, Type 6 specificity, prior work comparison, reproducibility. Includes 5 ready-to-run experiments, decision tree for responses, and template with paper references. Ready for reviewer response phase."
   evidence_verification:
-    status: in-progress
-    notes: "Verifying unsupported claims from knowledge graph (177 total). First verification complete: Haiku 4.5 B1 direct accuracy 0.5860 (n=500) - VERIFIED with 100% confidence (upgraded from 95%). Evidence: confidence_intervals.csv entry (0.586, n=500, CI [0.5299, 0.62305]), main_accuracy.csv aggregate (0.6322), mathematical validation (293/500=0.586). Documentation at notes/evidence-haiku-b1-direct-accuracy.md with complete evidence chain including multiple independent sources and cross-validation. Establishes verification workflow for remaining 176 claims."
+    status: deferred
+    notes: "Post-submission task. 1/177 claims verified (Haiku 4.5 B1 direct accuracy 0.5860). Remaining 176 claims deferred until after NeurIPS submission. Not on critical path for submission. See notes/evidence-haiku-b1-direct-accuracy.md for verification workflow."
 
 decisions_pending: []
 
+current_blocker:
+  blocker: "LaTeX not installed on system"
+  impact: "Cannot compile PDF to verify page limit (NeurIPS: 9 pages main text)"
+  solution: "User must install LaTeX: sudo apt-get install texlive-full texlive-latex-extra"
+  estimated_time_after_fix: "4-6 hours (compile, verify, proofread, submit)"
+  agent_capability: "Agents cannot install system packages (requires sudo)"
+  recommendation: "User installs LaTeX, THEN assign Writer to compile and verify"
+
 decisions_made:
+  - date: 2026-03-24
+    decision: "Meta-review confirms single blocker: LaTeX not installed; recommend halting agent sessions until resolved"
+    rationale: "Fourth meta-review session (notes/14-meta-review-final-assessment.md) confirms diagnosis from earlier today: paper is 95% complete, all content finished, but LaTeX not installed. Last 3 sessions scored 5-15/100 because Writer assigned to compile/verify tasks impossible without pdflatex. Researcher assigned to evidence verification (low-value busywork, 1/177 done). Paper quality excellent per Writer review. Critical path: 4-6 hours AFTER LaTeX installed. Recommendation: user installs LaTeX system-wide, then Writer compiles/verifies/proofreads/submits. 41 days to deadline, massive time buffer. Status changed to 'blocked' to signal user action required."
   - date: 2026-03-24
     decision: "Complete reference publication status check; update Sprague et al. to ICLR 2025"
     rationale: "Checked 9 of 20 arXiv papers (all high-priority 2021-2024 papers plus spot checks from 2025-2026). Found 1 published paper: Sprague et al. 'To CoT or not to CoT?' published at ICLR 2025. Updated bibliography with full author list and venue. Remaining 19 papers confirmed as arXiv-only or too recent to have been published (2025-2026 submissions unlikely to appear in venues until late 2026). No blocking issues for submission. See reviews/reference-update-2026-03-24.md for complete findings."
@@ -133,15 +144,33 @@ key_references:
   - "Yang et al., PaTH Attention: Position Encoding via Accumulating Householder Transformations, NeurIPS 2025"
 
 next_steps:
-  - "[CRITICAL] Install LaTeX (pdflatex, bibtex) on system"
-  - "[CRITICAL] Compile paper and verify page count ≤ 9 pages main text"
-  - "[CRITICAL] Fix any compilation errors"
-  - "[HIGH] Final PDF proofread after compilation"
-  - "[LOW] Evidence verification (176 remaining claims, post-submission task)"
-  - "[LOW] Post-submission: integrate PaTH attention (Yang et al.) in revision"
-  - "[LOW] Post-submission camera-ready: check 2026 papers for publication (Yehudai, Raju, Ye, Gao, Liu)"
+  critical_path:
+    - action: "USER ACTION REQUIRED: Install LaTeX on system"
+      command: "sudo apt-get install texlive-full texlive-latex-extra texlive-bibtex-extra"
+      time_required: "30 minutes"
+      why_blocking: "Cannot compile PDF to verify page limit without LaTeX"
+      agent_capability: "Agents cannot install system packages (requires sudo)"
+    - action: "AFTER LaTeX installed: Compile paper and verify page count"
+      agent: "Writer"
+      tasks: ["cd paper/", "pdflatex main.tex", "bibtex main", "pdflatex main.tex (2x)", "Check page count ≤ 9 pages"]
+      time_required: "1-2 hours"
+    - action: "Fix any compilation errors"
+      agent: "Writer"
+      time_required: "0-2 hours (depends on errors found)"
+    - action: "Final PDF proofread"
+      agent: "Writer"
+      tasks: ["Read compiled PDF start-to-finish", "Check figures render", "Verify cross-references", "Final polish"]
+      time_required: "2 hours"
+    - action: "Submit to NeurIPS"
+      agent: "Writer"
+      time_required: "1 hour"
 
-notes: "Paper 95% complete, submission-ready pending LaTeX. Writer review 2026-03-24: excellent quality, checklist complete, anonymization verified, no content issues. Reference check 2026-03-24: 1 update made (Sprague et al. to ICLR 2025), remaining arXiv citations current and appropriate. BLOCKER: LaTeX not installed (pdflatex, bibtex missing). Critical path: user must install LaTeX system-wide, THEN Writer can compile/verify (4-6 hours). See reviews/writer-session-2026-03-24.md and reviews/reference-update-2026-03-24.md."
+  post_submission:
+    - "Evidence verification (176 remaining claims) - nice-to-have for reproducibility"
+    - "PaTH attention (Yang et al., NeurIPS 2025) integration for revision"
+    - "Check 2026 papers for publication at camera-ready deadline (Yehudai, Raju, Ye, Gao, Liu)"
+
+notes: "Paper 95% complete, submission-ready pending LaTeX compilation. All content finished: 12 models, 159K instances, tool-use + budget sweep integrated, checklist complete, anonymization verified, references updated (Sprague et al. → ICLR 2025). BLOCKER: LaTeX not installed. Meta-review (notes/14-meta-review-final-assessment.md) confirms last 3 sessions failed (scores 5-15/100) because agents assigned LaTeX-dependent tasks when pdflatex unavailable. Agents cannot install system packages. Critical path: USER installs LaTeX (30 min), THEN Writer compiles/verifies/proofreads/submits (4-6 hours). 41 days to deadline = massive buffer. Risk: LOW."
 
 metrics:
   deadline_epoch: 1777939200000
@@ -150,4 +179,4 @@ metrics:
   critical_path_hours: 6
   blocker: "LaTeX not installed - requires system-level installation before Writer can proceed"
 
-current_activity: "BLOCKED on LaTeX installation. Meta-review complete (2026-03-24): last 3 sessions failed because tasks required LaTeX but LaTeX not installed. Paper content is complete and excellent. User must install LaTeX (`sudo apt-get install texlive-full`) before next Writer session. See notes/SESSION-2026-03-24-meta-diagnostic.md."
+current_activity: "BLOCKED - LaTeX not installed. Meta-review #4 complete (notes/14-meta-review-final-assessment.md): Paper 95% done, content excellent, all experiments complete. Last 3 sessions scored 5-15/100 attempting LaTeX-dependent tasks without pdflatex. Agents cannot install system packages. USER ACTION REQUIRED: install LaTeX (`sudo apt-get install texlive-full texlive-latex-extra`), THEN assign Writer to compile/verify/submit (4-6 hours). Alternative: use Overleaf. 41 days to deadline, risk LOW. Do not run more agent sessions until blocker resolved."
