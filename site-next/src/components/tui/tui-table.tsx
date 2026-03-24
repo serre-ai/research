@@ -23,7 +23,7 @@ interface TuiTableProps<T> {
  * reasoning-gaps    analysis  NeurIPS
  * verification      writing   ICLR
  */
-export function TuiTable<T extends Record<string, unknown>>({
+export function TuiTable<T>({
   columns,
   data,
   rowKey,
@@ -52,7 +52,7 @@ export function TuiTable<T extends Record<string, unknown>>({
           >
             {columns.map((col) => (
               <td key={col.key} className={col.className}>
-                {col.render ? col.render(row) : String(row[col.key] ?? '')}
+                {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
               </td>
             ))}
           </tr>

@@ -1,67 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  FolderOpen,
-  Activity,
-  FileText,
-  DollarSign,
-  ArrowRight,
-} from 'lucide-react';
 import { useProjects, useBudget, useHealth, useDaemonHealth, useDecisions, usePendingTriggers, useAckTrigger } from '@/hooks';
-import { PageHeader } from '@/components/ui/page-header';
-import { MetricCard } from '@/components/ui/metric-card';
-import { Card } from '@/components/ui/card';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { StatusDot } from '@/components/ui/status-dot';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import {
+  TuiBox,
+  TuiTable,
+  TuiBadge,
+  TuiStatusDot,
+  TuiProgress,
+  TuiMetric,
+  TuiSkeleton,
+} from '@/components/tui';
 import { TriggerCard } from '@/components/collective/trigger-card';
 import { mapStatusToKey, formatCurrency, formatDate } from '@/lib/dashboard-helpers';
 import type { Decision } from '@/lib/types';
 
-function MetricSkeleton() {
-  return (
-    <Card className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="h-4 w-4" />
-      </div>
-      <Skeleton className="h-8 w-20" />
-    </Card>
-  );
-}
-
-function ProjectCardSkeleton() {
-  return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-5 w-16" />
-      </div>
-      <Skeleton className="h-3 w-48" />
-      <Skeleton className="h-3 w-24" />
-    </Card>
-  );
-}
-
-// A wrapper that fetches decisions for a single project
+// Fetch decisions for first two projects
 function useAllDecisions(projectIds: string[]) {
   const q1 = useDecisions(projectIds[0] ?? '');
   const q2 = useDecisions(projectIds[1] ?? '');
 
   const isLoading = q1.isLoading || q2.isLoading;
-  const error = q1.error || q2.error;
-
   const allDecisions: Decision[] = [];
   if (q1.data) allDecisions.push(...q1.data);
   if (q2.data) allDecisions.push(...q2.data);
-
-  // Sort by date descending
   allDecisions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  return { data: allDecisions, isLoading, error };
+  return { data: allDecisions, isLoading };
 }
 
 export default function DashboardPage() {
@@ -76,231 +41,211 @@ export default function DashboardPage() {
   const ackTrigger = useAckTrigger();
 
   const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
-  const isActiveSessions = daemon?.running ?? false;
+  const budgetPct = budget ? Math.round((budget.total / 1000) * 100) : 0;
 
   return (
-    <div>
-      <PageHeader title="Dashboard" subtitle="Platform overview and project status" />
-
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {projectsLoading ? (
-          <MetricSkeleton />
-        ) : (
-          <MetricCard
-            label="Projects"
-            value={projects?.length ?? 0}
-            icon={FolderOpen}
-            trend={
-              activeProjects.length > 0
-                ? { value: activeProjects.length, label: 'active' }
-                : undefined
-            }
-          />
-        )}
-
-        {daemonLoading ? (
-          <MetricSkeleton />
-        ) : (
-          <MetricCard
-            label="Daemon"
-            value={isActiveSessions ? 'Running' : 'Idle'}
-            icon={Activity}
-          />
-        )}
-
-        {projectsLoading ? (
-          <MetricSkeleton />
-        ) : (
-          <MetricCard
-            label="Papers"
-            value={projects?.length ?? 0}
-            icon={FileText}
-          />
-        )}
-
-        {budgetLoading ? (
-          <MetricSkeleton />
-        ) : (
-          <MetricCard
-            label="Monthly Spend"
-            value={budget ? formatCurrency(budget.total) : '$0'}
-            icon={DollarSign}
-            trend={
-              budget
-                ? {
-                    value: -Math.round(((budget.remaining ?? 0) / 1000) * 100),
-                    label: `of $1,000`,
-                  }
-                : undefined
-            }
-          />
-        )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="font-mono">
+        <h1 className="text-xl font-semibold text-text-bright">DEEPWORK</h1>
+        <span className="text-xs text-text-muted">Platform overview and project status</span>
       </div>
 
-      {/* Project cards */}
-      <div className="mt-8">
-        <Label className="mb-4 block">Projects</Label>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* Metrics row */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <TuiBox>
           {projectsLoading ? (
-            <>
-              <ProjectCardSkeleton />
-              <ProjectCardSkeleton />
-            </>
-          ) : projects && projects.length > 0 ? (
-            projects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/projects/${project.name}`}
-                className="group block hover:no-underline"
-              >
-                <Card className="transition-colors group-hover:border-border-strong">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <StatusDot
-                        status={mapStatusToKey(project.status)}
-                        pulse={project.status === 'active'}
-                      />
-                      <span className="font-mono text-sm font-semibold text-text-bright">
-                        {project.name}
-                      </span>
-                    </div>
-                    <StatusBadge status={mapStatusToKey(project.status)}>
-                      {project.status}
-                    </StatusBadge>
-                  </div>
-
-                  {project.phase && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="font-mono text-xs text-text-muted">Phase:</span>
-                      <Badge variant="outline">{project.phase}</Badge>
-                    </div>
-                  )}
-
-                  {project.focus && (
-                    <p className="mt-2 text-xs text-text-secondary">{project.focus}</p>
-                  )}
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-text-muted">
-                    {project.confidence !== undefined && (
-                      <span className="font-mono">
-                        Confidence: {Math.round(project.confidence * 100)}%
-                      </span>
-                    )}
-                    <span className="font-mono">
-                      Updated {formatDate(project.updated_at)}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex items-center gap-1 text-xs text-text-muted opacity-0 transition-opacity group-hover:opacity-100">
-                    View project <ArrowRight className="h-3 w-3" />
-                  </div>
-                </Card>
-              </Link>
-            ))
+            <TuiSkeleton width={12} />
           ) : (
-            <Card className="col-span-full">
-              <p className="text-center text-sm text-text-muted">No projects found</p>
-            </Card>
+            <TuiMetric
+              label="Projects"
+              value={activeProjects.length}
+              unit={`/ ${projects?.length ?? 0}`}
+            />
           )}
-        </div>
+        </TuiBox>
+
+        <TuiBox>
+          {daemonLoading ? (
+            <TuiSkeleton width={12} />
+          ) : (
+            <TuiMetric
+              label="Daemon"
+              value={daemon?.running ? '● RUN' : '○ IDLE'}
+            />
+          )}
+        </TuiBox>
+
+        <TuiBox>
+          {projectsLoading ? (
+            <TuiSkeleton width={12} />
+          ) : (
+            <TuiMetric label="Papers" value={projects?.length ?? 0} />
+          )}
+        </TuiBox>
+
+        <TuiBox>
+          {budgetLoading ? (
+            <TuiSkeleton width={12} />
+          ) : (
+            <div className="font-mono">
+              <TuiMetric
+                label="Monthly Spend"
+                value={budget ? formatCurrency(budget.total) : '$0'}
+                unit="/ $1,000"
+              />
+              <TuiProgress
+                value={budgetPct}
+                width={16}
+                color={budgetPct > 90 ? 'error' : budgetPct > 70 ? 'warn' : 'ok'}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </TuiBox>
       </div>
+
+      {/* Projects table */}
+      <TuiBox title="Projects">
+        {projectsLoading ? (
+          <div className="space-y-2">
+            <TuiSkeleton width={40} />
+            <TuiSkeleton width={40} />
+            <TuiSkeleton width={40} />
+          </div>
+        ) : projects && projects.length > 0 ? (
+          <TuiTable
+            columns={[
+              {
+                key: 'name',
+                header: 'Name',
+                render: (row) => (
+                  <Link
+                    href={`/projects/${row.name}`}
+                    className="text-text-bright hover:text-[--color-accent-primary]"
+                  >
+                    {String(row.name)}
+                  </Link>
+                ),
+              },
+              {
+                key: 'status',
+                header: '',
+                className: 'w-8',
+                render: (row) => (
+                  <TuiStatusDot status={mapStatusToKey(String(row.status))} />
+                ),
+              },
+              {
+                key: 'phase',
+                header: 'Phase',
+                render: (row) => (
+                  <TuiBadge color="accent">{String(row.phase ?? '—')}</TuiBadge>
+                ),
+              },
+              {
+                key: 'confidence',
+                header: 'Conf',
+                render: (row) => {
+                  const conf = Number(row.confidence ?? 0);
+                  return (
+                    <TuiProgress
+                      value={Math.round(conf * 100)}
+                      width={8}
+                      showPercent={false}
+                      color={conf > 0.7 ? 'ok' : conf > 0.3 ? 'warn' : 'error'}
+                    />
+                  );
+                },
+              },
+              {
+                key: 'updated_at',
+                header: 'Updated',
+                className: 'text-text-muted',
+                render: (row) => formatDate(String(row.updated_at ?? '')),
+              },
+            ]}
+            data={projects}
+            rowKey={(r) => String(r.id)}
+          />
+        ) : (
+          <span className="text-sm text-text-muted">No projects found</span>
+        )}
+      </TuiBox>
 
       {/* Pending Triggers */}
       {triggers && triggers.length > 0 && (
-        <div className="mt-8">
-          <Card>
-            <Label className="mb-4 block">
-              Pending Triggers
-              <Badge variant="warning" className="ml-2">{triggers.length}</Badge>
-            </Label>
-            <div className="divide-y divide-border -mx-4 -mb-4">
-              {triggers.slice(0, 8).map((trigger) => (
-                <TriggerCard
-                  key={trigger.id}
-                  trigger={trigger}
-                  onAck={(id) => ackTrigger.mutate(id)}
-                  isAcking={ackTrigger.isPending}
-                />
-              ))}
-            </div>
-          </Card>
-        </div>
+        <TuiBox title="Pending Triggers" variant="warning">
+          <div className="divide-y divide-border">
+            {triggers.slice(0, 8).map((trigger) => (
+              <TriggerCard
+                key={trigger.id}
+                trigger={trigger}
+                onAck={(id) => ackTrigger.mutate(id)}
+                isAcking={ackTrigger.isPending}
+              />
+            ))}
+          </div>
+        </TuiBox>
       )}
 
       {/* Bottom row: Decisions + Health */}
-      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Recent Decisions */}
-        <Card className="lg:col-span-2">
-          <Label className="mb-4 block">Recent Decisions</Label>
+        <TuiBox title="Decisions" className="lg:col-span-2">
           {decisionsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="space-y-1.5">
-                  <Skeleton className="h-3 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              ))}
+            <div className="space-y-2">
+              <TuiSkeleton width={48} />
+              <TuiSkeleton width={36} />
+              <TuiSkeleton width={48} />
             </div>
           ) : decisions && decisions.length > 0 ? (
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               {decisions.slice(0, 5).map((d, i) => (
-                <li key={i} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                <li key={i} className="border-b border-border pb-2 font-mono last:border-0 last:pb-0">
                   <div className="flex items-start justify-between gap-4">
-                    <p className="font-mono text-xs text-text">{d.decision}</p>
-                    <span className="shrink-0 font-mono text-[10px] text-text-muted">
+                    <span className="text-xs text-text">{d.decision}</span>
+                    <span className="shrink-0 text-[10px] text-text-muted">
                       {formatDate(d.date)}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-text-muted">{d.rationale}</p>
+                  <p className="mt-0.5 text-[10px] text-text-muted">{d.rationale}</p>
                   {d.project_id && (
-                    <Badge variant="outline" className="mt-1.5">
-                      {d.project_id}
-                    </Badge>
+                    <TuiBadge color="muted" className="mt-1">{d.project_id}</TuiBadge>
                   )}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-text-muted">No decisions recorded yet</p>
+            <span className="text-xs text-text-muted">No decisions recorded</span>
           )}
-        </Card>
+        </TuiBox>
 
         {/* System Health */}
-        <Card>
-          <Label className="mb-4 block">System Health</Label>
+        <TuiBox title="Health">
           {healthLoading || daemonLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="h-2 w-2 rounded-full" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              ))}
+            <div className="space-y-2">
+              <TuiSkeleton width={20} />
+              <TuiSkeleton width={20} />
+              <TuiSkeleton width={20} />
+              <TuiSkeleton width={20} />
             </div>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-2 font-mono text-xs">
               <li className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <StatusDot
-                    status={health?.status === 'ok' ? 'ok' : 'error'}
-                    pulse={health?.status === 'ok'}
-                  />
-                  <span className="font-mono text-xs text-text-secondary">API Server</span>
-                </div>
-                <span className="font-mono text-xs text-text-muted">
-                  {health ? 'online' : 'offline'}
+                <span className="flex items-center gap-2">
+                  <TuiStatusDot status={health?.status === 'ok' ? 'ok' : 'error'} />
+                  <span className="text-text-secondary">API</span>
                 </span>
+                <span className="text-text-muted">{health ? 'online' : 'offline'}</span>
               </li>
 
               <li className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <StatusDot
-                    status={health?.database?.connected ? 'ok' : 'error'}
-                  />
-                  <span className="font-mono text-xs text-text-secondary">Database</span>
-                </div>
-                <span className="font-mono text-xs text-text-muted">
+                <span className="flex items-center gap-2">
+                  <TuiStatusDot status={health?.database?.connected ? 'ok' : 'error'} />
+                  <span className="text-text-secondary">Database</span>
+                </span>
+                <span className="text-text-muted">
                   {health?.database?.connected
                     ? `${health.database.latency_ms}ms`
                     : 'disconnected'}
@@ -308,21 +253,18 @@ export default function DashboardPage() {
               </li>
 
               <li className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <StatusDot
-                    status={daemon?.running ? 'ok' : 'idle'}
-                    pulse={daemon?.running}
-                  />
-                  <span className="font-mono text-xs text-text-secondary">Daemon</span>
-                </div>
-                <span className="font-mono text-xs text-text-muted">
+                <span className="flex items-center gap-2">
+                  <TuiStatusDot status={daemon?.running ? 'ok' : 'idle'} />
+                  <span className="text-text-secondary">Daemon</span>
+                </span>
+                <span className="text-text-muted">
                   {daemon?.running ? 'running' : 'stopped'}
                 </span>
               </li>
 
               <li className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <StatusDot
+                <span className="flex items-center gap-2">
+                  <TuiStatusDot
                     status={
                       health?.memory
                         ? health.memory.percentage > 90
@@ -333,9 +275,9 @@ export default function DashboardPage() {
                         : 'idle'
                     }
                   />
-                  <span className="font-mono text-xs text-text-secondary">Memory</span>
-                </div>
-                <span className="font-mono text-xs text-text-muted">
+                  <span className="text-text-secondary">Memory</span>
+                </span>
+                <span className="text-text-muted">
                   {health?.memory
                     ? `${Math.round(health.memory.percentage)}%`
                     : '--'}
@@ -343,15 +285,13 @@ export default function DashboardPage() {
               </li>
 
               {daemon?.last_session && (
-                <li className="mt-2 border-t border-border pt-3">
-                  <span className="font-mono text-[10px] text-text-muted">
-                    Last session: {formatDate(daemon.last_session)}
-                  </span>
+                <li className="mt-2 border-t border-border pt-2 text-[10px] text-text-muted">
+                  Last session: {formatDate(daemon.last_session)}
                 </li>
               )}
             </ul>
           )}
-        </Card>
+        </TuiBox>
       </div>
     </div>
   );
