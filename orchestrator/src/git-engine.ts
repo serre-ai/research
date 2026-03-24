@@ -69,6 +69,19 @@ export class GitEngine {
     await this.git("branch", "-d", name);
   }
 
+  // ── Sync operations ──────────────────────────────────────
+
+  /** Fetch from origin and fast-forward the local branch to match remote. */
+  async syncToRemote(branch: string = "main"): Promise<void> {
+    await this.git("fetch", "origin", branch);
+    try {
+      await this.git("checkout", branch);
+    } catch {
+      // May already be on the branch
+    }
+    await this.git("reset", "--hard", `origin/${branch}`);
+  }
+
   // ── Worktree operations ────────────────────────────────────
 
   async createWorktree(path: string, branch: string): Promise<string> {

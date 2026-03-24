@@ -493,6 +493,14 @@ export class Daemon {
     this.cycleCount++;
     console.log("\n--- Cycle " + this.cycleCount + " ---");
 
+    // Sync rootDir to latest remote main (keeps agent clone up to date)
+    try {
+      await this.gitEngine.syncToRemote("main");
+    } catch (err) {
+      console.error("Failed to sync to remote:", err instanceof Error ? err.message : err);
+      // Non-fatal — continue with potentially stale data
+    }
+
     // Check budget before doing anything
     const budgetStatus = await this.budgetTracker.getStatus();
     if (budgetStatus.alertLevel === "exceeded") {

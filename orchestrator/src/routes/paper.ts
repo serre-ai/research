@@ -25,11 +25,10 @@ interface PaperBuildState {
   lastBuild: BuildRecord | null;
 }
 
-export function paperRoutes(): express.Router {
+export function paperRoutes(rootDir?: string): express.Router {
   const router = express.Router();
 
-  // Resolve paths relative to repo root (cwd)
-  const repoRoot = process.cwd();
+  const repoRoot = rootDir ?? process.cwd();
   const paperDir = join(repoRoot, "projects", "reasoning-gaps", "paper");
   const buildScript = join(paperDir, "build-paper.sh");
   const pdfPath = join(paperDir, "main.pdf");

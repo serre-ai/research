@@ -90,6 +90,16 @@ jobs:
             cp -r site-next/.next/static "$STANDALONE_DIR/.next/static"
             ln -sf /opt/deepwork/site-next/.env.local "$STANDALONE_DIR/.env.local"
 
+            # Sync agent clone to match main checkout
+            if [ -d /opt/deepwork-agent/.git ]; then
+              echo "Syncing agent clone..."
+              cd /opt/deepwork-agent
+              git fetch origin main
+              git reset --hard origin/main
+              echo "Agent clone synced to $(git rev-parse --short HEAD)"
+              cd ~/deepwork
+            fi
+
             echo "Build complete: $(git rev-parse --short HEAD) at $(date -u)"
 
       - name: Run database migrations

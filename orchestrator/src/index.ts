@@ -45,10 +45,13 @@ async function main() {
       let maxSessions = Number(process.env.MAX_CONCURRENT_SESSIONS) || 2;
       let budget = Number(process.env.DAILY_BUDGET_USD) || 40;
 
+      let rootDir = process.env.DAEMON_ROOT_DIR || process.cwd();
+
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--interval" && args[i + 1]) interval = Number(args[++i]);
         if (args[i] === "--max-sessions" && args[i + 1]) maxSessions = Number(args[++i]);
         if (args[i] === "--budget" && args[i + 1]) budget = Number(args[++i]);
+        if (args[i] === "--root-dir" && args[i + 1]) rootDir = args[++i];
       }
 
       // Validate parsed values
@@ -60,10 +63,13 @@ async function main() {
         pollIntervalMs: interval * 60 * 1000,
         maxConcurrentSessions: maxSessions,
         dailyBudgetUsd: budget,
-        rootDir: process.cwd(),
+        rootDir,
       };
 
       console.log(`Starting daemon: interval=${interval}m, sessions=${maxSessions}, budget=$${budget}/day`);
+      if (rootDir !== process.cwd()) {
+        console.log(`  Root directory: ${rootDir}`);
+      }
 
       // Create DB pool for daemon + API to share
       const apiKey = process.env.DEEPWORK_API_KEY;
@@ -104,7 +110,7 @@ async function main() {
 
       if (apiKey && databaseUrl) {
         const { broadcast, close } = createApi(
-          { port: apiPort, apiKey, databaseUrl, pool: dbPool, corsOrigin: process.env.CORS_ORIGIN },
+          { port: apiPort, apiKey, databaseUrl, pool: dbPool, corsOrigin: process.env.CORS_ORIGIN, rootDir },
           daemon.getEvalManager(),
           daemon.getLogger(),
           (project) => daemon.getQualityHistory(project),

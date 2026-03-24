@@ -35,6 +35,7 @@ export interface ApiConfig {
   databaseUrl: string;
   corsOrigin?: string;
   pool?: pg.Pool; // shared pool from daemon — avoids creating a duplicate
+  rootDir?: string; // project data directory (defaults to cwd)
 }
 
 interface WsClient {
@@ -1087,7 +1088,7 @@ function daemonHealthRoutes(daemon?: Daemon): express.Router {
 // Project status update routes
 // ============================================================
 
-function projectStatusRoutes(): express.Router {
+function projectStatusRoutes(rootDir: string): express.Router {
   const router = express.Router();
 
   // PATCH /api/projects/:id/status — update project status.yaml
@@ -1109,7 +1110,7 @@ function projectStatusRoutes(): express.Router {
       const { join } = await import("node:path");
       const { parse, stringify } = await import("yaml");
 
-      const projectsRoot = join(process.cwd(), "projects");
+      const projectsRoot = join(rootDir, "projects");
       const statusPath = join(projectsRoot, projectId, "status.yaml");
       assertContained(statusPath, projectsRoot);
       const content = await readFile(statusPath, "utf-8");
@@ -1189,7 +1190,7 @@ function activityRoutes(logger?: ActivityLogger): express.Router {
 // Session detail routes (GET /api/sessions/:id, /:id/transcript)
 // ============================================================
 
-function sessionDetailRoutes(): express.Router {
+function sessionDetailRoutes(rootDir: string): express.Router {
   const router = express.Router();
 
   // GET /api/sessions/:id — single session metadata
@@ -1235,7 +1236,7 @@ function sessionDetailRoutes(): express.Router {
       }
 
       const project = rows[0].project as string;
-      const projectsRoot = join(process.cwd(), "projects");
+      const projectsRoot = join(rootDir, "projects");
       const transcriptPath = join(projectsRoot, project, "sessions", `${req.params.id}.jsonl`);
       assertContained(transcriptPath, projectsRoot);
 
@@ -1266,7 +1267,7 @@ function sessionDetailRoutes(): express.Router {
 // Project phases route (GET /api/projects/:id/phases)
 // ============================================================
 
-function projectPhaseRoutes(): express.Router {
+function projectPhaseRoutes(rootDir: string): express.Router {
   const router = express.Router();
 
   // GET /api/projects/:id/phases — structured phase data from status.yaml
@@ -1278,7 +1279,7 @@ function projectPhaseRoutes(): express.Router {
     }
     try {
       const { parse } = await import("yaml");
-      const projectsRoot = join(process.cwd(), "projects");
+      const projectsRoot = join(rootDir, "projects");
       const statusPath = join(projectsRoot, projectId, "status.yaml");
       assertContained(statusPath, projectsRoot);
 
@@ -1384,13 +1385,13 @@ function budgetDailyHistoryRoutes(): express.Router {
 // Agent definitions route (GET /api/agents/definitions)
 // ============================================================
 
-function agentDefinitionRoutes(): express.Router {
+function agentDefinitionRoutes(rootDir: string): express.Router {
   const router = express.Router();
 
   // GET /api/agents/definitions — list agent definitions from .claude/agents/
   router.get("/definitions", async (_req: Request, res: Response) => {
     try {
-      const agentsDir = join(process.cwd(), ".claude", "agents");
+      const agentsDir = join(rootDir, ".claude", "agents");
 
       let files: string[];
       try {
@@ -1447,6 +1448,7 @@ export function createApi(
   close: () => Promise<void>;
 } {
   const startedAt = Date.now();
+  const rootDir = config.rootDir ?? process.cwd();
 
   // Use shared pool if provided, else create own
   const ownPool = !config.pool;
@@ -1513,7 +1515,7 @@ export function createApi(
   app.use("/api/knowledge", knowledgeRoutes(kg));
   app.use("/api/events", eventRoutes(eventBus));
   app.use("/api/projects", projectRoutes());
-  app.use("/api/projects", projectStatusRoutes());
+  app.use("/api/projects", projectStatusRoutes(rootDir));
   app.use("/api/budget", budgetRoutes(daemon?.getBudgetTracker(), broadcast));
   app.use("/api/eval", evalControlRoutes(broadcast, evalManager));
   app.use("/api/activity", activityRoutes(logger));
@@ -1527,20 +1529,20 @@ export function createApi(
   app.use("/api/planner", plannerRoutes(() => daemon?.getPlanner() ?? null));
 
   // Verification layer (Sprint 5)
-  const verifier = daemon?.getVerifier() ?? new ClaimVerifier(pool, kg, process.cwd());
+  const verifier = daemon?.getVerifier() ?? new ClaimVerifier(pool, kg, rootDir);
   app.use("/api/projects", verificationRoutes(verifier));
 
   // Paper build pipeline
-  app.use("/api/paper", paperRoutes());
+  app.use("/api/paper", paperRoutes(rootDir));
 
   // Literature intelligence
   app.use("/api/literature", literatureRoutes(() => daemon?.getLiteratureMonitor() ?? null));
 
   // Sprint 3C: New endpoints
-  app.use("/api/sessions", sessionDetailRoutes());
-  app.use("/api/projects", projectPhaseRoutes());
+  app.use("/api/sessions", sessionDetailRoutes(rootDir));
+  app.use("/api/projects", projectPhaseRoutes(rootDir));
   app.use("/api/budget", budgetDailyHistoryRoutes());
-  app.use("/api/agents", agentDefinitionRoutes());
+  app.use("/api/agents", agentDefinitionRoutes(rootDir));
 
   // Start listening
   server.listen(config.port, () => {

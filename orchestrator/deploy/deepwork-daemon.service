@@ -9,7 +9,7 @@ Type=simple
 User=deepwork
 Group=deepwork
 WorkingDirectory=/opt/deepwork
-ExecStart=/usr/bin/node orchestrator/dist/index.js run --interval 30 --max-sessions 2 --budget 40
+ExecStart=/usr/bin/node orchestrator/dist/index.js run --root-dir /opt/deepwork-agent
 Restart=always
 RestartSec=30
 TimeoutStopSec=120
@@ -21,7 +21,7 @@ EnvironmentFile=/opt/deepwork/.env
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/deepwork
+ReadWritePaths=/opt/deepwork /opt/deepwork-agent /home/deepwork/deepwork
 PrivateTmp=true
 
 # Logging
