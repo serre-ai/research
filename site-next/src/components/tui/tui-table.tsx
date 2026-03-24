@@ -46,7 +46,9 @@ export function TuiTable<T extends Record<string, unknown>>({
           <tr
             key={rowKey(row)}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
-            className={onRowClick ? 'cursor-pointer' : undefined}
+            onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(row); } : undefined}
+            role={onRowClick ? 'link' : undefined}
+            tabIndex={onRowClick ? 0 : undefined}
           >
             {columns.map((col) => (
               <td key={col.key} className={col.className}>

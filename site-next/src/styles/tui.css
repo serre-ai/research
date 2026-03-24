@@ -13,10 +13,16 @@
   position: relative;
   font-family: var(--font-mono);
   color: var(--color-text);
+  --tui-frame-color: var(--color-border-strong);
 }
 
+/* Variant frame colors via custom property */
+.tui-box--accent  { --tui-frame-color: var(--color-accent-primary); }
+.tui-box--success { --tui-frame-color: var(--color-status-ok); }
+.tui-box--warning { --tui-frame-color: var(--color-status-warn); }
+.tui-box--error   { --tui-frame-color: var(--color-status-error); }
+
 .tui-box-frame {
-  color: var(--color-border-strong);
   pointer-events: none;
   user-select: none;
   line-height: 1;
@@ -25,18 +31,27 @@
 .tui-box-frame-top,
 .tui-box-frame-bottom {
   display: flex;
+  align-items: center;
   white-space: nowrap;
   overflow: hidden;
+  color: var(--tui-frame-color);
 }
 
-.tui-box-frame-top .tui-corner { color: var(--color-border-strong); }
-.tui-box-frame-bottom .tui-corner { color: var(--color-border-strong); }
+.tui-corner {
+  flex-shrink: 0;
+  color: var(--tui-frame-color);
+}
 
-.tui-box-frame-top .tui-line,
-.tui-box-frame-bottom .tui-line {
+/* Horizontal line: a flex-growing span with a bottom border.
+   No repeated characters — the border IS the line. */
+.tui-hline {
+  border-bottom: 1px solid var(--tui-frame-color);
+  height: 0.5em;
+  min-width: 1ch;
+}
+
+.tui-hline-fill {
   flex: 1;
-  overflow: hidden;
-  color: var(--color-border-strong);
 }
 
 .tui-box-title {
@@ -46,48 +61,20 @@
   text-transform: uppercase;
   font-size: var(--text-xs);
   letter-spacing: 0.05em;
+  flex-shrink: 0;
 }
 
-.tui-box-side {
-  color: var(--color-border-strong);
-  user-select: none;
+/* Body with CSS border sides — stretches with content height */
+.tui-box-body {
+  border-left: 1px solid var(--tui-frame-color);
+  border-right: 1px solid var(--tui-frame-color);
+  /* Offset by half a character to align with corner chars */
+  margin-left: 0.35ch;
+  margin-right: 0.35ch;
 }
 
 .tui-box-content {
   padding: var(--space-3) var(--space-4);
-}
-
-/* Box variants */
-.tui-box--accent .tui-box-frame-top .tui-corner,
-.tui-box--accent .tui-box-frame-top .tui-line,
-.tui-box--accent .tui-box-frame-bottom .tui-corner,
-.tui-box--accent .tui-box-frame-bottom .tui-line,
-.tui-box--accent .tui-box-side {
-  color: var(--color-accent-primary);
-}
-
-.tui-box--success .tui-box-frame-top .tui-corner,
-.tui-box--success .tui-box-frame-top .tui-line,
-.tui-box--success .tui-box-frame-bottom .tui-corner,
-.tui-box--success .tui-box-frame-bottom .tui-line,
-.tui-box--success .tui-box-side {
-  color: var(--color-status-ok);
-}
-
-.tui-box--warning .tui-box-frame-top .tui-corner,
-.tui-box--warning .tui-box-frame-top .tui-line,
-.tui-box--warning .tui-box-frame-bottom .tui-corner,
-.tui-box--warning .tui-box-frame-bottom .tui-line,
-.tui-box--warning .tui-box-side {
-  color: var(--color-status-warn);
-}
-
-.tui-box--error .tui-box-frame-top .tui-corner,
-.tui-box--error .tui-box-frame-top .tui-line,
-.tui-box--error .tui-box-frame-bottom .tui-corner,
-.tui-box--error .tui-box-frame-bottom .tui-line,
-.tui-box--error .tui-box-side {
-  color: var(--color-status-error);
 }
 
 /* --- Table --- */
@@ -120,6 +107,10 @@
   background: var(--color-bg-hover);
 }
 
+.tui-table tr[role="link"] {
+  cursor: pointer;
+}
+
 /* --- Badge --- */
 
 .tui-badge {
@@ -144,9 +135,10 @@
   color: var(--color-text-muted);
 }
 
-.tui-progress-fill {
-  color: var(--color-status-ok);
-}
+.tui-progress-fill { color: var(--color-status-ok); }
+.tui-progress-fill--warn { color: var(--color-status-warn); }
+.tui-progress-fill--error { color: var(--color-status-error); }
+.tui-progress-fill--accent { color: var(--color-accent-primary); }
 
 .tui-progress-empty {
   color: var(--color-border-strong);

@@ -13,8 +13,12 @@ const BLOCKS = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 export function TuiSparkline({ data, className }: TuiSparklineProps) {
   if (data.length === 0) return null;
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+  let min = data[0];
+  let max = data[0];
+  for (const v of data) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
   const range = max - min || 1;
 
   const chars = data.map((v) => {

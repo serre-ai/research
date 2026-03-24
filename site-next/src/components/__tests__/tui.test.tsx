@@ -22,13 +22,25 @@ describe('TuiBox', () => {
     expect(screen.getByText('PROJECTS')).toBeInTheDocument();
   });
 
-  it('renders box-drawing characters', () => {
+  it('renders box-drawing corner characters', () => {
     const { container } = render(<TuiBox>content</TuiBox>);
     expect(container.textContent).toContain('┌');
     expect(container.textContent).toContain('┐');
     expect(container.textContent).toContain('└');
     expect(container.textContent).toContain('┘');
-    expect(container.textContent).toContain('│');
+  });
+
+  it('has border sides that stretch with content', () => {
+    const { container } = render(
+      <TuiBox>
+        <p>line 1</p>
+        <p>line 2</p>
+        <p>line 3</p>
+      </TuiBox>,
+    );
+    // Side borders are CSS borders on .tui-box-body, not character spans
+    const body = container.querySelector('.tui-box-body');
+    expect(body).toBeTruthy();
   });
 
   it('applies variant class', () => {
@@ -88,6 +100,11 @@ describe('TuiBadge', () => {
     const { container } = render(<TuiBadge color="ok">OK</TuiBadge>);
     expect(container.querySelector('.tui-badge--ok')).toBeTruthy();
   });
+
+  it('defaults to muted color', () => {
+    const { container } = render(<TuiBadge>DEFAULT</TuiBadge>);
+    expect(container.querySelector('.tui-badge--muted')).toBeTruthy();
+  });
 });
 
 describe('TuiStatusDot', () => {
@@ -129,6 +146,20 @@ describe('TuiProgress', () => {
   it('hides percent when showPercent=false', () => {
     const { container } = render(<TuiProgress value={50} width={10} showPercent={false} />);
     expect(container.textContent).not.toContain('%');
+  });
+
+  it('applies color variant', () => {
+    const { container } = render(<TuiProgress value={90} width={10} color="error" />);
+    expect(container.querySelector('.tui-progress-fill--error')).toBeTruthy();
+  });
+
+  it('defaults to ok (green) color', () => {
+    const { container } = render(<TuiProgress value={50} width={10} />);
+    const fill = container.querySelector('.tui-progress-fill');
+    expect(fill).toBeTruthy();
+    // Should NOT have a variant modifier (plain .tui-progress-fill = green)
+    expect(container.querySelector('.tui-progress-fill--warn')).toBeFalsy();
+    expect(container.querySelector('.tui-progress-fill--error')).toBeFalsy();
   });
 });
 
