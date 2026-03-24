@@ -34,6 +34,9 @@ const MAX_HANDLER_ATTEMPTS = 3;
 const RECONNECT_BASE_MS = 5_000;
 const RECONNECT_MAX_MS = 5 * 60_000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const MAX_DEAD_LETTER_RETRIES = 5;
+const MAX_CONCURRENT_EVENTS = 100;
 
 export class EventBus {
   private pool: pg.Pool;
@@ -44,6 +47,8 @@ export class EventBus {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private broadcastFn: BroadcastFn | null = null;
   private reconnectAttempts = 0;
+  private reconnecting = false;
+  private activeDispatches = 0;
 
   constructor(pool: pg.Pool) {
     this.pool = pool;
@@ -83,7 +88,7 @@ export class EventBus {
 
     // Heartbeat to detect dropped connections
     this.heartbeatTimer = setInterval(() => {
-      if (this.listenClient) {
+      if (this.listenClient && !this.reconnecting) {
         this.listenClient.query("SELECT 1").catch(() => {
           console.error("[EventBus] Heartbeat failed, reconnecting...");
           this.reconnect();
@@ -179,13 +184,19 @@ export class EventBus {
   /** Retry a dead-letter entry — only re-runs the specific failed handler. */
   async retryDeadLetter(deadLetterId: number): Promise<boolean> {
     const { rows } = await this.pool.query(
-      `SELECT dl.handler_name, dl.event_id, de.type, de.payload
+      `SELECT dl.handler_name, dl.event_id, dl.attempts, de.type, de.payload
        FROM domain_events_dead_letter dl
        JOIN domain_events de ON de.id = dl.event_id
        WHERE dl.id = $1 AND dl.resolved = FALSE`,
       [deadLetterId],
     );
     if (rows.length === 0) return false;
+
+    const attempts = rows[0].attempts as number;
+    if (attempts >= MAX_DEAD_LETTER_RETRIES) {
+      console.warn(`[EventBus] Dead letter ${deadLetterId} (event ${rows[0].event_id}) exceeded max retries (${MAX_DEAD_LETTER_RETRIES}), skipping`);
+      return false;
+    }
 
     const handlerName = rows[0].handler_name as string;
     const event: DomainEvent = {
@@ -218,7 +229,9 @@ export class EventBus {
       await this.pool.query(
         "UPDATE domain_events SET processed = TRUE WHERE id = $1",
         [event.id],
-      ).catch(() => {});
+      ).catch((err) => {
+        console.error(`[EventBus] Failed to mark event ${event.id} as processed after dead letter resolution:`, err);
+      });
     }
 
     return true;
@@ -274,15 +287,27 @@ export class EventBus {
   }
 
   private reconnect(): void {
-    if (!this.running) return;
+    if (!this.running || this.reconnecting) return;
+    this.reconnecting = true;
     if (this.listenClient) {
       try { this.listenClient.release(); } catch { /* already released */ }
       this.listenClient = null;
     }
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.error(`[EventBus] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up. Manual restart required.`);
+      this.running = false;
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = null;
+      }
+      this.reconnecting = false;
+      return;
+    }
     const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, this.reconnectAttempts), RECONNECT_MAX_MS);
     this.reconnectAttempts++;
-    console.log(`[EventBus] Reconnecting in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts})`);
+    console.log(`[EventBus] Reconnecting in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
     setTimeout(() => {
+      this.reconnecting = false;
       if (this.running) this.connect();
     }, delay);
   }
@@ -308,6 +333,19 @@ export class EventBus {
   }
 
   private async dispatch(event: DomainEvent): Promise<void> {
+    if (this.activeDispatches >= MAX_CONCURRENT_EVENTS) {
+      console.warn(`[EventBus] Concurrency limit (${MAX_CONCURRENT_EVENTS}) reached, skipping event ${event.id} (${event.type})`);
+      return;
+    }
+    this.activeDispatches++;
+    try {
+      await this.dispatchInner(event);
+    } finally {
+      this.activeDispatches--;
+    }
+  }
+
+  private async dispatchInner(event: DomainEvent): Promise<void> {
     const typeHandlers = this.handlers.get(event.type) ?? [];
     const allHandlers = [...typeHandlers, ...this.wildcardHandlers];
 
@@ -322,7 +360,9 @@ export class EventBus {
       await this.pool.query(
         "UPDATE domain_events SET processed = TRUE WHERE id = $1",
         [event.id],
-      ).catch(() => { /* best effort */ });
+      ).catch((err) => {
+        console.error(`[EventBus] Failed to mark event ${event.id} as processed:`, err);
+      });
     }
 
     // Broadcast to WebSocket clients
