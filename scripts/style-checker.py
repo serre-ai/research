@@ -84,84 +84,115 @@ DEFAULT_SECTION_TARGETS: dict[str, float] = {
 }
 
 # ---------------------------------------------------------------------------
-# Minimal YAML parser (stdlib only — avoids pyyaml dependency)
+# YAML parser — try PyYAML first, fall back to recursive stdlib parser
 # ---------------------------------------------------------------------------
 
 
-def _parse_simple_yaml(text: str) -> dict:
-    """Parse a flat or single-nested YAML file into a dict.
+def _parse_yaml(text: str) -> dict:
+    """Parse YAML with PyYAML if available, else a recursive stdlib parser."""
+    try:
+        import yaml
+        return yaml.safe_load(text) or {}
+    except ImportError:
+        return _parse_yaml_stdlib(text)
 
-    Handles:
-      key: value
-      key:
-        - item
-      key:
-        subkey: value
-    Does NOT handle arbitrary nesting or complex YAML features.
+
+def _parse_yaml_stdlib(text: str) -> dict:
+    """Recursive indent-based YAML parser (stdlib only).
+
+    Handles arbitrary nesting of dicts and lists. Good enough for our
+    paper-style.yaml which has 3 levels of nesting.
     """
+    lines = []
+    for raw in text.splitlines():
+        stripped = raw.split("#")[0].rstrip()  # strip comments
+        if stripped.strip():
+            lines.append(stripped)
+
+    result, _ = _parse_block(lines, 0, 0)
+    return result if isinstance(result, dict) else {}
+
+
+def _parse_block(lines: list[str], start: int, min_indent: int):
+    """Parse a YAML block (dict or list) starting at the given line index."""
+    if start >= len(lines):
+        return {}, start
+
+    first_stripped = lines[start].strip()
+
+    # Detect if this block is a list
+    if first_stripped.startswith("- "):
+        return _parse_list(lines, start, min_indent)
+    else:
+        return _parse_dict(lines, start, min_indent)
+
+
+def _parse_dict(lines: list[str], start: int, min_indent: int):
+    """Parse a YAML dict block."""
     result: dict = {}
-    current_key: str | None = None
-    current_list: list | None = None
-    current_dict: dict | None = None
+    i = start
 
-    for raw_line in text.splitlines():
-        # Strip comments
-        line = raw_line.split("#")[0].rstrip()
-        if not line.strip():
-            continue
-
+    while i < len(lines):
+        line = lines[i]
         indent = len(line) - len(line.lstrip())
 
-        # Top-level key: value
-        if indent == 0:
-            # Flush previous collection
-            if current_key is not None:
-                if current_list is not None:
-                    result[current_key] = current_list
-                elif current_dict is not None:
-                    result[current_key] = current_dict
+        if indent < min_indent:
+            break
 
-            m = re.match(r"^(\w[\w\s_-]*):\s*(.*)", line.strip())
-            if m:
-                key = m.group(1).strip()
-                val = m.group(2).strip()
-                if val:
-                    # Try numeric
-                    result[key] = _coerce(val)
-                    current_key = None
-                    current_list = None
-                    current_dict = None
-                else:
-                    current_key = key
-                    current_list = None
-                    current_dict = None
+        stripped = line.strip()
+        m = re.match(r"^([\w][\w\s_-]*):\s*(.*)", stripped)
+        if not m:
+            i += 1
             continue
 
-        # Indented content belongs to current_key
+        key = m.group(1).strip()
+        val = m.group(2).strip()
+
+        if val:
+            result[key] = _coerce(val)
+            i += 1
+        else:
+            # Value is on subsequent indented lines
+            child_indent = indent + 2
+            if i + 1 < len(lines):
+                next_indent = len(lines[i + 1]) - len(lines[i + 1].lstrip())
+                if next_indent > indent:
+                    child_indent = next_indent
+
+            child, i = _parse_block(lines, i + 1, child_indent)
+            result[key] = child
+            continue
+
+    return result, i
+
+
+def _parse_list(lines: list[str], start: int, min_indent: int):
+    """Parse a YAML list block."""
+    result: list = []
+    i = start
+
+    while i < len(lines):
+        line = lines[i]
+        indent = len(line) - len(line.lstrip())
+
+        if indent < min_indent:
+            break
+
         stripped = line.strip()
         if stripped.startswith("- "):
-            if current_list is None:
-                current_list = []
-            current_list.append(_coerce(stripped[2:].strip().strip("\"'")))
+            item_text = stripped[2:].strip().strip("\"'")
+            result.append(_coerce(item_text))
+            i += 1
         else:
-            m = re.match(r"^(\w[\w\s_-]*):\s*(.*)", stripped)
-            if m:
-                if current_dict is None:
-                    current_dict = {}
-                current_dict[m.group(1).strip()] = _coerce(m.group(2).strip())
+            break
 
-    # Flush last
-    if current_key is not None:
-        if current_list is not None:
-            result[current_key] = current_list
-        elif current_dict is not None:
-            result[current_key] = current_dict
-
-    return result
+    return result, i
 
 
 def _coerce(val: str):
     """Coerce a YAML scalar string to int/float/bool/str."""
+    if not val:
+        return val
     if val.lower() in ("true", "yes"):
         return True
     if val.lower() in ("false", "no"):
@@ -251,9 +282,22 @@ def check_hedges(
 
 
 def check_passive_voice(lines: list[str]) -> dict:
-    """Approximate passive voice detection."""
+    """Approximate passive voice detection.
+
+    Catches both regular (-ed) and common irregular past participles
+    used in academic writing (shown, known, found, proven, etc.).
+    """
+    _IRREGULAR_PP = (
+        "shown|known|found|proven|proved|given|taken|seen|written|made|done|"
+        "built|run|held|set|put|cut|drawn|grown|thrown|worn|torn|born|"
+        "chosen|spoken|broken|frozen|stolen|driven|risen|fallen|forgotten|"
+        "begun|become|come|overcome|understood|meant|thought|taught|brought|"
+        "caught|fought|sought|told|sold|lost|sent|spent|left|kept|felt|met"
+    )
     pattern = re.compile(
-        r"\b(was|were|is|are|has been|have been|had been)\s+\w+ed\b", re.IGNORECASE
+        r"\b(was|were|is|are|has been|have been|had been|being)\s+"
+        r"(\w+ed|" + _IRREGULAR_PP + r")\b",
+        re.IGNORECASE,
     )
     full_text = " ".join(lines)
     matches = pattern.findall(full_text)
@@ -463,36 +507,46 @@ def check_citations(tex_path: Path, lines: list[str]) -> dict:
 
 
 def compute_score(checks: dict) -> int:
-    """Compute overall score (0-100) from check results."""
-    score = 0
+    """Compute overall score (0-100) from check results.
 
-    # Hedge density < 5/1000: +20 points
-    if checks["hedges"]["density"] < 5:
+    Uses linear scaling instead of binary pass/fail — a paper with
+    hedge density 4.9 shouldn't score 20 points higher than one at 5.1.
+    """
+    score = 0.0
+
+    # Hedge density: 20 points, linear scale (0 at density=10, 20 at density=0)
+    density = checks["hedges"]["density"]
+    score += max(0, 20 * (1 - density / 10))
+
+    # Passive voice: 15 points, linear scale (0 at ratio=0.40, 15 at ratio=0)
+    pv_ratio = checks["passive_voice"]["ratio"]
+    score += max(0, 15 * (1 - pv_ratio / 0.40))
+
+    # Section ratios: 20 points. Lose points per section that's >150% of target
+    sections = checks["section_ratios"]["sections"]
+    sections_with_target = [s for s in sections if s.get("target_ratio") is not None]
+    if sections_with_target:
+        violations = sum(1 for s in sections_with_target if s.get("over_under", 0) and s["over_under"] > 1.5)
+        score += max(0, 20 * (1 - violations / max(len(sections_with_target), 1)))
+    else:
         score += 20
 
-    # Passive ratio < 0.20: +15 points
-    if checks["passive_voice"]["ratio"] < 0.20:
+    # Banned phrases: 15 points, lose 3 per occurrence (0 at 5+)
+    bp_count = checks["banned_phrases"]["count"]
+    score += max(0, 15 - bp_count * 3)
+
+    # Captions with takeaways: 15 points, proportional
+    cap = checks["captions"]
+    if cap["total"] > 0:
+        score += 15 * (cap["with_takeaway"] / cap["total"])
+    else:
         score += 15
 
-    # All sections within 150% of target: +20 points
-    if checks["section_ratios"]["all_within_target"]:
-        score += 20
+    # Citation freshness: 15 points, linear (0 at 0%, 15 at 30%+)
+    cit_ratio = checks["citations"]["ratio"]
+    score += min(15, 15 * (cit_ratio / 0.30))
 
-    # Zero banned phrases: +15 points
-    if checks["banned_phrases"]["count"] == 0:
-        score += 15
-
-    # All captions have takeaways: +15 points
-    if checks["captions"]["total"] > 0 and checks["captions"]["total"] == checks["captions"]["with_takeaway"]:
-        score += 15
-    elif checks["captions"]["total"] == 0:
-        score += 15  # No captions = nothing to penalise
-
-    # Citation freshness > 15%: +15 points
-    if checks["citations"]["ratio"] > 0.15:
-        score += 15
-
-    return score
+    return round(score)
 
 
 # ---------------------------------------------------------------------------
@@ -501,7 +555,12 @@ def compute_score(checks: dict) -> int:
 
 
 def load_style(style_path: str | None) -> dict:
-    """Load style config from YAML, falling back to defaults."""
+    """Load style config from YAML, navigating the nested structure.
+
+    Our paper-style.yaml nests banned_phrases under voice: and
+    section_ratios under structure:. This function extracts them
+    into the flat config dict the checker expects.
+    """
     config: dict = {
         "banned_phrases": DEFAULT_BANNED_PHRASES,
         "hedge_phrases": DEFAULT_HEDGE_PHRASES,
@@ -516,12 +575,33 @@ def load_style(style_path: str | None) -> dict:
         print(f"Warning: style file {style_path} not found, using defaults", file=sys.stderr)
         return config
 
-    raw = _parse_simple_yaml(p.read_text(encoding="utf-8"))
+    raw = _parse_yaml(p.read_text(encoding="utf-8"))
 
+    # Extract banned phrases from voice.banned_phrases (nested) or top-level
+    voice = raw.get("voice", {})
+    if isinstance(voice, dict):
+        if "banned_phrases" in voice and isinstance(voice["banned_phrases"], list):
+            config["banned_phrases"] = voice["banned_phrases"]
+        # Use banned_phrases as the hedge list too — our curated list is
+        # better calibrated than the generic defaults
+        if "banned_phrases" in voice:
+            config["hedge_phrases"] = voice["banned_phrases"]
+
+    # Also check top-level (flat YAML format)
     if "banned_phrases" in raw and isinstance(raw["banned_phrases"], list):
         config["banned_phrases"] = raw["banned_phrases"]
     if "hedge_phrases" in raw and isinstance(raw["hedge_phrases"], list):
         config["hedge_phrases"] = raw["hedge_phrases"]
+
+    # Extract section ratios from structure.section_ratios (nested) or top-level
+    structure = raw.get("structure", {})
+    if isinstance(structure, dict):
+        ratios = structure.get("section_ratios", {})
+        if isinstance(ratios, dict):
+            config["section_targets"] = {
+                k: float(v) for k, v in ratios.items() if isinstance(v, (int, float))
+            }
+
     if "section_targets" in raw and isinstance(raw["section_targets"], dict):
         config["section_targets"] = {
             k: float(v) for k, v in raw["section_targets"].items()

@@ -397,7 +397,7 @@ export class SessionRunner {
         "related work": "related-work",
         "prior work": "related-work",
         "literature": "related-work",
-        "conclusion": "discussion",  // conclusion is covered in discussion guide
+        "conclusion": "conclusion",
       };
 
       const objectiveLower = (brief.objective || "").toLowerCase();

@@ -34,10 +34,10 @@ voice:
 
   # Preferred patterns
   preferred:
-    - "We show that X" over "We believe X"
-    - "X holds because Y" over "X is observed, which might be due to Y"
-    - Short sentence for the finding, longer sentence for the method
-    - Data before interpretation: "B4 accuracy is 100% (P-class), confirming Theorem 1"
+    - "'We show that X' over 'We believe X'"
+    - "'X holds because Y' over 'X is observed, which might be due to Y'"
+    - "Short sentence for the finding, longer sentence for the method"
+    - "Data before interpretation — 'B4 accuracy is 100% (P-class), confirming Theorem 1'"
 
 structure:
   # Where the contribution appears
