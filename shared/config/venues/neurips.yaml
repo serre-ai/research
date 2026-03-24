@@ -1,0 +1,49 @@
+name: neurips
+full_name: "Conference on Neural Information Processing Systems"
+url: "https://neurips.cc"
+
+deadlines:
+  2026:
+    abstract: "2026-05-04"
+    paper: "2026-05-06"
+    notification: "2026-09-20"
+    camera_ready: "2026-10-15"
+    conference: "2026-12-09"
+  2027:
+    abstract: "2027-05-03"  # estimated
+    paper: "2027-05-05"  # estimated
+
+acceptance_rate: 0.25
+submissions_per_year: ~13000
+
+topic_fit:
+  llm_reasoning: high
+  verification_oversight: high
+  complexity_expressiveness: medium
+  self_improvement: high
+  benchmarks_evaluation: high
+  ai_safety: high
+  architecture: medium
+
+contribution_preferences:
+  theory_with_empirical: high
+  pure_empirical: medium
+  benchmark_papers: high
+  pure_theory: medium
+  negative_results: low
+
+review:
+  reviewers: 4
+  discussion_period: true
+  author_response: true
+  double_blind: true
+  open_review: false
+
+format:
+  page_limit: 9
+  references_extra: true
+  appendix: unlimited
+  anonymous: true
+  checklist: required
+
+notes: "Strong fit for bridging theory and empirical work. Values novelty and clarity. Oral selection favors surprising results."

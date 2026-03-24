@@ -1,0 +1,46 @@
+name: acl
+full_name: "Annual Meeting of the Association for Computational Linguistics"
+url: "https://www.aclweb.org"
+
+deadlines:
+  2026:
+    paper: "2026-02-15"
+    notification: "2026-05-15"
+    conference: "2026-08-10"
+  2027:
+    paper: "2027-02-15"  # estimated
+
+acceptance_rate: 0.23
+submissions_per_year: ~4000
+
+topic_fit:
+  llm_reasoning: high
+  verification_oversight: medium
+  complexity_expressiveness: low
+  self_improvement: low
+  benchmarks_evaluation: high
+  ai_safety: medium
+  architecture: medium
+
+contribution_preferences:
+  theory_with_empirical: medium
+  pure_empirical: high
+  benchmark_papers: high
+  pure_theory: low
+  negative_results: medium
+
+review:
+  reviewers: 3
+  discussion_period: true
+  author_response: true
+  double_blind: true
+  open_review: false
+
+format:
+  page_limit: 8
+  references_extra: true
+  appendix: unlimited
+  anonymous: true
+  checklist: required
+
+notes: "NLP-focused. Computational linguistics tradition. Formal analysis of language models is valued."

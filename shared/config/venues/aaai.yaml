@@ -1,0 +1,48 @@
+name: aaai
+full_name: "AAAI Conference on Artificial Intelligence"
+url: "https://aaai.org"
+
+deadlines:
+  2026:
+    paper: "2025-08-15"  # passed
+    notification: "2025-12-09"
+    conference: "2026-02-20"
+  2027:
+    paper: "2026-08-15"  # estimated
+    notification: "2026-12-09"  # estimated
+    conference: "2027-02-22"  # estimated
+
+acceptance_rate: 0.20
+submissions_per_year: ~12000
+
+topic_fit:
+  llm_reasoning: medium
+  verification_oversight: medium
+  complexity_expressiveness: low
+  self_improvement: medium
+  benchmarks_evaluation: medium
+  ai_safety: high
+  architecture: medium
+
+contribution_preferences:
+  theory_with_empirical: medium
+  pure_empirical: high
+  benchmark_papers: medium
+  pure_theory: medium
+  negative_results: low
+
+review:
+  reviewers: 3
+  discussion_period: false
+  author_response: true
+  double_blind: true
+  open_review: false
+
+format:
+  page_limit: 7
+  references_extra: true
+  appendix: unlimited
+  anonymous: true
+  checklist: required
+
+notes: "Broader AI scope. More application-oriented than NeurIPS/ICML. Lower acceptance rate but higher submission volume."
