@@ -29,6 +29,7 @@ import argparse
 import json
 import logging
 import os
+import random
 import sys
 import time
 from collections import Counter
@@ -257,8 +258,13 @@ def main():
                         help="Evaluation condition (default: short_cot for self-consistency)")
     parser.add_argument("--resume", action="store_true",
                         help="Skip instances already in output file")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for reproducibility (default: 42)")
 
     args = parser.parse_args()
+
+    # Set random seed for reproducibility
+    random.seed(args.seed)
 
     tasks = args.tasks.split(",")
     models = args.models.split(",")
