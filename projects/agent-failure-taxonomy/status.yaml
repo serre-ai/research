@@ -4,31 +4,31 @@ status: active
 phase: research
 confidence: 0.5
 created: "2026-03-10"
-updated: "2026-03-21"
+updated: "2026-03-24"
 venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "Literature survey — collect agent failure reports from papers, blogs, and demonstrations"
+current_focus: "Literature survey in progress — documented 10 failure instances, surveyed 20+ papers, identified existing taxonomies"
 
 next_steps:
-  - "Survey agent papers from 2023-2026 for documented failures (target: 30+ papers in first pass)"
-  - "Collect failure reports from GitHub issues and blog posts (AutoGPT, Claude Code, Voyager, SWE-agent)"
-  - "Build structured failure instance template (source, agent, task, failure description, root cause hypothesis)"
-  - "Begin open coding of failure instances — first 50 instances"
-  - "Identify candidate taxonomy categories from initial coding"
-  - "Write literature review section outline"
+  - "Continue failure instance collection — target 40 more instances (total 50 for initial open coding)"
+  - "Deep-read existing taxonomy papers (MAST, DEFT, three-phase taxonomy) for detailed failure definitions"
+  - "Collect more GitHub issues from LangChain, AutoGPT, CrewAI repositories"
+  - "Search for plan-then-execute and tree-of-thought specific failures"
+  - "Begin preliminary open coding of first 10 instances — identify initial codes"
+  - "Create synthesis note on existing taxonomies and coverage gaps"
 
 progress:
   literature_review:
-    status: not_started
-    notes: "Target 100+ failure instances from published work and public demonstrations"
+    status: in_progress
+    notes: "Surveyed 20+ papers and sources. Created 2 comprehensive literature notes covering seed papers, benchmarks, production failures, and architecture-specific issues. Documented 10 detailed failure instances. Identified 4 existing taxonomies (MAST, DEFT, three-phase, system-level)."
   taxonomy_development:
     status: not_started
-    notes: "Grounded theory methodology — open coding, then axial coding"
+    notes: "Grounded theory methodology — ready to begin open coding with first 10 instances. Will expand to 50 instances before axial coding."
   controlled_experiments:
     status: not_started
-    notes: "Reproduce key failures across 3+ agent frameworks"
+    notes: "Reproduce key failures across 3+ agent frameworks. Priority failures identified: tool fabrication, infinite loops, context degradation, prompt injection, self-correction failure, cascading errors."
   paper_writing:
     status: not_started
     notes: "ACL 2027 format"
@@ -45,18 +45,32 @@ decisions_made:
   - date: 2026-03-21
     decision: "Reactivate project"
     rationale: "Starting alongside verification-complexity and self-improvement-limits to form a coherent research program. Literature survey is the immediate priority."
+  - date: 2026-03-24
+    decision: "Focus on single-agent failures first, defer multi-agent coordination"
+    rationale: "MAST taxonomy (2025) already covers multi-agent failures comprehensively. Our differentiation is hierarchical single-agent taxonomy with architecture comparison and LLM limitation mapping. Avoid scope overlap."
+  - date: 2026-03-24
+    decision: "Include evaluation/environment failures in taxonomy"
+    rationale: "WebArena dropdown issue shows some 'agent failures' are actually environment limitations. Important to distinguish agent vs. evaluation failures — helps practitioners understand whether to fix agent or evaluation infrastructure."
 
-key_references: []
+key_references:
+  - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
+  - "Wang et al. (2023) - Voyager: An Open-Ended Embodied Agent with Large Language Models"
+  - "Xie et al. (2024) - AgentBench: Evaluating LLMs as Agents [ICLR]"
+  - "Zhou et al. (2023) - WebArena: A Realistic Web Environment for Building Autonomous Agents"
+  - "Yang et al. (2024) - SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering [NeurIPS]"
+  - "Cemri et al. (2025) - Why Do Multi-Agent LLM Systems Fail? [MAST taxonomy]"
+  - "(2025) - Exploring Autonomous Agents: Three-Phase Failure Taxonomy"
+  - "(2024) - DEFT: Deep Research Failure Taxonomy"
 
 git:
   branch: "main"
-  latest_commit: ""
+  latest_commit: "e2a76db"
   open_prs: []
 
 metrics:
-  papers_reviewed: 0
-  failures_collected: 0
-  taxonomy_categories: 0
+  papers_reviewed: 20
+  failures_collected: 10
+  taxonomy_categories: 8
   experiments_run: 0
 
-notes: "Project initialized. Begin with systematic literature survey of LLM agent papers from 2023-2026. Focus on collecting concrete, documented failure instances with enough detail to categorize."
+notes: "Strong progress on literature survey. Identified clear differentiation from existing taxonomies: we focus on single-agent (MAST covers multi-agent), cross-architecture comparison (DEFT is domain-specific), hierarchical structure with LLM limitation mapping, and controlled reproduction. Concurrent work risk is MODERATE — active area but our approach is distinctive. Next session should continue instance collection to reach 50 instances, then begin open coding."
