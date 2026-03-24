@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./tokens.css";
+@import "./tui.css";
 
 @theme {
   --font-mono: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace;

@@ -1,0 +1,209 @@
+/* ============================================
+   TUI COMPONENT STYLES
+   Terminal-inspired UI using Unicode box-drawing
+   characters and monospace typography.
+
+   Composes with tokens.css — uses existing color
+   vars and spacing scale.
+   ============================================ */
+
+/* --- Box Drawing --- */
+
+.tui-box {
+  position: relative;
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
+.tui-box-frame {
+  color: var(--color-border-strong);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+.tui-box-frame-top,
+.tui-box-frame-bottom {
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tui-box-frame-top .tui-corner { color: var(--color-border-strong); }
+.tui-box-frame-bottom .tui-corner { color: var(--color-border-strong); }
+
+.tui-box-frame-top .tui-line,
+.tui-box-frame-bottom .tui-line {
+  flex: 1;
+  overflow: hidden;
+  color: var(--color-border-strong);
+}
+
+.tui-box-title {
+  color: var(--color-text-bright);
+  font-weight: 600;
+  padding: 0 0.5ch;
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: 0.05em;
+}
+
+.tui-box-side {
+  color: var(--color-border-strong);
+  user-select: none;
+}
+
+.tui-box-content {
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Box variants */
+.tui-box--accent .tui-box-frame-top .tui-corner,
+.tui-box--accent .tui-box-frame-top .tui-line,
+.tui-box--accent .tui-box-frame-bottom .tui-corner,
+.tui-box--accent .tui-box-frame-bottom .tui-line,
+.tui-box--accent .tui-box-side {
+  color: var(--color-accent-primary);
+}
+
+.tui-box--success .tui-box-frame-top .tui-corner,
+.tui-box--success .tui-box-frame-top .tui-line,
+.tui-box--success .tui-box-frame-bottom .tui-corner,
+.tui-box--success .tui-box-frame-bottom .tui-line,
+.tui-box--success .tui-box-side {
+  color: var(--color-status-ok);
+}
+
+.tui-box--warning .tui-box-frame-top .tui-corner,
+.tui-box--warning .tui-box-frame-top .tui-line,
+.tui-box--warning .tui-box-frame-bottom .tui-corner,
+.tui-box--warning .tui-box-frame-bottom .tui-line,
+.tui-box--warning .tui-box-side {
+  color: var(--color-status-warn);
+}
+
+.tui-box--error .tui-box-frame-top .tui-corner,
+.tui-box--error .tui-box-frame-top .tui-line,
+.tui-box--error .tui-box-frame-bottom .tui-corner,
+.tui-box--error .tui-box-frame-bottom .tui-line,
+.tui-box--error .tui-box-side {
+  color: var(--color-status-error);
+}
+
+/* --- Table --- */
+
+.tui-table {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tui-table th {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.tui-table td {
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tui-table tr:hover td {
+  background: var(--color-bg-hover);
+}
+
+/* --- Badge --- */
+
+.tui-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tui-badge--ok { color: var(--color-status-ok); }
+.tui-badge--warn { color: var(--color-status-warn); }
+.tui-badge--error { color: var(--color-status-error); }
+.tui-badge--muted { color: var(--color-text-muted); }
+.tui-badge--accent { color: var(--color-accent-primary); }
+
+/* --- Progress Bar --- */
+
+.tui-progress {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.tui-progress-fill {
+  color: var(--color-status-ok);
+}
+
+.tui-progress-empty {
+  color: var(--color-border-strong);
+}
+
+/* --- Sparkline --- */
+
+.tui-sparkline {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0;
+  color: var(--color-accent-primary);
+}
+
+/* --- Metric --- */
+
+.tui-metric {
+  font-family: var(--font-mono);
+}
+
+.tui-metric-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tui-metric-value {
+  color: var(--color-text-bright);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tui-metric-unit {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+/* --- Skeleton (loading) --- */
+
+.tui-skeleton {
+  font-family: var(--font-mono);
+  color: var(--color-border-strong);
+  animation: tui-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tui-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* --- Status Dot --- */
+
+.tui-dot { font-size: var(--text-sm); }
+.tui-dot--ok { color: var(--color-status-ok); }
+.tui-dot--warn { color: var(--color-status-warn); }
+.tui-dot--error { color: var(--color-status-error); }
+.tui-dot--idle { color: var(--color-text-muted); }
