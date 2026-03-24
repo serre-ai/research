@@ -32,7 +32,7 @@ export function TuiAppShell({ children }: TuiAppShellProps) {
       <div className="shrink-0 w-[18ch]">
         <TuiNavPanel />
       </div>
-      <div className="flex-1 min-w-0 space-y-3 overflow-y-auto">
+      <div className="flex-1 min-w-0 space-y-3">
         {children}
       </div>
     </div>

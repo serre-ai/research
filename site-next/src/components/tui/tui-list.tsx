@@ -7,7 +7,7 @@ import { useFocus } from '@/providers/focus-provider';
 
 interface TuiListProps<T> {
   panelId: string;
-  items: T[];
+  items: readonly T[];
   renderItem: (item: T, index: number, active: boolean) => ReactNode;
   keyFn?: (item: T, index: number) => string;
   onActivate?: (item: T, index: number) => void;

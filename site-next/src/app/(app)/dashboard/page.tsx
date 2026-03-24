@@ -6,7 +6,7 @@ import {
   useProjects, useBudget, useHealth, useDaemonHealth,
   useDecisions, usePendingTriggers, useAckTrigger,
 } from '@/hooks';
-import { TuiPanel, TuiList, TuiStatusDot, TuiBadge, TuiProgress } from '@/components/tui';
+import { TuiPanel, TuiList, TuiBox, TuiStatusDot, TuiBadge, TuiProgress } from '@/components/tui';
 import { mapStatusToKey, formatCurrency, formatDate } from '@/lib/dashboard-helpers';
 import type { Decision } from '@/lib/types';
 
@@ -128,7 +128,8 @@ export default function DashboardPage() {
           )}
         </TuiPanel>
 
-        <TuiPanel id="health" title="HEALTH" order={2} itemCount={0}>
+        {/* HEALTH — read-only, not focusable (skipped in Tab cycle) */}
+        <TuiBox title="HEALTH">
           {healthLoading || daemonLoading ? (
             <span className="text-text-muted">loading...</span>
           ) : (
@@ -176,11 +177,11 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-        </TuiPanel>
+        </TuiBox>
       </div>
 
       {/* DECISIONS */}
-      <TuiPanel id="decisions" title="DECISIONS" order={3} itemCount={decisionList.length} className="mb-3">
+      <TuiPanel id="decisions" title="DECISIONS" order={2} itemCount={decisionList.length} className="mb-3">
         <TuiList
           panelId="decisions"
           items={decisionList}
@@ -206,7 +207,7 @@ export default function DashboardPage() {
         <TuiPanel
           id="triggers"
           title="TRIGGERS"
-          order={4}
+          order={3}
           itemCount={triggerList.length}
           onActivateItem={(idx) => ackTrigger.mutate(triggerList[idx].id)}
           keyHints={[{ key: 'Enter', label: 'Acknowledge' }]}
