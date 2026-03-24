@@ -13,9 +13,6 @@
  *   5. Alert — create alerts and notify on threats
  */
 
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import pg from "pg";
 import type { ArxivClient, ArxivPaper } from "./arxiv.js";
 import type { SemanticScholarClient, S2Paper } from "./semantic-scholar.js";
@@ -24,20 +21,6 @@ import type { Notifier } from "./notifier.js";
 import type { EventBus } from "./event-bus.js";
 import type { EmbedFn } from "./embeddings.js";
 import type { KnowledgeGraph, ClaimRow } from "./knowledge-graph.js";
-
-// ============================================================
-// Topic taxonomy types
-// ============================================================
-
-interface TopicEntry {
-  name: string;
-  display: string;
-  keywords: string[];
-}
-
-interface TopicTaxonomy {
-  topics: TopicEntry[];
-}
 
 // ============================================================
 // Types
@@ -115,7 +98,6 @@ const THREAT_SIMILARITY_THRESHOLD = 0.85;
 
 export class LiteratureMonitor {
   private lastTickAt = 0;
-  private taxonomyCache: TopicEntry[] | null = null;
 
   constructor(
     private pool: pg.Pool,
@@ -127,147 +109,6 @@ export class LiteratureMonitor {
     private notifier: Notifier,
     private eventBus: EventBus | null,
   ) {}
-
-  // ============================================================
-  // Topic taxonomy
-  // ============================================================
-
-  /** Load topic taxonomy from shared/config/research-topics.yaml. Cached in memory. */
-  private loadTopicTaxonomy(): TopicEntry[] {
-    if (this.taxonomyCache) return this.taxonomyCache;
-
-    try {
-      // Resolve path relative to this file: ../../shared/config/research-topics.yaml
-      const thisDir = dirname(fileURLToPath(import.meta.url));
-      const yamlPath = join(thisDir, "..", "..", "shared", "config", "research-topics.yaml");
-      const raw = readFileSync(yamlPath, "utf-8");
-
-      // Lightweight YAML parse — the file is a simple list structure.
-      // We avoid a full YAML dependency by parsing the known structure.
-      const topics: TopicEntry[] = [];
-      let current: Partial<TopicEntry> | null = null;
-
-      for (const line of raw.split("\n")) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("#") || trimmed === "") continue;
-
-        const nameMatch = trimmed.match(/^- name:\s*(.+)/);
-        if (nameMatch) {
-          if (current?.name) topics.push(current as TopicEntry);
-          current = { name: nameMatch[1].trim(), display: "", keywords: [] };
-          continue;
-        }
-
-        if (current) {
-          const displayMatch = trimmed.match(/^display:\s*"?([^"]*)"?/);
-          if (displayMatch) {
-            current.display = displayMatch[1];
-            continue;
-          }
-
-          const kwMatch = trimmed.match(/^- "([^"]+)"/);
-          if (kwMatch && current.keywords) {
-            current.keywords.push(kwMatch[1]);
-          }
-        }
-      }
-      if (current?.name) topics.push(current as TopicEntry);
-
-      this.taxonomyCache = topics;
-      console.log(`[LitMonitor] Loaded ${topics.length} topic categories with ${topics.reduce((s, t) => s + t.keywords.length, 0)} keywords`);
-      return topics;
-    } catch (err) {
-      console.error("[LitMonitor] Failed to load topic taxonomy:", err);
-      return [];
-    }
-  }
-
-  /** Classify a paper against the topic taxonomy. Returns topic names where 2+ keywords match. */
-  private classifyTopics(title: string, abstract: string | null): string[] {
-    const topics = this.loadTopicTaxonomy();
-    const text = (title + " " + (abstract ?? "")).toLowerCase();
-
-    const matched: string[] = [];
-    for (const topic of topics) {
-      const matchCount = topic.keywords.filter(kw => {
-        // Use word-boundary regex for single-word keywords, includes for multi-word
-        if (kw.includes(" ") || kw.includes("-")) {
-          return text.includes(kw.toLowerCase());
-        }
-        const regex = new RegExp(`\\b${kw.toLowerCase()}\\b`);
-        return regex.test(text);
-      }).length;
-      if (matchCount >= 2) {
-        matched.push(topic.name);
-      }
-    }
-    return matched;
-  }
-
-  /** Update a paper's topics in the database. */
-  private async updatePaperTopics(paper: LitPaper): Promise<void> {
-    const topics = this.classifyTopics(paper.title, paper.abstract);
-    if (topics.length > 0) {
-      await this.pool.query(
-        "UPDATE lit_papers SET topics = $1 WHERE id = $2",
-        [topics, paper.id],
-      );
-    }
-  }
-
-  /**
-   * Get a representative set of search terms from the taxonomy for broad filtering.
-   * Rotates keyword selection based on day of year so different terms are searched each day.
-   */
-  private getTopLevelSearchTerms(): string[] {
-    const topics = this.loadTopicTaxonomy();
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-
-    const terms: string[] = [];
-    for (const topic of topics) {
-      if (topic.keywords.length === 0) continue;
-      const idx = dayOfYear % topic.keywords.length;
-      terms.push(topic.keywords[idx]);
-    }
-    return terms;
-  }
-
-  /**
-   * Backfill topics for papers that have null topics.
-   * Processes up to 100 papers per call. Called once per tick.
-   */
-  private async backfillTopics(): Promise<void> {
-    const { rows } = await this.pool.query(
-      `SELECT id, title, abstract FROM lit_papers
-       WHERE topics IS NULL
-       ORDER BY discovered_at DESC
-       LIMIT 100`,
-    );
-
-    if (rows.length === 0) return;
-
-    let classified = 0;
-    for (const row of rows) {
-      const topics = this.classifyTopics(row.title as string, row.abstract as string | null);
-      if (topics.length > 0) {
-        await this.pool.query(
-          "UPDATE lit_papers SET topics = $1 WHERE id = $2",
-          [topics, row.id],
-        );
-        classified++;
-      } else {
-        // Set empty array so we don't reprocess
-        await this.pool.query(
-          "UPDATE lit_papers SET topics = '{}' WHERE id = $1",
-          [row.id],
-        );
-      }
-    }
-
-    if (classified > 0) {
-      console.log(`[LitMonitor] Backfill: classified ${classified}/${rows.length} papers`);
-    }
-  }
 
   // ============================================================
   // Main entry point — called from daemon cycle
@@ -329,20 +170,6 @@ export class LiteratureMonitor {
       } catch (err) {
         console.error(`[LitMonitor] Error processing ${project.project}:`, err);
       }
-    }
-
-    // Backfill topics for papers missing classification
-    try {
-      await this.backfillTopics();
-    } catch (err) {
-      console.error("[LitMonitor] Topic backfill error:", err);
-    }
-
-    // Broad topic-based search (independent of any project)
-    try {
-      await this.broadTopicScan();
-    } catch (err) {
-      console.error("[LitMonitor] Broad topic scan error:", err);
     }
 
     // Check citation watches across all projects
@@ -412,70 +239,6 @@ export class LiteratureMonitor {
     return newPapers;
   }
 
-  /** Broad topic-based search — stores papers matching 2+ topic keywords regardless of project. */
-  private async broadTopicScan(): Promise<void> {
-    const taxonomyTerms = this.getTopLevelSearchTerms();
-    if (taxonomyTerms.length === 0) return;
-
-    const currentYear = new Date().getFullYear();
-    const yearFilter = `${currentYear - 1}-`;
-    let totalStored = 0;
-
-    // Limit to top 5 terms per tick to stay lightweight
-    for (const term of taxonomyTerms.slice(0, 5)) {
-      try {
-        // Search S2 with this term (limit 10 papers per search)
-        const papers = await this.s2.search(term, {
-          limit: 10,
-          year: yearFilter,
-          fieldsOfStudy: "Computer Science",
-        });
-
-        for (const paper of papers) {
-          // Only store if the paper matches 2+ topic keywords
-          const topics = this.classifyTopics(paper.title, paper.abstract ?? "");
-          if (topics.length === 0) continue;
-
-          const stored = await this.upsertS2Paper(paper);
-          if (stored) {
-            await this.updatePaperTopics(stored);
-            totalStored++;
-          }
-        }
-      } catch (err) {
-        console.error(`[LitMonitor] Broad topic search failed for "${term}":`, err);
-      }
-
-      try {
-        // Also search arXiv
-        const catQuery = ARXIV_CATEGORIES.map((c) => `cat:${c}`).join(" OR ");
-        const query = `all:"${term}" AND (${catQuery})`;
-        const arxivPapers = await this.arxiv.search(query, {
-          maxResults: 10,
-          sortBy: "submittedDate",
-          sortOrder: "descending",
-        });
-
-        for (const paper of arxivPapers) {
-          const topics = this.classifyTopics(paper.title, paper.abstract ?? "");
-          if (topics.length === 0) continue;
-
-          const stored = await this.upsertArxivPaper(paper);
-          if (stored) {
-            await this.updatePaperTopics(stored);
-            totalStored++;
-          }
-        }
-      } catch (err) {
-        console.error(`[LitMonitor] Broad arXiv search failed for "${term}":`, err);
-      }
-    }
-
-    if (totalStored > 0) {
-      console.log(`[LitMonitor] Broad topic scan: stored ${totalStored} new papers`);
-    }
-  }
-
   /** Insert arXiv paper if not already in DB. Returns the paper if newly inserted, null if existing. */
   private async upsertArxivPaper(paper: ArxivPaper): Promise<LitPaper | null> {
     const { rows } = await this.pool.query(
@@ -502,15 +265,6 @@ export class LiteratureMonitor {
         paper.pdfUrl,
       ],
     );
-
-    // Classify topics on newly inserted paper
-    const topics = this.classifyTopics(paper.title, paper.abstract);
-    if (topics.length > 0) {
-      await this.pool.query(
-        "UPDATE lit_papers SET topics = $1 WHERE id = $2",
-        [topics, id],
-      );
-    }
 
     return {
       id,
@@ -579,15 +333,6 @@ export class LiteratureMonitor {
         paper.url,
       ],
     );
-
-    // Classify topics on newly inserted paper
-    const topics = this.classifyTopics(paper.title, paper.abstract ?? "");
-    if (topics.length > 0) {
-      await this.pool.query(
-        "UPDATE lit_papers SET topics = $1 WHERE id = $2",
-        [topics, id],
-      );
-    }
 
     return {
       id,
@@ -887,74 +632,6 @@ export class LiteratureMonitor {
         }
       }
     }
-  }
-
-  // ============================================================
-  // Citation velocity
-  // ============================================================
-
-  /**
-   * Compute citation velocity for papers from the last 6 months.
-   * Designed to run weekly — compares current S2 citation count
-   * against stored count and computes monthly rate.
-   */
-  async computeCitationVelocity(): Promise<void> {
-    const { rows } = await this.pool.query(
-      `SELECT id, s2_id, citation_count, analyzed_at FROM lit_papers
-       WHERE discovered_at > NOW() - INTERVAL '6 months'
-         AND s2_id IS NOT NULL`,
-    );
-
-    if (rows.length === 0) {
-      console.log("[LitMonitor] No papers with S2 IDs for velocity computation");
-      return;
-    }
-
-    // Batch query S2 for updated citation counts (batches of 500)
-    const s2Ids = rows.map((r: Record<string, unknown>) => r.s2_id as string).filter(Boolean);
-    let updated: Array<{ paperId: string; citationCount: number }> = [];
-
-    for (let i = 0; i < s2Ids.length; i += 500) {
-      const batch = s2Ids.slice(i, i + 500);
-      try {
-        const batchResults = await this.s2.batchGetPapers(batch);
-        updated = updated.concat(batchResults);
-      } catch (err) {
-        console.error(`[LitMonitor] Batch velocity fetch failed (batch ${i / 500}):`, err);
-      }
-    }
-
-    let velocityUpdates = 0;
-    const now = new Date();
-    for (const paper of updated) {
-      if (!paper) continue;
-      const row = rows.find((r: Record<string, unknown>) => r.s2_id === paper.paperId);
-      if (!row) continue;
-
-      const prevCount = (row.citation_count as number) ?? 0;
-      const newCount = paper.citationCount ?? 0;
-      const delta = newCount - prevCount;
-
-      // Compute monthly rate normalized by days since last check
-      let velocity = 0;
-      const lastAnalyzed = row.analyzed_at ? new Date(row.analyzed_at as string) : null;
-      if (lastAnalyzed && delta > 0) {
-        const daysSinceCheck = Math.max(1, (now.getTime() - lastAnalyzed.getTime()) / (1000 * 60 * 60 * 24));
-        velocity = (delta / daysSinceCheck) * 30; // monthly rate
-      } else if (delta > 0) {
-        velocity = delta; // no previous check — raw delta as fallback
-      }
-
-      if (delta !== 0 || velocity !== 0) {
-        await this.pool.query(
-          "UPDATE lit_papers SET citation_count = $1, citation_velocity = $2, analyzed_at = NOW() WHERE id = $3",
-          [newCount, velocity, row.id],
-        );
-        velocityUpdates++;
-      }
-    }
-
-    console.log(`[LitMonitor] Citation velocity: updated ${velocityUpdates}/${rows.length} papers`);
   }
 
   // ============================================================

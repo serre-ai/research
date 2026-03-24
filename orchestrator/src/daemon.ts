@@ -132,7 +132,6 @@ export class Daemon {
   private linearClient: LinearClient | null = null;
   private lastMaintenanceAt = 0;
   private lastLiteratureScanAt = 0;
-  private lastVelocityAt = 0;
   private budgetCheckInProgress = false;
   private pendingDispatches: Array<{
     request: Parameters<Daemon["queueSession"]>[0];
@@ -956,18 +955,6 @@ export class Daemon {
       await this.literatureMonitor.tick(
         activeProjects.map((p) => ({ project: p.project, keyTerms: p.key_terms ?? [] })),
       );
-
-      // Weekly citation velocity check
-      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-      if (Date.now() - this.lastVelocityAt > SEVEN_DAYS_MS) {
-        console.log("[Daemon] Computing citation velocity...");
-        try {
-          await this.literatureMonitor.computeCitationVelocity();
-          this.lastVelocityAt = Date.now();
-        } catch (err) {
-          console.error("[Daemon] Citation velocity error:", err);
-        }
-      }
     } else if (this.literatureScanner) {
       await this.literatureScanner.scan(activeProjects);
     }

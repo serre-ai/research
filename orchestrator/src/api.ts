@@ -1536,7 +1536,7 @@ export function createApi(
   app.use("/api/paper", paperRoutes(rootDir));
 
   // Literature intelligence
-  app.use("/api/literature", literatureRoutes(() => daemon?.getLiteratureMonitor() ?? null, pool));
+  app.use("/api/literature", literatureRoutes(() => daemon?.getLiteratureMonitor() ?? null));
 
   // Sprint 3C: New endpoints
   app.use("/api/sessions", sessionDetailRoutes(rootDir));
