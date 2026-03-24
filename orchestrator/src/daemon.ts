@@ -1022,6 +1022,13 @@ export class Daemon {
       // Stale session detection: kill if running > hard limit
       const runningMs = Date.now() - tracker.startedAt;
       if (runningMs > MAX_SESSION_DURATION_MS) {
+        // Double-check settled status — the promise may have resolved between
+        // the check above and this point. If settled, just clean up normally
+        // rather than logging a false stale-session error.
+        if (tracker.settled) {
+          this.activeSessions.delete(name);
+          continue;
+        }
         console.log("Session for " + name + " exceeded " + (MAX_SESSION_DURATION_MS / 60000) + "min hard limit -- marking stale");
         await this.logger.log({
           type: "session_error",
@@ -1346,6 +1353,13 @@ export class Daemon {
     chainId: string,
     chainDepth: number = 0,
   ): Promise<void> {
+    // Chain depth is also validated when follow-ups are consumed in the tick loop,
+    // but check early here to avoid queuing follow-ups that will be skipped.
+    if (chainDepth + 1 >= MAX_CHAIN_DEPTH) {
+      console.log("[processSessionSignals] Not chaining from " + agentType + " for " + projectName + " — next depth " + (chainDepth + 1) + " would exceed max " + MAX_CHAIN_DEPTH);
+      return;
+    }
+
     // Critic completed — check if reviewing a Linear issue
     if (agentType === "critic" && this.planner && this.linearClient) {
       const pending = await this.planner.getPendingCriticReview(projectName);

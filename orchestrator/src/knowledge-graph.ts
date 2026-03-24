@@ -83,43 +83,65 @@ export class KnowledgeGraph {
   // Claims CRUD
   // --------------------------------------------------------
 
-  /** Insert a new claim with auto-computed embedding. */
+  /** Insert a new claim with auto-computed embedding.
+   *  Dedup check + insert are wrapped in a single transaction to prevent
+   *  race conditions where two identical claims both pass dedup. */
   async addClaim(claim: Claim): Promise<ClaimRow> {
     const id = claim.id ?? randomUUID();
 
-    // Compute embedding once and reuse for dedup check + insert
-    let embedding: number[] | null = null;
+    // Compute embedding outside the transaction (network call)
     let embeddingStr: string | null = null;
     if (this.embedFn) {
       try {
-        embedding = await this.embedFn(claim.statement);
+        const embedding = await this.embedFn(claim.statement);
         embeddingStr = `[${embedding.join(",")}]`;
       } catch (err) {
         console.error("[KnowledgeGraph] Embedding failed (inserting without):", err);
       }
     }
 
-    // Check for near-duplicates using pre-computed embedding
-    if (embeddingStr) {
-      const dupes = await this.findNearDuplicatesWithVector(embeddingStr, claim.project);
-      if (dupes.length > 0) {
-        console.log(`[KnowledgeGraph] Near-duplicate found for "${claim.statement.slice(0, 60)}..." — returning existing claim ${dupes[0].id}`);
-        return dupes[0];
-      }
-    }
+    // Wrap dedup check + insert in a transaction to avoid duplicate inserts
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    const { rows } = await this.pool.query(
-      `INSERT INTO claims (id, project, claim_type, statement, confidence,
-                           source, source_type, embedding, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector, $9)
-       RETURNING *`,
-      [
-        id, claim.project, claim.claimType, claim.statement,
-        claim.confidence, claim.source ?? null, claim.sourceType ?? null,
-        embeddingStr, JSON.stringify(claim.metadata ?? {}),
-      ],
-    );
-    return this.rowToClaim(rows[0]);
+      // Check for near-duplicates inside the transaction
+      if (embeddingStr) {
+        const { rows: dupeRows } = await client.query(
+          `SELECT *, (embedding <=> $1::vector) AS distance
+           FROM claims
+           WHERE project = $2 AND embedding IS NOT NULL AND (embedding <=> $1::vector) < 0.05
+           ORDER BY distance ASC
+           LIMIT 1`,
+          [embeddingStr, claim.project],
+        );
+        if (dupeRows.length > 0) {
+          await client.query("COMMIT");
+          console.log(`[KnowledgeGraph] Near-duplicate found for "${claim.statement.slice(0, 60)}..." — returning existing claim ${dupeRows[0].id}`);
+          return this.rowToClaim(dupeRows[0]);
+        }
+      }
+
+      const { rows } = await client.query(
+        `INSERT INTO claims (id, project, claim_type, statement, confidence,
+                             source, source_type, embedding, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector, $9)
+         RETURNING *`,
+        [
+          id, claim.project, claim.claimType, claim.statement,
+          claim.confidence, claim.source ?? null, claim.sourceType ?? null,
+          embeddingStr, JSON.stringify(claim.metadata ?? {}),
+        ],
+      );
+
+      await client.query("COMMIT");
+      return this.rowToClaim(rows[0]);
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   /** Get a single claim by ID. */
