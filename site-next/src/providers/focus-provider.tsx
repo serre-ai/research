@@ -36,6 +36,7 @@ interface FocusContextType {
   registerPanel: (reg: PanelRegistration) => () => void;
   updatePanel: (id: string, updates: Partial<Omit<PanelRegistration, 'id'>>) => void;
   focusPanel: (panelId: string) => void;
+  focusItem: (panelId: string, itemIndex: number) => void;
   activeKeyHints: KeyHint[];
   globalKeyHints: KeyHint[];
 }
@@ -55,6 +56,7 @@ const FocusContext = createContext<FocusContextType>({
   registerPanel: () => () => {},
   updatePanel: () => {},
   focusPanel: () => {},
+  focusItem: () => {},
   activeKeyHints: [],
   globalKeyHints: GLOBAL_HINTS,
 });
@@ -112,6 +114,12 @@ export function FocusProvider({ children }: { children: ReactNode }) {
   const focusPanel = useCallback((panelId: string) => {
     if (panelsRef.current.has(panelId)) {
       setState({ activePanelId: panelId, activeItemIndex: 0 });
+    }
+  }, []);
+
+  const focusItem = useCallback((panelId: string, itemIndex: number) => {
+    if (panelsRef.current.has(panelId)) {
+      setState({ activePanelId: panelId, activeItemIndex: itemIndex });
     }
   }, []);
 
@@ -196,6 +204,7 @@ export function FocusProvider({ children }: { children: ReactNode }) {
         registerPanel,
         updatePanel,
         focusPanel,
+        focusItem,
         activeKeyHints: activePanel?.keyHints ?? [],
         globalKeyHints: GLOBAL_HINTS,
       }}

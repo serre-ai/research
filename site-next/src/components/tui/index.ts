@@ -10,3 +10,4 @@ export { TuiScreen } from './tui-screen';
 export { TuiFrame } from './tui-frame';
 export { TuiPanel } from './tui-panel';
 export { TuiKeyHints } from './tui-key-hints';
+export { TuiList } from './tui-list';

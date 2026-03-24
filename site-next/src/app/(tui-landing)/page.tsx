@@ -1,13 +1,4 @@
-import {
-  TerminalHero,
-  StatusBar,
-  ProjectsTable,
-  PapersList,
-  ActivityLog,
-  LandingFooter,
-} from '@/components/landing';
-
-// ── Static data ─────────────────────────────────────────
+import { LandingShell } from '@/components/landing/landing-shell';
 
 const papers = [
   {
@@ -15,14 +6,12 @@ const papers = [
     subtitle: 'A Formal Characterization',
     venue: 'NeurIPS 2026',
     status: 'Pre-Print',
-    description: '176K evaluations, 12 models, 9 benchmark tasks',
     href: '/papers/reasoning-gaps',
   },
   {
     title: 'The Computational Complexity of Verifying LLM Outputs',
     venue: 'ICLR 2027',
     status: 'In Progress',
-    href: '/research/reasoning-gaps',
   },
   {
     title: 'A Taxonomy of Failure Modes in LLM-Based Autonomous Agents',
@@ -38,22 +27,15 @@ const posts = [
   { date: '2026-03-10', title: 'Introducing Deepwork Research', href: '/blog/introducing-deepwork' },
 ];
 
-// ── Server-side data fetching ───────────────────────────
-
 const VPS_API_URL = process.env.VPS_API_URL ?? 'http://localhost:3001';
 const VPS_API_KEY = process.env.VPS_API_KEY ?? '';
 
 async function fetchHealth() {
   try {
-    const res = await fetch(`${VPS_API_URL}/api/health`, {
-      next: { revalidate: 60 },
-    });
+    const res = await fetch(`${VPS_API_URL}/api/health`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
-    const text = await res.text();
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+    return JSON.parse(await res.text());
+  } catch { return null; }
 }
 
 async function fetchProjects() {
@@ -63,37 +45,23 @@ async function fetchProjects() {
       next: { revalidate: 300 },
     });
     if (!res.ok) return [];
-    const text = await res.text();
-    const data = JSON.parse(text);
+    const data = JSON.parse(await res.text());
     return Array.isArray(data) ? data : data.projects ?? [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-// Force dynamic rendering — don't try to fetch at build time
 export const dynamic = 'force-dynamic';
 
-// ── Page ────────────────────────────────────────────────
-
 export default async function HomePage() {
-  const [health, projects] = await Promise.all([
-    fetchHealth(),
-    fetchProjects(),
-  ]);
-
-  const activeProjects = projects.filter(
-    (p: { status: string }) => p.status === 'active',
-  );
+  const [health, projects] = await Promise.all([fetchHealth(), fetchProjects()]);
+  const activeProjects = projects.filter((p: { status: string }) => p.status === 'active');
 
   return (
-    <div className="mx-auto max-w-4xl px-6 space-y-6">
-      <TerminalHero />
-      <StatusBar health={health} projectCount={activeProjects.length} />
-      <ProjectsTable projects={activeProjects} />
-      <PapersList papers={papers} />
-      <ActivityLog posts={posts} />
-      <LandingFooter />
-    </div>
+    <LandingShell
+      health={health}
+      projects={activeProjects}
+      papers={papers}
+      posts={posts}
+    />
   );
 }
