@@ -1,0 +1,26 @@
+/* Landing page — terminal-specific styles */
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.terminal-cursor {
+  animation: cursor-blink 1s step-end infinite;
+  color: var(--color-text-bright);
+}
+
+.ascii-art {
+  font-family: var(--font-mono);
+  line-height: 1.15;
+  white-space: pre;
+  color: var(--color-text-bright);
+  font-size: clamp(0.35rem, 1.2vw, 0.75rem);
+  overflow: hidden;
+}
+
+/* Prompt prefix for section headers */
+.terminal-prompt {
+  color: var(--color-status-ok);
+  font-family: var(--font-mono);
+}
