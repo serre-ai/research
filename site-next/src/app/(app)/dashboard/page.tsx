@@ -15,22 +15,27 @@ import { TriggerCard } from '@/components/collective/trigger-card';
 import { mapStatusToKey, formatCurrency, formatDate } from '@/lib/dashboard-helpers';
 import type { Decision } from '@/lib/types';
 
-// Fetch decisions for first two projects
+// Fetch decisions for up to 5 projects
 function useAllDecisions(projectIds: string[]) {
   const q1 = useDecisions(projectIds[0] ?? '');
   const q2 = useDecisions(projectIds[1] ?? '');
+  const q3 = useDecisions(projectIds[2] ?? '');
+  const q4 = useDecisions(projectIds[3] ?? '');
+  const q5 = useDecisions(projectIds[4] ?? '');
 
-  const isLoading = q1.isLoading || q2.isLoading;
+  const queries = [q1, q2, q3, q4, q5];
+  const isLoading = queries.some((q) => q.isLoading);
   const allDecisions: Decision[] = [];
-  if (q1.data) allDecisions.push(...q1.data);
-  if (q2.data) allDecisions.push(...q2.data);
+  for (const q of queries) {
+    if (q.data) allDecisions.push(...q.data);
+  }
   allDecisions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return { data: allDecisions, isLoading };
 }
 
 export default function DashboardPage() {
-  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: projects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const { data: budget, isLoading: budgetLoading } = useBudget();
   const { data: health, isLoading: healthLoading } = useHealth();
   const { data: daemon, isLoading: daemonLoading } = useDaemonHealth();
@@ -41,7 +46,9 @@ export default function DashboardPage() {
   const ackTrigger = useAckTrigger();
 
   const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
-  const budgetPct = budget ? Math.round((budget.total / 1000) * 100) : 0;
+  // Budget limit = total + remaining (what's been spent + what's left)
+  const budgetLimit = budget ? budget.total + budget.remaining : 1000;
+  const budgetPct = budget ? Math.round((budget.total / budgetLimit) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -65,14 +72,17 @@ export default function DashboardPage() {
           )}
         </TuiBox>
 
-        <TuiBox>
+        <TuiBox variant={daemon?.running ? 'success' : undefined}>
           {daemonLoading ? (
             <TuiSkeleton width={12} />
           ) : (
-            <TuiMetric
-              label="Daemon"
-              value={daemon?.running ? '● RUN' : '○ IDLE'}
-            />
+            <div className="flex items-center gap-2">
+              <TuiStatusDot status={daemon?.running ? 'ok' : 'idle'} />
+              <TuiMetric
+                label="Daemon"
+                value={daemon?.running ? 'Running' : 'Idle'}
+              />
+            </div>
           )}
         </TuiBox>
 
@@ -92,7 +102,7 @@ export default function DashboardPage() {
               <TuiMetric
                 label="Monthly Spend"
                 value={budget ? formatCurrency(budget.total) : '$0'}
-                unit="/ $1,000"
+                unit={`/ ${formatCurrency(budgetLimit)}`}
               />
               <TuiProgress
                 value={budgetPct}
@@ -106,15 +116,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Projects table */}
-      <TuiBox title="Projects">
-        {projectsLoading ? (
+      <TuiBox title="Projects" variant={projectsError ? 'error' : undefined}>
+        {projectsError ? (
+          <span className="font-mono text-xs text-[--color-status-error]">
+            ✗ Failed to load projects: {projectsError.message ?? 'connection error'}
+          </span>
+        ) : projectsLoading ? (
           <div className="space-y-2">
             <TuiSkeleton width={40} />
             <TuiSkeleton width={40} />
             <TuiSkeleton width={40} />
           </div>
         ) : projects && projects.length > 0 ? (
-          <TuiTable
+          <TuiTable<typeof projects[number]>
             columns={[
               {
                 key: 'name',
@@ -124,7 +138,7 @@ export default function DashboardPage() {
                     href={`/projects/${row.name}`}
                     className="text-text-bright hover:text-[--color-accent-primary]"
                   >
-                    {String(row.name)}
+                    {row.name}
                   </Link>
                 ),
               },
@@ -133,21 +147,21 @@ export default function DashboardPage() {
                 header: '',
                 className: 'w-8',
                 render: (row) => (
-                  <TuiStatusDot status={mapStatusToKey(String(row.status))} />
+                  <TuiStatusDot status={mapStatusToKey(row.status)} />
                 ),
               },
               {
                 key: 'phase',
                 header: 'Phase',
                 render: (row) => (
-                  <TuiBadge color="accent">{String(row.phase ?? '—')}</TuiBadge>
+                  <TuiBadge color="accent">{row.phase ?? '—'}</TuiBadge>
                 ),
               },
               {
                 key: 'confidence',
                 header: 'Conf',
                 render: (row) => {
-                  const conf = Number(row.confidence ?? 0);
+                  const conf = row.confidence ?? 0;
                   return (
                     <TuiProgress
                       value={Math.round(conf * 100)}
@@ -162,11 +176,11 @@ export default function DashboardPage() {
                 key: 'updated_at',
                 header: 'Updated',
                 className: 'text-text-muted',
-                render: (row) => formatDate(String(row.updated_at ?? '')),
+                render: (row) => formatDate(row.updated_at ?? ''),
               },
             ]}
             data={projects}
-            rowKey={(r) => String(r.id)}
+            rowKey={(r) => r.id}
           />
         ) : (
           <span className="text-sm text-text-muted">No projects found</span>
@@ -201,8 +215,8 @@ export default function DashboardPage() {
             </div>
           ) : decisions && decisions.length > 0 ? (
             <ul className="space-y-3">
-              {decisions.slice(0, 5).map((d, i) => (
-                <li key={i} className="border-b border-border pb-2 font-mono last:border-0 last:pb-0">
+              {decisions.slice(0, 5).map((d) => (
+                <li key={`${d.date}-${d.decision?.slice(0, 30)}`} className="border-b border-border pb-2 font-mono last:border-0 last:pb-0">
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-xs text-text">{d.decision}</span>
                     <span className="shrink-0 text-[10px] text-text-muted">
