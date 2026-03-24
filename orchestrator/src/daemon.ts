@@ -623,8 +623,11 @@ export class Daemon {
       const hoursSince = (Date.now() - lastRun) / (1000 * 60 * 60);
 
       if (hoursSince < 24) {
-        console.log("[Daemon] Strategist: skipped (" + Math.round(hoursSince) + "h since last, need 24h)");
-      } else if (availableSlots > 0) {
+        // Only log once per hour to avoid noise (48 logs/day otherwise)
+        if (Math.round(hoursSince) % 6 === 0) {
+          console.log("[Daemon] Strategist: " + Math.round(hoursSince) + "h since last (need 24h)");
+        }
+      } else {
         // Check for new activity
         let newEvals = 0;
         if (this.dbPool) {

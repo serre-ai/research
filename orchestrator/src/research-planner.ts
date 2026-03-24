@@ -719,10 +719,10 @@ export class ResearchPlanner {
         "SELECT value FROM planner_state WHERE project = $1 AND key = $2",
         [projectName, "retry:" + linearIdentifier],
       );
-      if (rows.length === 0) return true; // first retry
+      if (rows.length === 0) return true; // first retry (attempt 2 of 3)
       const data = JSON.parse(rows[0].value as string);
       const attempts = data.attempts || 1;
-      return attempts < 3; // allow up to 3 attempts total
+      return attempts < 2; // 3 total attempts: original + 2 retries
     } catch { return false; }
   }
 
