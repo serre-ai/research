@@ -415,7 +415,8 @@ export class BudgetTracker {
       }
     }
 
-    // Estimate fixed costs from config when DB not available
+    // Estimate fixed costs from config when DB not available.
+    // NOTE: Keep this value in sync with fixed_cost_entries in DB / config.yaml.
     const fixedSpent = 455.50; // $400 Claude Code Max + $5.50 Hetzner + $50 Firecrawl
     const totalMonthly = monthlySpent + fixedSpent;
 
@@ -490,11 +491,16 @@ export class BudgetTracker {
     } catch {
       return [];
     }
-    return content
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => JSON.parse(line));
+    const records: SpendingRecord[] = [];
+    for (const line of content.trim().split("\n")) {
+      if (!line) continue;
+      try {
+        records.push(JSON.parse(line));
+      } catch (err) {
+        console.warn("[BudgetTracker] Skipping malformed JSONL line:", (err as Error).message);
+      }
+    }
+    return records;
   }
 
   private async getMonthlyLimit(): Promise<number> {

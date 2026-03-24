@@ -132,6 +132,12 @@ export class Daemon {
   private linearClient: LinearClient | null = null;
   private lastMaintenanceAt = 0;
   private lastLiteratureScanAt = 0;
+  private budgetCheckInProgress = false;
+  private pendingDispatches: Array<{
+    request: Parameters<Daemon["queueSession"]>[0];
+    resolve: (v: ExternalDispatch) => void;
+    reject: (e: Error) => void;
+  }> = [];
 
   constructor(config: Partial<DaemonConfig> = {}, dbPool?: pg.Pool) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -268,8 +274,41 @@ export class Daemon {
   /**
    * Queue an external dispatch from an OpenClaw agent.
    * Returns the dispatch object or throws if rate-limited/rejected.
+   * Uses a simple lock to prevent concurrent budget checks from racing.
    */
   async queueSession(request: {
+    project: string;
+    agent_type: AgentType;
+    priority?: "low" | "normal" | "high" | "critical";
+    reason: string;
+    triggered_by: string;
+    chain_depth?: number;
+  }): Promise<ExternalDispatch> {
+    // Serialize budget checks: if another dispatch is in progress, queue this one
+    if (this.budgetCheckInProgress) {
+      return new Promise<ExternalDispatch>((resolve, reject) => {
+        this.pendingDispatches.push({ request, resolve, reject });
+      });
+    }
+
+    this.budgetCheckInProgress = true;
+    try {
+      return await this.queueSessionInner(request);
+    } finally {
+      this.budgetCheckInProgress = false;
+      // Drain any dispatches that queued while we held the lock
+      this.drainPendingDispatches();
+    }
+  }
+
+  private drainPendingDispatches(): void {
+    if (this.pendingDispatches.length === 0) return;
+    const next = this.pendingDispatches.shift()!;
+    // Re-enter queueSession which will re-acquire the lock
+    this.queueSession(next.request).then(next.resolve, next.reject);
+  }
+
+  private async queueSessionInner(request: {
     project: string;
     agent_type: AgentType;
     priority?: "low" | "normal" | "high" | "critical";
@@ -302,7 +341,7 @@ export class Daemon {
       throw new Error(`Chain depth limit: depth ${chainDepth} exceeds max ${MAX_CHAIN_DEPTH}`);
     }
 
-    // Budget check
+    // Budget check (serialized via budgetCheckInProgress lock)
     const budgetStatus = await this.budgetTracker.getStatus();
     if (budgetStatus.alertLevel === "exceeded") {
       throw new Error("Budget exceeded — dispatch rejected");
