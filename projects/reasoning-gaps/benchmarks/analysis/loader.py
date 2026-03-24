@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -257,6 +260,8 @@ def _parse_json_file(path: Path) -> list[dict]:
         "summary": {...},
         "results": [{"instance_id": ..., "task": ..., ...}, ...]
     }
+
+    Raises json.JSONDecodeError on corrupt files (caught by caller).
     """
     with open(path) as f:
         data = json.load(f)
@@ -270,13 +275,21 @@ def _parse_json_file(path: Path) -> list[dict]:
 
 
 def _parse_jsonl_file(path: Path) -> list[dict]:
-    """Parse a JSONL checkpoint file (one JSON object per line)."""
+    """Parse a JSONL checkpoint file (one JSON object per line).
+
+    Skips corrupt lines with a warning instead of crashing, so that
+    a single bad line does not abort loading of the entire file.
+    """
     results = []
     with open(path) as f:
-        for line in f:
+        for line_num, line in enumerate(f, 1):
             line = line.strip()
-            if line:
+            if not line:
+                continue
+            try:
                 results.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                logger.warning("Skipping corrupt line %d in %s: %s", line_num, path, exc)
     return results
 
 

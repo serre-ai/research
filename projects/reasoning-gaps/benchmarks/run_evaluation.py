@@ -910,6 +910,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         if cond not in CONDITIONS:
             parser.error(f"Unknown condition: {cond}. Valid: {', '.join(CONDITIONS)}")
 
+    # Validate --max-instances is positive if provided
+    if args.max_instances is not None and args.max_instances <= 0:
+        parser.error(f"--max-instances must be positive, got {args.max_instances}")
+
+    # Warn about unknown model names (not an error — allows new models)
+    for model in args.models:
+        if model not in MODELS:
+            print(f"WARNING: Unknown model '{model}' — not in the known model list. "
+                  f"It may still work if the provider and API key are configured.")
+
     return args
 
 

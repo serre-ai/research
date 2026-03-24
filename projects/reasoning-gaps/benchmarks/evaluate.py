@@ -294,7 +294,7 @@ def _evaluate_tool_use(
         if not code:
             return "Error: no code provided"
         result = execute_python(code)
-        if result["success"] == "true":
+        if result["success"]:
             output = result["stdout"]
             if result["stderr"]:
                 output += f"\nStderr: {result['stderr']}"
@@ -340,7 +340,7 @@ def _evaluate_tool_use(
         code = extract_code_from_response(response)
         if code:
             exec_result = execute_python(code)
-            if exec_result["success"] == "true" and exec_result["stdout"]:
+            if exec_result["success"] and exec_result["stdout"]:
                 output_line = get_last_output_line(exec_result["stdout"])
                 response = f"{response}\n\nExecution output:\n{exec_result['stdout']}\n\n{output_line}"
 
@@ -396,10 +396,18 @@ def compute_summary(results: list[EvalResult]) -> EvalSummary:
 # ---------------------------------------------------------------------------
 
 def setup_logging(verbose: bool = False) -> None:
-    """Configure structured logging for the evaluation pipeline."""
+    """Configure structured logging for the evaluation pipeline.
+
+    Uses a module-specific handler instead of basicConfig(force=True)
+    to avoid resetting parent loggers when imported as a library.
+    """
     level = logging.DEBUG if verbose else logging.INFO
-    fmt = "%(asctime)s %(levelname)s %(message)s"
-    logging.basicConfig(level=level, format=fmt, force=True)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    root = logging.getLogger()
+    if not root.handlers:
+        root.addHandler(handler)
+    root.setLevel(level)
 
 
 # ---------------------------------------------------------------------------
@@ -498,6 +506,10 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Validate --parallel is positive
+    if args.parallel is not None and args.parallel <= 0:
+        parser.error(f"--parallel must be a positive integer, got {args.parallel}")
 
     # Set up logging
     setup_logging(verbose=args.verbose)
