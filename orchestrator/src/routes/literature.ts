@@ -5,11 +5,12 @@
  */
 
 import { Router, type Request, type Response } from "express";
+import type pg from "pg";
 import type { LiteratureMonitor } from "../literature-monitor.js";
 
 type MonitorGetter = () => LiteratureMonitor | null;
 
-export function literatureRoutes(getMonitor: MonitorGetter): Router {
+export function literatureRoutes(getMonitor: MonitorGetter, pool: pg.Pool): Router {
   const r = Router();
 
   // GET /api/literature/alerts — list literature alerts
@@ -74,6 +75,82 @@ export function literatureRoutes(getMonitor: MonitorGetter): Router {
     } catch (err) {
       console.error("GET /api/literature/papers error:", err);
       res.status(500).json({ error: "Failed to fetch papers" });
+    }
+  });
+
+  // GET /api/literature/papers/unanalyzed — papers not yet assessed by scout
+  r.get("/papers/unanalyzed", async (req: Request, res: Response) => {
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, arxiv_id, title, abstract, authors, year, venue, categories, citation_count, url
+         FROM lit_papers
+         WHERE analyzed_at IS NULL
+         ORDER BY discovered_at DESC
+         LIMIT $1`,
+        [limit]
+      );
+      res.json({ papers: rows, count: rows.length });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : "Query failed" });
+    }
+  });
+
+  // PATCH /api/literature/papers/:id — update paper metadata (structured assessment from scout agent)
+  r.patch("/papers/:id", async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const allowed = ["contribution_type", "key_finding", "gap_left", "portfolio_relevance", "topics"];
+    const validContributionTypes = ["theory", "method", "benchmark", "negative_result", "survey"];
+
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIdx = 1;
+
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) {
+        if (field === "contribution_type") {
+          if (!validContributionTypes.includes(req.body[field])) {
+            res.status(400).json({
+              error: `Invalid contribution_type. Must be one of: ${validContributionTypes.join(", ")}`,
+            });
+            return;
+          }
+          updates.push(`${field} = $${paramIdx}`);
+          values.push(req.body[field]);
+        } else if (field === "topics" && Array.isArray(req.body[field])) {
+          updates.push(`${field} = $${paramIdx}`);
+          values.push(req.body[field]);
+        } else if (field === "portfolio_relevance") {
+          updates.push(`${field} = $${paramIdx}`);
+          values.push(parseFloat(req.body[field]));
+        } else {
+          updates.push(`${field} = $${paramIdx}`);
+          values.push(req.body[field]);
+        }
+        paramIdx++;
+      }
+    }
+
+    if (updates.length === 0) {
+      res.status(400).json({ error: "No valid fields to update" });
+      return;
+    }
+
+    // Always set analyzed_at when assessment is updated
+    updates.push(`analyzed_at = NOW()`);
+
+    try {
+      const result = await pool.query(
+        `UPDATE lit_papers SET ${updates.join(", ")} WHERE id = $${paramIdx} RETURNING id, title`,
+        [...values, id]
+      );
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: "Paper not found" });
+        return;
+      }
+      res.json({ updated: result.rows[0] });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : "Update failed" });
     }
   });
 

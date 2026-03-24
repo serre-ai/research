@@ -117,6 +117,55 @@ Append new ideas to `docs/ideas/backlog.md` in this format:
     timeliness:
 ```
 
+## Structured Paper Assessment
+
+In addition to the markdown digest, store a structured assessment for each paper you review. This feeds the research intelligence pipeline.
+
+### For each paper scored 3+ (Relevant or higher):
+
+Call the API to store your assessment:
+```bash
+curl -s -X PATCH "http://localhost:3001/api/literature/papers/${PAPER_ID}" \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: ${DEEPWORK_API_KEY}" \
+  -d '{
+    "contribution_type": "theory|method|benchmark|negative_result|survey",
+    "key_finding": "One sentence: what is new in this paper",
+    "gap_left": "One sentence: what this paper does NOT do",
+    "portfolio_relevance": 7
+  }'
+```
+
+### Field Definitions
+
+- **contribution_type**: What kind of paper is this?
+  - `theory` — proves theorems, formal analysis
+  - `method` — proposes a new technique or algorithm
+  - `benchmark` — introduces evaluation, dataset, or diagnostic
+  - `negative_result` — shows something doesn't work
+  - `survey` — reviews a field
+
+- **key_finding**: The single most important result, in one sentence. Not the abstract — the takeaway. "Proves that fixed-depth transformers cannot solve parity" not "We study the limitations of transformer architectures."
+
+- **gap_left**: What this paper explicitly does NOT do, or what question it raises. "No empirical validation on models larger than 7B" or "Theory assumes i.i.d. data, doesn't address distribution shift."
+
+- **portfolio_relevance**: 0-10 score.
+  - 9-10: Directly impacts one of our current papers
+  - 7-8: Closely related to our research program
+  - 5-6: Relevant to our field
+  - 3-4: Tangentially related
+  - 0-2: Not relevant (shouldn't be scoring this if <3)
+
+### Finding Unanalyzed Papers
+
+To get papers that haven't been assessed yet:
+```bash
+curl -s "http://localhost:3001/api/literature/papers/unanalyzed?limit=10" \
+  -H "X-Api-Key: ${DEEPWORK_API_KEY}"
+```
+
+Prioritize: higher citation count and more recent papers first.
+
 ## Tools
 
 - **WebSearch**: For arXiv, Semantic Scholar, and Google Scholar queries.
