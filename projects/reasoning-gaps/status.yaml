@@ -39,6 +39,9 @@ progress:
 decisions_pending: []
 
 decisions_made:
+  - date: 2026-03-24
+    decision: "Verify unsupported result claim: Haiku 4.5 B1 direct accuracy 0.5860"
+    rationale: "Knowledge graph identified 177 unsupported claims. Selected high-confidence claim (95%) for verification as test case. Found complete supporting evidence in evaluation results file with exact match (0.586 accuracy, n=500). Evidence includes primary source data, instance-level results, difficulty breakdown, and integration into analysis pipeline. Documented in notes/evidence-haiku-b1-direct-accuracy.md. Establishes verification workflow for remaining unsupported claims."
   - date: 2026-03-22
     decision: "Prepare comprehensive rebuttal materials pre-submission"
     rationale: "Proactive preparation of responses to anticipated reviewer criticisms enables rapid, high-quality rebuttals during review period. Identified 12 likely criticism areas (scope, models, assumptions, rigor, results, prior work, impact, reproducibility) with evidence-backed responses. Includes 5 ready-to-run experiments ($0.50-$400 range) if reviewers request additional validation. Template approach ensures consistent, concrete responses with paper references."
