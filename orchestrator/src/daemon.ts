@@ -132,7 +132,6 @@ export class Daemon {
   private linearClient: LinearClient | null = null;
   private lastMaintenanceAt = 0;
   private lastLiteratureScanAt = 0;
-  private lastStrategistRunMs = 0;
   private budgetCheckInProgress = false;
   private pendingDispatches: Array<{
     request: Parameters<Daemon["queueSession"]>[0];
@@ -618,37 +617,13 @@ export class Daemon {
 
     // Daily strategist session
     try {
-      const lastRunDb = await this.getLastStrategistRun();
-      const lastRun = Math.max(lastRunDb, this.lastStrategistRunMs);
+      const lastRun = await this.getLastStrategistRun();
       const hoursSince = (Date.now() - lastRun) / (1000 * 60 * 60);
-
-      if (hoursSince < 24) {
-        // Only log once per hour to avoid noise (48 logs/day otherwise)
-        if (Math.round(hoursSince) % 6 === 0) {
-          console.log("[Daemon] Strategist: " + Math.round(hoursSince) + "h since last (need 24h)");
-        }
-      } else {
-        // Check for new activity
-        let newEvals = 0;
-        if (this.dbPool) {
-          try {
-            const { rows } = await this.dbPool.query(
-              "SELECT COUNT(*) AS cnt FROM session_evaluations WHERE created_at > to_timestamp($1 / 1000.0)",
-              [lastRun]
-            );
-            newEvals = parseInt(rows[0]?.cnt || "0", 10);
-          } catch {}
-        }
-
-        if (newEvals < 3 && hoursSince < 48) {
-          console.log("[Daemon] Strategist: skipped (only " + newEvals + " new evals, need 3+)");
-        } else {
-          console.log("[Daemon] Scheduling strategist (" + Math.round(hoursSince) + "h, " + newEvals + " new evals)");
-          await this.runStrategistSession();
-          this.lastStrategistRunMs = Date.now();
-          await this.setLastStrategistRun();
-          availableSlots--;
-        }
+      if (hoursSince > 24 && availableSlots > 0) {
+        console.log("[Daemon] Scheduling daily strategist session (" + Math.round(hoursSince) + "h since last)");
+        await this.runStrategistSession();
+        await this.setLastStrategistRun();
+        availableSlots--;
       }
     } catch (err) {
       console.error("[Daemon] Strategist scheduling error:", err);
@@ -1000,7 +975,6 @@ export class Daemon {
   }
 
   private async setLastStrategistRun(): Promise<void> {
-    this.lastStrategistRunMs = Date.now();
     if (!this.dbPool) return;
     await this.dbPool.query(
       `INSERT INTO planner_state (project, key, value, updated_at)
@@ -1286,7 +1260,7 @@ export class Daemon {
         if (issueId && this.planner) {
           const evalQuality = evaluation?.qualityScore ?? quality.score;
 
-          // Quality gate: retry if below threshold (up to 3 attempts)
+          // Quality gate: retry once if below threshold
           if (evalQuality < 40 && await this.planner.shouldRetry(brief.projectName, identifier, evalQuality)) {
             try {
               await this.linearClient.transitionIssue(issueId, "Todo");
@@ -1300,19 +1274,6 @@ export class Daemon {
               console.error("[Linear] Quality gate update failed:", err);
             }
             // Skip notification below — will retry
-            return;
-          } else if (evalQuality < 40) {
-            // Max retries exceeded — flag for human
-            try {
-              await this.linearClient.transitionIssue(issueId, "In Review");
-              await this.linearClient.addComment(issueId,
-                "Blocked: " + identifier + " failed 3 attempts (last quality: " + evalQuality + "/100). Needs human investigation."
-              );
-            } catch (err) {
-              console.error("[Linear] Max retry flag failed:", err);
-            }
-            console.log("  Max retries: " + identifier + " — flagged for human review");
-            return;
           } else {
             // Critic chaining for Paper/Research issues
             const needsCritic = labels.some((l: string) => l === "Paper" || l === "Research");
@@ -1339,30 +1300,15 @@ export class Daemon {
               }
               console.log("  Chaining: " + identifier + " → critic review");
             } else {
-              // Standard completion — quality-aware status
-              const commits = session?.result?.commitsCreated?.length ?? 0;
-
-              let target: string;
-              let comment: string;
-
-              if (evalQuality >= 70 && commits > 0) {
-                target = "Done";
-                comment = "Session completed (" + evalQuality + "/100). Commits: " + commits + ". Cost: $" + (session?.result?.costUsd?.toFixed(2) ?? "?");
-              } else if (evalQuality >= 40 && commits > 0) {
-                target = "In Review";
-                comment = "Session completed with moderate quality (" + evalQuality + "/100). Commits: " + commits + ". Needs human review.";
-              } else if (evalQuality < 40) {
-                // Quality gate should have handled retry already, but in case it didn't:
-                target = "Todo";
-                comment = "Session failed (quality: " + evalQuality + "/100, commits: " + commits + "). Left in Todo for retry or investigation.";
-              } else {
-                target = "In Review";
-                comment = "Session completed (" + evalQuality + "/100) but no commits. Needs review.";
-              }
-
+              // Standard completion
+              const target = (session?.result?.commitsCreated?.length ?? 0) > 0 ? "Done" : "In Review";
               try {
                 await this.linearClient.transitionIssue(issueId, target);
-                await this.linearClient.addComment(issueId, comment);
+                await this.linearClient.addComment(issueId,
+                  "Session completed (" + evalQuality + "/100).\n" +
+                  "Commits: " + (session?.result?.commitsCreated?.length ?? 0) + "\n" +
+                  "Cost: $" + (session?.result?.costUsd?.toFixed(2) ?? "?"),
+                );
               } catch (err) {
                 console.error("[Linear] Completion update failed:", err);
               }
