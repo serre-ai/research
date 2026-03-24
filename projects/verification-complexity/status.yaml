@@ -4,7 +4,7 @@ status: active
 phase: empirical-evaluation
 confidence: 0.80
 created: "2026-03-21"
-updated: "2026-03-23"
+updated: "2026-03-24"
 venue: "ICLR 2027"
 submission_deadline: "2026-09-25"
 draft_version: "v0.3 (Theorem 2c identified as incomplete, Definition 7 and Lemma 3 needed)"
@@ -65,7 +65,7 @@ progress:
 
   empirical_validation:
     status: in_progress
-    notes: "Cross-model verification canary complete (DW-143, 2026-03-23): B4 (P-class) 100% accuracy, B7 (coNP-class) 64% accuracy, 36pp gap confirms VC signal. Gate PASSED. Key finding: 8/9 B7 errors are false positives where verifier failed to find satisfying assignment for SAT instances. Pipeline validated: 0% extraction failures, $0.10 cost for 50 verifications. Ready for full experiment (3 generators × 3 verifiers × 9 tasks × 50 instances = 4,050 verifications, ~$38). Full_cot variant not viable: reasoning-gaps results lack model_response field. SC experiments abandoned (DW-121): insufficient diversity at T=0.7, correlation analysis shows rho varies by task not VC class."
+    notes: "Cross-model verification: (1) Canary complete (DW-143, 2026-03-23): B4=100%, B7=64%, 36pp gap, ANOVA F=13.5 p<0.001, 8/9 B7 errors are false positives on UNSAT verification (coNP-complete bottleneck). (2) Pre-registration spec created (DW-144, 2026-03-24): spec.yaml with full experimental design (4,050 verifications, ~$38), pre-registered analyses (ANOVA, ICC, error types, difficulty scaling), theoretical grounding to Theorem 1. Status: draft, awaiting critic review. (3) Analysis infrastructure ready: analyze_verification_results.py implements all pre-registered analyses, tested on canary data, bootstrap CIs, effect sizes, publication-ready output. Next: critic approval → full experiment execution → figure generation. SC experiments abandoned (DW-121): insufficient diversity at T=0.7."
 
   paper_writing:
     status: complete_pending_experiments
@@ -140,6 +140,10 @@ decisions_made:
     decision: "Identify proof gap in Theorem 2c requiring Definition 7 and Lemma 3 (DW-142)"
     rationale: "Linear issue DW-142 asks for critic review of 'revised Theorem 2c + Lemma 3' and whether 'Definition 7 is circular.' Investigation reveals: (1) Theorem 2c exists (part c of Self-Consistency Condition theorem), (2) Definition 7 does NOT exist in paper (only Definitions 1-6), (3) Lemma 3 does NOT exist in paper (only Lemmas 1-2 in appendix). Critical assessment of Theorem 2c finds: (a) Statement is informal compared to parts (a) and (b), (b) Key term 'bottleneck structure' is undefined, (c) Proof has a gap: Extended Proof asserts 'VC ⊄ cap(M) → bottleneck exists → ρ > 0' but only Lemma 2 proves 'bottleneck → ρ > 0', the connection 'VC ⊄ cap(M) → bottleneck exists' is not proved. (d) Claim 'regardless of VC class' contradicts empirical findings—correlation is not independent of VC, just not monotonic (Type 4 algorithmic gap has ρ=0.42 despite VC=P, Type 5 intractability has ρ=0.06 despite VC⊇coNP). Decision: Flag for Theorist to develop (1) Definition 7 (Computational Bottleneck) to formalize shared vs stochastic bottleneck structure, (2) Lemma 3 (Verification Hardness Produces Bottleneck) to prove VC ⊄ cap(M) → bottleneck exists with Pr[B]=q>0, (3) Revised Theorem 2c statement to be formally precise. Without these, Theorem 2c is not publication-ready—a hostile theory reviewer would flag it as incomplete. Documented full critique at reviews/critic-review-2026-03-23-theorem-2c.md."
 
+  - date: 2026-03-24
+    decision: "Create pre-registration spec and analysis infrastructure before full experiment (DW-144)"
+    rationale: "Experimenter session with $5 budget cannot execute $38 full experiment. Instead, prepare all infrastructure: (1) Pre-registration spec (experiments/cross-model-verification/spec.yaml) with hypothesis, predictions, design, canary results, budget, pre-registered analyses, theoretical grounding. Required by platform policy for experiments >$2. (2) Comprehensive analysis script (experiments/analyze_verification_results.py) implementing all pre-registered analyses (ANOVA, ICC, error types, difficulty scaling, latency) with bootstrap CIs, effect sizes, multiple comparison corrections. Tested on canary data. (3) Experiment status document (experiments/EXPERIMENT_STATUS.md) detailing completed work, blocking steps (critic review), execution plan, budget tracking. This ensures: (a) No p-hacking—analyses pre-registered before seeing full results. (b) Critic review gate enforced—spec must be approved before $38 spend. (c) Next session can execute immediately after approval. (d) All statistical infrastructure validated before data collection. Total session cost: $0, all infrastructure ready for ~$38 experiment execution."
+
 key_references:
   - "Shamir 1992 — IP = PSPACE"
   - "Arora et al. 1998 — PCP theorem"
@@ -180,11 +184,14 @@ metrics:
   definitions: 6
   lemmas_outlined: 2
   experiments_designed: 4
-  experiments_run: 0
+  experiments_run: 1  # canary run complete
+  canary_runs_complete: 1
+  full_experiments_pending: 1
   papers_reviewed: 83
   draft_pages: 22
-  todos_addressed: 9
+  todos_addressed: 12
   literature_notes_written: 2
+  analysis_scripts_created: 1
 
 paper_status:
   sections_complete:
