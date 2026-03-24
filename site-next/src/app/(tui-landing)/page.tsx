@@ -32,7 +32,7 @@ const VPS_API_KEY = process.env.VPS_API_KEY ?? '';
 
 async function fetchHealth() {
   try {
-    const res = await fetch(`${VPS_API_URL}/api/health`, { next: { revalidate: 60 } });
+    const res = await fetch(`${VPS_API_URL}/api/health`, { cache: 'no-store' });
     if (!res.ok) return null;
     return JSON.parse(await res.text());
   } catch { return null; }
@@ -42,7 +42,7 @@ async function fetchProjects() {
   try {
     const res = await fetch(`${VPS_API_URL}/api/projects`, {
       headers: { 'X-Api-Key': VPS_API_KEY },
-      next: { revalidate: 300 },
+      cache: 'no-store',
     });
     if (!res.ok) return [];
     const data = JSON.parse(await res.text());

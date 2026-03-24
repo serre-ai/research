@@ -9,6 +9,8 @@ interface TuiListProps<T> {
   panelId: string;
   items: T[];
   renderItem: (item: T, index: number, active: boolean) => ReactNode;
+  keyFn?: (item: T, index: number) => string;
+  onActivate?: (item: T, index: number) => void;
   emptyMessage?: string;
   className?: string;
 }
@@ -24,6 +26,8 @@ export function TuiList<T>({
   panelId,
   items,
   renderItem,
+  keyFn,
+  onActivate,
   emptyMessage = 'empty',
   className,
 }: TuiListProps<T>) {
@@ -40,11 +44,13 @@ export function TuiList<T>({
     }
   }, [activeIndex]);
 
+  // Single click: select and activate (navigate)
   const handleItemClick = useCallback(
     (index: number) => {
       focusItem(panelId, index);
+      onActivate?.(items[index], index);
     },
-    [panelId, focusItem],
+    [panelId, focusItem, onActivate, items],
   );
 
   if (items.length === 0) {
@@ -57,7 +63,7 @@ export function TuiList<T>({
         const active = isItemActive(panelId, index);
         return (
           <div
-            key={index}
+            key={keyFn ? keyFn(item, index) : index}
             ref={(el) => {
               if (el) itemRefs.current.set(index, el);
               else itemRefs.current.delete(index);
@@ -68,7 +74,7 @@ export function TuiList<T>({
             aria-selected={active}
           >
             <span className="tui-list__cursor" aria-hidden="true">
-              {active ? '>' : '\u00A0'}
+              {active ? '> ' : '\u00A0\u00A0'}
             </span>
             <span className="tui-list__content">
               {renderItem(item, index, active)}

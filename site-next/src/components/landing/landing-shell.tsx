@@ -57,7 +57,9 @@ function StatusLine({ health, projectCount }: { health: HealthData | null; proje
     <div className="flex flex-wrap gap-x-6 gap-y-1">
       <span className="flex items-center gap-1">
         <TuiStatusDot status={health.status === 'ok' ? 'ok' : 'error'} />
-        <span className="text-text-secondary">API online</span>
+        <span className="text-text-secondary">
+          API {health.status === 'ok' ? 'online' : 'degraded'}
+        </span>
       </span>
       <span className="flex items-center gap-1">
         <TuiStatusDot status={health.database?.connected ? 'ok' : 'error'} />
@@ -88,17 +90,9 @@ function StatusLine({ health, projectCount }: { health: HealthData | null; proje
 export function LandingShell({ health, projects, papers, posts }: LandingShellProps) {
   const router = useRouter();
 
-  const handleProjectSelect = useCallback(
-    (idx: number) => { if (projects[idx]) router.push(`/projects/${projects[idx].name}`); },
-    [projects, router],
-  );
-  const handlePaperSelect = useCallback(
-    (idx: number) => { if (papers[idx]?.href) router.push(papers[idx].href!); },
-    [papers, router],
-  );
-  const handlePostSelect = useCallback(
-    (idx: number) => { if (posts[idx]?.href) router.push(posts[idx].href); },
-    [posts, router],
+  const navigateTo = useCallback(
+    (href: string | undefined) => { if (href) router.push(href); },
+    [router],
   );
 
   return (
@@ -117,11 +111,13 @@ export function LandingShell({ health, projects, papers, posts }: LandingShellPr
               title="PROJECTS"
               order={1}
               itemCount={projects.length}
-              onActivateItem={handleProjectSelect}
+              onActivateItem={(idx) => navigateTo(`/research/${projects[idx]?.name}`)}
             >
               <TuiList
                 panelId="projects"
                 items={projects}
+                keyFn={(p) => p.name}
+                onActivate={(p) => navigateTo(`/research/${p.name}`)}
                 emptyMessage="no active projects"
                 renderItem={(p, _i, active) => (
                   <div className="flex items-center justify-between gap-2">
@@ -142,15 +138,17 @@ export function LandingShell({ health, projects, papers, posts }: LandingShellPr
               title="PAPERS"
               order={2}
               itemCount={papers.length}
-              onActivateItem={handlePaperSelect}
+              onActivateItem={(idx) => navigateTo(papers[idx]?.href)}
             >
               <TuiList
                 panelId="papers"
                 items={papers}
+                keyFn={(p) => p.title}
+                onActivate={(p) => navigateTo(p.href)}
                 emptyMessage="no papers"
                 renderItem={(p, _i, active) => (
                   <div>
-                    <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                    <span className={active ? 'text-text-bright' : (p.href ? 'text-text-secondary' : 'text-text-muted')}>
                       {p.title}
                     </span>
                     <div className="text-text-muted">
@@ -171,11 +169,13 @@ export function LandingShell({ health, projects, papers, posts }: LandingShellPr
             title="LOG"
             order={3}
             itemCount={posts.length}
-            onActivateItem={handlePostSelect}
+            onActivateItem={(idx) => navigateTo(posts[idx]?.href)}
           >
             <TuiList
               panelId="log"
               items={posts}
+              keyFn={(p) => p.href}
+              onActivate={(p) => navigateTo(p.href)}
               emptyMessage="no posts"
               renderItem={(post, _i, active) => (
                 <div className="flex items-baseline gap-4">
