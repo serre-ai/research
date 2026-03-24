@@ -1,0 +1,109 @@
+# Paper Style Specification — Darkreach AI
+# Loaded by session-runner.ts and injected into writer/editor prompts.
+# This is the single source of truth for how our papers should read.
+
+voice:
+  # Confidence level: make claims, don't hedge
+  hedge_level: low  # "we show" not "we believe it might be possible"
+  active_voice_ratio: 0.8  # 80% active, 20% passive max
+
+  sentence_length:
+    mean_words: 18
+    variance: high  # mix short punchy (8-12) with longer explanatory (25-30)
+    max_consecutive_long: 2  # break up dense passages
+    max_consecutive_short: 3  # avoid choppy prose
+
+  # Paragraph rhythm: each paragraph follows claim → evidence → implication
+  paragraph_pattern: "claim-evidence-implication"
+
+  # Banned phrases — these weaken prose or signal AI-generated text
+  banned_phrases:
+    - "it is worth noting that"  # just state it
+    - "it should be noted that"  # just state it
+    - "to the best of our knowledge"  # either cite prior work or don't
+    - "interestingly"  # let the reader decide what's interesting
+    - "importantly"  # if it weren't important you wouldn't write it
+    - "the remainder of this paper is organized as follows"  # nobody reads outlines
+    - "in this paper, we"  # only in abstract and intro, nowhere else
+    - "we believe that"  # you're publishing it — you believe it. Say "we show"
+    - "it might be possible that"  # vague hedging
+    - "it is clear that"  # if it were clear you wouldn't need to say it
+    - "as shown in Table X"  # always say WHAT Table X shows, not just point to it
+    - "further research is needed"  # say what specific research
+    - "we leave this for future work"  # say what specific future work
+
+  # Preferred patterns
+  preferred:
+    - "We show that X" over "We believe X"
+    - "X holds because Y" over "X is observed, which might be due to Y"
+    - Short sentence for the finding, longer sentence for the method
+    - Data before interpretation: "B4 accuracy is 100% (P-class), confirming Theorem 1"
+
+structure:
+  # Where the contribution appears
+  contribution_position:
+    abstract: "sentence 3-4"
+    introduction: "paragraph 4, as numbered list of 3-5 items"
+
+  # Related work placement
+  related_work_position: after_contribution  # NeurIPS/ICLR standard
+
+  # Section length targets (fraction of main text, excluding appendix)
+  section_ratios:
+    introduction: 0.12
+    background: 0.08
+    framework: 0.20
+    experiments: 0.30
+    discussion: 0.15
+    related_work: 0.10
+    conclusion: 0.05
+
+  # Appendix guidance
+  appendix:
+    - Full proofs (main text has proof sketches)
+    - Per-model detailed results tables
+    - Benchmark task specifications
+    - Experimental details (hyperparameters, compute)
+    - Additional ablations
+
+figures:
+  style: pub_style  # use shared pub_style.py system
+  max_per_page: 2
+  caption_style: self_contained  # readable without main text
+  caption_includes_takeaway: true  # "B7 shows no improvement, confirming Theorem 2"
+
+  # When to use which type
+  type_guidance:
+    bar_chart: "comparing discrete categories (tasks, models, conditions)"
+    line_chart: "trends over continuous variable (N, difficulty, model size)"
+    heatmap: "two-dimensional grid (model × task accuracy)"
+    scatter: "correlation between two continuous variables"
+
+  # Color
+  palette: okabe_ito  # colorblind-safe, defined in pub_style.py
+
+tables:
+  style: booktabs  # \toprule, \midrule, \bottomrule
+  max_columns: 8
+  highlight_best: bold
+  include_confidence_intervals: true
+  number_format: "3 decimal places for proportions, 2 for dollars"
+
+references:
+  min_count: 30
+  max_self_citation_ratio: 0.10
+  must_cite_recent: true  # at least 5 from last 12 months
+  style: natbib_round  # (Author, Year) format
+
+venue_overrides:
+  neurips:
+    page_limit: 9  # main content
+    checklist: required
+    anonymous: true
+  iclr:
+    page_limit: 9
+    checklist: required
+    anonymous: true
+  icml:
+    page_limit: 9
+    anonymous: true

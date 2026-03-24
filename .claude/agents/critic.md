@@ -195,6 +195,29 @@ After writing the review:
 - If **REVISE**: Update `spec.yaml` fields: `review.status: revision_requested`, plus the same reviewer/date/verdict_file fields.
 - If **REJECT**: Update `spec.yaml` fields: `review.status: rejected`, plus the same reviewer/date/verdict_file fields. Set `status: failed`.
 
+## Automated Style Check (Pre-Review)
+
+Before conducting your deep review of a paper, run the style checker:
+```bash
+python3 scripts/style-checker.py projects/{project}/paper/main.tex
+```
+
+Read the JSON output. It provides objective metrics on:
+- **Hedge density**: hedges per 1000 words (target: <5)
+- **Passive voice ratio**: (target: <0.20)
+- **Section length ratios**: compared to paper-style.yaml targets
+- **Banned phrases**: with line numbers
+- **Caption quality**: whether figure captions include takeaway statements
+- **Citation freshness**: % of references from last 2 years
+
+**How to use these metrics:**
+- If hedge density is high: include specific line numbers in your weaknesses
+- If a section is >150% of its target ratio: flag "Section X is too long (42% vs target 30%)"
+- If banned phrases exist: include them verbatim with line numbers
+- Don't report false positives — use judgment on what matters
+
+These metrics complement your subjective assessment. They catch mechanical issues so you can focus on substance: is the argument sound? Are the claims supported? Is this novel?
+
 ## Tools
 
 - **Read**: For reading the paper, experiments, results, and project files.

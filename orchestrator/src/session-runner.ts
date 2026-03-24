@@ -369,6 +369,52 @@ export class SessionRunner {
       );
     }
 
+    // Inject paper style for writer and editor agents
+    if (brief.agentType === "writer" || brief.agentType === "editor") {
+      // Load paper style YAML
+      try {
+        const stylePath = join(this.rootDir, "shared", "config", "paper-style.yaml");
+        const styleContent = await this.readOptional(stylePath);
+        if (styleContent) {
+          sections.push("# Paper Style Guide\n\n```yaml\n" + styleContent + "\n```\n");
+        }
+      } catch {}
+
+      // Detect section from brief objective and load section-specific guide
+      const sectionKeywords: Record<string, string> = {
+        "introduction": "introduction",
+        "intro": "introduction",
+        "background": "background",
+        "framework": "framework",
+        "theory": "framework",
+        "theorem": "framework",
+        "experiment": "experiments",
+        "result": "experiments",
+        "empirical": "experiments",
+        "discussion": "discussion",
+        "limitation": "discussion",
+        "future": "discussion",
+        "related work": "related-work",
+        "prior work": "related-work",
+        "literature": "related-work",
+        "conclusion": "discussion",  // conclusion is covered in discussion guide
+      };
+
+      const objectiveLower = (brief.objective || "").toLowerCase();
+      for (const [keyword, section] of Object.entries(sectionKeywords)) {
+        if (objectiveLower.includes(keyword)) {
+          try {
+            const guidePath = join(this.rootDir, "shared", "prompts", "sections", section + ".md");
+            const guideContent = await this.readOptional(guidePath);
+            if (guideContent) {
+              sections.push("# Section Guidance: " + section + "\n\n" + guideContent + "\n");
+            }
+          } catch {}
+          break;  // only inject one section guide
+        }
+      }
+    }
+
     // Brief-specific context — this is what makes planner sessions intelligent
     const briefParts: string[] = [];
     briefParts.push("# Session Objective\n");
