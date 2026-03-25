@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { readdir, readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { ProjectManager } from "./project-manager.js";
 import { GitEngine } from "./git-engine.js";
 import { SessionRunner, type SessionResult, type AgentType } from "./session-runner.js";
@@ -57,7 +58,8 @@ export class SessionManager {
     agentType: AgentType = "researcher",
     options?: { maxTurns?: number; maxDurationMs?: number },
   ): Promise<Session> {
-    const branch = "main";
+    const sessionId = randomUUID().slice(0, 8);
+    const branch = `agent/${projectName}/${sessionId}`;
     const requestedPath = join(this.rootDir, ".worktrees", projectName);
     const worktreePath = await this.gitEngine.createWorktree(requestedPath, branch);
 
@@ -137,7 +139,8 @@ export class SessionManager {
 
   /** Start a session using a planner-generated brief with specific objectives and constraints. */
   async startProjectWithBrief(brief: SessionBrief): Promise<Session> {
-    const branch = "main";
+    const sessionId = randomUUID().slice(0, 8);
+    const branch = `agent/${brief.projectName}/${sessionId}`;
     const requestedPath = join(this.rootDir, ".worktrees", brief.projectName);
     const worktreePath = await this.gitEngine.createWorktree(requestedPath, branch);
 
@@ -345,6 +348,14 @@ export class SessionManager {
     this.sessions.delete(projectName);
 
     await this.gitEngine.cleanupProjectWorktree(projectName);
+    // Clean up agent branch
+    if (session.branch && session.branch !== "main") {
+      try {
+        await this.gitEngine.deleteBranch(session.branch);
+      } catch {
+        // Branch may already be deleted or pushed to remote only
+      }
+    }
     console.log(`Stopped session for ${projectName}`);
   }
 

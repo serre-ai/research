@@ -479,8 +479,8 @@ export class SessionRunner {
       `4. Make frequent conventional commits: type(${brief.projectName}): description\n` +
       "5. Update status.yaml after significant progress\n" +
       "6. Log all decisions in decisions_made with date and rationale\n" +
-      "7. Push changes to remote regularly\n" +
-      "8. Create a PR to main when you reach a milestone\n\n" +
+      "7. Push changes to remote regularly (you are on a feature branch, not main)\n" +
+      "8. Do NOT merge to main — the daemon handles PR creation\n\n" +
       "Today's date is " + new Date().toISOString().split("T")[0] + ".",
     );
 
@@ -543,8 +543,8 @@ export class SessionRunner {
       `4. Make frequent conventional commits: type(${projectName}): description\n` +
       "5. Update status.yaml after significant progress\n" +
       "6. Log all decisions in decisions_made with date and rationale\n" +
-      "7. Push changes to remote regularly\n" +
-      "8. Create a PR to main when you reach a milestone\n\n" +
+      "7. Push changes to remote regularly (you are on a feature branch, not main)\n" +
+      "8. Do NOT merge to main — the daemon handles PR creation\n\n" +
       "Today's date is " + new Date().toISOString().split("T")[0] + ".",
     );
 
