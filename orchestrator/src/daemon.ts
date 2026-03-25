@@ -649,6 +649,26 @@ export class Daemon {
 
     if (availableSlots <= 0) return;
 
+    // Weekly research synthesis session
+    try {
+      const lastSynthesis = await this.getLastSynthesisRun();
+      const daysSinceSynthesis = (Date.now() - lastSynthesis) / (1000 * 60 * 60 * 24);
+      if (daysSinceSynthesis > 7 && availableSlots > 0) {
+        // Check we have enough new papers to warrant synthesis
+        const newPaperCount = await this.getNewPaperCount(lastSynthesis);
+        if (newPaperCount >= 10 || daysSinceSynthesis > 14) {
+          console.log("[Daemon] Scheduling weekly synthesis session (" + Math.round(daysSinceSynthesis) + "d since last, " + newPaperCount + " new papers)");
+          await this.runSynthesisSession();
+          await this.setLastSynthesisRun();
+          availableSlots--;
+        }
+      }
+    } catch (err) {
+      console.error("[Daemon] Synthesis scheduling error:", err);
+    }
+
+    if (availableSlots <= 0) return;
+
     if (this.planner) {
       // ---- Planner path ----
       const activeSet = new Set(this.activeSessions.keys());
@@ -1043,6 +1063,107 @@ export class Daemon {
     }
   }
 
+  private async getLastSynthesisRun(): Promise<number> {
+    if (!this.dbPool) return 0;
+    try {
+      const { rows } = await this.dbPool.query(
+        "SELECT value FROM planner_state WHERE project = '_platform' AND key = 'synthesis:last_run'"
+      );
+      if (rows.length > 0) {
+        const data = JSON.parse(rows[0].value as string);
+        return data.timestamp || 0;
+      }
+    } catch (err) {
+      console.error("[Daemon] Failed to read synthesis:last_run:", err);
+    }
+    return 0;
+  }
+
+  private async setLastSynthesisRun(): Promise<void> {
+    if (!this.dbPool) return;
+    await this.dbPool.query(
+      `INSERT INTO planner_state (project, key, value, updated_at)
+       VALUES ('_platform', 'synthesis:last_run', $1, NOW())
+       ON CONFLICT (project, key) DO UPDATE SET value = $1, updated_at = NOW()`,
+      [JSON.stringify({ timestamp: Date.now() })]
+    ).catch(() => {});
+  }
+
+  private async getNewPaperCount(since: number): Promise<number> {
+    if (!this.dbPool) return 0;
+    try {
+      const { rows } = await this.dbPool.query(
+        "SELECT COUNT(*) as count FROM lit_papers WHERE discovered_at > $1",
+        [new Date(since).toISOString()]
+      );
+      return parseInt(rows[0].count as string) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  private async runSynthesisSession(): Promise<void> {
+    // Gather recent paper metadata for context injection
+    let paperContext = "";
+    if (this.dbPool) {
+      try {
+        const { rows } = await this.dbPool.query(
+          `SELECT title, abstract, categories, citation_count, url, discovered_at
+           FROM lit_papers
+           ORDER BY discovered_at DESC
+           LIMIT 50`
+        );
+        const paperSummaries = rows.map((r: Record<string, unknown>, i: number) =>
+          `${i + 1}. "${r.title}" (citations: ${r.citation_count || 0})\n   Categories: ${JSON.stringify(r.categories)}\n   Abstract: ${(r.abstract as string || "").slice(0, 300)}...`
+        );
+        paperContext = "## Recent Papers\n" + paperSummaries.join("\n\n");
+      } catch (err) {
+        console.error("[Daemon] Failed to gather paper context for synthesis:", err);
+      }
+    }
+
+    const brief: SessionBrief = {
+      id: randomUUID().slice(0, 8),
+      projectName: "_platform",
+      agentType: "researcher",
+      objective: "Weekly research synthesis: run gap-detector, analyze recent papers, generate 3-5 scored idea candidates. " +
+        "Read docs/research-intelligence/grading-rubric.md for scoring criteria. " +
+        "Write results to ideas/candidates/ as YAML files following shared/templates/idea-candidate.yaml. " +
+        "If the gap-detector finds no gaps, generate ideas directly from the recent papers provided in context.",
+      context: {
+        claims: [],
+        contradictions: [],
+        files: [
+          "CLAUDE.md",
+          "docs/research-intelligence/grading-rubric.md",
+          "shared/templates/idea-candidate.yaml",
+          "docs/ideas/backlog.yaml",
+        ],
+        recentDecisions: [],
+        supplementary: paperContext || undefined,
+      },
+      constraints: {
+        maxTurns: 30,
+        maxDurationMs: 30 * 60 * 1000,
+        maxBudgetUsd: 3,
+        model: "claude-sonnet-4-6",
+      },
+      deliverables: [
+        { description: "3-5 scored idea candidates in ideas/candidates/YYYY-MM-DD.yaml", type: "status_update" as const, verificationMethod: "manual" as const },
+      ],
+      priority: 40,
+      reasoning: "Scheduled weekly synthesis session — gap detection and idea generation",
+      strategy: "quality_improvement" as const,
+    };
+
+    const session = await this.sessionManager.startProjectWithBrief(brief);
+
+    console.log("  Synthesis session: " + (session.status === "completed" ? "completed" : "failed"));
+    if (session.result) {
+      console.log("  Turns: " + session.result.turnsUsed + " | Cost: $" + session.result.costUsd.toFixed(2));
+    }
+  }
+
   private async cleanupSessions(): Promise<void> {
     for (const [name, tracker] of this.activeSessions) {
       if (tracker.settled) {
@@ -1101,7 +1222,6 @@ export class Daemon {
         projectName,
         agentType,
         result?.commitsCreated.length ?? 0,
-        result?.costUsd ?? 0,
       );
       this.recordFingerprint(projectName, fingerprint);
 
@@ -1266,7 +1386,6 @@ export class Daemon {
         brief.projectName,
         brief.agentType,
         session.result?.commitsCreated.length ?? 0,
-        session.result?.costUsd ?? 0,
       );
       this.recordFingerprint(brief.projectName, fingerprint);
 
@@ -1666,22 +1785,31 @@ export class Daemon {
   }
 
   private async checkQualityGate(projectName: string): Promise<void> {
-    const avg = this.getRecentQualityAvg(projectName, 5);
-    if (avg === undefined || avg >= 25) return;
+    const QUALITY_GATE_THRESHOLD = 20; // Based on actual data: avg=29, p25=15
+    const QUALITY_GATE_WINDOW = 5;
 
-    console.log(`Quality gate: ${projectName} avg quality ${avg.toFixed(0)}/100 — pausing project`);
+    const avg = this.getRecentQualityAvg(projectName, QUALITY_GATE_WINDOW);
+    if (avg === undefined || avg >= QUALITY_GATE_THRESHOLD) return;
+
+    console.log(`Quality gate: ${projectName} avg quality ${avg.toFixed(0)}/100 (threshold ${QUALITY_GATE_THRESHOLD}) — pausing project`);
 
     // Update in-memory project status
     try {
       await this.projectManager.updateProjectStatus(projectName, { status: "paused" });
-    } catch {}
+    } catch (err) {
+      console.error(`Quality gate: failed to pause ${projectName} in filesystem:`, err instanceof Error ? err.message : err);
+    }
 
     // Update in DB
     if (this.dbPool) {
-      await this.dbPool.query(
-        "UPDATE projects SET status = 'paused', updated_at = NOW() WHERE id = $1",
-        [projectName],
-      ).catch(() => {});
+      try {
+        await this.dbPool.query(
+          "UPDATE projects SET status = 'paused', updated_at = NOW() WHERE id = $1",
+          [projectName],
+        );
+      } catch (err) {
+        console.error(`Quality gate: failed to pause ${projectName} in DB:`, err instanceof Error ? err.message : err);
+      }
     }
 
     await this.logger.log({
@@ -1733,8 +1861,10 @@ export class Daemon {
     return last3[0] === last3[1] || last3[1] === last3[2] || last3[0] === last3[2];
   }
 
-  private computeSessionFingerprint(projectName: string, agentType: string, commitsCreated: number, costUsd: number): string {
-    const input = `${projectName}:${agentType}:${commitsCreated}:${costUsd.toFixed(2)}`;
+  private computeSessionFingerprint(projectName: string, agentType: string, commitsCreated: number): string {
+    // Coarse fingerprint: project + agent + commit count (cost excluded — too variable)
+    // This catches loops where the same agent type produces the same number of commits
+    const input = `${projectName}:${agentType}:${commitsCreated}`;
     return createHash("sha256").update(input).digest("hex").slice(0, 16);
   }
 

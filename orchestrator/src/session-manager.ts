@@ -204,15 +204,27 @@ export class SessionManager {
   }
 
   private hasMeaningfulChanges(files: string[]): boolean {
-    const NOISE_PATTERNS = [
-      /^\.deepwork\.heartbeat$/,
-      /^\.worktrees\//,
-      /^node_modules\//,
-      /\.log$/,
-      /^\.claude\/worktrees\//,
+    // Whitelist approach: a change is meaningful only if at least one file
+    // matches a known productive pattern. Everything else (status reports,
+    // session docs, strategist reviews) is considered noise.
+    const MEANINGFUL_PATTERNS = [
+      /\.tex$/, /\.bib$/,                    // Paper content
+      /\.py$/, /\.ts$/, /\.tsx$/, /\.js$/,   // Code
+      /\.sql$/, /\.csv$/, /\.jsonl$/,        // Data
+      /experiments\//, /benchmarks\//,        // Experiment results
+      /paper\//, /figures\//,                 // Paper artifacts
+      /\.yaml$/, /\.yml$/,                   // Config (includes status.yaml)
     ];
-    // A change is meaningful if at least one file doesn't match noise patterns
-    return files.some(f => !NOISE_PATTERNS.some(p => p.test(f)));
+    // Exclude status.yaml-only changes (just timestamp bumps)
+    const meaningfulFiles = files.filter(f => {
+      // Always noise
+      if (/^\.deepwork|^\.worktrees|^node_modules|\.log$|^\.claude\/worktrees/.test(f)) return false;
+      // Meaningful if matches whitelist
+      return MEANINGFUL_PATTERNS.some(p => p.test(f));
+    });
+    // If the only yaml file changed is status.yaml and nothing else, it's noise
+    if (meaningfulFiles.length === 1 && meaningfulFiles[0].endsWith('status.yaml')) return false;
+    return meaningfulFiles.length > 0;
   }
 
   private async detectSignals(worktreePath: string, result?: SessionResult): Promise<SessionSignals> {
@@ -307,11 +319,12 @@ export class SessionManager {
 
     const worktreeEngine = this.gitEngine.inDir(session.worktreePath);
 
-    // Check if pending changes are meaningful before deciding to push
+    // Check if there are any changes to commit
     const pendingFiles = await worktreeEngine.getPendingFiles();
-    const meaningful = this.hasMeaningfulChanges(pendingFiles);
 
-    if (meaningful) {
+    if (pendingFiles.length === 0) {
+      // Nothing to commit — skip entirely
+    } else if (this.hasMeaningfulChanges(pendingFiles)) {
       await worktreeEngine.commitAndPush(
         `chore(${projectName}): save session state`,
       );
