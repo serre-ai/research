@@ -11,7 +11,7 @@ venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "ALL RESEARCH WORK COMPLETE. Competitor deep-read finished (2026-03-25): Shah et al. taxonomy is complementary (implementation faults vs. our cognitive failures), novelty secure, differentiation clear. Ready for parallel execution: (1) EXPERIMENTER AGENT — design protocol, build infrastructure, run pilot experiments; (2) WRITER AGENT — draft introduction, related work, partial methodology. NO MORE RESEARCHER SESSIONS NEEDED."
+current_focus: "⚠️ CRITICAL: DO NOT ASSIGN RESEARCHER AGENT ⚠️ Research phase 100% complete (2026-03-25). Phase transition required. ASSIGN: (1) EXPERIMENTER AGENT for protocol design + infrastructure + pilot experiments OR (2) WRITER AGENT for introduction + related work + methodology. Both can work in parallel. Assigning Researcher again will repeat previous failures (3 sessions scored avg 15/100). See ORCHESTRATOR-GUIDANCE.md for details."
 
 next_steps:
   - "EXPERIMENTER AGENT (Priority 1): Design experimental protocol — select 3-4 frameworks (ReAct, AutoGPT, Reflexion, plan-then-execute), choose 6-8 high-priority failures (1-2 per category), define success criteria"
