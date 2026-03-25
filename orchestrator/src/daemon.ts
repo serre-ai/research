@@ -118,6 +118,7 @@ export class Daemon {
   private dispatchLog: ExternalDispatch[] = [];
   private qualityHistory = new Map<string, SessionQuality[]>();
   private sessionFingerprints = new Map<string, string[]>(); // last N output fingerprints per project
+  private lastStuckNotifyAt = new Map<string, number>();
   private lastKnownPhases = new Map<string, string>();
   private cycleCount = 0;
   private startedAt = 0;
@@ -683,6 +684,16 @@ export class Daemon {
 
         if (this.isProjectStuck(brief.projectName)) {
           console.log(`Skipping ${brief.projectName} — stuck (identical output in recent sessions)`);
+          const lastNotify = this.lastStuckNotifyAt.get(brief.projectName) ?? 0;
+          if (Date.now() - lastNotify > 6 * 60 * 60 * 1000) {
+            this.lastStuckNotifyAt.set(brief.projectName, Date.now());
+            await this.notifier.notify({
+              event: "Project Stuck",
+              project: brief.projectName,
+              summary: "Identical output in recent sessions — project skipped",
+              level: "warning",
+            });
+          }
           continue;
         }
 
@@ -1816,6 +1827,13 @@ export class Daemon {
       type: "session_quality",
       project: projectName,
       data: { event: "quality_gate", avgQuality: avg, threshold: 25, action: "paused" },
+    });
+
+    await this.notifier.notify({
+      event: "Quality Gate — Project Paused",
+      project: projectName,
+      summary: `Average quality ${avg.toFixed(0)}/100 over last ${QUALITY_GATE_WINDOW} sessions — project paused`,
+      level: "error",
     });
   }
 
