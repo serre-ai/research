@@ -1094,6 +1094,7 @@ export class Daemon {
       const result = session.result;
       const quality = this.assessQuality(session, agentType);
       this.recordQuality(projectName, quality);
+      await this.checkQualityGate(projectName);
 
       // Record fingerprint for stuck detection
       const fingerprint = this.computeSessionFingerprint(
@@ -1258,6 +1259,7 @@ export class Daemon {
       const session = await this.sessionManager.startProjectWithBrief(brief);
       const quality = this.assessQuality(session, brief.agentType);
       this.recordQuality(brief.projectName, quality);
+      await this.checkQualityGate(brief.projectName);
 
       // Record fingerprint for stuck detection
       const fingerprint = this.computeSessionFingerprint(
@@ -1661,6 +1663,32 @@ export class Daemon {
 
   getQualityHistory(projectName: string): SessionQuality[] {
     return this.qualityHistory.get(projectName) ?? [];
+  }
+
+  private async checkQualityGate(projectName: string): Promise<void> {
+    const avg = this.getRecentQualityAvg(projectName, 5);
+    if (avg === undefined || avg >= 25) return;
+
+    console.log(`Quality gate: ${projectName} avg quality ${avg.toFixed(0)}/100 — pausing project`);
+
+    // Update in-memory project status
+    try {
+      await this.projectManager.updateProjectStatus(projectName, { status: "paused" });
+    } catch {}
+
+    // Update in DB
+    if (this.dbPool) {
+      await this.dbPool.query(
+        "UPDATE projects SET status = 'paused', updated_at = NOW() WHERE id = $1",
+        [projectName],
+      ).catch(() => {});
+    }
+
+    await this.logger.log({
+      type: "session_quality",
+      project: projectName,
+      data: { event: "quality_gate", avgQuality: avg, threshold: 25, action: "paused" },
+    });
   }
 
   /**
