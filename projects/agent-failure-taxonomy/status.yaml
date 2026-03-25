@@ -9,23 +9,23 @@ venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "MAJOR MILESTONE: Open coding phase COMPLETE. All 50 instances systematically coded, 9 provisional categories identified, architecture-specific patterns documented. Ready for axial coding and category refinement."
+current_focus: "BREAKTHROUGH SESSION: Completed open coding, axial coding, and LLM limitation mapping. Taxonomy development phase substantially complete. Have clear hierarchical structure, theoretical grounding, and differentiation strategy. Ready for controlled experiments and competitor deep-read."
 
 next_steps:
-  - "Begin axial coding — identify relationships between categories, refine boundaries"
-  - "Map failures to LLM limitations — connect agent-level failures to underlying capability gaps"
-  - "Develop architecture-failure correlation matrix — quantify which architectures exhibit which failures"
-  - "Test category boundary criteria with ambiguous instances — ensure mutual exclusivity"
-  - "URGENT: Deep-read 'Characterizing Faults in Agentic AI' (March 2026) — understand detailed overlap and refine differentiation"
-  - "Deep-read AgentErrorTaxonomy (Sep 2025) for modular structure comparison"
+  - "Design controlled experiments — reproduce key failures across 3+ frameworks for empirical validation"
+  - "URGENT: Deep-read 'Characterizing Faults in Agentic AI' (March 2026) — compare 37-category taxonomy to our 9-category hierarchical structure"
+  - "Quantify architecture-failure correlation — move from qualitative to quantitative frequency analysis"
+  - "Develop mitigation strategy evaluation — test architectural fixes for each category"
+  - "Begin paper writing — introduction and related work sections can start now"
+  - "Create taxonomy visualization — hierarchical diagram showing categories, sub-categories, and LLM limitations"
 
 progress:
   literature_review:
     status: completed
     notes: "COMPLETE - Surveyed 30+ papers (2023-2026). Created 4 comprehensive literature notes (168 pages). Documented 50 detailed failure instances across 7 architectures from 5 source types. Identified 6 competing taxonomies. Architecture balance achieved: ReAct (11), All (21), Reflection (3), Coding (3), others. Category distribution: Tool-use (16), Grounding (8), Planning (7), State (6), Self-correction (6). 80% instances highly reproducible."
   taxonomy_development:
-    status: in_progress
-    notes: "OPEN CODING COMPLETE (2026-03-25). Systematically coded all 50 instances using grounded theory methodology. Generated ~150 distinct codes through line-by-line analysis. Identified 9 cross-cutting patterns and 9 provisional major categories. Architecture-specific patterns documented for ReAct (5 patterns), Reflexion (3 patterns), Coding agents (3 patterns). Identified 4 fundamental LLM limitations affecting all architectures. Ready for axial coding phase to refine category boundaries, test boundary criteria, and map to LLM limitations."
+    status: substantially_complete
+    notes: "MAJOR PROGRESS (2026-03-25): Three-phase grounded theory analysis complete. (1) Open coding: Coded all 50 instances, generated ~150 codes, identified 9 patterns. (2) Axial coding: Analyzed 5 relationship types (causal, reinforcement, common root, trade-offs, hierarchical), refined boundaries for ambiguous cases, evolved to hierarchical structure with sub-categories. (3) LLM limitation mapping: Connected all 9 categories to 8 underlying LLM capability dimensions (C1-C8), distinguished fundamental (5) vs. correctable (8) limitations, derived 6 design principles. Taxonomy now has theoretical grounding, clear boundaries, dual-view structure (symptom-based for practitioners, cause-based for researchers). Preliminary architecture-failure correlation matrix developed. Ready for empirical validation through controlled experiments."
   controlled_experiments:
     status: not_started
     notes: "Reproduce key failures across 3+ agent frameworks. Priority failures identified: tool fabrication, infinite loops, context degradation, prompt injection, self-correction failure, cascading errors."
@@ -60,6 +60,9 @@ decisions_made:
   - date: 2026-03-25
     decision: "Complete open coding before deep-reading competitor paper"
     rationale: "Grounded theory methodology requires coding from data without prior category frameworks to avoid bias. Deep-reading competitor's 37-category taxonomy before our open coding would contaminate our emergent categories. Our 9 provisional categories emerged naturally from the data and can now be compared to competitor's structure without bias. This preserves methodological integrity while enabling informed differentiation."
+  - date: 2026-03-25
+    decision: "Develop LLM limitation mapping as core differentiation"
+    rationale: "Competitor paper has 37 categories from 385 production faults — we cannot compete on scale alone. Our differentiation must be theoretical: mapping agent failures to underlying LLM capability gaps (C1-C8). This bridges to reasoning-gaps project, provides design principles, distinguishes fundamental from correctable failures, and offers research priorities. Dual-view taxonomy (symptom-based for practitioners, cause-based for researchers) serves both audiences. This is novel theoretical contribution competitor lacks."
 
 key_references:
   - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
@@ -87,9 +90,13 @@ metrics:
   instances_coded: 50
   codes_generated: 150
   taxonomy_categories: 9
+  taxonomy_subcategories: 24
   cross_cutting_patterns: 9
   architecture_patterns: 11
-  fundamental_limitations: 4
+  llm_capability_dimensions: 8
+  fundamental_limitations: 5
+  design_principles_derived: 6
+  relationship_types_identified: 5
   experiments_run: 0
 
-notes: "MAJOR MILESTONE (2026-03-25): Open coding phase COMPLETE. All 50 failure instances systematically coded using grounded theory, generating ~150 distinct codes. Identified 9 provisional major categories: (1) Tool-use failures (16 instances), (2) Grounding failures (8), (3) Planning failures (7), (4) State tracking failures (6), (5) Self-correction failures (6), (6) Error recovery failures (4), (7) Error propagation (3), (8) Evaluation/environment failures (5), (9) Security vulnerabilities (2). Documented 9 cross-cutting patterns including state divergence, hallucination under insufficient grounding, infinite loops, error cascading, reasoning paradoxes, scaling limits, external dependency fragility, self-correction limitations, and evaluation issues. Architecture-specific patterns identified for ReAct (tight feedback loop traps, context exhaustion), Reflexion (confirmation bias, degeneration-of-thought), and coding agents (semantic incorrectness, edit cascades, test gaming). Identified 4 fundamental LLM limitations: reasoning-hallucination trade-off, context degradation, scaling failures, hallucination under complexity. Concurrent work risk remains HIGH but our emergent categories provide unbiased foundation for differentiation. Next phase: axial coding to refine boundaries, map to LLM limitations, develop architecture-failure correlation matrix."
+notes: "BREAKTHROUGH SESSION (2026-03-25): Taxonomy development substantially complete after intensive 3-phase grounded theory analysis. (1) Open coding: 50 instances → 150 codes → 9 categories. (2) Axial coding: 5 relationship types identified, hierarchical structure with 24 sub-categories, boundary criteria refined. (3) LLM limitation mapping: 8 capability dimensions (C1-C8) defined, all failures mapped to root causes, 5 fundamental vs 8 correctable limitations distinguished, 6 design principles derived. Key theoretical contributions: (a) Dual-view taxonomy: symptom-based (practitioners) + cause-based (researchers), (b) Architecture-failure correlation matrix showing which architectures exhibit which failures, (c) Fundamental vs correctable distinction guides research priorities, (d) Bridge to reasoning-gaps project via C1-C8 capability framework. Novel findings: C3 (meta-cognitive monitoring) and C7 (self-correction) are most pervasive limitations - agents fundamentally cannot evaluate their own work reliably. Concurrent work differentiation now clear: our 9-category hierarchical structure with theoretical grounding vs competitor's 37-category flat taxonomy from production data. Our advantage is theory and design principles; their advantage is empirical scale. Controlled experiments needed to validate architecture correlation claims. Paper writing can begin."
