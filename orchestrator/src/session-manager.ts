@@ -16,6 +16,7 @@ export interface SessionSignals {
   experimentSpecPath?: string;
   experimentSpecApproved?: boolean;
   experimentSpecRevisionRequested?: boolean;
+  pushSkipped?: boolean;
 }
 
 export interface Session {
@@ -202,6 +203,18 @@ export class SessionManager {
     return session;
   }
 
+  private hasMeaningfulChanges(files: string[]): boolean {
+    const NOISE_PATTERNS = [
+      /^\.deepwork\.heartbeat$/,
+      /^\.worktrees\//,
+      /^node_modules\//,
+      /\.log$/,
+      /^\.claude\/worktrees\//,
+    ];
+    // A change is meaningful if at least one file doesn't match noise patterns
+    return files.some(f => !NOISE_PATTERNS.some(p => p.test(f)));
+  }
+
   private async detectSignals(worktreePath: string, result?: SessionResult): Promise<SessionSignals> {
     const signals: SessionSignals = {
       commitsCreated: result?.commitsCreated.length ?? 0,
@@ -293,9 +306,25 @@ export class SessionManager {
     if (!session) return;
 
     const worktreeEngine = this.gitEngine.inDir(session.worktreePath);
-    await worktreeEngine.commitAndPush(
-      `chore(${projectName}): save session state`,
-    );
+
+    // Check if pending changes are meaningful before deciding to push
+    const pendingFiles = await worktreeEngine.getPendingFiles();
+    const meaningful = this.hasMeaningfulChanges(pendingFiles);
+
+    if (meaningful) {
+      await worktreeEngine.commitAndPush(
+        `chore(${projectName}): save session state`,
+      );
+    } else {
+      // Still commit locally, but skip the push
+      await worktreeEngine.commitAll(
+        `chore(${projectName}): save session state`,
+      );
+      console.log(`[commit-gate] Skipping push for ${projectName} — no meaningful changes (${pendingFiles.length} noise-only files)`);
+      if (session.signals) {
+        session.signals.pushSkipped = true;
+      }
+    }
 
     if (session.status === "running") {
       session.status = "completed";

@@ -173,6 +173,16 @@ export class GitEngine {
     }
   }
 
+  /** List files with uncommitted changes (staged + unstaged). */
+  async getPendingFiles(): Promise<string[]> {
+    try {
+      const output = await this.git("status", "--porcelain");
+      return output.split("\n").filter(Boolean).map(line => line.slice(3).trim());
+    } catch {
+      return [];
+    }
+  }
+
   // ── Commit operations ──────────────────────────────────────
 
   async stageAll(): Promise<void> {
