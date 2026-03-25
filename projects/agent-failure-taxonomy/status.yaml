@@ -4,25 +4,25 @@ status: active
 phase: research
 confidence: 0.5
 created: "2026-03-10"
-updated: "2026-03-24"
+updated: "2026-03-25"
 venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "Literature survey in progress — documented 10 failure instances, surveyed 20+ papers, identified existing taxonomies"
+current_focus: "Literature survey accelerating — documented 25 failure instances, surveyed 30+ papers including critical March 2026 competitor. Concurrent work risk elevated to HIGH."
 
 next_steps:
-  - "Continue failure instance collection — target 40 more instances (total 50 for initial open coding)"
-  - "Deep-read existing taxonomy papers (MAST, DEFT, three-phase taxonomy) for detailed failure definitions"
-  - "Collect more GitHub issues from LangChain, AutoGPT, CrewAI repositories"
-  - "Search for plan-then-execute and tree-of-thought specific failures"
-  - "Begin preliminary open coding of first 10 instances — identify initial codes"
-  - "Create synthesis note on existing taxonomies and coverage gaps"
+  - "URGENT: Deep-read 'Characterizing Faults in Agentic AI' (March 2026) — 37 categories, 385 faults, direct competition"
+  - "Continue failure instance collection — target 25 more instances (total 50 for initial open coding)"
+  - "Deep-read AgentErrorTaxonomy (Sep 2025) and Reasoning Trap (Oct 2025) papers"
+  - "Collect more LangChain GitHub issues and benchmark-specific failures (WebArena, SWE-bench)"
+  - "Search for ReAct-specific and reflection/self-correction failures (architectural balance)"
+  - "Begin preliminary open coding once 50 instances reached"
 
 progress:
   literature_review:
     status: in_progress
-    notes: "Surveyed 20+ papers and sources. Created 2 comprehensive literature notes covering seed papers, benchmarks, production failures, and architecture-specific issues. Documented 10 detailed failure instances. Identified 4 existing taxonomies (MAST, DEFT, three-phase, system-level)."
+    notes: "Surveyed 30+ papers including 10+ from 2025-2026. Created 4 comprehensive literature notes. Documented 25 detailed failure instances from production (AutoGPT, CrewAI) and research. Identified 6 existing/concurrent taxonomies including critical March 2026 competitor (37 categories, 385 real-world faults). Key findings: reasoning-hallucination paradox, error cascade amplification, false completion reporting, memory persistence of errors."
   taxonomy_development:
     status: not_started
     notes: "Grounded theory methodology — ready to begin open coding with first 10 instances. Will expand to 50 instances before axial coding."
@@ -51,6 +51,12 @@ decisions_made:
   - date: 2026-03-24
     decision: "Include evaluation/environment failures in taxonomy"
     rationale: "WebArena dropdown issue shows some 'agent failures' are actually environment limitations. Important to distinguish agent vs. evaluation failures — helps practitioners understand whether to fix agent or evaluation infrastructure."
+  - date: 2026-03-25
+    decision: "Elevate concurrent work risk to HIGH and revise differentiation strategy"
+    rationale: "March 2026 paper 'Characterizing Faults in Agentic AI' (37 categories, 385 real-world faults) is direct competition. Must clearly differentiate through: (1) architecture-failure correlation with controlled experiments, (2) LLM limitation mapping bridging to reasoning-gaps project, (3) production vs. benchmark failure comparison, (4) hierarchical structure with explicit boundary criteria. Monitor arXiv weekly for additional concurrent work."
+  - date: 2026-03-25
+    decision: "Accelerate controlled experiments to establish empirical differentiation"
+    rationale: "With comprehensive taxonomies now published, our unique contribution must be empirical: quantitative frequency analysis across architectures, controlled reproduction validation, and architecture selection guidance. Cannot rely on taxonomy alone for novelty."
 
 key_references:
   - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
@@ -59,18 +65,23 @@ key_references:
   - "Zhou et al. (2023) - WebArena: A Realistic Web Environment for Building Autonomous Agents"
   - "Yang et al. (2024) - SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering [NeurIPS]"
   - "Cemri et al. (2025) - Why Do Multi-Agent LLM Systems Fail? [MAST taxonomy]"
-  - "(2025) - Exploring Autonomous Agents: Three-Phase Failure Taxonomy"
-  - "(2024) - DEFT: Deep Research Failure Taxonomy"
+  - "(2025) - Exploring Autonomous Agents: Three-Phase Failure Taxonomy [arXiv:2508.13143]"
+  - "(2024) - DEFT: Deep Research Failure Taxonomy [arXiv:2512.01948]"
+  - "(2025) - Where LLM Agents Fail and How They Can Learn [AgentErrorTaxonomy, arXiv:2509.25370]"
+  - "(2025) - The Reasoning Trap: How Enhancing LLM Reasoning Amplifies Tool Hallucination [arXiv:2510.22977]"
+  - "(2026) - Characterizing Faults in Agentic AI [arXiv:2603.06847] — CRITICAL COMPETITOR"
+  - "(2026) - From Spark to Fire: Modeling Error Cascades in Multi-Agent Collaboration [arXiv:2603.04474]"
+  - "(2026) - Why Do LLM-based Web Agents Fail? Hierarchical Planning Perspective [arXiv:2603.14248]"
 
 git:
   branch: "main"
-  latest_commit: "e2a76db"
+  latest_commit: "e1fce70"
   open_prs: []
 
 metrics:
-  papers_reviewed: 20
-  failures_collected: 10
+  papers_reviewed: 30
+  failures_collected: 25
   taxonomy_categories: 8
   experiments_run: 0
 
-notes: "Strong progress on literature survey. Identified clear differentiation from existing taxonomies: we focus on single-agent (MAST covers multi-agent), cross-architecture comparison (DEFT is domain-specific), hierarchical structure with LLM limitation mapping, and controlled reproduction. Concurrent work risk is MODERATE — active area but our approach is distinctive. Next session should continue instance collection to reach 50 instances, then begin open coding."
+notes: "Excellent progress on literature survey. Surveyed 30+ papers including critical March 2026 competitor with 37 categories and 385 real-world faults. Documented 25 failure instances (15 new this session) from production systems and research. Concurrent work risk elevated to HIGH. Clear differentiation strategy: (1) architecture-failure correlation via controlled experiments, (2) LLM limitation mapping, (3) production vs. benchmark comparison, (4) hierarchical structure with boundary criteria. Key findings: reasoning-hallucination paradox (better reasoning → more tool hallucination), error cascade amplification in multi-agent and memory systems, false completion reporting creates persistent false states. Next session: deep-read March 2026 competitor, continue to 50 instances, begin open coding."
