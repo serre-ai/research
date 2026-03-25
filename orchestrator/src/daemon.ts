@@ -41,14 +41,15 @@ export interface DaemonConfig {
 }
 
 const DEFAULT_CONFIG: DaemonConfig = {
-  pollIntervalMs: 30 * 60 * 1000,
-  maxConcurrentSessions: 2,
+  pollIntervalMs: 60 * 60 * 1000,  // 60 min default (was 30)
+  maxConcurrentSessions: 1,          // 1 session at a time (was 2)
   dailyBudgetUsd: 40,
   rootDir: process.cwd(),
 };
 
 const MAX_SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour hard limit
 const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 min before retry
+const MAX_SESSIONS_PER_DAY = 20; // Hard cap on total sessions per day (all types)
 
 interface SessionTracker {
   promise: Promise<unknown>;
@@ -499,6 +500,22 @@ export class Daemon {
     } catch (err) {
       console.error("Failed to sync to remote:", err instanceof Error ? err.message : err);
       // Non-fatal — continue with potentially stale data
+    }
+
+    // Check daily session cap
+    if (this.dbPool) {
+      try {
+        const { rows } = await this.dbPool.query(
+          "SELECT count(*) as cnt FROM sessions WHERE started_at > NOW() - INTERVAL '24 hours'"
+        );
+        const todaySessions = parseInt(rows[0]?.cnt ?? '0', 10);
+        if (todaySessions >= MAX_SESSIONS_PER_DAY) {
+          console.log(`Daily session cap reached (${todaySessions}/${MAX_SESSIONS_PER_DAY}) — skipping cycle`);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to check daily session count:", err instanceof Error ? err.message : err);
+      }
     }
 
     // Check budget before doing anything
