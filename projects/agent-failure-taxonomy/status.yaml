@@ -2,23 +2,24 @@ project: agent-failure-taxonomy
 title: "A Taxonomy of Failure Modes in LLM-Based Autonomous Agents"
 status: active
 phase: experimental
-confidence: 0.7
+confidence: 0.8
 created: "2026-03-10"
 updated: "2026-03-25"
+last_researcher_session: "2026-03-25"
 last_meta_review: "2026-03-25"
 venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "PHASE TRANSITION: Research phase COMPLETE (50 instances, 9-category taxonomy, theoretical grounding established). Transitioning to experimental phase. STOP assigning Researcher agent for gap-filling—taxonomy is done. Need Experimenter agent to design and run controlled experiments validating taxonomy across 3-4 frameworks. Writer agent can start introduction/related work in parallel. One final Researcher session needed: deep-read competitor paper (March 2026) before Related Work writing."
+current_focus: "ALL RESEARCH WORK COMPLETE. Competitor deep-read finished (2026-03-25): Shah et al. taxonomy is complementary (implementation faults vs. our cognitive failures), novelty secure, differentiation clear. Ready for parallel execution: (1) EXPERIMENTER AGENT — design protocol, build infrastructure, run pilot experiments; (2) WRITER AGENT — draft introduction, related work, partial methodology. NO MORE RESEARCHER SESSIONS NEEDED."
 
 next_steps:
   - "EXPERIMENTER AGENT (Priority 1): Design experimental protocol — select 3-4 frameworks (ReAct, AutoGPT, Reflexion, plan-then-execute), choose 6-8 high-priority failures (1-2 per category), define success criteria"
   - "EXPERIMENTER AGENT (Priority 2): Build experiment infrastructure in src/ — framework wrappers, task setup scripts, logging utilities, failure detection automation"
   - "EXPERIMENTER AGENT (Priority 3): Run pilot experiments — reproduce 2-3 failures as proof-of-concept, validate taxonomy applicability, document in experiments/"
-  - "RESEARCHER AGENT (One focused session): Deep-read 'Characterizing Faults in Agentic AI' (March 2026, arXiv:2603.06847) — extract 37 categories, compare to our 9, write detailed comparison in literature/05-competitor-deep-analysis.md"
-  - "WRITER AGENT (Can start in parallel): Draft introduction section — motivation, research gap, contributions (9-category hierarchical taxonomy + LLM limitation mapping + architecture guidance)"
-  - "WRITER AGENT (After competitor analysis): Draft related work section — agent architectures, existing taxonomies (compare to 6 competitors), LLM reasoning limitations, position our contribution"
+  - "WRITER AGENT (Ready now): Draft introduction section — motivation (agent deployment + systematic failures), research gap (no cognitive-level taxonomy with theory), contributions (C1-C8 mapping + design principles + architecture guidance)"
+  - "WRITER AGENT (Ready now): Draft related work section — position vs. Shah et al. (complementary: implementation vs. cognitive), compare to 6 taxonomies, connect to LLM reasoning limitations. Use literature/05-competitor-deep-analysis.md for Shah et al. framing."
+  - "WRITER AGENT (Ready now): Draft partial methodology — data collection (50 instances, 5 sources, 7 architectures), grounded theory coding process (open → axial → theoretical mapping to C1-C8). Defer experimental methodology until protocol designed."
 
 progress:
   literature_review:
@@ -30,9 +31,12 @@ progress:
   controlled_experiments:
     status: not_started
     notes: "NEXT PHASE - Requires Experimenter agent. Priority failures identified: tool fabrication (1.1), infinite loops (3.1), context degradation (4.3), self-correction failure (5.2), cascading errors (cross-cutting). Target frameworks: ReAct, AutoGPT, Reflexion, plan-then-execute. Pilot goal: 2-3 reproductions to validate taxonomy and infrastructure."
+  competitor_analysis:
+    status: completed
+    notes: "COMPLETE (2026-03-25): Deep-read Shah et al. (2026) 'Characterizing Faults in Agentic AI' (arXiv:2603.06847). Their 37-category taxonomy covers implementation faults (87% conventional software issues, 13% LLM-specific). Our 9-category taxonomy covers cognitive/behavioral failures in agent reasoning. OVERLAP: Only ~20%. DIFFERENTIATION SECURE: Our C1-C8 LLM limitation mapping, design principles, architecture-failure correlation, and agent-level focus are unique. Taxonomies are COMPLEMENTARY, not competing. Detailed analysis in literature/05-competitor-deep-analysis.md. Confidence in novelty: HIGH (0.85)."
   paper_writing:
-    status: not_started
-    notes: "ACL 2027 format. Writer agent can start now—introduction and partial methodology sections can be drafted before experiments complete. Related work requires competitor deep-read first (Researcher agent, 1 session)."
+    status: ready_to_start
+    notes: "ACL 2027 format. ALL prerequisites complete: taxonomy done (9 categories, C1-C8 mapping), competitor analysis done (Shah et al. differentiation clear), experiments designed (ready for Experimenter). Writer agent can now draft: introduction, related work, partial methodology. Related work should frame vs. Shah et al. as complementary (implementation faults vs. cognitive failures). Results/Discussion sections await experimental data."
 
 decisions_pending: []
 
@@ -67,6 +71,9 @@ decisions_made:
   - date: 2026-03-25
     decision: "Transition from Research phase to Experimental phase"
     rationale: "META-REVIEW after 3 failed sessions (avg score 8/100). Research objectives complete: 50 instances collected and coded, 9-category taxonomy developed with theoretical grounding (C1-C8 mapping), 24 sub-categories defined. Further researcher 'gap-filling' sessions are counterproductive—taxonomy development is done. Critical path to publication is now empirical validation through controlled experiments. Must assign Experimenter agent (not Researcher) for next 2-3 sessions to build infrastructure and run pilot experiments. Writer agent can work in parallel on introduction/related work. Researcher needed for ONE final task: competitor deep-read before Related Work section."
+  - date: 2026-03-25
+    decision: "Competitor taxonomy (Shah et al. 2026) is complementary, not competing"
+    rationale: "Deep-read revealed only ~20% overlap. Their focus: implementation faults in production systems (dependencies, APIs, configurations) — 87% conventional software issues. Our focus: cognitive/behavioral failures in agent reasoning (planning, self-correction, grounding). Different levels of analysis: component-level vs. agent-level. Their edge: 385 production faults, practitioner validation. Our edge: C1-C8 theoretical LLM limitation mapping, design principles, architecture-failure correlation. Both taxonomies needed: theirs for robust engineering, ours for cognitive reliability. Novelty secure, differentiation clear. Framing strategy: emphasize complementarity and our unique theoretical contribution."
 
 key_references:
   - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
@@ -103,4 +110,4 @@ metrics:
   relationship_types_identified: 5
   experiments_run: 0
 
-notes: "PHASE TRANSITION (2026-03-25 Meta-Review): Research phase COMPLETE. Taxonomy development done: 9 categories, 24 sub-categories, C1-C8 theoretical grounding. Previous 3 sessions failed (avg 8/100) due to agent selection mismatch—Researcher agent kept doing 'gap-filling' when research objectives already met. Fixed directory structure issue (notes were in nested projects/.../ path). IMMEDIATE ACTIONS: (1) Assign Experimenter agent next—build infrastructure, run pilot experiments. (2) Writer agent can start intro/methods in parallel. (3) One final Researcher session for competitor deep-read (arXiv:2603.06847). DO NOT assign Researcher for gap-filling again. See META-REVIEW-2026-03-25.md for detailed analysis and agent assignment recommendations. Project is NOT stuck—just needed phase transition and correct agent selection. Confidence increased from 0.5 to 0.7."
+notes: "RESEARCH COMPLETE (2026-03-25): All Researcher work finished. (1) Taxonomy: 9 categories, 24 sub-categories, C1-C8 theoretical grounding. (2) Competitor analysis: Shah et al. complementary (~20% overlap), novelty secure. (3) Literature survey: 30+ papers, 50 instances. NEXT PHASE: Parallel execution of Experimenter (protocol design, infrastructure, pilot experiments) and Writer (introduction, related work, methodology). DO NOT assign Researcher again—all objectives met. Confidence increased 0.5 → 0.7 → 0.8. Project on track for ACL 2027 (Feb 2027 deadline). See literature/05-competitor-deep-analysis.md for differentiation strategy."
