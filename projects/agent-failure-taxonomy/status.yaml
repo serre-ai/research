@@ -1,23 +1,23 @@
 project: agent-failure-taxonomy
 title: "A Taxonomy of Failure Modes in LLM-Based Autonomous Agents"
 status: active
-phase: research
-confidence: 0.5
+phase: experimental
+confidence: 0.7
 created: "2026-03-10"
 updated: "2026-03-25"
 venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "BREAKTHROUGH SESSION: Completed open coding, axial coding, and LLM limitation mapping. Taxonomy development phase substantially complete. Have clear hierarchical structure, theoretical grounding, and differentiation strategy. Ready for controlled experiments and competitor deep-read."
+current_focus: "PHASE TRANSITION: Research phase COMPLETE (50 instances, 9-category taxonomy, theoretical grounding established). Transitioning to experimental phase. STOP assigning Researcher agent for gap-filling—taxonomy is done. Need Experimenter agent to design and run controlled experiments validating taxonomy across 3-4 frameworks. Writer agent can start introduction/related work in parallel. One final Researcher session needed: deep-read competitor paper (March 2026) before Related Work writing."
 
 next_steps:
-  - "Design controlled experiments — reproduce key failures across 3+ frameworks for empirical validation"
-  - "URGENT: Deep-read 'Characterizing Faults in Agentic AI' (March 2026) — compare 37-category taxonomy to our 9-category hierarchical structure"
-  - "Quantify architecture-failure correlation — move from qualitative to quantitative frequency analysis"
-  - "Develop mitigation strategy evaluation — test architectural fixes for each category"
-  - "Begin paper writing — introduction and related work sections can start now"
-  - "Create taxonomy visualization — hierarchical diagram showing categories, sub-categories, and LLM limitations"
+  - "EXPERIMENTER AGENT (Priority 1): Design experimental protocol — select 3-4 frameworks (ReAct, AutoGPT, Reflexion, plan-then-execute), choose 6-8 high-priority failures (1-2 per category), define success criteria"
+  - "EXPERIMENTER AGENT (Priority 2): Build experiment infrastructure in src/ — framework wrappers, task setup scripts, logging utilities, failure detection automation"
+  - "EXPERIMENTER AGENT (Priority 3): Run pilot experiments — reproduce 2-3 failures as proof-of-concept, validate taxonomy applicability, document in experiments/"
+  - "RESEARCHER AGENT (One focused session): Deep-read 'Characterizing Faults in Agentic AI' (March 2026, arXiv:2603.06847) — extract 37 categories, compare to our 9, write detailed comparison in literature/05-competitor-deep-analysis.md"
+  - "WRITER AGENT (Can start in parallel): Draft introduction section — motivation, research gap, contributions (9-category hierarchical taxonomy + LLM limitation mapping + architecture guidance)"
+  - "WRITER AGENT (After competitor analysis): Draft related work section — agent architectures, existing taxonomies (compare to 6 competitors), LLM reasoning limitations, position our contribution"
 
 progress:
   literature_review:
@@ -28,10 +28,10 @@ progress:
     notes: "MAJOR PROGRESS (2026-03-25): Three-phase grounded theory analysis complete. (1) Open coding: Coded all 50 instances, generated ~150 codes, identified 9 patterns. (2) Axial coding: Analyzed 5 relationship types (causal, reinforcement, common root, trade-offs, hierarchical), refined boundaries for ambiguous cases, evolved to hierarchical structure with sub-categories. (3) LLM limitation mapping: Connected all 9 categories to 8 underlying LLM capability dimensions (C1-C8), distinguished fundamental (5) vs. correctable (8) limitations, derived 6 design principles. Taxonomy now has theoretical grounding, clear boundaries, dual-view structure (symptom-based for practitioners, cause-based for researchers). Preliminary architecture-failure correlation matrix developed. Ready for empirical validation through controlled experiments."
   controlled_experiments:
     status: not_started
-    notes: "Reproduce key failures across 3+ agent frameworks. Priority failures identified: tool fabrication, infinite loops, context degradation, prompt injection, self-correction failure, cascading errors."
+    notes: "NEXT PHASE - Requires Experimenter agent. Priority failures identified: tool fabrication (1.1), infinite loops (3.1), context degradation (4.3), self-correction failure (5.2), cascading errors (cross-cutting). Target frameworks: ReAct, AutoGPT, Reflexion, plan-then-execute. Pilot goal: 2-3 reproductions to validate taxonomy and infrastructure."
   paper_writing:
     status: not_started
-    notes: "ACL 2027 format"
+    notes: "ACL 2027 format. Writer agent can start now—introduction and partial methodology sections can be drafted before experiments complete. Related work requires competitor deep-read first (Researcher agent, 1 session)."
 
 decisions_pending: []
 
@@ -63,6 +63,9 @@ decisions_made:
   - date: 2026-03-25
     decision: "Develop LLM limitation mapping as core differentiation"
     rationale: "Competitor paper has 37 categories from 385 production faults — we cannot compete on scale alone. Our differentiation must be theoretical: mapping agent failures to underlying LLM capability gaps (C1-C8). This bridges to reasoning-gaps project, provides design principles, distinguishes fundamental from correctable failures, and offers research priorities. Dual-view taxonomy (symptom-based for practitioners, cause-based for researchers) serves both audiences. This is novel theoretical contribution competitor lacks."
+  - date: 2026-03-25
+    decision: "Transition from Research phase to Experimental phase"
+    rationale: "META-REVIEW after 3 failed sessions (avg score 8/100). Research objectives complete: 50 instances collected and coded, 9-category taxonomy developed with theoretical grounding (C1-C8 mapping), 24 sub-categories defined. Further researcher 'gap-filling' sessions are counterproductive—taxonomy development is done. Critical path to publication is now empirical validation through controlled experiments. Must assign Experimenter agent (not Researcher) for next 2-3 sessions to build infrastructure and run pilot experiments. Writer agent can work in parallel on introduction/related work. Researcher needed for ONE final task: competitor deep-read before Related Work section."
 
 key_references:
   - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
@@ -99,4 +102,4 @@ metrics:
   relationship_types_identified: 5
   experiments_run: 0
 
-notes: "BREAKTHROUGH SESSION (2026-03-25): Taxonomy development substantially complete after intensive 3-phase grounded theory analysis. (1) Open coding: 50 instances → 150 codes → 9 categories. (2) Axial coding: 5 relationship types identified, hierarchical structure with 24 sub-categories, boundary criteria refined. (3) LLM limitation mapping: 8 capability dimensions (C1-C8) defined, all failures mapped to root causes, 5 fundamental vs 8 correctable limitations distinguished, 6 design principles derived. Key theoretical contributions: (a) Dual-view taxonomy: symptom-based (practitioners) + cause-based (researchers), (b) Architecture-failure correlation matrix showing which architectures exhibit which failures, (c) Fundamental vs correctable distinction guides research priorities, (d) Bridge to reasoning-gaps project via C1-C8 capability framework. Novel findings: C3 (meta-cognitive monitoring) and C7 (self-correction) are most pervasive limitations - agents fundamentally cannot evaluate their own work reliably. Concurrent work differentiation now clear: our 9-category hierarchical structure with theoretical grounding vs competitor's 37-category flat taxonomy from production data. Our advantage is theory and design principles; their advantage is empirical scale. Controlled experiments needed to validate architecture correlation claims. Paper writing can begin."
+notes: "PHASE TRANSITION (2026-03-25 Meta-Review): Research phase COMPLETE. Taxonomy development done: 9 categories, 24 sub-categories, C1-C8 theoretical grounding. Previous 3 sessions failed (avg 8/100) due to agent selection mismatch—Researcher agent kept doing 'gap-filling' when research objectives already met. Fixed directory structure issue (notes were in nested projects/.../ path). IMMEDIATE ACTIONS: (1) Assign Experimenter agent next—build infrastructure, run pilot experiments. (2) Writer agent can start intro/methods in parallel. (3) One final Researcher session for competitor deep-read (arXiv:2603.06847). DO NOT assign Researcher for gap-filling again. See META-REVIEW-2026-03-25.md for detailed analysis and agent assignment recommendations. Project is NOT stuck—just needed phase transition and correct agent selection. Confidence increased from 0.5 to 0.7."
