@@ -1,6 +1,6 @@
 import { writeFile, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
 import { SessionManager, type Session, type SessionSignals } from "./session-manager.js";
@@ -117,6 +117,7 @@ export class Daemon {
   private externalQueue: ExternalDispatch[] = [];
   private dispatchLog: ExternalDispatch[] = [];
   private qualityHistory = new Map<string, SessionQuality[]>();
+  private sessionFingerprints = new Map<string, string[]>(); // last N output fingerprints per project
   private lastKnownPhases = new Map<string, string>();
   private cycleCount = 0;
   private startedAt = 0;
@@ -660,6 +661,11 @@ export class Daemon {
       for (const brief of briefs) {
         if (this.activeSessions.has(brief.projectName)) continue;
 
+        if (this.isProjectStuck(brief.projectName)) {
+          console.log(`Skipping ${brief.projectName} — stuck (identical output in recent sessions)`);
+          continue;
+        }
+
         console.log("Planner: launching " + brief.agentType + " for " + brief.projectName + " (strategy: " + brief.strategy + ", pri=" + brief.priority + ")");
         console.log("  Objective: " + brief.objective.slice(0, 120));
 
@@ -1088,6 +1094,16 @@ export class Daemon {
       const result = session.result;
       const quality = this.assessQuality(session, agentType);
       this.recordQuality(projectName, quality);
+
+      // Record fingerprint for stuck detection
+      const fingerprint = this.computeSessionFingerprint(
+        projectName,
+        agentType,
+        result?.commitsCreated.length ?? 0,
+        result?.costUsd ?? 0,
+      );
+      this.recordFingerprint(projectName, fingerprint);
+
       if (result) await this.persistSession(result);
 
       await this.logger.log({
@@ -1242,6 +1258,16 @@ export class Daemon {
       const session = await this.sessionManager.startProjectWithBrief(brief);
       const quality = this.assessQuality(session, brief.agentType);
       this.recordQuality(brief.projectName, quality);
+
+      // Record fingerprint for stuck detection
+      const fingerprint = this.computeSessionFingerprint(
+        brief.projectName,
+        brief.agentType,
+        session.result?.commitsCreated.length ?? 0,
+        session.result?.costUsd ?? 0,
+      );
+      this.recordFingerprint(brief.projectName, fingerprint);
+
       if (session.result) await this.persistSession(session.result, brief.constraints.model);
 
       // Planner evaluation
@@ -1661,6 +1687,27 @@ export class Daemon {
     }
 
     return false;
+  }
+
+  private recordFingerprint(projectName: string, fingerprint: string): void {
+    if (!fingerprint) return;
+    const list = this.sessionFingerprints.get(projectName) ?? [];
+    list.push(fingerprint);
+    if (list.length > 5) list.shift();
+    this.sessionFingerprints.set(projectName, list);
+  }
+
+  private isProjectStuck(projectName: string): boolean {
+    const prints = this.sessionFingerprints.get(projectName);
+    if (!prints || prints.length < 3) return false;
+    const last3 = prints.slice(-3);
+    // If 2 of last 3 fingerprints are identical, project is stuck
+    return last3[0] === last3[1] || last3[1] === last3[2] || last3[0] === last3[2];
+  }
+
+  private computeSessionFingerprint(projectName: string, agentType: string, commitsCreated: number, costUsd: number): string {
+    const input = `${projectName}:${agentType}:${commitsCreated}:${costUsd.toFixed(2)}`;
+    return createHash("sha256").update(input).digest("hex").slice(0, 16);
   }
 
   private getRecentQualityAvg(projectName: string, count: number = 3): number | undefined {
