@@ -41,6 +41,8 @@ export interface BudgetStatus {
     daily7dAvg: number;
     projectedMonthEnd: number;
   };
+  sessionsToday: number;
+  avgCostPerSession: number;
   alertLevel: "ok" | "warning" | "critical" | "exceeded";
 }
 
@@ -301,6 +303,16 @@ export class BudgetTracker {
     const daysRemaining = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
     const projectedMonthEnd = monthlySpent + (daily7dAvg * daysRemaining);
 
+    // Session count today and 7-day average cost per session
+    const { rows: sessionRows } = await this.pool!.query<{ today: string; avg7d: string }>(
+      `SELECT
+        (SELECT COUNT(*) FROM sessions WHERE started_at > CURRENT_DATE) AS today,
+        (SELECT COALESCE(AVG(cost_usd), 2.0) FROM sessions
+         WHERE started_at > NOW() - INTERVAL '7 days' AND status = 'completed' AND cost_usd > 0) AS avg7d`,
+    );
+    const sessionsToday = parseInt(sessionRows[0].today);
+    const avgCostPerSession = parseFloat(sessionRows[0].avg7d);
+
     const dailyRemaining = Math.max(0, dailyLimit - dailySpent);
     const monthlyRemaining = Math.max(0, limit - monthlySpent);
     const alertLevel = this.computeAlertLevel(dailySpent, dailyLimit, monthlySpent, limit);
@@ -319,6 +331,8 @@ export class BudgetTracker {
       byProject,
       byProvider,
       burnRate: { daily7dAvg, projectedMonthEnd },
+      sessionsToday,
+      avgCostPerSession,
       alertLevel,
     };
   }
@@ -438,6 +452,8 @@ export class BudgetTracker {
       byProject,
       byProvider: [],
       burnRate: { daily7dAvg: 0, projectedMonthEnd: 0 },
+      sessionsToday: 0,
+      avgCostPerSession: 2.0,
       alertLevel,
     };
   }
