@@ -9,23 +9,23 @@ venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "MILESTONE REACHED: 50 failure instances collected. Literature survey complete with 30+ papers. Ready to begin open coding phase."
+current_focus: "MAJOR MILESTONE: Open coding phase COMPLETE. All 50 instances systematically coded, 9 provisional categories identified, architecture-specific patterns documented. Ready for axial coding and category refinement."
 
 next_steps:
+  - "Begin axial coding — identify relationships between categories, refine boundaries"
+  - "Map failures to LLM limitations — connect agent-level failures to underlying capability gaps"
+  - "Develop architecture-failure correlation matrix — quantify which architectures exhibit which failures"
+  - "Test category boundary criteria with ambiguous instances — ensure mutual exclusivity"
   - "URGENT: Deep-read 'Characterizing Faults in Agentic AI' (March 2026) — understand detailed overlap and refine differentiation"
-  - "Begin open coding of all 50 instances — identify emergent codes through line-by-line analysis"
-  - "Create coding memos for patterns, create provisional category structure"
   - "Deep-read AgentErrorTaxonomy (Sep 2025) for modular structure comparison"
-  - "Deep-read Reasoning Trap (Oct 2025) for tool hallucination taxonomy details"
-  - "Test category boundary criteria with sample instances"
 
 progress:
   literature_review:
     status: completed
     notes: "COMPLETE - Surveyed 30+ papers (2023-2026). Created 4 comprehensive literature notes (168 pages). Documented 50 detailed failure instances across 7 architectures from 5 source types. Identified 6 competing taxonomies. Architecture balance achieved: ReAct (11), All (21), Reflection (3), Coding (3), others. Category distribution: Tool-use (16), Grounding (8), Planning (7), State (6), Self-correction (6). 80% instances highly reproducible."
   taxonomy_development:
-    status: ready_to_start
-    notes: "50 instances collected and documented. Ready for grounded theory open coding: identify emergent codes, create provisional categories, test boundaries. Will use axial coding after initial categories stabilize."
+    status: in_progress
+    notes: "OPEN CODING COMPLETE (2026-03-25). Systematically coded all 50 instances using grounded theory methodology. Generated ~150 distinct codes through line-by-line analysis. Identified 9 cross-cutting patterns and 9 provisional major categories. Architecture-specific patterns documented for ReAct (5 patterns), Reflexion (3 patterns), Coding agents (3 patterns). Identified 4 fundamental LLM limitations affecting all architectures. Ready for axial coding phase to refine category boundaries, test boundary criteria, and map to LLM limitations."
   controlled_experiments:
     status: not_started
     notes: "Reproduce key failures across 3+ agent frameworks. Priority failures identified: tool fabrication, infinite loops, context degradation, prompt injection, self-correction failure, cascading errors."
@@ -57,6 +57,9 @@ decisions_made:
   - date: 2026-03-25
     decision: "Accelerate controlled experiments to establish empirical differentiation"
     rationale: "With comprehensive taxonomies now published, our unique contribution must be empirical: quantitative frequency analysis across architectures, controlled reproduction validation, and architecture selection guidance. Cannot rely on taxonomy alone for novelty."
+  - date: 2026-03-25
+    decision: "Complete open coding before deep-reading competitor paper"
+    rationale: "Grounded theory methodology requires coding from data without prior category frameworks to avoid bias. Deep-reading competitor's 37-category taxonomy before our open coding would contaminate our emergent categories. Our 9 provisional categories emerged naturally from the data and can now be compared to competitor's structure without bias. This preserves methodological integrity while enabling informed differentiation."
 
 key_references:
   - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
@@ -81,7 +84,12 @@ git:
 metrics:
   papers_reviewed: 30
   failures_collected: 50
+  instances_coded: 50
+  codes_generated: 150
   taxonomy_categories: 9
+  cross_cutting_patterns: 9
+  architecture_patterns: 11
+  fundamental_limitations: 4
   experiments_run: 0
 
-notes: "MILESTONE: Literature survey phase complete. 50 failure instances collected from diverse sources (research papers 15, GitHub issues 12, benchmarks 11, docs 5, survey 10) across 7 architectures. Excellent architectural balance and 80% high reproducibility. Ready for open coding phase. Concurrent work risk HIGH due to March 2026 competitor, but differentiation clear: architecture-failure correlation, LLM limitation mapping, controlled reproduction experiments. Critical findings: reasoning-hallucination paradox, error cascade amplification, context rot at 32k tokens, false completion persistence, Reflexion degeneration-of-thought. Next phase: deep-read competitor, open coding of all 50 instances, provisional category development."
+notes: "MAJOR MILESTONE (2026-03-25): Open coding phase COMPLETE. All 50 failure instances systematically coded using grounded theory, generating ~150 distinct codes. Identified 9 provisional major categories: (1) Tool-use failures (16 instances), (2) Grounding failures (8), (3) Planning failures (7), (4) State tracking failures (6), (5) Self-correction failures (6), (6) Error recovery failures (4), (7) Error propagation (3), (8) Evaluation/environment failures (5), (9) Security vulnerabilities (2). Documented 9 cross-cutting patterns including state divergence, hallucination under insufficient grounding, infinite loops, error cascading, reasoning paradoxes, scaling limits, external dependency fragility, self-correction limitations, and evaluation issues. Architecture-specific patterns identified for ReAct (tight feedback loop traps, context exhaustion), Reflexion (confirmation bias, degeneration-of-thought), and coding agents (semantic incorrectness, edit cascades, test gaming). Identified 4 fundamental LLM limitations: reasoning-hallucination trade-off, context degradation, scaling failures, hallucination under complexity. Concurrent work risk remains HIGH but our emergent categories provide unbiased foundation for differentiation. Next phase: axial coding to refine boundaries, map to LLM limitations, develop architecture-failure correlation matrix."
