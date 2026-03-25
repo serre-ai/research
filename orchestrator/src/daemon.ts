@@ -967,15 +967,10 @@ export class Daemon {
         "SELECT value FROM planner_state WHERE project = '_platform' AND key = 'strategist:last_run'"
       );
       if (rows.length > 0) {
-        // value is JSONB — pg driver returns it as a parsed object, not a string
-        const data = typeof rows[0].value === 'string'
-          ? JSON.parse(rows[0].value)
-          : rows[0].value;
-        return data?.timestamp || 0;
+        const data = JSON.parse(rows[0].value as string);
+        return data.timestamp || 0;
       }
-    } catch (err) {
-      console.error("[Daemon] Failed to read strategist last run:", err instanceof Error ? err.message : err);
-    }
+    } catch {}
     return 0;
   }
 

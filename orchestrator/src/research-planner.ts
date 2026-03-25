@@ -750,9 +750,7 @@ export class ResearchPlanner {
         "SELECT value FROM planner_state WHERE project = $1 AND key = 'pending_critic_review'",
         [projectName],
       );
-      if (rows.length === 0) return null;
-      // value is JSONB — pg driver returns parsed object, not string
-      return typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+      return rows.length > 0 ? JSON.parse(rows[0].value as string) : null;
     } catch { return null; }
   }
 
