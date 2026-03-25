@@ -1,12 +1,13 @@
 project: agent-failure-taxonomy
 title: "A Taxonomy of Failure Modes in LLM-Based Autonomous Agents"
 status: active
-phase: experimental
+phase: experimental  # TRANSITION COMPLETE - Assign Experimenter or Writer, NOT Researcher
 confidence: 0.8
 created: "2026-03-10"
 updated: "2026-03-25"
 last_researcher_session: "2026-03-25"
 last_meta_review: "2026-03-25"
+researcher_work_status: "COMPLETE - DO NOT ASSIGN RESEARCHER UNLESS NEW RESEARCH QUESTION EMERGES"
 venue: "ACL 2027"
 
 collaborators: []
