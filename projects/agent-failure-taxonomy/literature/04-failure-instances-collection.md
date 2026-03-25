@@ -754,3 +754,223 @@ To reach 50 instances target, need 8 more. Focus areas:
    - Incorrect implementations categorization
 
 **Target**: 50 instances by end of next session, enabling open coding phase
+
+---
+
+## Reflection/Self-Correction Failures
+
+### Instance 43: Reflexion Degeneration-of-Thought
+**Description**: Reflexion agent repeats same flawed reasoning across iterations even when explicit failures are identified; self-reflections reinforce original misconception
+**Source**: [MAR Multi-Agent Reflexion](https://arxiv.org/html/2512.20845) + [Self-Reflection Study](https://arxiv.org/pdf/2405.06682)
+**Date**: 2024-2025
+**Architecture**: Reflection (Reflexion)
+**Category**: Self-correction failures → Confirmation bias + Degeneration
+**Root Cause**: Actor, Evaluator, and Reflector are all same model; reflections reinforce misconceptions rather than correct them; fixed internal thinking patterns prevent exploring alternatives
+**Symptoms**:
+- Same error repeated across multiple reflection iterations
+- Reflections acknowledge failure but propose same flawed solution
+- Cannot escape entrenched errors
+- Self-reflective approaches depend on fixed patterns
+**Impact**: Repeated task failure despite explicit self-correction attempts
+**Reproducibility**: High — systematic pattern in single-agent reflexion
+**Mitigation**: Multi-agent reflexion with diverse persona critics (MAR framework)
+
+---
+
+### Instance 44: Reflexion Plateaus on Complex Reasoning
+**Description**: Reflexion frequently plateaus on complex reasoning tasks, sometimes reinforcing earlier mistakes instead of correcting them
+**Source**: [ICLR 2025 Paper](https://proceedings.iclr.cc/paper_files/paper/2025/file/871ac99fdc5282d0301934d23945ebaa-Paper-Conference.pdf)
+**Date**: 2024-2025
+**Architecture**: Reflection (Reflexion)
+**Category**: Self-correction failures → Complexity limits
+**Root Cause**: Self-correction effective for simple errors but insufficient for complex multi-step reasoning; reflection can't overcome fundamental reasoning limitations
+**Symptoms**:
+- Initial iterations show improvement
+- Performance plateaus without reaching solution
+- Further reflection doesn't help
+- May even reinforce mistakes from earlier attempts
+**Impact**: Cannot complete complex tasks even with unlimited reflection iterations
+**Reproducibility**: High — consistent on complex multi-step tasks
+**Mitigation**: External feedback, diverse critics, or different models for evaluation
+
+---
+
+### Instance 45: Reflexion Behavior Collapse and Non-Correcting Strategy
+**Description**: Model learns non-correcting strategy (e.g., making no edits) or falls prey to distribution shift during self-correction training
+**Source**: [ICLR 2025 Paper](https://proceedings.iclr.cc/paper_files/paper/2025/file/871ac99fdc5282d0301934d23945ebaa-Paper-Conference.pdf)
+**Date**: 2024-2025
+**Architecture**: Reflection (Reflexion)
+**Category**: Self-correction failures → Training/adaptation failures
+**Root Cause**: During training or fine-tuning for self-correction, model can converge to degenerate strategy of minimal changes
+**Symptoms**:
+- Model stops making meaningful corrections
+- Proposes minimal or no edits even when errors present
+- Behavior collapse: all self-correction attempts look similar
+- Distribution shift from training data
+**Impact**: Self-correction mechanism becomes non-functional
+**Reproducibility**: Medium — depends on training procedure
+**Mitigation**: Careful training with diverse correction examples, regularization
+
+---
+
+## SWE-bench Code Generation Failures
+
+### Instance 46: SWE-bench Incorrect Implementations (Dominant Failure)
+**Description**: About half (52%) of unresolved instances are incorrect implementations or overly specific implementations that fail to functionally address the issue
+**Source**: [SWE-agent NeurIPS 2024](https://proceedings.neurips.cc/paper_files/paper/2024/file/5a7c947568c1b1328ccc5230172e1e7c-Paper-Conference.pdf)
+**Date**: 2024
+**Architecture**: All coding agents
+**Category**: Tool-use failures → Code generation semantic errors
+**Root Cause**: Agent understands task but generates code that doesn't actually fix the issue; may be logically flawed or insufficiently general
+**Symptoms**:
+- Code is syntactically correct
+- May partially address issue
+- Fails to functionally solve the problem
+- Overly specific to test cases rather than general solution
+**Impact**: Task failure — most common failure mode (52% of failures)
+**Reproducibility**: High — systematic across many tasks
+**Mitigation**: Better code understanding, test-driven development, verification
+
+---
+
+### Instance 47: SWE-bench Cascading Failed Edits
+**Description**: Failed code edits cascade through subsequent attempts, with 23.4% of failures due to cascading edit failures
+**Source**: [SWE-agent NeurIPS 2024](https://proceedings.neurips.cc/paper_files/paper/2024/file/5a7c947568c1b1328ccc5230172e1e7c-Paper-Conference.pdf)
+**Date**: 2024
+**Architecture**: All coding agents
+**Category**: Error propagation → Code editing cascades
+**Root Cause**: Initial incorrect edit creates problems that subsequent edits compound; agent doesn't recognize need to revert
+**Symptoms**:
+- First edit introduces subtle bug
+- Subsequent edits work around bug rather than fixing it
+- Code becomes increasingly complex and incorrect
+- Cannot recover without reverting to earlier state
+**Impact**: Task failure from compounding code errors (23.4% of failures)
+**Reproducibility**: High — consistent pattern in multi-edit scenarios
+**Mitigation**: Checkpointing, edit validation, revert strategies
+
+---
+
+### Instance 48: SWE-bench Functionally Incorrect Passing Patches
+**Description**: 12.5% of patches that pass tests are functionally or semantically incorrect, failing to implement intended fix despite passing unit tests
+**Source**: [SWE-bench++ Framework](https://arxiv.org/html/2512.17419v1)
+**Date**: 2024
+**Architecture**: All coding agents
+**Category**: Evaluation failures → Oracle limitations + Self-correction
+**Root Cause**: Test suites incomplete; agent optimizes for passing tests rather than correct implementation; can game tests
+**Symptoms**:
+- Patch passes all provided tests
+- Implementation doesn't actually fix underlying issue
+- May fail on edge cases not covered by tests
+- Semantically diverges from ground truth
+**Impact**: Overestimation of agent capabilities; deployed "fixes" don't work
+**Reproducibility**: Medium — requires oracle analysis beyond tests
+**Mitigation**: More comprehensive test suites, semantic verification, code review
+
+---
+
+## Context Degradation Failures
+
+### Instance 49: Context Rot Performance Drop Below 50%
+**Description**: 11 out of 12 tested LLM models drop below 50% of short-context performance at 32k tokens in NoLiMa benchmark
+**Source**: [Chroma Context Rot Study](https://research.trychroma.com/context-rot) + [Understanding AI Analysis](https://www.understandingai.org/p/context-rot-the-emerging-challenge)
+**Date**: 2025
+**Architecture**: All architectures relying on long context
+**Category**: State tracking failures → Context degradation
+**Root Cause**: Attention mechanism computational cost scales quadratically (O(n²)); models struggle to utilize information across extremely long contexts
+**Symptoms**:
+- Performance starts high with short contexts
+- Degrades continuously as context grows
+- At 32k tokens, most models below 50% of baseline
+- Information effectively invisible in mid-context ("lost in the middle")
+**Impact**: Severe performance degradation on long-running tasks
+**Reproducibility**: Easy — systematic across models and benchmarks
+**Mitigation**: Context compression, summarization, external memory, retrieval
+
+---
+
+### Instance 50: Lost in the Middle Effect
+**Description**: LLMs more likely to recall information at beginning or end of long prompts rather than content in middle; critical mid-context information becomes effectively invisible
+**Source**: [Context Rot Study](https://research.trychroma.com/context-rot) + [Context Management Guide](https://eval.16x.engineer/blog/llm-context-management-guide)
+**Date**: 2025
+**Architecture**: All architectures
+**Category**: State tracking failures → Positional bias in long contexts
+**Root Cause**: Attention patterns favor beginning and end of context; middle content receives less attention weight
+**Symptoms**:
+- Agent correctly uses information from first few messages
+- Agent correctly uses information from last few messages
+- Information from middle 50% of context ignored or forgotten
+- Behavior inconsistent depending on where critical info appears
+**Impact**: Task failure when critical information positioned mid-context
+**Reproducibility**: Easy — reliably demonstrated across models
+**Mitigation**: Strategic information placement (beginning/end), retrieval-augmented context, compression
+
+---
+
+## FINAL Summary Statistics
+
+**Total Instances Documented**: 50 (TARGET REACHED!)
+
+**By Architecture**:
+- ReAct: 11 instances
+- All architectures: 21 instances (general failures affecting all)
+- Autonomous loop: 4 instances
+- Reflection: 3 instances (new cluster completed)
+- Plan-then-execute: 3 instances
+- Multi-agent: 3 instances
+- Tree-of-Thought: 2 instances
+- Coding agents: 3 instances (new cluster)
+
+**By Category** (provisional):
+- Tool-use failures: 16 instances (largest category)
+- Grounding failures: 8 instances
+- Planning failures: 7 instances
+- State tracking / Memory: 6 instances
+- Self-correction failures: 6 instances (cluster completed)
+- Error recovery failures: 4 instances
+- Evaluation failures: 5 instances
+- Error propagation: 3 instances
+- Security vulnerabilities: 2 instances
+
+**By Source**:
+- Production systems (GitHub issues): 12 instances
+- Research papers: 15 instances
+- Benchmark/evaluation studies: 11 instances
+- Framework documentation: 5 instances
+- Previous survey: 10 instances
+
+**Reproducibility**:
+- Easy: 29 instances (58%)
+- High: 11 instances (22%)
+- Medium: 9 instances (18%)
+- Hard: 1 instance (2%)
+
+**Architecture Balance Achieved**:
+- ReAct now well-represented (11 instances)
+- Reflection failures documented (3 instances)
+- Coding agents covered (3 instances)
+- Context degradation quantified (2 instances)
+
+---
+
+## Ready for Open Coding Phase
+
+With 50 instances documented from diverse sources and architectures, we now have sufficient data to begin open coding according to grounded theory methodology:
+
+**Next Steps**:
+1. Create coding memos for each instance
+2. Identify emergent codes through line-by-line analysis
+3. Group codes into provisional categories
+4. Refine category boundaries and definitions
+5. Test inter-coder reliability on sample
+6. Expand to axial coding to identify relationships between categories
+
+**Quality Metrics Achieved**:
+- ✅ 50+ instances (target met)
+- ✅ Multiple architectures represented (7 types)
+- ✅ Diverse sources (5 types)
+- ✅ High reproducibility (80% Easy/High)
+- ✅ Balanced categories (no single category dominates)
+- ✅ Production + Research + Benchmark mix
+
+**Taxonomy Development Can Now Proceed**
