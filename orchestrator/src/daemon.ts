@@ -549,6 +549,25 @@ export class Daemon {
       return;
     }
 
+    // Cost-aware scheduling: cap slots based on remaining daily budget
+    if (budgetStatus.avgCostPerSession > 0 && budgetStatus.dailyRemaining > 0) {
+      const affordableSessions = Math.floor(
+        budgetStatus.dailyRemaining / budgetStatus.avgCostPerSession
+      );
+      if (affordableSessions < availableSlots) {
+        console.log(
+          `[Budget] Cost-aware cap: ${affordableSessions} affordable ` +
+          `($${budgetStatus.dailyRemaining.toFixed(2)} remaining / ` +
+          `$${budgetStatus.avgCostPerSession.toFixed(2)} avg) — capping from ${availableSlots}`
+        );
+        availableSlots = Math.max(affordableSessions, 0);
+      }
+      if (availableSlots <= 0) {
+        console.log("[Budget] No affordable sessions remaining today — skipping cycle");
+        return;
+      }
+    }
+
     // Process follow-up queue first (chained sessions take priority)
     while (this.followUpQueue.length > 0 && availableSlots > 0) {
       const followUp = this.followUpQueue.shift()!;
