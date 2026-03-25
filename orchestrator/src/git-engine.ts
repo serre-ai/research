@@ -183,6 +183,18 @@ export class GitEngine {
     }
   }
 
+  /** Compute a content hash of uncommitted changes. */
+  async diffContentHash(): Promise<string> {
+    try {
+      const diff = await this.git("diff", "HEAD");
+      if (!diff) return "";
+      const { createHash } = await import("node:crypto");
+      return createHash("sha256").update(diff).digest("hex").slice(0, 16);
+    } catch {
+      return "";
+    }
+  }
+
   // ── Commit operations ──────────────────────────────────────
 
   async stageAll(): Promise<void> {
