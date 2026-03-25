@@ -319,18 +319,26 @@ export class GitEngine {
     const newCommits = await this.logBetween("main", "HEAD");
     if (newCommits.length === 0) return null;
 
-    // Create an ephemeral branch for this session's PR
-    const shortId = opts.sessionId.slice(0, 8);
-    const ephemeralBranch = `session/${opts.projectName}/${shortId}`;
+    // Use the current branch if already on an agent branch, otherwise create ephemeral
+    const currentBranch = await this.currentBranch();
+    let prBranch: string;
+    if (currentBranch !== "main" && currentBranch !== "HEAD") {
+      prBranch = currentBranch; // Already on agent branch
+    } else {
+      // Legacy: create ephemeral branch
+      const shortId = opts.sessionId.slice(0, 8);
+      prBranch = `session/${opts.projectName}/${shortId}`;
+      await this.git("checkout", "-b", prBranch);
+    }
 
-    // Skip if PR already open for this ephemeral branch
-    const openPRs = await this.listOpenPRs(ephemeralBranch);
+    // Skip if PR already open for this branch
+    const openPRs = await this.listOpenPRs(prBranch);
     if (openPRs.length > 0) return null;
 
-    // Rename the current branch to the ephemeral name and push
-    await this.git("checkout", "-b", ephemeralBranch);
-    await this.pushSafe(ephemeralBranch);
+    // Push the branch to remote
+    await this.pushSafe(prBranch);
 
+    const shortId = opts.sessionId.slice(0, 8);
     const commitList = newCommits.slice(0, 15).map((c) => `- ${c}`).join("\n");
     const durationMin = Math.round(opts.durationMs / 60000);
 
@@ -352,7 +360,7 @@ export class GitEngine {
         newCommits.length > 15 ? `\n...and ${newCommits.length - 15} more` : "",
         ``,
         `## Project`,
-        `- **Branch**: \`${ephemeralBranch}\``,
+        `- **Branch**: \`${prBranch}\``,
         `- **Session**: \`${opts.sessionId}\``,
       ].join("\n"),
     });
