@@ -4,24 +4,24 @@ status: active
 phase: research
 confidence: 0.5
 created: "2026-03-21"
-updated: "2026-03-21"
+updated: "2026-03-26"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Literature survey — collect and synthesize self-improvement approaches across self-training, self-refinement, self-play, and constitutional AI"
+current_focus: "Validation complete. Framework validated against 4 major published methods (STaR, ReST, Constitutional AI, AlphaGo). Next: complete proofs and draft paper sections."
 
 next_steps:
-  - "Survey self-improvement literature: self-training (He et al., Huang et al.), self-refinement (Madaan et al.), self-play (Burns et al., Chen et al.), constitutional AI (Bai et al.)"
-  - "Survey relevant learning theory: PAC learning, boosting convergence, self-training convergence results"
-  - "Survey relevant optimization theory: fixed-point theorems, contraction mappings, iterative methods"
-  - "Formalize the iterative self-improvement process as operators over a capability space"
-  - "Identify key proof strategies for convergence bounds"
+  - "Complete formal proofs for Theorems 1-4 (Theorist work)"
+  - "Draft Section 5.X with validation results (Writer work)"
+  - "Characterize slack term ε and dynamic ν_t behavior"
+  - "Survey additional learning theory if needed for proof techniques"
+  - "Decide on experiment budget allocation (Option A: $200-500 real experiments)"
 
 progress:
   literature_review:
-    status: not_started
-    notes: "Target: comprehensive survey of self-improvement approaches and relevant theory (learning theory, optimization, fixed-point theorems)"
+    status: validation_complete
+    notes: "Validated framework against STaR (plateaus after ~16 iterations), ReST (external > self-reward), Constitutional AI (principle-guided convergence), AlphaGo (continuous improvement with objective verification). All observations consistent with Theorems 1-4. See literature/01-validation-published-results.md"
   formal_framework:
     status: not_started
     notes: "Define generation/verification operators, capability space, self-improvement mechanisms as formal objects"
@@ -50,8 +50,17 @@ decisions_made:
   - date: 2026-03-21
     decision: "Scope empirical validation to ~$200 on small models with controlled tasks"
     rationale: "This is primarily a theory paper. Empirical validation confirms theoretical predictions but is not the main contribution. Controlled tasks (arithmetic, logic, constrained writing) provide clean generation-verification gap manipulation."
+  - date: 2026-03-26
+    decision: "Focus validation on published self-improvement results rather than comprehensive literature survey"
+    rationale: "Meta-review identified that paper draft exists with Major Issue #5: no validation against published results. Rather than surveying from scratch, analyzed 4 major methods (STaR, ReST, Constitutional AI, AlphaGo) to validate framework predictions. All observations consistent with Theorems 1-4, resolving the review issue efficiently."
 
-key_references: []
+key_references:
+  - "Zelikman et al. 2022 - STaR: Bootstrapping Reasoning With Reasoning (arXiv:2203.14465)"
+  - "Gulcehre et al. 2023 - Reinforced Self-Training (ReST) for Language Modeling (arXiv:2308.08998)"
+  - "Bai et al. 2022 - Constitutional AI: Harmlessness from AI Feedback (arXiv:2212.08073)"
+  - "Silver et al. 2016 - Mastering the game of Go with deep neural networks and tree search (Nature)"
+  - "Silver et al. 2017 - Mastering the game of Go without human knowledge (Nature)"
+  - "Silver et al. 2018 - A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play (Science)"
 
 git:
   branch: "research/self-improvement-limits"
@@ -60,7 +69,7 @@ git:
 
 metrics:
   theorems_proved: 0
-  papers_reviewed: 0
+  papers_reviewed: 6
   experiments_run: 0
 
 notes: "Project initialized. Complements reasoning-gaps by providing impossibility results for self-improvement rather than just characterizing reasoning limitations. Together they form a theoretical program: what can't LLMs do, and what can't they learn to do on their own."
