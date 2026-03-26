@@ -21,3 +21,4 @@ site/package-lock.json
 *.fls
 *.fdb_latexmk
 missfont.log
+_backups/

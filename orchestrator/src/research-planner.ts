@@ -789,13 +789,14 @@ export class ResearchPlanner {
   ): SessionBrief[] {
     const avgScore = recentEvals.reduce((s, e) => s + e.qualityScore, 0) / recentEvals.length;
     const failedStrategies = [...new Set(recentEvals.map((e) => e.strategy))];
-    // Use phase-based agent type, not hardcoded researcher (DW-290/302 fix)
-    const agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
+    // quality_improvement is always a researcher meta-review — the objective
+    // is "assess and recommend," not phase-specific work. The stuck detection
+    // (DW-292) and quality gate (DW-293) prevent this from looping.
 
     return [{
       id: randomUUID().slice(0, 8),
       projectName: project.project,
-      agentType,
+      agentType: "researcher",
       objective: `Meta-review: Last ${recentEvals.length} sessions scored avg ${avgScore.toFixed(0)}/100. Strategies tried: ${failedStrategies.join(", ")}. Assess project state and recommend concrete next steps. Do NOT repeat previous approaches.`,
       context: {
         claims: allClaims.slice(0, 10),
@@ -804,7 +805,7 @@ export class ResearchPlanner {
         recentDecisions: project.next_steps ?? [],
         supplementary: `Recent failed sessions:\n${recentEvals.map((e) => `- ${e.agentType}/${e.strategy}: score ${e.qualityScore}, objective: ${e.objective.slice(0, 80)}`).join("\n")}`,
       },
-      constraints: this.buildConstraints(agentType, budgetUsd),
+      constraints: this.buildConstraints("researcher", budgetUsd),
       deliverables: [
         { description: "Update status.yaml with revised next_steps and current_focus", type: "status_update", verificationMethod: "status_changed" },
         { description: "Identify concrete, actionable work items", type: "commit", verificationMethod: "commit_count" },
