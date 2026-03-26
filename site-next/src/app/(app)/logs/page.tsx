@@ -1,13 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ScrollText, Inbox } from 'lucide-react';
 import { useEvents, useDeadLetters, useRetryDeadLetter } from '@/hooks';
-import { PageHeader } from '@/components/ui/page-header';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { EmptyState } from '@/components/ui/empty-state';
-import { EventTable } from '@/components/logs/event-table';
-import { DeadLetterCard } from '@/components/logs/dead-letter-card';
+import { TuiPanel, TuiList, TuiBadge } from '@/components/tui';
+import { formatDate } from '@/lib/dashboard-helpers';
 
 const EVENT_TYPES = [
   { label: 'All Events', value: '' },
@@ -32,87 +28,98 @@ export default function LogsPage() {
   const { data: deadLetters, isLoading: deadLettersLoading } = useDeadLetters();
   const retryMutation = useRetryDeadLetter();
 
+  const eventList = events ?? [];
+  const deadLetterList = deadLetters ?? [];
+
   return (
-    <div>
-      <PageHeader
-        title="Event Logs"
-        subtitle="System events and dead letter queue"
+    <>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4 mb-3">
+        <select
+          value={eventType}
+          onChange={(e) => setEventType(e.target.value)}
+          className="border border-border bg-bg-elevated px-3 py-1.5 font-mono text-xs text-text-bright focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          {EVENT_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={limit}
+          onChange={(e) => setLimit(Number(e.target.value))}
+          className="border border-border bg-bg-elevated px-3 py-1.5 font-mono text-xs text-text-bright focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          {LIMIT_OPTIONS.map((l) => (
+            <option key={l} value={l}>
+              {l} rows
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Events */}
+      <TuiPanel
+        id="activity-log"
+        title="ACTIVITY LOG"
+        order={1}
+        itemCount={eventList.length}
+        className="mb-3"
       >
-        <ScrollText className="h-5 w-5 text-text-muted" />
-      </PageHeader>
-
-      <Tabs defaultValue="events">
-        <TabsList>
-          <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="dead-letters">Dead Letters</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="events">
-          {/* Filters */}
-          <div className="mb-4 flex items-center gap-4">
-            <select
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              className="border border-border bg-bg-elevated px-3 py-1.5 font-mono text-xs text-text-bright focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {EVENT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              className="border border-border bg-bg-elevated px-3 py-1.5 font-mono text-xs text-text-bright focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {LIMIT_OPTIONS.map((l) => (
-                <option key={l} value={l}>
-                  {l} rows
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {!eventsLoading && events?.length === 0 ? (
-            <EmptyState
-              icon={ScrollText}
-              message="No events found"
-              description="Events will appear here as the system processes them."
-            />
-          ) : (
-            <EventTable events={events ?? []} isLoading={eventsLoading} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="dead-letters">
-          {deadLettersLoading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-28 animate-pulse rounded border border-border bg-bg-elevated" />
-              ))}
+        <TuiList
+          panelId="activity-log"
+          items={eventList}
+          keyFn={(e) => e.id}
+          emptyMessage={eventsLoading ? 'loading...' : 'no activity'}
+          renderItem={(e, _i, active) => (
+            <div className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2">
+                <TuiBadge color="accent">{e.event_type}</TuiBadge>
+                <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                  {e.agent ?? (e.payload?.project as string) ?? 'system'}
+                </span>
+              </span>
+              <span className="shrink-0 text-text-muted">{formatDate(e.created_at)}</span>
             </div>
-          ) : deadLetters && deadLetters.length > 0 ? (
-            <div className="space-y-4">
-              {deadLetters.map((dl) => (
-                <DeadLetterCard
-                  key={dl.id}
-                  deadLetter={dl}
-                  onRetry={(id) => retryMutation.mutate(id)}
-                  isRetrying={retryMutation.isPending}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Inbox}
-              message="No dead letters"
-              description="Failed events will appear here for retry."
-            />
           )}
-        </TabsContent>
-      </Tabs>
-    </div>
+        />
+      </TuiPanel>
+
+      {/* Dead Letters */}
+      <TuiPanel
+        id="dead-letters"
+        title="DEAD LETTERS"
+        order={2}
+        itemCount={deadLetterList.length}
+        onActivateItem={(idx) => retryMutation.mutate(deadLetterList[idx].id)}
+        keyHints={[{ key: 'Enter', label: 'Retry' }]}
+      >
+        <TuiList
+          panelId="dead-letters"
+          items={deadLetterList}
+          keyFn={(dl) => dl.id}
+          onActivate={(dl) => retryMutation.mutate(dl.id)}
+          emptyMessage={deadLettersLoading ? 'loading...' : 'no dead letters'}
+          renderItem={(dl, _i, active) => (
+            <div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="flex items-center gap-2">
+                  <TuiBadge color="error">{dl.event_type}</TuiBadge>
+                  <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                    {dl.error}
+                  </span>
+                </span>
+                <span className="shrink-0 text-text-muted">{formatDate(dl.created_at)}</span>
+              </div>
+              <span className="text-text-muted">
+                attempts: {dl.attempts} | last: {formatDate(dl.last_attempt_at)}
+              </span>
+            </div>
+          )}
+        />
+      </TuiPanel>
+    </>
   );
 }
