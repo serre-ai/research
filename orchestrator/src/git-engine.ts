@@ -235,6 +235,82 @@ export class GitEngine {
     }
   }
 
+  /**
+   * Get files changed between two refs.
+   */
+  async filesBetween(base: string, head: string = "HEAD"): Promise<string[]> {
+    try {
+      const output = await this.git("diff", "--name-only", `${base}...${head}`);
+      return output.split("\n").filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Check that all changed files are within the allowed scope for a project.
+   * Returns list of out-of-scope files. Empty list = all files in scope.
+   */
+  scopeCheck(changedFiles: string[], projectName: string): string[] {
+    // Platform sessions can touch orchestrator, scripts, docs, .claude, shared
+    const platformPrefixes = [
+      "orchestrator/", "scripts/", "docs/", ".claude/", "shared/",
+      "ideas/", "CLAUDE.md", "config.yaml", "budget.yaml",
+    ];
+
+    return changedFiles.filter((file) => {
+      if (projectName === "_platform") {
+        return !platformPrefixes.some((p) => file.startsWith(p));
+      }
+      // Project sessions can only touch their project directory
+      const projectPrefix = `projects/${projectName}/`;
+      return !file.startsWith(projectPrefix);
+    });
+  }
+
+  /**
+   * Remove out-of-scope changes by resetting those files to the base branch state.
+   * Returns the list of files that were reset.
+   */
+  async enforceScopeGuard(projectName: string, base: string = "main"): Promise<string[]> {
+    const changedFiles = await this.filesBetween(base);
+    const violations = this.scopeCheck(changedFiles, projectName);
+
+    if (violations.length === 0) return [];
+
+    console.log(`[ScopeGuard] ${violations.length} out-of-scope file(s) in ${projectName} session:`);
+    for (const f of violations.slice(0, 10)) {
+      console.log(`  - ${f}`);
+    }
+    if (violations.length > 10) {
+      console.log(`  ... and ${violations.length - 10} more`);
+    }
+
+    // Reset out-of-scope files to their state on the base branch
+    for (const file of violations) {
+      try {
+        await this.git("checkout", base, "--", file);
+      } catch {
+        // File may not exist on base (was newly created) — remove it
+        try {
+          await this.git("rm", "-f", file);
+        } catch { /* ignore */ }
+      }
+    }
+
+    // Amend the last commit if there are staged changes from the resets
+    try {
+      const status = await this.git("status", "--porcelain");
+      if (status.trim()) {
+        await this.git("add", "-A");
+        await this.git("commit", "--amend", "--no-edit");
+        console.log(`[ScopeGuard] Amended last commit to remove ${violations.length} out-of-scope file(s)`);
+      }
+    } catch { /* ignore */ }
+
+    return violations;
+  }
+
   // ── Remote operations ──────────────────────────────────────
 
   async push(branch?: string): Promise<void> {
@@ -315,7 +391,10 @@ export class GitEngine {
     durationMs: number;
     commits: string[];
   }): Promise<string | null> {
-    // Skip if no commits ahead of main
+    // Enforce scope guard — remove any out-of-scope changes before pushing
+    await this.enforceScopeGuard(opts.projectName);
+
+    // Skip if no commits ahead of main (scope guard may have removed all changes)
     const newCommits = await this.logBetween("main", "HEAD");
     if (newCommits.length === 0) return null;
 
