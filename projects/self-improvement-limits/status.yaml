@@ -1,83 +1,55 @@
 project: self-improvement-limits
 title: "Impossibility Results for Unsupervised Self-Improvement in Language Models"
 status: active
-phase: revision
-confidence: 0.45
+phase: research
+confidence: 0.5
 created: "2026-03-21"
-updated: "2026-03-24"
+updated: "2026-03-21"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Draft v0.1 complete but has 3 FATAL issues (score 5.26/10). Priority: Fix incomplete proofs, conduct/remove experiments, validate against published results. Target: 7.6/10 for acceptance."
-
-predicted_score:
-  current_v0.1: "5.26/10 (Reject to Borderline)"
-  after_phase1_fixes: "6.8/10 (Borderline Accept) — if FATAL issues fixed"
-  after_phase2_polish: "7.6/10 (Accept) — target for submission"
-  target: "7.5+/10"
+current_focus: "Literature survey — collect and synthesize self-improvement approaches across self-training, self-refinement, self-play, and constitutional AI"
 
 next_steps:
-  - "DECISION REQUIRED (by 2026-03-29): Choose experiment option: A (conduct $200-500), B (remove Section 5), or C (reframe as predictions). Researcher recommends Option A."
-  - "Researcher: Validate theory against published results — analyze STaR, ReST, AlphaZero through framework lens. Write Section 5.X or similar with case studies. NEW work, not done yet. (1 week)"
-  - "Theorist: Complete proofs for Theorems 1-4 — add Lemma A.1 (verification boundedness), characterize f(g_D) in Theorem 3, add Corollary 1.1 (bound ε), justify Assumption 2. FIXING existing work, not starting from scratch. (2-4 weeks)"
-  - "Experimenter: Execute designed experiments (if Option A) — run self-training on GSM8K/HumanEval, measure γ_t and ν_t, generate figures. Code exists, run real experiments. (2-4 weeks)"
-  - "Writer: Revise presentation after proofs/experiments complete — reframe to avoid overclaiming, add practitioner's guide, expand related work, add safety caveats. (1-2 weeks)"
+  - "Survey self-improvement literature: self-training (He et al., Huang et al.), self-refinement (Madaan et al.), self-play (Burns et al., Chen et al.), constitutional AI (Bai et al.)"
+  - "Survey relevant learning theory: PAC learning, boosting convergence, self-training convergence results"
+  - "Survey relevant optimization theory: fixed-point theorems, contraction mappings, iterative methods"
+  - "Formalize the iterative self-improvement process as operators over a capability space"
+  - "Identify key proof strategies for convergence bounds"
 
 progress:
   literature_review:
-    status: embedded_in_paper
-    notes: "Related work section cites 15+ papers (STaR, ReST, Constitutional AI, AlphaZero, PAC learning, No Free Lunch, etc.). Not comprehensive standalone survey, but sufficient for paper. HOWEVER: Missing validation against published results — need to analyze whether STaR/ReST empirical curves match theoretical predictions."
+    status: not_started
+    notes: "Target: comprehensive survey of self-improvement approaches and relevant theory (learning theory, optimization, fixed-point theorems)"
   formal_framework:
-    status: substantial_draft
-    notes: "Section 3 (Framework) complete with 5 definitions, capability spaces, self-improvement operators. ~200 lines in main.tex. Well-received by internal reviewers. NO NEW WORK NEEDED — framework is done."
+    status: not_started
+    notes: "Define generation/verification operators, capability space, self-improvement mechanisms as formal objects"
   convergence_proofs:
-    status: incomplete_with_critical_gaps
-    notes: "4 main theorems stated with proof sketches in main text, appendix proofs drafted but incomplete. FATAL ISSUE #2: Circular reasoning (Theorem 1), uncharacterized functions (Theorem 3 f(g_D)), unjustified assumptions. FATAL ISSUE #3: Slack terms (ε) uncharacterized. Needs: Lemma A.1, explicit f(g_D), Corollary 1.1."
+    status: not_started
+    notes: "Prove convergence bounds for self-training, self-refinement; characterize fixed points"
   self_play_separation:
-    status: drafted_but_informal
-    notes: "Theorem 4 stated and sketch provided. Internal review: 'objective outcome property' defined by examples, needs formalization. Lower priority than Theorems 1-3."
+    status: not_started
+    notes: "Prove separation results for self-play vs. self-training under game-theoretic assumptions"
   empirical_validation:
-    status: simulation_complete_real_pending_decision
-    notes: "FATAL ISSUE #1: Section 5 presents hypothetical results as real data (scientific misconduct per all 5 reviewers). Simulation complete (self-training). Real experiments designed, code exists, awaiting budget decision. Options: A (conduct $200-500), B (remove Section 5), C (reframe as predictions)."
+    status: not_started
+    notes: "Small-scale experiments on controlled tasks with tunable generation-verification gaps (~$200)"
   paper_writing:
-    status: draft_v0.1_with_fatal_flaws
-    notes: "574 lines main.tex + 1026 lines supplementary.tex. Abstract, intro, framework, theorems, related work, discussion complete. Internal review (5 synthetic reviewers): avg 5.26/10 (Reject to Borderline). 3 FATAL issues + 7 major issues identified. ~45% complete (framework solid, proofs/experiments incomplete). NOT starting from scratch — REVISING what exists."
+    status: not_started
+    notes: "ICLR 2027 format, proofs in appendix"
 
 decisions_pending: []
 
-decisions_pending:
-  - decision: "Choose experiment option for Section 5"
-    deadline: "2026-03-29"
-    options:
-      A: "Conduct real experiments — $200-500, 2-4 weeks, +2.0 points impact (RECOMMENDED by Researcher)"
-      B: "Remove Section 5 entirely — $0, 1 day, neutral impact (acceptable fallback)"
-      C: "Reframe as predictions — $0, 2 days, minimal impact (not recommended)"
-    blocker: "All work blocked until this decision made — cannot proceed with experiments (Option A) or paper revision (Options B/C) without clarity"
-    impact: "Difference between 6.0/10 (pure theory, no experiments) and 7.6/10 (theory + validation)"
-
 decisions_made:
   - date: 2026-03-21
-    decision: "Target ICLR 2027 as primary venue, abandon NeurIPS 2026"
-    rationale: "ICLR is a strong venue for theoretical ML work with safety implications. Sep/Oct 2026 deadline gives ~6 months for a theory-heavy project. UPDATE 2026-03-24: NeurIPS 2026 (May deadline) is only 6 weeks away, insufficient for fixing FATAL issues (need 6-10 weeks). ICLR 2027 is the only realistic target."
+    decision: "Target ICLR 2027 as primary venue with NeurIPS 2026 as backup"
+    rationale: "ICLR is a strong venue for theoretical ML work with safety implications. Sep/Oct 2026 deadline gives ~6 months for a theory-heavy project. NeurIPS 2026 as backup if timeline permits."
   - date: 2026-03-21
     decision: "Position as impossibility results rather than algorithmic contributions"
-    rationale: "Impossibility results are the distinctive contribution. Complements reasoning-gaps (what LLMs can't do) with self-improvement-limits (what LLMs can't learn to do on their own). Clear separation from algorithmic self-improvement papers. UPDATE 2026-03-24: Internal review flagged 'impossibility' as overclaim — need to reframe as 'convergence bounds' or 'capability limits'."
+    rationale: "Impossibility results are the distinctive contribution. Complements reasoning-gaps (what LLMs can't do) with self-improvement-limits (what LLMs can't learn to do on their own). Clear separation from algorithmic self-improvement papers."
   - date: 2026-03-21
     decision: "Scope empirical validation to ~$200 on small models with controlled tasks"
-    rationale: "This is primarily a theory paper. Empirical validation confirms theoretical predictions but is not the main contribution. Controlled tasks (arithmetic, logic, constrained writing) provide clean generation-verification gap manipulation. UPDATE 2026-03-24: Internal review shows experiments are CRITICAL (+2.0 points) — worth expanding budget to $200-500 for comprehensive validation."
-  - date: 2026-03-22
-    decision: "Design comprehensive validation across 4 self-improvement mechanisms"
-    rationale: "DW-77 requested experiment design. Extended beyond self-training (already designed in DW-78) to cover self-refinement, self-play, and constitutional AI as mentioned in BRIEF. This provides complete validation of all theoretical claims. Budget allocation: self-training ($100-150) + self-refinement ($35-50) = Phase 1 ($135-200), with optional Phase 2 for self-play and constitutional AI if budget permits."
-  - date: 2026-03-22
-    decision: "Prioritize self-training and self-refinement experiments first (Phase 1)"
-    rationale: "These directly test core theorems (1-3) and resolve FATAL issue #1 from internal review. Self-play and constitutional AI are valuable extensions but not critical for minimum viable validation. Two-phase approach manages budget risk while ensuring critical experiments complete."
-  - date: 2026-03-22
-    decision: "Use in-context learning instead of fine-tuning for self-improvement simulation"
-    rationale: "ICL reduces cost 5× ($100 vs $500) while still testing core theoretical prediction (convergence to verification-bounded fixed point). Trade-off: May underestimate improvement magnitude, but if ICL validates theory, fine-tuning would strengthen it further. This is a cost-effective validation strategy."
-  - date: 2026-03-24
-    decision: "Pivot from 'build from scratch' to 'fix what exists' strategy"
-    rationale: "Meta-review revealed critical status-reality disconnect. status.yaml claimed 'not_started' for components that are substantially complete (paper: 574 lines, notes: 86KB, experiments: designed+simulated). This caused 3 consecutive session failures (avg 15/100). Root cause: agents given wrong instructions. Solution: Honest status update + strategy pivot from building to fixing. Next sessions must focus on: completing proofs (not writing them), running experiments (not designing them), validating against published results (not surveying literature)."
+    rationale: "This is primarily a theory paper. Empirical validation confirms theoretical predictions but is not the main contribution. Controlled tasks (arithmetic, logic, constrained writing) provide clean generation-verification gap manipulation."
 
 key_references: []
 
@@ -86,97 +58,9 @@ git:
   latest_commit: ""
   open_prs: []
 
-critic_reviews:
-  internal_review_2026_03_22:
-    file: "reviews/internal-review-simulation-2026-03-22.md"
-    reviewers: 5
-    avg_score: "5.26/10"
-    verdict: "Reject to Borderline"
-    fatal_issues: 3
-    major_issues: 7
-    summary: "Framework solid, proofs incomplete, experiments hypothetical. Fixable with 6-8 weeks work."
-
-fatal_issues:
-  - id: 1
-    issue: "Hypothetical experiments presented as real results"
-    severity: "FATAL"
-    impact: "-2.0 to -3.0 points"
-    location: "Section 5"
-    flagged_by: "All 5 reviewers"
-    description: "Section 5 presents specific numbers (γ∞=0.67, p<0.01) for experiments never conducted. This is scientific misconduct."
-    fix: "Choose by 2026-03-29: A) Conduct experiments ($200-500), B) Remove Section 5, C) Reframe as predictions"
-    status: "pending_decision"
-  - id: 2
-    issue: "Incomplete and circular proofs"
-    severity: "FATAL"
-    impact: "-1.5 to -2.0 points"
-    location: "Theorems 1-4, Appendix A"
-    flagged_by: "Reviewers 1, 4, 5"
-    description: "Theorem 1 assumes verification boundedness without proving it. Theorem 3 f(g_D) stated but never characterized. Lemma 2 has circular reasoning."
-    fix: "Add Lemma A.1 (verification boundedness), characterize f(g_D), add Corollary 1.1 (bound ε), justify Assumption 2"
-    status: "in_progress"
-  - id: 3
-    issue: "Uncharacterized slack terms (ε)"
-    severity: "FATAL"
-    impact: "-1.0 to -1.5 points"
-    location: "Theorems 1-2"
-    flagged_by: "Reviewers 4, 5"
-    description: "Theorems state bounds with ε but never characterize ε. Results may be vacuous if ε is arbitrarily large."
-    fix: "Add Corollary 1.1 bounding ε as function of model/task properties"
-    status: "not_started"
-
-major_issues:
-  - "Misleading 'impossibility result' framing (should be 'convergence bounds') — impact: -0.5 to -1.0"
-  - "No validation against published results (STaR, ReST, AlphaZero) — impact: -1.0"
-  - "Poor operationalization for practitioners (can't measure Ver_M, Gen_M) — impact: -0.5"
-  - "Overclaimed safety implications (ignores tool use, human feedback) — impact: -0.5"
-  - "Missing convergence rate analysis — impact: +0.3 if added"
-  - "Missing related work citations — impact: +0.2 if fixed"
-  - "Notation and presentation issues — impact: +0.1 if fixed"
-
-blockers:
-  - blocker: "Experiment decision pending (FATAL #1)"
-    deadline: "2026-03-29"
-    impact: "Cannot revise Section 5 or proceed with paper until decision made"
-  - blocker: "Proof completion needed (FATAL #2, #3)"
-    owner: "Theorist"
-    timeline: "2-4 weeks"
-    impact: "Cannot claim 'we prove' until proofs are complete and rigorous"
-
 metrics:
-  paper_lines: 1600  # main.tex: 574, supplementary.tex: 1026
-  theorems_stated: 4  # Theorems 1-4 with proof sketches
-  theorems_proved_rigorously: 0  # all have gaps per internal review
-  papers_cited: 15  # STaR, ReST, Constitutional AI, AlphaZero, PAC learning, No Free Lunch, etc.
-  papers_analyzed_in_depth: 0  # need to validate predictions against empirical results
-  experiments_designed: 4  # self-training, self-refinement, self-play, constitutional AI
-  experiments_implemented: 1  # self-training code exists
-  experiments_simulated: 1  # self-training simulation complete
-  experiments_run_real: 0  # pending budget decision
-  notes_files: 4  # 00-meta-review, 01-fixed-point, 02-gv-gap, 03-self-training (86KB total)
-  review_sessions: 1  # internal review 2026-03-22
+  theorems_proved: 0
+  papers_reviewed: 0
+  experiments_run: 0
 
-timeline:
-  initialized: "2026-03-21"
-  draft_v0.1_complete: "2026-03-22"
-  internal_review: "2026-03-22"
-  meta_review_diagnosis: "2026-03-24"
-  experiment_decision_deadline: "2026-03-29"
-  estimated_submission_ready: "2026-05-05 to 2026-05-19" # 6-10 weeks from 2026-03-24
-  iclr_2027_deadline: "~2026-09-30"  # estimated, ~6 months buffer
-  neurips_2026_deadline: "~2026-05-09"  # estimated, INFEASIBLE (only 6 weeks away)
-
-notes: |
-  Project status corrected after meta-review (2026-03-24). Previous status.yaml claimed "not_started" for components that are substantially complete, causing 3 consecutive session failures (avg 15/100).
-
-  REALITY: Draft v0.1 exists (1600 lines LaTeX) with solid framework but 3 FATAL issues. Internal review predicts 5.26/10 (Reject) in current form, 7.6/10 (Accept) after revisions.
-
-  STRATEGY PIVOT: From "build from scratch" to "fix what exists":
-  - Researcher: Validate against published results (NEW work)
-  - Theorist: Complete proofs rigorously (FIX existing work)
-  - Experimenter: Run designed experiments (EXECUTE existing code)
-  - Writer: Revise presentation (POLISH existing draft)
-
-  CRITICAL PATH: Experiment decision (by 2026-03-29) → Proof completion (2-4 weeks) → Validation work (1 week) → Presentation polish (1-2 weeks) → Submission-ready
-
-  Complements reasoning-gaps by providing impossibility results for self-improvement rather than just characterizing reasoning limitations. Together they form a theoretical program: what can't LLMs do, and what can't they learn to do on their own.
+notes: "Project initialized. Complements reasoning-gaps by providing impossibility results for self-improvement rather than just characterizing reasoning limitations. Together they form a theoretical program: what can't LLMs do, and what can't they learn to do on their own."

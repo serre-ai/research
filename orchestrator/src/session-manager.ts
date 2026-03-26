@@ -241,9 +241,15 @@ export class SessionManager {
     for (const f of files) {
       if (/experiments\/|benchmarks\/|literature\/|\.csv$|\.jsonl$|results\//.test(f)) {
         research++;
+      } else if (/projects\/.*\.py$/.test(f)) {
+        // Python under projects/ is research, not infra
+        research++;
       } else if (/paper\/.*\.tex$|paper\/.*\.bib$|figures\//.test(f)) {
         writing++;
-      } else if (/orchestrator\/|site-next\/|scripts\/|\.ts$|\.tsx$|\.js$|\.py$/.test(f)) {
+      } else if (/orchestrator\/|site-next\/|scripts\/|\.ts$|\.tsx$|\.js$/.test(f)) {
+        infra++;
+      } else if (/\.py$/.test(f)) {
+        // Python outside projects/ (scripts/, orchestrator/) is infra
         infra++;
       } else if (/status\.yaml$|docs\/reports\/|docs\/sessions\/|\.deepwork/.test(f)) {
         meta++;

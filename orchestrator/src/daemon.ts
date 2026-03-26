@@ -495,8 +495,20 @@ export class Daemon {
     };
   }
 
-  private getProjectSessionsToday(projectName: string): number {
-    // Reset counts at midnight
+  private async getProjectSessionsToday(projectName: string): Promise<number> {
+    // Query DB for accurate count that survives restarts
+    if (this.dbPool) {
+      try {
+        const { rows } = await this.dbPool.query(
+          "SELECT count(*) as cnt FROM sessions WHERE project = $1 AND started_at >= CURRENT_DATE",
+          [projectName],
+        );
+        return parseInt(rows[0]?.cnt ?? "0", 10);
+      } catch {
+        // Fall through to in-memory
+      }
+    }
+    // Fallback: in-memory count
     const today = new Date().toDateString();
     if (today !== this.lastDailyReset) {
       this.dailyProjectSessions.clear();
@@ -725,7 +737,7 @@ export class Daemon {
         if (this.activeSessions.has(brief.projectName)) continue;
 
         // Per-project daily limit (DW-299)
-        const todaySessions = this.getProjectSessionsToday(brief.projectName);
+        const todaySessions = await this.getProjectSessionsToday(brief.projectName);
         if (todaySessions >= MAX_SESSIONS_PER_PROJECT_PER_DAY) {
           console.log(`Skipping ${brief.projectName} — daily limit reached (${todaySessions}/${MAX_SESSIONS_PER_PROJECT_PER_DAY})`);
           continue;
@@ -812,7 +824,7 @@ export class Daemon {
           const { project, agentType } = candidate;
 
           // Per-project daily limit (DW-299)
-          const todaySessions = this.getProjectSessionsToday(project.project);
+          const todaySessions = await this.getProjectSessionsToday(project.project);
           if (todaySessions >= MAX_SESSIONS_PER_PROJECT_PER_DAY) {
             console.log(`Skipping ${project.project} — daily limit reached (${todaySessions}/${MAX_SESSIONS_PER_PROJECT_PER_DAY})`);
             continue;
@@ -1832,8 +1844,8 @@ export class Daemon {
     if (!this.dbPool) return;
     try {
       await this.dbPool.query(
-        `INSERT INTO sessions (session_id, project, agent_type, model, tokens_used, cost_usd, commits_created, status, error, started_at, duration_s)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW() - INTERVAL '1 second' * $10, $11)
+        `INSERT INTO sessions (session_id, project, agent_type, model, tokens_used, cost_usd, commits_created, status, error, started_at, duration_s, output_category)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW() - INTERVAL '1 second' * $10, $11, $12)
          ON CONFLICT (session_id) DO NOTHING`,
         [
           result.sessionId,
@@ -1847,6 +1859,7 @@ export class Daemon {
           result.error ?? null,
           result.durationMs / 1000,
           result.durationMs / 1000,
+          signals?.outputCategory ?? null,
         ],
       );
     } catch (err) {
