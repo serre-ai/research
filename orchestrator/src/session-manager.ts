@@ -8,6 +8,8 @@ import { ActivityLogger } from "./logger.js";
 import type { KnowledgeGraph } from "./knowledge-graph.js";
 import type { SessionBrief } from "./research-planner.js";
 
+export type SessionOutputCategory = 'research' | 'writing' | 'infrastructure' | 'meta' | 'noise';
+
 export interface SessionSignals {
   criticVerdict?: "ACCEPT" | "REVISE" | "REJECT";
   commitsCreated: number;
@@ -18,6 +20,7 @@ export interface SessionSignals {
   experimentSpecApproved?: boolean;
   experimentSpecRevisionRequested?: boolean;
   pushSkipped?: boolean;
+  outputCategory?: SessionOutputCategory;
 }
 
 export interface Session {
@@ -230,6 +233,40 @@ export class SessionManager {
     return meaningfulFiles.length > 0;
   }
 
+  private classifyOutput(files: string[]): SessionOutputCategory {
+    if (files.length === 0) return 'noise';
+
+    let research = 0, writing = 0, infra = 0, meta = 0;
+
+    for (const f of files) {
+      if (/experiments\/|benchmarks\/|literature\/|\.csv$|\.jsonl$|results\//.test(f)) {
+        research++;
+      } else if (/paper\/.*\.tex$|paper\/.*\.bib$|figures\//.test(f)) {
+        writing++;
+      } else if (/orchestrator\/|site-next\/|scripts\/|\.ts$|\.tsx$|\.js$|\.py$/.test(f)) {
+        infra++;
+      } else if (/status\.yaml$|docs\/reports\/|docs\/sessions\/|\.deepwork/.test(f)) {
+        meta++;
+      }
+    }
+
+    // If only status.yaml, it's meta
+    if (files.length === 1 && files[0].endsWith('status.yaml')) return 'meta';
+
+    // Return dominant category
+    const ranked: [SessionOutputCategory, number][] = [
+      ['research', research],
+      ['writing', writing],
+      ['infrastructure', infra],
+      ['meta', meta],
+    ];
+    ranked.sort((a, b) => b[1] - a[1]);
+
+    // If nothing matched any pattern, it's noise
+    if (ranked[0][1] === 0) return 'noise';
+    return ranked[0][0];
+  }
+
   private async detectSignals(worktreePath: string, result?: SessionResult): Promise<SessionSignals> {
     const signals: SessionSignals = {
       commitsCreated: result?.commitsCreated.length ?? 0,
@@ -311,6 +348,15 @@ export class SessionManager {
       } catch {
         signals.statusYamlChanged = result.commitsCreated.length > 1;
       }
+    }
+
+    // Classify output
+    try {
+      const worktreeEngine = this.gitEngine.inDir(worktreePath);
+      const changedFiles = await worktreeEngine.getPendingFiles();
+      signals.outputCategory = this.classifyOutput(changedFiles);
+    } catch {
+      // Classification is best-effort
     }
 
     return signals;

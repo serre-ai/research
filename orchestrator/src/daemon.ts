@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
-import { SessionManager, type Session, type SessionSignals } from "./session-manager.js";
+import { SessionManager, type Session, type SessionSignals, type SessionOutputCategory } from "./session-manager.js";
 import { type AgentType, type SessionResult, PHASE_TO_AGENT } from "./session-runner.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
@@ -1259,7 +1259,7 @@ export class Daemon {
       );
       this.recordFingerprint(projectName, fingerprint);
 
-      if (result) await this.persistSession(result);
+      if (result) await this.persistSession(result, undefined, session.signals);
 
       await this.logger.log({
         type: "session_end",
@@ -1423,7 +1423,7 @@ export class Daemon {
       );
       this.recordFingerprint(brief.projectName, fingerprint);
 
-      if (session.result) await this.persistSession(session.result, brief.constraints.model);
+      if (session.result) await this.persistSession(session.result, brief.constraints.model, session.signals);
 
       // Planner evaluation
       let evaluation: import("./research-planner.js").SessionEvaluation | undefined;
@@ -1765,6 +1765,13 @@ export class Daemon {
       else score += 5;
     }
 
+    // Category-based quality adjustment
+    const category = session.signals?.outputCategory;
+    if (category === 'research') score = Math.min(100, score + 5);
+    else if (category === 'writing') score = Math.min(100, score + 3);
+    else if (category === 'meta') score = Math.max(0, score - 5);
+    else if (category === 'noise') score = Math.max(0, score - 15);
+
     return {
       score: Math.min(score, 100),
       commitsCreated: commits,
@@ -1780,7 +1787,9 @@ export class Daemon {
   private async persistSession(
     result: SessionResult,
     model?: string,
+    signals?: SessionSignals,
   ): Promise<void> {
+    console.log(`  Output: ${signals?.outputCategory ?? 'unknown'}`);
     if (!this.dbPool) return;
     try {
       await this.dbPool.query(
