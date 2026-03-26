@@ -7,14 +7,14 @@ const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-mono',
-  display: 'swap',
+  display: 'block',
 });
 
 const plexSans = IBM_Plex_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-sans',
-  display: 'swap',
+  display: 'block',
 });
 
 export const metadata: Metadata = {

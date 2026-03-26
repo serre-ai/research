@@ -19,7 +19,7 @@ interface TuiPanelProps {
 }
 
 /**
- * Focusable panel with single-line box-drawing border.
+ * Focusable panel with CSS border and background-gap title.
  * Registers with the focus system. Active panel gets bright border.
  */
 export function TuiPanel({
@@ -54,31 +54,9 @@ export function TuiPanel({
       role="region"
       aria-label={title ?? id}
     >
-      {/* Top border: ┌─ TITLE ──────┐ */}
-      <div className="tui-panel__top" aria-hidden="true">
-        <span className="tui-panel__corner">┌</span>
-        {title ? (
-          <>
-            <span className="tui-panel__hline" />
-            <span className="tui-panel__title">{title}</span>
-            <span className="tui-panel__hline tui-panel__hline--fill" />
-          </>
-        ) : (
-          <span className="tui-panel__hline tui-panel__hline--fill" />
-        )}
-        <span className="tui-panel__corner">┐</span>
-      </div>
-
-      {/* Content with side borders */}
+      {title && <div className="tui-panel__label" aria-hidden="true">{title}</div>}
       <div className="tui-panel__body">
         <div className="tui-panel__content">{children}</div>
-      </div>
-
-      {/* Bottom border: └──────────────┘ */}
-      <div className="tui-panel__bottom" aria-hidden="true">
-        <span className="tui-panel__corner">└</span>
-        <span className="tui-panel__hline tui-panel__hline--fill" />
-        <span className="tui-panel__corner">┘</span>
       </div>
     </div>
   );

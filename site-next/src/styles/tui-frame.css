@@ -1,6 +1,6 @@
 /* ============================================
    TUI FRAME & SCREEN
-   Full-viewport terminal with double-line border,
+   Full-viewport terminal with clean borders,
    keyboard focus system, and panel management.
    ============================================ */
 
@@ -33,68 +33,45 @@
   font-size: inherit;
 }
 
-/* --- Frame: double-line border --- */
+/* --- Frame: outer border --- */
 
 .tui-frame {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
-  --frame-color: var(--color-border-strong);
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-bg);
 }
 
-/* Top / bottom / separator rows */
-.tui-frame__top,
-.tui-frame__bottom,
-.tui-frame__separator {
+/* Title bar */
+.tui-frame__titlebar {
   display: flex;
   align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  color: var(--frame-color);
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 0 1ch;
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-bg-elevated);
+  height: calc(1.5em + 2px);
   user-select: none;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.tui-frame__corner {
-  flex-shrink: 0;
-  color: var(--frame-color);
-}
-
-.tui-frame__hline {
-  border-bottom: 3px double var(--frame-color);
-  height: 0.5em;
-  min-width: 1ch;
-}
-
-.tui-frame__hline--fill {
-  flex: 1;
 }
 
 .tui-frame__title {
   color: var(--color-text-bright);
-  font-weight: 600;
-  padding: 0 1ch;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  flex-shrink: 0;
+  letter-spacing: 0.1em;
 }
 
 .tui-frame__title-right {
   color: var(--color-text-muted);
-  padding: 0 1ch;
-  flex-shrink: 0;
 }
 
-/* Content body with double side borders */
+/* Content body */
 .tui-frame__body {
   flex: 1;
   min-height: 0;
-  border-left: 3px double var(--frame-color);
-  border-right: 3px double var(--frame-color);
-  margin-left: 0.25ch;
-  margin-right: 0.25ch;
   overflow: hidden;
 }
 
@@ -106,18 +83,16 @@
   padding: 1ch;
 }
 
-/* Thin scrollbar */
+/* Scrollbar */
 .tui-frame__content::-webkit-scrollbar { width: 1ch; }
 .tui-frame__content::-webkit-scrollbar-track { background: transparent; }
 .tui-frame__content::-webkit-scrollbar-thumb { background: var(--color-border-strong); }
 
-/* Key hints row */
-.tui-frame__hints-row {
+/* Status bar / key hints */
+.tui-frame__statusbar {
   flex-shrink: 0;
-  border-left: 3px double var(--frame-color);
-  border-right: 3px double var(--frame-color);
-  margin-left: 0.25ch;
-  margin-right: 0.25ch;
+  border-top: 1px solid var(--color-border-strong);
+  background: var(--color-bg-elevated);
 }
 
 .tui-frame__hints {
@@ -137,56 +112,40 @@
   color: var(--color-text-bright);
 }
 
-/* --- Panel: focusable region with single-line border --- */
+/* --- Panel: focusable region --- */
 
 .tui-panel {
-  --panel-color: var(--color-border-strong);
+  position: relative;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-surface);
 }
 
 .tui-panel--active {
-  --panel-color: var(--color-text-bright);
+  border-color: var(--color-text-secondary);
 }
 
-.tui-panel__top,
-.tui-panel__bottom {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  color: var(--panel-color);
-  user-select: none;
-  line-height: 1;
-}
-
-.tui-panel__corner {
-  flex-shrink: 0;
-  color: var(--panel-color);
-}
-
-.tui-panel__hline {
-  border-bottom: 1px solid var(--panel-color);
-  height: 0.5em;
-  min-width: 1ch;
-}
-
-.tui-panel__hline--fill {
-  flex: 1;
-}
-
-.tui-panel__title {
-  color: var(--color-text-bright);
-  font-weight: 600;
+/* Panel title — sits on the top border with bg gap */
+.tui-panel__label {
+  position: absolute;
+  top: -0.75em;
+  left: 1ch;
   padding: 0 0.5ch;
+  background: inherit;
+  color: var(--color-text-muted);
+  font-weight: 600;
   text-transform: uppercase;
+  font-size: inherit;
   letter-spacing: 0.05em;
-  flex-shrink: 0;
+  line-height: 1.5;
+  user-select: none;
+  z-index: 1;
+}
+
+.tui-panel--active .tui-panel__label {
+  color: var(--color-text-bright);
 }
 
 .tui-panel__body {
-  border-left: 1px solid var(--panel-color);
-  border-right: 1px solid var(--panel-color);
-  margin-left: 0.35ch;
-  margin-right: 0.35ch;
   max-height: 40vh;
   overflow-y: auto;
 }
@@ -195,13 +154,12 @@
 .tui-panel__body::-webkit-scrollbar-track { background: transparent; }
 .tui-panel__body::-webkit-scrollbar-thumb { background: var(--color-border-strong); }
 
-.tui-panel__content {
-  padding: 0.5em 1ch;
-}
-
-/* Active panel's scrollbar is brighter */
 .tui-panel--active .tui-panel__body::-webkit-scrollbar-thumb {
   background: var(--color-text-muted);
+}
+
+.tui-panel__content {
+  padding: 0.75em 1ch 0.5em;
 }
 
 /* --- List: keyboard-navigable items --- */
@@ -224,7 +182,7 @@
 .tui-list__cursor {
   flex-shrink: 0;
   width: 2ch;
-  color: var(--color-accent-primary);
+  color: var(--color-text-bright);
   user-select: none;
 }
 

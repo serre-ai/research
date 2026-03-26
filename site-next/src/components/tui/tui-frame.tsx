@@ -8,31 +8,16 @@ interface TuiFrameProps {
 }
 
 /**
- * Full-viewport double-line bordered frame.
+ * Full-viewport bordered frame with title bar and status bar.
  * Server component — TuiKeyHints is the only client island.
- *
- * ╔═ TITLE ══════════════════ STATUS ═╗
- * ║  {children}                       ║
- * ╠═══════════════════════════════════╣
- * ║ Tab:Next  ↑↓:Nav  Enter:Select   ║
- * ╚═══════════════════════════════════╝
  */
 export function TuiFrame({ title = 'DEEPWORK', titleRight, children }: TuiFrameProps) {
   return (
     <div className="tui-frame">
-      {/* Top: ╔═ TITLE ════════════ STATUS ═╗ */}
-      <div className="tui-frame__top" aria-hidden="true">
-        <span className="tui-frame__corner">╔</span>
-        <span className="tui-frame__hline" />
+      {/* Title bar */}
+      <div className="tui-frame__titlebar">
         <span className="tui-frame__title">{title}</span>
-        <span className="tui-frame__hline tui-frame__hline--fill" />
-        {titleRight && (
-          <>
-            <span className="tui-frame__title-right">{titleRight}</span>
-            <span className="tui-frame__hline" />
-          </>
-        )}
-        <span className="tui-frame__corner">╗</span>
+        {titleRight && <span className="tui-frame__title-right">{titleRight}</span>}
       </div>
 
       {/* Content */}
@@ -42,23 +27,9 @@ export function TuiFrame({ title = 'DEEPWORK', titleRight, children }: TuiFrameP
         </div>
       </div>
 
-      {/* Separator: ╠═══════════╣ */}
-      <div className="tui-frame__separator" aria-hidden="true">
-        <span className="tui-frame__corner">╠</span>
-        <span className="tui-frame__hline tui-frame__hline--fill" />
-        <span className="tui-frame__corner">╣</span>
-      </div>
-
-      {/* Key hints (client island) */}
-      <div className="tui-frame__hints-row">
+      {/* Status bar with key hints */}
+      <div className="tui-frame__statusbar">
         <TuiKeyHints />
-      </div>
-
-      {/* Bottom: ╚═══════════╝ */}
-      <div className="tui-frame__bottom" aria-hidden="true">
-        <span className="tui-frame__corner">╚</span>
-        <span className="tui-frame__hline tui-frame__hline--fill" />
-        <span className="tui-frame__corner">╝</span>
       </div>
     </div>
   );
