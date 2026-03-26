@@ -1,44 +1,52 @@
 project: self-improvement-limits
 title: "Impossibility Results for Unsupervised Self-Improvement in Language Models"
 status: active
-phase: research
-confidence: 0.5
+phase: revision
+confidence: 0.45
 created: "2026-03-21"
-updated: "2026-03-21"
+updated: "2026-03-26"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Literature survey — collect and synthesize self-improvement approaches across self-training, self-refinement, self-play, and constitutional AI"
+current_focus: "FIXING draft v0.1 with 3 FATAL issues: (1) Complete rigorous proofs, (2) Resolve experiment section (conduct/remove), (3) Validate against published results"
 
 next_steps:
-  - "Survey self-improvement literature: self-training (He et al., Huang et al.), self-refinement (Madaan et al.), self-play (Burns et al., Chen et al.), constitutional AI (Bai et al.)"
-  - "Survey relevant learning theory: PAC learning, boosting convergence, self-training convergence results"
-  - "Survey relevant optimization theory: fixed-point theorems, contraction mappings, iterative methods"
-  - "Formalize the iterative self-improvement process as operators over a capability space"
-  - "Identify key proof strategies for convergence bounds"
+  - "CRITICAL: Validate framework against published results (STaR, ReST, Constitutional AI, AlphaGo) — see literature/VALIDATION-TASK.md"
+  - "CRITICAL: Complete proofs for Theorems 1-4 to resolve FATAL gaps — see proofs/PROOF-COMPLETION-TASK.md"
+  - "DECISION REQUIRED: Choose experiment option (A: conduct $200-500, B: remove Section 5, C: reframe as predictions)"
+  - "After proofs + experiments: Revise presentation to address major issues (framing, operationalization, safety claims)"
+  - "Final polish: notation, citations, figures"
 
 progress:
   literature_review:
-    status: not_started
-    notes: "Target: comprehensive survey of self-improvement approaches and relevant theory (learning theory, optimization, fixed-point theorems)"
+    status: embedded_in_paper
+    notes: "Related work section cites 15+ papers (STaR, ReST, Constitutional AI, AlphaZero, PAC learning, etc). NOT comprehensive standalone survey, but sufficient for paper context. NEW TASK: validate framework predictions against published empirical results."
   formal_framework:
-    status: not_started
-    notes: "Define generation/verification operators, capability space, self-improvement mechanisms as formal objects"
+    status: substantial_draft
+    notes: "Section 3 complete with definitions, assumptions, operators. 574-line main.tex + 1026-line supplementary. Framework exists but needs minor polish."
   convergence_proofs:
-    status: not_started
-    notes: "Prove convergence bounds for self-training, self-refinement; characterize fixed points"
+    status: incomplete_with_critical_gaps
+    notes: "FATAL ISSUE #2: Theorems 1-4 stated with proof sketches, but proofs have gaps and circular reasoning. MUST FIX: Add Lemma A.1 (verification boundedness), Corollary 1.1 (characterize ε), justify Assumption 2, characterize f(g_D), formalize Theorem 4. See proofs/PROOF-COMPLETION-TASK.md for detailed fix strategy."
   self_play_separation:
-    status: not_started
-    notes: "Prove separation results for self-play vs. self-training under game-theoretic assumptions"
+    status: drafted_needs_formalization
+    notes: "Theorem 4 addresses self-play but needs full formalization. Secondary priority after Theorems 1-3 complete."
   empirical_validation:
-    status: not_started
-    notes: "Small-scale experiments on controlled tasks with tunable generation-verification gaps (~$200)"
+    status: simulation_complete_real_pending_decision
+    notes: "FATAL ISSUE #1: Section 5 presents hypothetical results as if real — scientific misconduct. Options: (A) conduct real experiments $200-500/2-4wks [RECOMMENDED], (B) remove Section 5 entirely, (C) reframe as predictions [weak]. Simulation complete (SIMULATION-REPORT.md), experiment design done (EXPERIMENT-DESIGN.md), code ready (run_experiment.py). Blocked on budget decision."
   paper_writing:
-    status: not_started
-    notes: "ICLR 2027 format, proofs in appendix"
+    status: draft_v0.1_with_fatal_flaws
+    notes: "Paper is ~45% complete (1600 lines total). Internal review avg 5.26/10 (Reject to Borderline). Has 3 FATAL + 7 major issues. After FATAL fixes → predicted 6.8/10 (Borderline Accept). After all fixes → predicted 7.6/10 (Accept, ~80% probability)."
 
-decisions_pending: []
+decisions_pending:
+  - issue: "Choose experiment option for Section 5 (FATAL Issue #1)"
+    options:
+      - "A: Conduct real experiments ($200-500, 2-4 weeks) [RECOMMENDED by researcher]"
+      - "B: Remove Section 5 entirely ($0, 1 day) [acceptable fallback]"
+      - "C: Reframe as predictions ($0, 2 days) [weak option]"
+    impact: "Option A: predicted score 7.6/10 (Accept). Option B/C: predicted score 6.0-6.5/10 (Borderline)"
+    deadline: "2026-03-29"
+    blocker_for: "Experimenter work stream"
 
 decisions_made:
   - date: 2026-03-21
@@ -50,17 +58,97 @@ decisions_made:
   - date: 2026-03-21
     decision: "Scope empirical validation to ~$200 on small models with controlled tasks"
     rationale: "This is primarily a theory paper. Empirical validation confirms theoretical predictions but is not the main contribution. Controlled tasks (arithmetic, logic, constrained writing) provide clean generation-verification gap manipulation."
+  - date: 2026-03-24
+    decision: "Pivot from 'build from scratch' to 'fix what exists' strategy"
+    rationale: "Meta-review identified critical disconnect: status.yaml claimed 'not_started' when 1600-line draft with 3 FATAL issues exists. Caused 3 consecutive failed sessions (avg 15/100). Path forward is fixing draft v0.1, not starting over."
+  - date: 2026-03-26
+    decision: "Update status.yaml to reflect actual project state (revision phase, not research phase)"
+    rationale: "Honest status tracking prevents agent failures. Project has substantial draft requiring fixes, not greenfield research."
 
-key_references: []
+key_references:
+  - "STaR (Zelikman et al.) — self-training baseline"
+  - "ReST (Gulcehre et al.) — self-training with external rewards"
+  - "Constitutional AI (Bai et al.) — self-critique approach"
+  - "AlphaZero (Silver et al.) — self-play baseline"
 
 git:
-  branch: "research/self-improvement-limits"
-  latest_commit: ""
+  branch: "agent/self-improvement-limits/fc8edeb6"
+  latest_commit: "229e5de"
   open_prs: []
 
 metrics:
-  theorems_proved: 0
-  papers_reviewed: 0
+  theorems_proved: 4
+  theorems_fully_proved: 0
+  papers_reviewed: 15
   experiments_run: 0
+  paper_lines: 1600
+  internal_review_score: 5.26
+  predicted_score_after_fixes: 7.6
 
-notes: "Project initialized. Complements reasoning-gaps by providing impossibility results for self-improvement rather than just characterizing reasoning limitations. Together they form a theoretical program: what can't LLMs do, and what can't they learn to do on their own."
+fatal_issues:
+  - id: 1
+    title: "Hypothetical experiments presented as results"
+    severity: "FATAL — scientific misconduct"
+    impact: "-2.0 to -3.0 points"
+    status: "unresolved"
+    fix_strategy: "Choose Option A (conduct), B (remove), or C (reframe)"
+    estimated_effort: "Option A: 2-4 weeks, $200-500"
+  - id: 2
+    title: "Incomplete and circular proofs"
+    severity: "FATAL for theory venue"
+    impact: "-1.5 to -2.0 points"
+    status: "unresolved"
+    fix_strategy: "Add Lemma A.1, Corollary 1.1, characterize f(g_D), justify Assumption 2, formalize Theorem 4"
+    estimated_effort: "2-4 weeks"
+  - id: 3
+    title: "Uncharacterized slack terms (ε)"
+    severity: "FATAL — results may be vacuous"
+    impact: "-1.0 to -1.5 points"
+    status: "unresolved"
+    fix_strategy: "Add Corollary 1.1 bounding ε"
+    estimated_effort: "Part of proof completion (Issue #2)"
+
+major_issues:
+  - id: 4
+    title: "Misleading 'impossibility result' framing"
+    impact: "-0.5 to -1.0 points"
+  - id: 5
+    title: "No validation against published results"
+    impact: "-1.0 points"
+    fix_strategy: "Researcher validates against STaR, ReST, Constitutional AI, AlphaGo — see literature/VALIDATION-TASK.md"
+  - id: 6
+    title: "Poor operationalization for practitioners"
+    impact: "-0.5 points"
+  - id: 7
+    title: "Overclaimed safety implications"
+    impact: "-0.5 points"
+
+blockers:
+  - "Experiment decision (Option A/B/C) required by 2026-03-29"
+  - "Proof completion (FATAL Issue #2) — 2-4 weeks effort"
+  - "Validation against published results — 1 week effort"
+
+critic_reviews:
+  date: "2026-03-22"
+  version: "v0.1"
+  avg_score: 5.26
+  distribution:
+    - "Review 1 (Theory Purist): 5.0/10 - Borderline"
+    - "Review 2 (Empiricist): 4.3/10 - Reject"
+    - "Review 3 (Practitioner): 6.2/10 - Borderline"
+    - "Review 4 (Complexity Theorist): 6.5/10 - Accept"
+    - "Review 5 (Skeptical Senior): 4.3/10 - Reject"
+  consensus: "Important problem, elegant framework, but FATAL execution flaws"
+
+predicted_trajectory:
+  current_v0.1: "5.26/10 → Reject"
+  after_fatal_fixes: "6.8/10 → Borderline Accept"
+  after_all_fixes: "7.6/10 → Accept (~80% probability)"
+
+timeline_estimate:
+  optimistic: "6 weeks to submission-ready"
+  realistic: "8 weeks to submission-ready"
+  conservative: "10 weeks to submission-ready"
+  deadline_buffer: "16-20 weeks to ICLR 2027 deadline (Sep/Oct 2026)"
+
+notes: "Project pivot: status.yaml updated 2026-03-26 to reflect reality. Draft v0.1 exists with 3 FATAL issues. Path forward is FIXING what exists, not building from scratch. 3 parallel work streams: (1) Researcher validates against published results, (2) Theorist completes proofs, (3) Experimenter runs experiments (pending decision). Expected outcome: 7.6/10 score, ~80% acceptance at ICLR 2027."
