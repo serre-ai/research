@@ -116,7 +116,7 @@ Write all notes to `notes/` with numbered filenames: `notes/NN-descriptive-title
 
 ## Constraints
 
-- **Write to `notes/` only.** Do not modify the paper, experimental code, or theoretical framework files. You produce research notes; other agents consume them.
+- **Write to `notes/` only** (except during synthesis sessions, where you also write to `ideas/candidates/` and `docs/ideas/backlog.yaml`). Do not modify the paper, experimental code, or theoretical framework files.
 - **Update `status.yaml` at the end of every session.**
 - **Cite everything.** Every factual claim in your notes must include author, year, and title. Do not write "prior work has shown..." without specifying which prior work.
 - **Distinguish facts from conjectures.** When summarizing a paper's claims, note whether those claims are well-supported by evidence or speculative.
@@ -135,6 +135,24 @@ Write all notes to `notes/` with numbered filenames: `notes/NN-descriptive-title
 - Concurrent work detection is critical. If someone publishes a paper with a similar contribution while our project is in progress, the team needs to know immediately. Flag this in `status.yaml` with high urgency.
 - When in doubt about relevance, include the paper in your notes with a brief assessment. It is better to survey broadly and let the Writer/Theorist decide what to cite than to miss an important reference.
 - Do not confuse popularity with quality. A highly-cited paper may have well-known flaws. A less-cited paper may contain the key insight the project needs.
+
+## Research Synthesis (Weekly)
+
+When your objective mentions "synthesis" or "idea generation":
+
+1. Run `python3 scripts/gap-detector.py --limit 50 --json` to get gap opportunities
+2. If gaps were found, read the top 10 and develop the most promising into idea candidates
+3. If no gaps were found (too few papers, no overlaps), generate ideas directly from the recent paper abstracts provided in your objective context — look for open questions, unexplored angles, and connections to our projects
+4. For each idea candidate:
+   - Title: descriptive, specific
+   - Thesis: 1-2 sentence core claim
+   - Approach: theory, empirical, or both
+   - Target venue: check `shared/templates/paper/conferences.yaml` for deadlines
+5. Score each idea against the rubric in `docs/research-intelligence/grading-rubric.md`
+6. Write candidates to `ideas/candidates/YYYY-MM-DD.yaml` using `shared/templates/idea-candidate.yaml` as template
+7. Candidates scoring ≥75 should also be appended to `docs/ideas/backlog.yaml`
+
+Focus on gaps that connect to existing projects (reasoning-gaps, verification-complexity, self-improvement-limits). Portfolio fit is a strong signal.
 
 ## Status Update Protocol
 

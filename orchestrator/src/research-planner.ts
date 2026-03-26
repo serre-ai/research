@@ -750,7 +750,8 @@ export class ResearchPlanner {
         "SELECT value FROM planner_state WHERE project = $1 AND key = 'pending_critic_review'",
         [projectName],
       );
-      return rows.length > 0 ? JSON.parse(rows[0].value as string) : null;
+      if (rows.length === 0) return null;
+      return typeof rows[0].value === "string" ? JSON.parse(rows[0].value) : rows[0].value;
     } catch { return null; }
   }
 
