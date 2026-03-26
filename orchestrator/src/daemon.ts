@@ -50,6 +50,7 @@ const DEFAULT_CONFIG: DaemonConfig = {
 const MAX_SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour hard limit
 const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 min before retry
 const MAX_SESSIONS_PER_DAY = 20; // Hard cap on total sessions per day (all types)
+const MAX_SESSIONS_PER_PROJECT_PER_DAY = 5; // Per-project daily limit (DW-299)
 
 interface SessionTracker {
   promise: Promise<unknown>;
@@ -135,6 +136,8 @@ export class Daemon {
   private linearClient: LinearClient | null = null;
   private lastMaintenanceAt = 0;
   private lastLiteratureScanAt = 0;
+  private dailyProjectSessions = new Map<string, number>();
+  private lastDailyReset = new Date().toDateString();
   private budgetCheckInProgress = false;
   private pendingDispatches: Array<{
     request: Parameters<Daemon["queueSession"]>[0];
@@ -492,6 +495,26 @@ export class Daemon {
     };
   }
 
+  private getProjectSessionsToday(projectName: string): number {
+    // Reset counts at midnight
+    const today = new Date().toDateString();
+    if (today !== this.lastDailyReset) {
+      this.dailyProjectSessions.clear();
+      this.lastDailyReset = today;
+    }
+    return this.dailyProjectSessions.get(projectName) ?? 0;
+  }
+
+  private recordProjectSession(projectName: string): void {
+    const today = new Date().toDateString();
+    if (today !== this.lastDailyReset) {
+      this.dailyProjectSessions.clear();
+      this.lastDailyReset = today;
+    }
+    const count = this.dailyProjectSessions.get(projectName) ?? 0;
+    this.dailyProjectSessions.set(projectName, count + 1);
+  }
+
   private async cycle(): Promise<void> {
     this.cycleCount++;
     console.log("\n--- Cycle " + this.cycleCount + " ---");
@@ -701,6 +724,13 @@ export class Daemon {
       for (const brief of briefs) {
         if (this.activeSessions.has(brief.projectName)) continue;
 
+        // Per-project daily limit (DW-299)
+        const todaySessions = this.getProjectSessionsToday(brief.projectName);
+        if (todaySessions >= MAX_SESSIONS_PER_PROJECT_PER_DAY) {
+          console.log(`Skipping ${brief.projectName} — daily limit reached (${todaySessions}/${MAX_SESSIONS_PER_PROJECT_PER_DAY})`);
+          continue;
+        }
+
         if (this.isProjectStuck(brief.projectName)) {
           console.log(`Skipping ${brief.projectName} — stuck (identical output in recent sessions)`);
           const lastNotify = this.lastStuckNotifyAt.get(brief.projectName) ?? 0;
@@ -763,6 +793,7 @@ export class Daemon {
           tracker.settled = true;
         });
         this.activeSessions.set(brief.projectName, tracker);
+        this.recordProjectSession(brief.projectName);
       }
     } else {
       // ---- Legacy scoring path ----
@@ -779,6 +810,13 @@ export class Daemon {
       } else {
         for (const candidate of candidates) {
           const { project, agentType } = candidate;
+
+          // Per-project daily limit (DW-299)
+          const todaySessions = this.getProjectSessionsToday(project.project);
+          if (todaySessions >= MAX_SESSIONS_PER_PROJECT_PER_DAY) {
+            console.log(`Skipping ${project.project} — daily limit reached (${todaySessions}/${MAX_SESSIONS_PER_PROJECT_PER_DAY})`);
+            continue;
+          }
 
           if (this.isStuckLoop(project.project, agentType)) {
             console.log("⚠ Loop detected: " + project.project + " has 3+ consecutive low-quality " + agentType + " sessions — skipping this cycle");
@@ -810,6 +848,7 @@ export class Daemon {
             tracker.settled = true;
           });
           this.activeSessions.set(project.project, tracker);
+          this.recordProjectSession(project.project);
         }
       }
     }
