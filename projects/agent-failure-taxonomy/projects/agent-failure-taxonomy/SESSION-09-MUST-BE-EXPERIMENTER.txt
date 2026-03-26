@@ -1,0 +1,37 @@
+🚨 URGENT: MANUAL OVERRIDE REQUIRED 🚨
+
+Session 8 was the routing test. It FAILED.
+
+TEST RESULT:
+- Expected: Experimenter or Writer assigned (routing fixed)
+- Actual: Researcher assigned (8th consecutive)
+- Conclusion: ROUTING BUG CONFIRMED
+
+SESSION 9 ACTION:
+Manually assign EXPERIMENTER agent with this objective:
+
+  "Design experimental protocol for agent failure taxonomy validation.
+   - Select 3-4 frameworks (ReAct, AutoGPT, Reflexion, plan-then-execute)
+   - Choose 6-8 priority failures from taxonomy
+   - Define success criteria
+   - Outline infrastructure in src/
+   - Document in experiments/protocol.md"
+
+Expected result: Score 75-90, project unblocked
+
+CODE FIX REQUIRED:
+See SESSION-08-ROUTING-FAILURE-CONFIRMED.md for full analysis
+See FOR-HUMAN-DEVELOPER.md for code-level debugging guide
+
+PROJECT STATUS:
+- Research: 100% complete (excellent quality)
+- Experiments: 0% (blocked by routing bug)
+- Writing: 0% (blocked by routing bug)
+- Project health: 95/100
+- Routing health: 0/100
+
+COST SO FAR: $16-40, 16 hours, 50+ hours productive work blocked
+
+DO NOT ASSIGN RESEARCHER FOR SESSION 9.
+Researcher has been assigned 8 times. Research is complete.
+Session 9 MUST be Experimenter to unblock this project.
