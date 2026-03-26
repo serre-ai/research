@@ -22,25 +22,19 @@ describe('TuiBox', () => {
     expect(screen.getByText('PROJECTS')).toBeInTheDocument();
   });
 
-  it('renders box-drawing corner characters', () => {
+  it('renders with CSS border (no box-drawing characters)', () => {
     const { container } = render(<TuiBox>content</TuiBox>);
-    expect(container.textContent).toContain('┌');
-    expect(container.textContent).toContain('┐');
-    expect(container.textContent).toContain('└');
-    expect(container.textContent).toContain('┘');
+    const box = container.querySelector('.tui-box');
+    expect(box).toBeTruthy();
+    // CSS border-based — no Unicode box-drawing chars in the DOM
+    expect(container.textContent).toBe('content');
   });
 
-  it('has border sides that stretch with content', () => {
-    const { container } = render(
-      <TuiBox>
-        <p>line 1</p>
-        <p>line 2</p>
-        <p>line 3</p>
-      </TuiBox>,
-    );
-    // Side borders are CSS borders on .tui-box-body, not character spans
-    const body = container.querySelector('.tui-box-body');
-    expect(body).toBeTruthy();
+  it('renders title as label on border', () => {
+    const { container } = render(<TuiBox title="PROJECTS">content</TuiBox>);
+    const label = container.querySelector('.tui-box-label');
+    expect(label).toBeTruthy();
+    expect(label?.textContent).toBe('PROJECTS');
   });
 
   it('applies variant class', () => {
