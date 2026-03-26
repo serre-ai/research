@@ -1,0 +1,255 @@
+{
+  "timestamp": "2026-03-12T18:51:13.828901+00:00",
+  "total_combinations": 27,
+  "completed": 27,
+  "succeeded": 27,
+  "failed": 0,
+  "skipped": 0,
+  "elapsed_seconds": 34073.715537499986,
+  "eta_seconds": 0.0,
+  "results": [
+    {
+      "model": "openai:o3",
+      "task": "B1",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 448.641822665988,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B1",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 1138.028536290978,
+      "accuracy": 0.38877755511022044,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B1",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 746.774217416998,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B2",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 441.952109417005,
+      "accuracy": 0.09563409563409564,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B2",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 843.4447848339914,
+      "accuracy": 0.776,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B2",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 1362.4334208340151,
+      "accuracy": 0.6008146639511202,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B3",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 561.3200610419735,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B3",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 1081.8272822499857,
+      "accuracy": 0.7289156626506024,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B3",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 889.3425280409865,
+      "accuracy": 0.03413654618473896,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B4",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 456.4668692499981,
+      "accuracy": 0.00404040404040404,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B4",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 787.3814972499968,
+      "accuracy": 0.7570281124497992,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B4",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 1508.2540549999685,
+      "accuracy": 0.27628865979381445,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B5",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 1555.2779848750215,
+      "accuracy": 0.10330578512396695,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B5",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 2027.1401785829803,
+      "accuracy": 0.832271762208068,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B5",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 2559.2445607920527,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B6",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 2506.821282040968,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B6",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 2598.9896212910535,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B6",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 2125.6592772500007,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B7",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 2516.3682652499992,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B7",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 3014.306190708012,
+      "accuracy": 0.14512471655328799,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B7",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 1759.6658015829744,
+      "accuracy": 0.08571428571428572,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B8",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 444.5085077090189,
+      "accuracy": 0.432967032967033,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B8",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 442.0922566659865,
+      "accuracy": 1.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B8",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 442.04802845796803,
+      "accuracy": 0.7636363636363637,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B9",
+      "condition": "direct",
+      "success": true,
+      "duration_seconds": 445.105453917,
+      "accuracy": 0.0,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B9",
+      "condition": "short_cot",
+      "success": true,
+      "duration_seconds": 920.1391070420505,
+      "accuracy": 0.908,
+      "error_message": null
+    },
+    {
+      "model": "openai:o3",
+      "task": "B9",
+      "condition": "budget_cot",
+      "success": true,
+      "duration_seconds": 450.41610529099125,
+      "accuracy": 0.006012024048096192,
+      "error_message": null
+    }
+  ]
+}

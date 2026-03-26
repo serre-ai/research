@@ -1,0 +1,47 @@
+name: emnlp
+full_name: "Conference on Empirical Methods in Natural Language Processing"
+url: "https://aclweb.org/emnlp"
+
+deadlines:
+  2026:
+    paper: "2026-06-15"
+    notification: "2026-09-15"
+    conference: "2026-12-07"
+  2027:
+    estimated: true
+    paper: "2027-06-15"  # estimated
+
+acceptance_rate: 0.24
+submissions_per_year: 4500  # approximate
+
+topic_fit:
+  llm_reasoning: high
+  verification_oversight: medium
+  complexity_expressiveness: low
+  self_improvement: low
+  benchmarks_evaluation: high
+  ai_safety: medium
+  architecture: medium
+
+contribution_preferences:
+  theory_with_empirical: medium
+  pure_empirical: high
+  benchmark_papers: high
+  pure_theory: low
+  negative_results: medium
+
+review:
+  reviewers: 3
+  discussion_period: true
+  author_response: true
+  double_blind: true
+  open_review: false
+
+format:
+  page_limit: 8
+  references_extra: true
+  appendix: unlimited
+  anonymous: true
+  checklist: required
+
+notes: "Empirical NLP focus. Values thorough experiments and analysis. Sister conference to ACL."

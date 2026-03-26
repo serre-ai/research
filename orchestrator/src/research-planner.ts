@@ -719,17 +719,31 @@ export class ResearchPlanner {
         "SELECT value FROM planner_state WHERE project = $1 AND key = $2",
         [projectName, "retry:" + linearIdentifier],
       );
-      return rows.length === 0;
+      if (rows.length === 0) return true; // first retry
+      const data = typeof rows[0].value === "string" ? JSON.parse(rows[0].value) : rows[0].value;
+      const attempts = (data as Record<string, unknown>).attempts as number || 1;
+      return attempts < 3; // allow up to 3 attempts total
     } catch { return false; }
   }
 
   async markRetried(projectName: string, linearIdentifier: string, quality: number): Promise<void> {
     if (!this.pool) return;
     try {
+      // Get current attempt count
+      const { rows } = await this.pool.query(
+        "SELECT value FROM planner_state WHERE project = $1 AND key = $2",
+        [projectName, "retry:" + linearIdentifier],
+      );
+      const prev = rows.length > 0
+        ? (typeof rows[0].value === "string" ? JSON.parse(rows[0].value) : rows[0].value)
+        : {};
+      const prevAttempts = (prev as Record<string, unknown>).attempts as number || 0;
+
       await this.pool.query(
         `INSERT INTO planner_state (project, key, value, updated_at) VALUES ($1, $2, $3, NOW())
          ON CONFLICT (project, key) DO UPDATE SET value = $3, updated_at = NOW()`,
-        [projectName, "retry:" + linearIdentifier, JSON.stringify({ retried: true, quality, ts: Date.now() })],
+        [projectName, "retry:" + linearIdentifier,
+         JSON.stringify({ attempts: prevAttempts + 1, lastQuality: quality, ts: Date.now() })],
       );
     } catch { /* ignore */ }
   }
@@ -775,11 +789,13 @@ export class ResearchPlanner {
   ): SessionBrief[] {
     const avgScore = recentEvals.reduce((s, e) => s + e.qualityScore, 0) / recentEvals.length;
     const failedStrategies = [...new Set(recentEvals.map((e) => e.strategy))];
+    // Use phase-based agent type, not hardcoded researcher (DW-290/302 fix)
+    const agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
 
     return [{
       id: randomUUID().slice(0, 8),
       projectName: project.project,
-      agentType: "researcher",
+      agentType,
       objective: `Meta-review: Last ${recentEvals.length} sessions scored avg ${avgScore.toFixed(0)}/100. Strategies tried: ${failedStrategies.join(", ")}. Assess project state and recommend concrete next steps. Do NOT repeat previous approaches.`,
       context: {
         claims: allClaims.slice(0, 10),
@@ -788,7 +804,7 @@ export class ResearchPlanner {
         recentDecisions: project.next_steps ?? [],
         supplementary: `Recent failed sessions:\n${recentEvals.map((e) => `- ${e.agentType}/${e.strategy}: score ${e.qualityScore}, objective: ${e.objective.slice(0, 80)}`).join("\n")}`,
       },
-      constraints: this.buildConstraints("researcher", budgetUsd),
+      constraints: this.buildConstraints(agentType, budgetUsd),
       deliverables: [
         { description: "Update status.yaml with revised next_steps and current_focus", type: "status_update", verificationMethod: "status_changed" },
         { description: "Identify concrete, actionable work items", type: "commit", verificationMethod: "commit_count" },

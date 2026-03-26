@@ -1,0 +1,64 @@
+{
+  "summary": {
+    "task": "B1_masked_majority",
+    "model": "claude-haiku-4-5-20251001",
+    "condition": "direct",
+    "total_instances": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "accuracy_by_difficulty": {
+      "1": 1.0
+    },
+    "mean_latency_ms": 647.2467919908619
+  },
+  "results": [
+    {
+      "instance_id": "B1_masked_majority_d1_0000",
+      "task": "B1_masked_majority",
+      "difficulty": 1,
+      "condition": "direct",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Consider the binary string: 0010111?1?\nThe '?' characters are masked and should be ignored.\nAmong the visible (unmasked) bits, is the majority 0 or 1?\nAnswer with just '0' or '1'.",
+      "model_response": "1",
+      "extracted_answer": "1",
+      "ground_truth": "1",
+      "correct": true,
+      "latency_ms": 577.3714589886367,
+      "metadata": {
+        "is_refusal": false
+      }
+    },
+    {
+      "instance_id": "B1_masked_majority_d1_0001",
+      "task": "B1_masked_majority",
+      "difficulty": 1,
+      "condition": "direct",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Consider the binary string: 0001100?1?\nThe '?' characters are masked and should be ignored.\nAmong the visible (unmasked) bits, is the majority 0 or 1?\nAnswer with just '0' or '1'.",
+      "model_response": "0",
+      "extracted_answer": "0",
+      "ground_truth": "0",
+      "correct": true,
+      "latency_ms": 818.7082090007607,
+      "metadata": {
+        "is_refusal": false
+      }
+    },
+    {
+      "instance_id": "B1_masked_majority_d1_0002",
+      "task": "B1_masked_majority",
+      "difficulty": 1,
+      "condition": "direct",
+      "model": "claude-haiku-4-5-20251001",
+      "prompt_sent": "Consider the binary string: 00100??100\nThe '?' characters are masked and should be ignored.\nAmong the visible (unmasked) bits, is the majority 0 or 1?\nAnswer with just '0' or '1'.",
+      "model_response": "0",
+      "extracted_answer": "0",
+      "ground_truth": "0",
+      "correct": true,
+      "latency_ms": 545.6607079831883,
+      "metadata": {
+        "is_refusal": false
+      }
+    }
+  ]
+}

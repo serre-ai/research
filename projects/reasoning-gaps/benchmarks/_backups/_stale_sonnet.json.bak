@@ -1,0 +1,13 @@
+{
+  "summary": {
+    "task": "",
+    "model": "",
+    "condition": "",
+    "total_instances": 0,
+    "correct": 0,
+    "accuracy": 0.0,
+    "accuracy_by_difficulty": {},
+    "mean_latency_ms": 0.0
+  },
+  "results": []
+}

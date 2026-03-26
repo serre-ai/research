@@ -1,0 +1,10 @@
+# Conference venue index
+# Each venue has a detailed profile in this directory.
+venues:
+  - neurips
+  - icml
+  - iclr
+  - acl
+  - aaai
+  - colm
+  - emnlp

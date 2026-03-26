@@ -1,0 +1,47 @@
+name: icml
+full_name: "International Conference on Machine Learning"
+url: "https://icml.cc"
+
+deadlines:
+  2026:
+    paper: "2026-01-30"  # passed
+    notification: "2026-05-01"
+    conference: "2026-07-13"
+  2027:
+    estimated: true
+    paper: "2027-01-29"  # estimated
+
+acceptance_rate: 0.27
+submissions_per_year: 10000  # approximate
+
+topic_fit:
+  llm_reasoning: high
+  verification_oversight: medium
+  complexity_expressiveness: high
+  self_improvement: medium
+  benchmarks_evaluation: medium
+  ai_safety: medium
+  architecture: high
+
+contribution_preferences:
+  theory_with_empirical: high
+  pure_empirical: medium
+  benchmark_papers: medium
+  pure_theory: high
+  negative_results: low
+
+review:
+  reviewers: 3
+  discussion_period: true
+  author_response: true
+  double_blind: true
+  open_review: false
+
+format:
+  page_limit: 9
+  references_extra: true
+  appendix: unlimited
+  anonymous: true
+  checklist: required
+
+notes: "More theoretical than NeurIPS. Appreciates formal contributions with clean proofs."
