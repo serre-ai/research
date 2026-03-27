@@ -17,13 +17,18 @@ export type AgentType =
 export const PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
   "literature-review": "researcher",
+  "experimental": "experimenter",
   "empirical-evaluation": "experimenter",
   "analysis": "experimenter",
+  "theory": "theorist",
+  "theory-completion-parallel-experiment-execution": "theorist",
   "drafting": "writer",
+  "writing": "writer",
   "submission-prep": "writer",
   "revision": "writer",
   "paper-finalization": "writer",
   "final": "editor",
+  "review": "critic",
   "active": "engineer",
 };
 
