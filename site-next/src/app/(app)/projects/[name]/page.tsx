@@ -1,39 +1,17 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { Activity, BarChart3, Crosshair, Gauge } from 'lucide-react';
+import { useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useProject, useEvalData, useDecisions, useSessions } from '@/hooks';
 import { useQuality } from '@/hooks/use-quality';
-import { MetricCard } from '@/components/ui/metric-card';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { ProgressBar } from '@/components/ui/progress-bar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatDuration(seconds?: number): string {
-  if (!seconds) return '--';
-  if (seconds < 60) return `${seconds}s`;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  if (mins < 60) return `${mins}m ${secs}s`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m`;
-}
+import { TuiBox, TuiPanel, TuiList, TuiMetric, TuiProgress, TuiBadge, TuiStatusDot } from '@/components/tui';
+import { mapStatusToKey, formatDate } from '@/lib/dashboard-helpers';
+import { formatDuration } from '@/lib/format';
 
 export default function ProjectOverviewPage() {
   const params = useParams();
   const name = params.name as string;
+  const router = useRouter();
 
   const { data: project, isLoading: projectLoading } = useProject(name);
   const { data: evalData, isLoading: evalLoading } = useEvalData(name);
@@ -41,211 +19,160 @@ export default function ProjectOverviewPage() {
   const { data: sessions, isLoading: sessionsLoading } = useSessions(name);
   const { data: quality, isLoading: qualityLoading } = useQuality(name);
 
+  const decisionList = (decisions ?? []).slice(0, 5);
+  const sessionList = (sessions ?? []).slice(0, 5);
+
+  const navigateToSession = useCallback(
+    (s: (typeof sessionList)[number]) => router.push(`/projects/${name}/sessions/${s.id}`),
+    [router, name],
+  );
+
+  const confidencePct = project?.confidence != null ? Math.round(project.confidence * 100) : null;
+  const evalPct = evalData
+    ? Math.round((evalData.summary.completed / (evalData.summary.total || 1)) * 100)
+    : 0;
+
   return (
-    <div className="space-y-8">
-      {/* Key metrics */}
-      <section>
-        <Label className="mb-4 block">Key Metrics</Label>
-        {projectLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="space-y-2">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-7 w-24" />
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              label="Phase"
-              value={project?.phase ?? '--'}
-              icon={BarChart3}
-            />
-            <MetricCard
-              label="Confidence"
-              value={
-                project?.confidence != null
-                  ? `${Math.round(project.confidence * 100)}%`
-                  : '--'
-              }
-              icon={Gauge}
-            />
-            <MetricCard
-              label="Focus"
-              value={project?.focus ?? '--'}
-              icon={Crosshair}
-            />
-            <MetricCard
-              label="Status"
-              value={project?.status ?? '--'}
-              icon={Activity}
-            />
-          </div>
-        )}
-      </section>
-
-      {/* Quality score */}
-      <section>
-        <Label className="mb-4 block">Quality Score</Label>
-        {qualityLoading ? (
-          <Card className="space-y-2">
-            <Skeleton className="h-3 w-16" />
-            <Skeleton className="h-7 w-24" />
-          </Card>
-        ) : quality ? (
-          <Card>
-            <div className="flex items-center gap-4">
-              <span className="font-mono text-2xl font-bold text-text-bright">
-                {quality.score}
-              </span>
-              <span className="font-mono text-xs text-text-muted">/ 100</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(quality.checks ?? []).map((check, i) => (
-                <span
-                  key={i}
-                  className={`font-mono text-xs px-2 py-0.5 rounded ${
-                    check.passed
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-red-500/10 text-red-400'
-                  }`}
-                >
-                  {check.name}
-                </span>
-              ))}
-            </div>
-          </Card>
-        ) : (
-          <Card>
-            <EmptyState message="No quality data" description="Quality scores will appear once generated" />
-          </Card>
-        )}
-      </section>
-
-      {/* Eval progress */}
-      <section>
-        <Label className="mb-4 block">Eval Progress</Label>
-        {evalLoading ? (
-          <Card className="space-y-3">
-            <Skeleton className="h-3 w-48" />
-            <Skeleton className="h-2 w-full" />
-          </Card>
-        ) : evalData && evalData.runs.length > 0 ? (
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-sm text-text-secondary">
-                {evalData.summary.completed.toLocaleString()} /{' '}
-                {evalData.summary.total.toLocaleString()} runs completed
-              </span>
-              {evalData.summary.failed > 0 && (
-                <Badge variant="error">{evalData.summary.failed} failed</Badge>
-              )}
-            </div>
-            <ProgressBar
-              value={evalData.summary.completed}
-              max={evalData.summary.total || 1}
-            />
-            <div className="font-mono text-xs text-text-muted">
-              {evalData.runs.length} total eval runs
-            </div>
-          </Card>
-        ) : (
-          <Card>
-            <EmptyState message="No eval data yet" description="Evaluations will appear here once started" />
-          </Card>
-        )}
-      </section>
-
-      {/* Recent decisions */}
-      <section>
-        <Label className="mb-4 block">Recent Decisions</Label>
-        {decisionsLoading ? (
-          <Card className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-1.5">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-4 w-full" />
-              </div>
-            ))}
-          </Card>
-        ) : decisions && decisions.length > 0 ? (
-          <Card padding={false}>
-            <div className="divide-y divide-border">
-              {decisions.slice(0, 5).map((d, i) => (
-                <div key={i} className="px-6 py-4">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="font-mono text-xs text-text-muted">
-                      {formatDate(d.date)}
-                    </span>
-                  </div>
-                  <p className="font-mono text-sm text-text-bright">{d.decision}</p>
-                  {d.rationale && (
-                    <p className="mt-1 font-mono text-xs text-text-muted">{d.rationale}</p>
+    <>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mb-3">
+        <TuiBox title="PROJECT">
+          {projectLoading ? (
+            <span className="text-text-muted">loading...</span>
+          ) : (
+            <div className="space-y-2">
+              <TuiMetric label="PHASE" value={project?.phase ?? '--'} />
+              <div>
+                <div className="text-text-muted text-xs mb-0.5">CONFIDENCE</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-text-bright">
+                    {confidencePct != null ? `${confidencePct}%` : '--'}
+                  </span>
+                  {confidencePct != null && (
+                    <TuiProgress
+                      value={confidencePct}
+                      width={12}
+                      color={confidencePct > 70 ? 'ok' : confidencePct > 30 ? 'warn' : 'error'}
+                    />
                   )}
                 </div>
-              ))}
-            </div>
-          </Card>
-        ) : (
-          <Card>
-            <EmptyState message="No decisions yet" description="Decisions will be logged here as they are made" />
-          </Card>
-        )}
-      </section>
-
-      {/* Recent sessions */}
-      <section>
-        <Label className="mb-4 block">Recent Sessions</Label>
-        {sessionsLoading ? (
-          <Card className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-32" />
               </div>
-            ))}
-          </Card>
-        ) : sessions && sessions.length > 0 ? (
-          <Card padding={false}>
-            <div className="divide-y divide-border">
-              {sessions.slice(0, 5).map((s) => (
-                <div key={s.id} className="flex items-center justify-between px-6 py-3">
-                  <div className="flex items-center gap-4">
-                    <Badge variant="outline">{s.agent_type}</Badge>
-                    <span className="font-mono text-xs text-text-muted">
-                      {formatDate(s.started_at)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-xs text-text-muted tabular-nums">
-                      {formatDuration(s.duration_seconds)}
-                    </span>
-                    <Badge
-                      variant={
-                        s.status === 'completed'
-                          ? 'success'
-                          : s.status === 'running'
-                            ? 'default'
-                            : s.status === 'failed' || s.status === 'error'
-                              ? 'error'
-                              : 'default'
-                      }
-                    >
-                      {s.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+              <TuiMetric label="FOCUS" value={project?.focus ?? '--'} />
+              <div>
+                <div className="text-text-muted text-xs mb-0.5">STATUS</div>
+                <span className="flex items-center gap-2">
+                  <TuiStatusDot status={mapStatusToKey(project?.status ?? 'idle')} />
+                  <span className="text-text-bright">{project?.status ?? '--'}</span>
+                </span>
+              </div>
             </div>
-          </Card>
+          )}
+        </TuiBox>
+
+        {/* Quality Score */}
+        <TuiBox title="QUALITY">
+          {qualityLoading ? (
+            <span className="text-text-muted">loading...</span>
+          ) : quality ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-text-bright text-lg">{quality.score}</span>
+                <span className="text-text-muted">/ 100</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(quality.checks ?? []).map((check, i) => (
+                  <TuiBadge key={i} color={check.passed ? 'ok' : 'error'}>
+                    {check.name}
+                  </TuiBadge>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <span className="text-text-muted">no quality data</span>
+          )}
+        </TuiBox>
+      </div>
+
+      {/* Eval Progress */}
+      <TuiBox title="EVAL" className="mb-3">
+        {evalLoading ? (
+          <span className="text-text-muted">loading...</span>
+        ) : evalData && (evalData.runs ?? []).length > 0 ? (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-text-secondary">
+                {evalData.summary.completed.toLocaleString()} / {evalData.summary.total.toLocaleString()} runs
+              </span>
+              {evalData.summary.failed > 0 && (
+                <TuiBadge color="error">{evalData.summary.failed} failed</TuiBadge>
+              )}
+            </div>
+            <TuiProgress
+              value={evalPct}
+              width={30}
+              color={evalData.summary.failed > 0 ? 'warn' : 'ok'}
+            />
+            <span className="text-text-muted">{(evalData.runs ?? []).length} total eval runs</span>
+          </div>
         ) : (
-          <Card>
-            <EmptyState message="No sessions yet" description="Agent sessions will appear here once started" />
-          </Card>
+          <span className="text-text-muted">no eval data yet</span>
         )}
-      </section>
-    </div>
+      </TuiBox>
+
+      {/* Recent Decisions */}
+      <TuiPanel id="decisions" title="DECISIONS" order={1} itemCount={decisionList.length} className="mb-3">
+        <TuiList
+          panelId="decisions"
+          items={decisionList}
+          keyFn={(d, i) => `${d.date}-${i}`}
+          emptyMessage={decisionsLoading ? 'loading...' : 'no decisions yet'}
+          renderItem={(d, _i, active) => (
+            <div>
+              <div className="flex items-start justify-between gap-4">
+                <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                  {d.decision}
+                </span>
+                <span className="shrink-0 text-text-muted">{formatDate(d.date)}</span>
+              </div>
+              {d.rationale && <span className="text-text-muted">{d.rationale}</span>}
+            </div>
+          )}
+        />
+      </TuiPanel>
+
+      {/* Recent Sessions */}
+      <TuiPanel
+        id="sessions"
+        title="SESSIONS"
+        order={2}
+        itemCount={sessionList.length}
+        onActivateItem={(idx) => navigateToSession(sessionList[idx])}
+        keyHints={[{ key: 'Enter', label: 'Open session' }]}
+      >
+        <TuiList
+          panelId="sessions"
+          items={sessionList}
+          keyFn={(s) => String(s.id)}
+          onActivate={navigateToSession}
+          emptyMessage={sessionsLoading ? 'loading...' : 'no sessions yet'}
+          renderItem={(s, _i, active) => (
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <TuiBadge color="accent">{s.agent_type}</TuiBadge>
+                <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                  {formatDate(s.started_at)}
+                </span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="text-text-muted tabular-nums">
+                  {s.duration_seconds ? formatDuration(s.duration_seconds) : '--'}
+                </span>
+                <TuiStatusDot status={mapStatusToKey(s.status)} />
+              </span>
+            </div>
+          )}
+        />
+      </TuiPanel>
+    </>
   );
 }
