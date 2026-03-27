@@ -66,7 +66,8 @@ export class GitEngine {
   }
 
   async deleteBranch(name: string): Promise<void> {
-    await this.git("branch", "-d", name);
+    try { await this.git("branch", "-d", name); } catch { /* may not exist locally */ }
+    try { await this.git("push", "origin", "--delete", name); } catch { /* may not exist on remote */ }
   }
 
   // ── Sync operations ──────────────────────────────────────
