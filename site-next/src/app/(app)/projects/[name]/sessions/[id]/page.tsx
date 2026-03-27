@@ -3,14 +3,9 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Clock, Coins, DollarSign, Activity } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useSessionDetail, useTranscript } from '@/hooks';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { MetricCard } from '@/components/ui/metric-card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
+import { TuiBox, TuiStatusDot, TuiBadge, TuiMetric } from '@/components/tui';
 import { TranscriptViewer } from '@/components/transcript-viewer';
 import type { StatusKey } from '@/lib/constants';
 import { formatDuration, formatTokens, formatCost } from '@/lib/format';
@@ -44,36 +39,6 @@ function formatDateTime(dateStr: string): string {
   });
 }
 
-function DetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      {/* Header skeleton */}
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-5 w-20" />
-        <Skeleton className="h-5 w-16" />
-      </div>
-
-      {/* Metric cards skeleton */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-16" />
-            <Skeleton className="h-8 w-20" />
-          </Card>
-        ))}
-      </div>
-
-      {/* Transcript skeleton */}
-      <div className="space-y-2">
-        <Skeleton className="h-3 w-24" />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const PAGE_SIZE = 100;
 
 export default function SessionDetailPage() {
@@ -102,91 +67,79 @@ export default function SessionDetailPage() {
       </Link>
 
       {sessionLoading ? (
-        <DetailSkeleton />
+        <TuiBox title="SESSION">
+          <span className="text-text-muted">loading...</span>
+        </TuiBox>
       ) : sessionError ? (
-        <Card>
-          <p className="text-sm text-[--color-status-error]">
-            Failed to load session: {sessionError.message}
-          </p>
-        </Card>
+        <TuiBox title="SESSION">
+          <span className="text-[--color-status-error]">
+            failed to load session: {sessionError.message}
+          </span>
+        </TuiBox>
       ) : session ? (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Session header */}
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge variant="outline">{session.agent_type}</Badge>
-            <StatusBadge status={sessionStatusKey(session.status)}>
-              {session.status}
-            </StatusBadge>
-            <span className="font-mono text-xs text-text-muted">
-              {formatDateTime(session.started_at)}
-            </span>
-            {session.ended_at && (
-              <>
-                <span className="font-mono text-xs text-text-muted">&rarr;</span>
-                <span className="font-mono text-xs text-text-muted">
-                  {formatDateTime(session.ended_at)}
-                </span>
-              </>
-            )}
-          </div>
+          <TuiBox title="SESSION">
+            <div className="flex flex-wrap items-center gap-3">
+              <TuiBadge color="accent">{session.agent_type}</TuiBadge>
+              <TuiStatusDot status={sessionStatusKey(session.status)} />
+              <span className="text-text-secondary">{session.status}</span>
+              <span className="text-text-muted">
+                {formatDateTime(session.started_at)}
+              </span>
+              {session.ended_at && (
+                <>
+                  <span className="text-text-muted">&rarr;</span>
+                  <span className="text-text-muted">
+                    {formatDateTime(session.ended_at)}
+                  </span>
+                </>
+              )}
+            </div>
+          </TuiBox>
 
-          {/* Metadata cards */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <MetricCard
-              label="Duration"
-              value={
-                session.duration_seconds != null
-                  ? formatDuration(session.duration_seconds)
-                  : '--'
-              }
-              icon={Clock}
-            />
-            <MetricCard
-              label="Tokens"
-              value={
-                session.token_usage != null
-                  ? formatTokens(session.token_usage)
-                  : '--'
-              }
-              icon={Coins}
-            />
-            <MetricCard
-              label="Cost"
-              value={
-                session.cost != null ? formatCost(session.cost) : '--'
-              }
-              icon={DollarSign}
-            />
-            <MetricCard
-              label="Status"
-              value={session.status}
-              icon={Activity}
-            />
-          </div>
+          {/* Metrics */}
+          <TuiBox title="METRICS">
+            <div className="flex flex-wrap gap-6">
+              <TuiMetric
+                label="DURATION"
+                value={
+                  session.duration_seconds != null
+                    ? formatDuration(session.duration_seconds)
+                    : '--'
+                }
+              />
+              <TuiMetric
+                label="TOKENS"
+                value={
+                  session.token_usage != null
+                    ? formatTokens(session.token_usage)
+                    : '--'
+                }
+              />
+              <TuiMetric
+                label="COST"
+                value={
+                  session.cost != null ? formatCost(session.cost) : '--'
+                }
+              />
+            </div>
+          </TuiBox>
 
           {/* Transcript */}
-          <div>
-            <Label className="mb-4 block">Transcript</Label>
+          <TuiBox title="TRANSCRIPT">
             {transcriptLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
+              <span className="text-text-muted">loading...</span>
             ) : transcript ? (
               <TranscriptViewer
-                lines={transcript.lines}
+                lines={transcript.lines ?? []}
                 total={transcript.total}
                 onLoadMore={handleLoadMore}
               />
             ) : (
-              <div className="flex items-center justify-center py-12">
-                <p className="font-mono text-sm text-text-muted">
-                  No transcript data available
-                </p>
-              </div>
+              <span className="text-text-muted">no transcript data available</span>
             )}
-          </div>
+          </TuiBox>
         </div>
       ) : null}
     </div>
