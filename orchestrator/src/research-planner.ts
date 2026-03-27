@@ -789,7 +789,10 @@ export class ResearchPlanner {
   ): SessionBrief[] {
     const avgScore = recentEvals.reduce((s, e) => s + e.qualityScore, 0) / recentEvals.length;
     const failedStrategies = [...new Set(recentEvals.map((e) => e.strategy))];
-    const agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
+    const agentType: AgentType = PHASE_TO_AGENT[project.phase] ?? "researcher";
+    if (!PHASE_TO_AGENT[project.phase]) {
+      console.warn(`[Planner] Unknown phase "${project.phase}" for ${project.project} — falling back to researcher. Add this phase to PHASE_TO_AGENT in session-runner.ts.`);
+    }
 
     return [{
       id: randomUUID().slice(0, 8),
@@ -819,7 +822,10 @@ export class ResearchPlanner {
   // --------------------------------------------------------
 
   private phaseBasedFallback(project: ProjectStatus, budgetUsd: number): SessionBrief {
-    const agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
+    const agentType: AgentType = PHASE_TO_AGENT[project.phase] ?? "researcher";
+    if (!PHASE_TO_AGENT[project.phase]) {
+      console.warn(`[Planner] Unknown phase "${project.phase}" for ${project.project} — falling back to researcher. Add this phase to PHASE_TO_AGENT in session-runner.ts.`);
+    }
 
     const PHASE_OBJECTIVES: Record<string, string> = {
       "submission-prep": "Polish paper for submission: integrate pending results, check formatting, verify anonymization, review figures and tables",

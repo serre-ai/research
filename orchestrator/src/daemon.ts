@@ -1009,6 +1009,17 @@ export class Daemon {
   }
 
   /** Sync filesystem projects to the DB on startup so FK references never break. */
+  private mapProjectStatus(status: string): string {
+    const VALID_DB_STATUSES = new Set(["active", "paused", "blocked", "review", "completed"]);
+    const ALIASES: Record<string, string> = { "in-progress": "active" };
+    const mapped = ALIASES[status] ?? status;
+    if (!VALID_DB_STATUSES.has(mapped)) {
+      console.warn(`[Daemon] Unknown project status "${status}" — mapping to "active". Update the DB constraint or status.yaml.`);
+      return "active";
+    }
+    return mapped;
+  }
+
   private async syncProjectsToDb(): Promise<void> {
     if (!this.dbPool) return;
     try {
@@ -1029,7 +1040,7 @@ export class Daemon {
             p.title,
             p.venue ?? null,
             p.phase,
-            p.status === "in-progress" ? "active" : p.status,
+            this.mapProjectStatus(p.status),
             p.confidence,
             p.current_focus,
             p.current_activity ?? null,

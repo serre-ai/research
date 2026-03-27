@@ -2,6 +2,8 @@
 -- 'blocked' = waiting on external action (e.g. LaTeX install, human review).
 -- Distinct from 'paused' (deliberately stopped by user).
 
+BEGIN;
 ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_status_check;
 ALTER TABLE projects ADD CONSTRAINT projects_status_check
   CHECK (status IN ('active', 'paused', 'blocked', 'review', 'completed'));
+COMMIT;
