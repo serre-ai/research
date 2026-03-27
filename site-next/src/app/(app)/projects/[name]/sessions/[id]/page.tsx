@@ -3,28 +3,11 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { useSessionDetail, useTranscript } from '@/hooks';
 import { TuiBox, TuiStatusDot, TuiBadge, TuiMetric } from '@/components/tui';
 import { TranscriptViewer } from '@/components/transcript-viewer';
-import type { StatusKey } from '@/lib/constants';
+import { mapStatusToKey } from '@/lib/dashboard-helpers';
 import { formatDuration, formatTokens, formatCost } from '@/lib/format';
-
-function sessionStatusKey(status: string): StatusKey {
-  switch (status) {
-    case 'completed':
-    case 'success':
-      return 'ok';
-    case 'running':
-    case 'in_progress':
-      return 'warn';
-    case 'failed':
-    case 'error':
-      return 'error';
-    default:
-      return 'idle';
-  }
-}
 
 function formatDateTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -62,7 +45,7 @@ export default function SessionDetailPage() {
         href={`/projects/${name}/sessions`}
         className="mb-6 inline-flex items-center gap-1.5 font-mono text-xs text-text-muted hover:text-text-secondary hover:no-underline"
       >
-        <ArrowLeft className="h-3 w-3" />
+        <span aria-hidden="true">←</span>
         Back to sessions
       </Link>
 
@@ -82,7 +65,7 @@ export default function SessionDetailPage() {
           <TuiBox title="SESSION">
             <div className="flex flex-wrap items-center gap-3">
               <TuiBadge color="accent">{session.agent_type}</TuiBadge>
-              <TuiStatusDot status={sessionStatusKey(session.status)} />
+              <TuiStatusDot status={mapStatusToKey(session.status)} />
               <span className="text-text-secondary">{session.status}</span>
               <span className="text-text-muted">
                 {formatDateTime(session.started_at)}

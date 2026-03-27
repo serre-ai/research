@@ -7,25 +7,9 @@ import { useSessions } from '@/hooks';
 import { DispatchSessionDialog } from '@/components/dispatch-session-dialog';
 import { TuiPanel, TuiList, TuiStatusDot, TuiBadge } from '@/components/tui';
 import { Label } from '@/components/ui/label';
-import type { StatusKey } from '@/lib/constants';
 import type { Session } from '@/lib/types';
+import { mapStatusToKey } from '@/lib/dashboard-helpers';
 import { formatDuration, formatCost, relativeTime } from '@/lib/format';
-
-function sessionStatusKey(status: string): StatusKey {
-  switch (status) {
-    case 'completed':
-    case 'success':
-      return 'ok';
-    case 'running':
-    case 'in_progress':
-      return 'warn';
-    case 'failed':
-    case 'error':
-      return 'error';
-    default:
-      return 'idle';
-  }
-}
 
 function FilterSelect({
   label,
@@ -156,7 +140,7 @@ export default function SessionsPage() {
             renderItem={(session, _i, active) => (
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
-                  <TuiStatusDot status={sessionStatusKey(session.status)} />
+                  <TuiStatusDot status={mapStatusToKey(session.status)} />
                   <TuiBadge color="accent">{session.agent_type}</TuiBadge>
                   <span className={active ? 'text-text-bright' : 'text-text-muted'}>
                     {relativeTime(session.started_at)}

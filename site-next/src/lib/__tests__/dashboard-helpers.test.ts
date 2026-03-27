@@ -16,10 +16,15 @@ describe('mapStatusToKey', () => {
     expect(mapStatusToKey('failed')).toBe('error');
   });
 
+  it('maps session statuses correctly', () => {
+    expect(mapStatusToKey('completed')).toBe('ok');
+    expect(mapStatusToKey('success')).toBe('ok');
+    expect(mapStatusToKey('in_progress')).toBe('warn');
+  });
+
   it('maps unknown statuses to idle', () => {
     expect(mapStatusToKey('unknown')).toBe('idle');
     expect(mapStatusToKey('')).toBe('idle');
-    expect(mapStatusToKey('completed')).toBe('idle');
   });
 });
 

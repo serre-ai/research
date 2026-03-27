@@ -4,9 +4,12 @@ export function mapStatusToKey(status: string): StatusKey {
   switch (status) {
     case 'active':
     case 'running':
+    case 'completed':
+    case 'success':
       return 'ok';
     case 'paused':
     case 'pending':
+    case 'in_progress':
       return 'warn';
     case 'error':
     case 'failed':

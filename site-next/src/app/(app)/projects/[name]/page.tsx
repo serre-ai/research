@@ -76,7 +76,7 @@ export default function ProjectOverviewPage() {
           ) : quality ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-text-bright text-lg">{quality.score}</span>
+                <span className="text-text-bright">{quality.score}</span>
                 <span className="text-text-muted">/ 100</span>
               </div>
               <div className="flex flex-wrap gap-1">
