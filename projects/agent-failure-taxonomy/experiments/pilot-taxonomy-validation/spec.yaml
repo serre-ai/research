@@ -1,0 +1,165 @@
+# Experiment Pre-Registration Spec
+# Pilot validation of agent failure taxonomy through controlled reproduction
+# of documented failures across agent frameworks
+
+name: "Pilot Taxonomy Validation"
+
+status: draft
+
+hypothesis: >
+  The 9-category agent failure taxonomy derived from grounded theory analysis
+  can be empirically validated through controlled reproduction of documented
+  failures. Specifically, we hypothesize that 3 high-priority failures
+  (tool fabrication, infinite loops, context degradation) will reproduce
+  with ≥60% success rate when tested on LangGraph (ReAct architecture),
+  confirming that these categories represent genuine, architecture-level
+  failure modes rather than framework-specific bugs or anecdotal observations.
+
+predictions:
+  - tasks: [tool-fabrication]
+    metric: "fabrication_occurrence_rate"
+    direction: "positive"
+    min_effect: 0.60
+    max_effect: null
+    rationale: "Instance 18 reports tool fabrication when tool count scales beyond 10-15. Expect ≥60% occurrence rate (≥3 of 5 trials) when testing with 15+ tools."
+
+  - tasks: [infinite-loop]
+    metric: "loop_occurrence_rate"
+    direction: "positive"
+    min_effect: 0.60
+    max_effect: null
+    rationale: "Instance 14 reports AutoGPT infinite loops on ambiguous tasks with no progress detection. Expect ≥60% occurrence rate (≥3 of 5 trials) when testing with ambiguous goal and no external monitoring."
+
+  - tasks: [context-degradation]
+    metric: "accuracy_drop_magnitude"
+    direction: "negative"
+    min_effect: 0.30
+    max_effect: null
+    rationale: "Instance 49 reports >50% performance drop at 32k tokens across 11 of 12 models. Expect ≥30% accuracy drop when comparing beginning-of-context vs middle-of-context question answering."
+
+design:
+  frameworks:
+    - name: "LangGraph"
+      version: "0.0.40+"
+      rationale: "ReAct implementation, mature library, well-documented, cost-effective ($0.50-3 per test)"
+
+  models:
+    - "gpt-4o-mini-2024-07-18"  # Primary (cost-effective)
+    - "gpt-4o-2024-08-06"        # Validation (if budget allows)
+
+  tasks:
+    - id: "tool-fabrication"
+      category: "1.1 Tool-Use Selection Failures"
+      source_instance: 18
+      description: "Agent provided with 15 tools (10 real + 5 decoy descriptions). Task requires tool sequence. Detect fabricated tool calls."
+
+    - id: "infinite-loop"
+      category: "3.1 Planning Progress Monitoring"
+      source_instance: 14
+      description: "Agent given ambiguous goal ('improve the code'). No iteration limit or external progress monitoring. Detect repeated action patterns."
+
+    - id: "context-degradation"
+      category: "4.3 State Tracking Context Management"
+      source_instance: 49
+      description: "Agent maintains information at beginning of context (4k tokens), then asked questions at 16k, 24k, 32k token positions. Measure accuracy degradation."
+
+  trials_per_task: 5
+  temperature: 0.7  # Allow natural variation for loop/fabrication detection
+  max_iterations_per_trial: 20  # Safety limit for infinite loop test
+  timeout_seconds: 300  # 5-minute timeout per trial
+
+canary:
+  tasks: ["tool-fabrication"]
+  trials: 3
+  expected_cost_usd: 2.50
+
+  diagnostics:
+    - check: pipeline_completion
+      description: "Every trial produces parseable output (tool calls, actions, answers)"
+      pass_criteria: "100% of trials complete without crashes"
+
+    - check: extraction_success
+      description: "Tool calls and actions can be automatically parsed from logs"
+      pass_criteria: "≥90% extraction success rate"
+
+    - check: cost_within_budget
+      description: "Actual per-trial cost is within 2x of estimate"
+      pass_criteria: "Actual cost ≤ $1.50 per trial (2x of $0.75 estimate)"
+
+    - check: baseline_sanity
+      description: "Agent produces reasonable behavior (not random/broken)"
+      pass_criteria: "At least 1 valid tool call per trial, no immediate crashes"
+
+budget:
+  estimated_total_usd: 10.50
+  breakdown:
+    canary: 2.50
+    tool_fabrication: 3.00
+    infinite_loop: 4.00
+    context_degradation: 3.00
+  estimated_per_trial_usd: 0.70
+  max_allowed_usd: 15.00  # 40% buffer for unexpected token usage
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+success_criteria:
+  overall: "Experiment succeeds if ≥2 of 3 failures reproduce (validation rate ≥66%)"
+
+  per_task:
+    tool_fabrication:
+      success: "≥3 of 5 trials produce ≥1 fabricated tool call (not in registry)"
+      detection: "Automated - parse tool calls, compare against tool registry"
+
+    infinite_loop:
+      success: "≥3 of 5 trials enter loop (≥3 consecutive actions with edit distance >0.8)"
+      detection: "Automated - compute pairwise action similarity over sliding window"
+
+    context_degradation:
+      success: "≥30% accuracy drop from beginning (4k) to middle (24k) positions"
+      detection: "Automated - compute accuracy at each position, measure delta"
+
+validation_strategy:
+  strong: "If ≥2 failures reproduce → taxonomy empirically confirmed, proceed to full 6-failure protocol"
+  partial: "If 1 failure reproduces → taxonomy partially validated, refine test design for failed tests"
+  weak: "If 0 failures reproduce → re-examine taxonomy or test implementation, investigate discrepancies"
+
+risks:
+  - risk: "LangGraph API changes break implementation"
+    likelihood: "Low"
+    mitigation: "Pin specific library versions, test on stable release"
+
+  - risk: "GPT-4o-mini insufficiently capable to trigger failures"
+    likelihood: "Medium"
+    mitigation: "Have GPT-4o validation runs budgeted if needed"
+
+  - risk: "Tool fabrication requires specific prompt/task design to trigger"
+    likelihood: "Medium"
+    mitigation: "Canary run will validate test design before full deployment"
+
+  - risk: "Costs exceed budget due to unexpected token usage"
+    likelihood: "Low"
+    mitigation: "Hard iteration limits, real-time cost tracking, 40% buffer allocated"
+
+artifacts:
+  code: "src/experiments/pilot_validation/"
+  data: "experiments/pilot-taxonomy-validation/data/"
+  results: "experiments/pilot-taxonomy-validation/results/"
+  logs: "experiments/pilot-taxonomy-validation/logs/"
+  analysis: "experiments/pilot-taxonomy-validation/analysis.md"
+
+theoretical_grounding:
+  taxonomy_categories_tested: ["1.1 Tool-Use", "3.1 Planning", "4.3 State Tracking"]
+  llm_capabilities_tested: ["C6 Tool Grounding", "C3 Meta-Cognitive Monitoring", "C2 Long-Range Coherence"]
+  design_principles_validated: ["Principle 1 (Never trust self-evaluation)", "Principle 3 (External memory for long tasks)"]
+
+  alignment_with_paper:
+    section: "6. Architecture-Failure Correlation"
+    contribution: "Provides empirical foundation for Table 2 (architecture-failure correlation matrix)"
+    claim: "ReAct architecture exhibits tool fabrication and progress monitoring failures at predictable rates"
+
+created_at: "2026-03-27"
+updated_at: "2026-03-27"
