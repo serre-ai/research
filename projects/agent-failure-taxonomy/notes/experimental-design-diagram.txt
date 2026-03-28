@@ -1,0 +1,361 @@
+EXPERIMENTAL VALIDATION PROTOCOL - VISUAL STRUCTURE
+==================================================
+
+TAXONOMY VALIDATION STRATEGY
+-----------------------------
+
+50 Instances (9 Categories) → Select 6 High-Priority Failures → Reproduce Across 3 Frameworks
+                                      ↓
+                            Validate Categories Empirically
+
+
+PILOT EXPERIMENT (Days 1-2, $8-12)
+-----------------------------------
+
+Framework: LangGraph only
+
+Test 1: TOOL FABRICATION (Instance 18)
+│
+├─ Setup: 15-20 tools, similar names
+├─ Task: Stock price + CAGR calculation
+├─ Expected: Agent fabricates "calculate_cagr" tool
+├─ Detection: Parse tool calls vs registry
+├─ Cost: $1.50-2.50 (5 trials)
+└─ Validates: Category 1.1 (Tool-Use Selection)
+
+Test 2: INFINITE LOOP (Instance 14)
+│
+├─ Setup: AutoGPT with impossible task
+├─ Task: "Research fictional Wakanda history"
+├─ Expected: Loops searching without recognizing impossibility
+├─ Detection: Action similarity >0.8 for 10+ iterations
+├─ Cost: $2.00-4.00 (3 trials, 50-iteration limit)
+└─ Validates: Category 3.1 (Planning Progress Monitoring)
+
+Test 3: CONTEXT DEGRADATION (Instance 49)
+│
+├─ Setup: 20 facts scattered across 32k tokens
+├─ Task: "What is fact #7?" (position varies)
+├─ Expected: >30% accuracy drop for mid-context facts
+├─ Detection: Accuracy by position bucket
+├─ Cost: $2.00-3.00 (10 positional trials)
+└─ Validates: Category 4.3 (State Tracking Context Management)
+
+PILOT DECISION POINT
+│
+├─ If ≥2 failures reproduced → Proceed to full protocol
+└─ If <2 failures reproduced → Adjust design or substitute
+
+
+FULL PROTOCOL (Weeks 1-3, $45-75)
+----------------------------------
+
+FRAMEWORK 1: LangGraph (ReAct)
+│
+├─ Test 1: Tool Fabrication [$2.50]
+├─ Test 3: Reflexion Bias [$2.00]
+├─ Test 4: Context Degradation [$3.00]
+└─ Test 6: JSON Non-Recovery [$1.00]
+
+FRAMEWORK 2: AutoGPT (Autonomous Loop)
+│
+└─ Test 2: Infinite Loop [$4.00]
+
+FRAMEWORK 3: OpenAI Swarm (Multi-Agent)
+│
+└─ Test 5: Error Amplification [$1.50]
+
+
+CATEGORY COVERAGE MAP
+----------------------
+
+Category 1: Tool-Use
+├─ 1.1 Selection → Test 1: Tool Fabrication ✓
+└─ (1.2-1.4 not tested directly)
+
+Category 2: Grounding
+└─ (Not tested - covered theoretically)
+
+Category 3: Planning
+├─ 3.1 Progress Monitoring → Test 2: Infinite Loop ✓
+└─ (3.2-3.3 not tested directly)
+
+Category 4: State Tracking
+├─ 4.3 Context Management → Test 4: Context Degradation ✓
+└─ (4.1-4.2 not tested directly)
+
+Category 5: Self-Correction
+├─ 5.2 Reflection → Test 3: Reflexion Bias ✓
+└─ (5.1, 5.3 not tested directly)
+
+Category 6: Error Recovery
+├─ 6.2 Error Handling → Test 6: JSON Non-Recovery ✓
+└─ (6.1 not tested directly)
+
+Category 7: Error Propagation
+├─ 7.2 Spatial Propagation → Test 5: Error Amplification ✓
+└─ (7.1, 7.3 not tested directly)
+
+Category 8: Evaluation/Environment
+└─ (Not tested - infrastructure issue, not agent)
+
+Category 9: Security
+└─ (Not tested - out of scope for validation)
+
+COVERAGE: 6/9 categories (66%), prioritized by frequency and criticality
+
+
+TEST AUTOMATION LEVELS
+-----------------------
+
+Fully Automated (5 tests):
+├─ Tool Fabrication: Tool call parser
+├─ Infinite Loop: Action similarity analyzer
+├─ Reflexion Bias: Answer extractor
+├─ Context Degradation: Position-based accuracy tracker
+└─ JSON Non-Recovery: Log parser for retry attempts
+
+Semi-Automated (1 test):
+└─ Error Amplification: Manual review with structured rubric
+
+
+COST BREAKDOWN (Optimized)
+---------------------------
+
+Pilot (3 tests, LangGraph):
+├─ Tool Fabrication: $1.50
+├─ Infinite Loop: $4.00 (needs GPT-4o)
+├─ Context Degradation: $3.00 (needs GPT-4o for context)
+└─ TOTAL: $8.50
+
+Full Protocol Additional (3 tests):
+├─ Reflexion Bias: $2.00
+├─ Error Amplification: $1.50
+├─ JSON Non-Recovery: $1.00
+└─ TOTAL: $4.50
+
+FULL PROTOCOL TOTAL: $13.00 (optimized with GPT-4o-mini where possible)
+
+
+TIMELINE VISUALIZATION
+-----------------------
+
+Week 1:
+│
+├─ Days 1-2: Pilot Experiment
+│   ├─ Setup LangGraph (2 hours)
+│   ├─ Test 1: Tool Fabrication (3 hours)
+│   ├─ Test 2: Infinite Loop (3 hours)
+│   └─ Test 4: Context Degradation (2 hours)
+│
+└─ Day 3: Pilot Analysis & Decision
+    └─ Go/no-go for full protocol
+
+Week 2 (if pilot succeeds):
+│
+├─ Days 1-2: Additional Framework Setup
+│   ├─ AutoGPT setup (4 hours)
+│   └─ Swarm setup (1 hour)
+│
+├─ Days 3-4: Remaining Tests
+│   ├─ Test 3: Reflexion Bias (2 hours)
+│   ├─ Test 5: Error Amplification (2 hours)
+│   └─ Test 6: JSON Non-Recovery (1 hour)
+│
+└─ Day 5: Cross-framework validation runs
+
+Week 3:
+│
+├─ Days 1-2: Data Analysis
+│   ├─ Aggregate results
+│   ├─ Statistical analysis
+│   └─ Plotting and visualization
+│
+├─ Days 3-4: Validation Report
+│   ├─ Methods section
+│   ├─ Results section
+│   └─ Discussion and limitations
+│
+└─ Day 5: Replication Package
+    ├─ Code cleanup and documentation
+    ├─ Docker containers
+    └─ README and setup guide
+
+
+SUCCESS METRICS HIERARCHY
+--------------------------
+
+Minimum Success (validates taxonomy):
+├─ ✓ 4/6 failures reproduced reliably (>80% trials)
+├─ ✓ 5/9 categories empirically validated
+├─ ✓ Budget ≤ $75
+├─ ✓ Timeline ≤ 3 weeks
+└─ ✓ Replicable methods documented
+
+Target Success (strong validation):
+├─ ✓ 5/6 failures reproduced reliably
+├─ ✓ 6/9 categories empirically validated
+├─ ✓ Quantitative failure rates measured
+├─ ✓ Budget ≤ $60
+└─ ✓ Automated detection validated
+
+Stretch Success (publication-ready):
+├─ ✓ 6/6 failures reproduced reliably
+├─ ✓ Model comparison (GPT-4 vs Claude)
+├─ ✓ Scaling relationships quantified
+├─ ✓ Public replication package
+└─ ✓ Contributions to benchmark literature
+
+
+FAILURE INSTANCE MAPPING
+-------------------------
+
+Instance → Test → Category → Framework
+
+18 → Tool Fabrication → 1.1 Tool-Use Selection → LangGraph
+14 → Infinite Loop → 3.1 Planning Progress → AutoGPT
+43 → Reflexion Bias → 5.2 Self-Correction Reflection → LangGraph
+49 → Context Degradation → 4.3 State Tracking Context → LangGraph
+21 → Error Amplification → 7.2 Error Propagation Spatial → Swarm
+28 → JSON Non-Recovery → 6.2 Error Recovery Handling → LangGraph
+
+
+AUTOMATION ARCHITECTURE
+------------------------
+
+Test Harness
+│
+├─ Framework Adapters
+│   ├─ LangGraph Runner
+│   ├─ AutoGPT Runner
+│   └─ Swarm Runner
+│
+├─ Detection Modules
+│   ├─ Tool Call Parser
+│   ├─ Action Similarity Analyzer
+│   ├─ Answer Extractor
+│   ├─ Position-based Accuracy Tracker
+│   └─ Log Parser
+│
+├─ Data Collection
+│   ├─ Conversation Logger
+│   ├─ Cost Tracker
+│   ├─ Metrics Recorder
+│   └─ Timestamp Manager
+│
+└─ Analysis Pipeline
+    ├─ Statistical Analysis
+    ├─ Visualization Generator
+    └─ Report Builder
+
+
+RISK MITIGATION STRATEGY
+-------------------------
+
+Technical Risks:
+├─ Framework setup fails → Pilot validates early
+├─ Failures don't reproduce → Selected Easy/High instances (80%)
+└─ Cost overruns → Strict limits, real-time tracking
+
+Experimental Risks:
+├─ Success criteria too strict → Pilot validates thresholds
+├─ Success criteria too loose → Manual review borderline cases
+└─ Confounding factors → Pin model versions, document dates
+
+Resource Risks:
+├─ Budget exceeded → Use GPT-4o-mini aggressively
+└─ Timeline exceeded → Pilot identifies bottlenecks early
+
+
+DELIVERABLE CHECKLIST
+----------------------
+
+Code Deliverables:
+□ Test harness scripts (Python)
+□ Framework adapter modules
+□ Detection automation
+□ Analysis notebooks (Jupyter)
+□ Docker containers
+□ Requirements.txt and setup guide
+
+Data Deliverables:
+□ Raw conversation logs
+□ Aggregated metrics (CSV)
+□ Success/failure determinations
+□ Model version metadata
+□ Cost and time actuals
+
+Documentation Deliverables:
+□ Validation report (15-20 pages)
+□ Methods section for paper
+□ Results section for paper
+□ Discussion section for paper
+□ Replication instructions
+□ README with setup guide
+
+Analysis Deliverables:
+□ Per-test result tables
+□ Cross-test comparison matrix
+□ Visualization plots
+□ Statistical significance tests
+□ Taxonomy refinement recommendations
+
+
+INTEGRATION WITH PAPER TIMELINE
+--------------------------------
+
+Current Status: March 2026
+Paper Deadline: ACL 2027 (February 2027)
+Time Available: 11 months
+
+Validation Timeline:
+├─ April 2026: Experimental validation (3 weeks)
+├─ May 2026: Analysis and replication package (2 weeks)
+└─ June 2026: Paper integration (1 week)
+
+Writing Timeline (June 2026 - January 2027):
+├─ Methods section (validated experimentally)
+├─ Results section (quantitative failure rates)
+└─ Discussion (boundary conditions, limitations)
+
+Buffer: 1 month for revisions and extensions
+
+Status: On track ✓
+
+
+NEXT ACTIONS
+------------
+
+Immediate (Day 1):
+1. Obtain budget approval ($8-12 pilot or $45-75 full)
+2. Confirm model preference (GPT-4o vs Claude vs GPT-4o-mini)
+3. Set up LangGraph development environment
+4. Implement tool fabrication test (3 hours)
+5. Run 5 trials and validate automated detection
+
+Day 2:
+1. Implement infinite loop test with AutoGPT
+2. Run 3 trials with iteration limits
+3. Validate action similarity detection
+
+Day 3:
+1. Implement context degradation test
+2. Run 10 positional trials
+3. Generate accuracy plots
+
+Day 4:
+1. Analyze pilot results
+2. Make go/no-go decision
+3. If go: plan full protocol execution
+4. If no-go: adjust design and retry
+
+Week 2+ (if pilot succeeds):
+1. Set up remaining frameworks (AutoGPT, Swarm)
+2. Execute remaining 3 tests
+3. Collect and analyze all data
+4. Write validation report
+5. Integrate into paper
+
+
+END OF EXPERIMENTAL DESIGN DIAGRAM
+===================================
