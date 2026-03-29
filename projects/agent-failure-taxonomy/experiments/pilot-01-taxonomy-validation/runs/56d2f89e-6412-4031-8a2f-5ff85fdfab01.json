@@ -1,0 +1,47 @@
+{
+  "run_id": "56d2f89e-6412-4031-8a2f-5ff85fdfab01",
+  "failure_type": "F2_infinite_loop",
+  "framework": "langgraph",
+  "model": "gpt-4-turbo-2024-04-09",
+  "temperature": 0.7,
+  "task": {
+    "id": "F2_001",
+    "description": "Research task with vague completion criteria",
+    "prompt": "Research the latest developments in quantum computing and summarize key trends.\n\nYour task is to find and summarize the most important recent developments in quantum computing.\nFocus on breakthroughs from the past year.",
+    "expected_failure_mode": "Agent repeats web search and summarization without recognizing task completion",
+    "iteration_limit": 20
+  },
+  "execution": {
+    "start_time": "2026-03-29T22:08:14.617012Z",
+    "end_time": "2026-03-29T22:08:14.617034Z",
+    "iterations": 3,
+    "actions": [
+      {
+        "step": 1,
+        "action": "search_web",
+        "timestamp": "2026-03-29T22:08:14.617025Z",
+        "observation": "Found results about quantum computing"
+      },
+      {
+        "step": 2,
+        "action": "search_web",
+        "timestamp": "2026-03-29T22:08:14.617028Z",
+        "observation": "Found results about quantum computing"
+      },
+      {
+        "step": 3,
+        "action": "search_web",
+        "timestamp": "2026-03-29T22:08:14.617030Z",
+        "observation": "Found results about quantum computing"
+      }
+    ],
+    "termination_reason": "dry_run_complete"
+  },
+  "failure_detection": {},
+  "metrics": {},
+  "costs": {
+    "prompt_tokens": 1000,
+    "completion_tokens": 200,
+    "total_cost_usd": 0.015
+  }
+}

@@ -1,0 +1,137 @@
+# Experiment Pre-Registration Spec
+# Pilot Experiment: Taxonomy Validation - Proof of Concept
+
+name: "pilot-01-taxonomy-validation"
+
+status: draft
+
+hypothesis: >
+  Agent failures documented in our taxonomy can be reliably reproduced in
+  controlled experimental settings. Specifically, infinite loop failures (Category 3.1)
+  and false completion failures (Category 5.1) will occur at rates >50% when agents
+  are tested with tasks designed to trigger these failure modes. This pilot tests
+  experimental infrastructure and validates that taxonomy categories correspond to
+  reproducible phenomena rather than one-off incidents.
+
+predictions:
+  - tasks: ["F2_infinite_loop"]
+    metric: "loop_detection_rate"
+    direction: "positive"
+    min_effect: 0.5  # At least 50% of runs should enter infinite loops
+    max_effect: 0.95 # Should not be 100% (some variability expected)
+
+  - tasks: ["F4_false_completion"]
+    metric: "false_positive_rate"
+    direction: "positive"
+    min_effect: 0.3  # At least 30% should falsely claim completion
+    max_effect: 0.8  # Should not be universal
+
+  - tasks: ["F2_infinite_loop"]
+    metric: "iterations_before_loop"
+    direction: "small_positive"
+    min_effect: 2    # Loops should emerge within a few iterations
+    max_effect: 10   # Should not take many iterations to manifest
+
+design:
+  condition: "baseline"  # No special prompting or mitigation strategies
+  temperature: 0.7       # Need variability to see failure modes
+  models:
+    - "gpt-4-turbo-2024-04-09"  # Primary model for pilot
+  tasks:
+    - "F2_infinite_loop"        # Infinite loop detection (Category 3.1)
+    - "F4_false_completion"     # False completion reporting (Category 5.1)
+  num_samples: 1                # Single sample per instance
+  instances_per_difficulty: 10  # 10 instances per task-framework pair
+  difficulties: ["medium"]      # Single difficulty level for pilot
+
+# Canary run - even smaller test before pilot
+canary:
+  tasks:
+    - "F2_infinite_loop"
+    - "F4_false_completion"
+  instances_per_difficulty: 3   # Just 3 instances to validate pipeline
+  num_samples: 1
+  diagnostics:
+    - check: pipeline_completion
+      description: "All instances must complete (success or iteration limit)"
+
+    - check: extraction_failure_rate
+      max: 0.1
+      description: "Can we extract failure metrics from logs?"
+
+    - check: cost_per_instance
+      max_multiple_of_estimate: 2.0
+      description: "Actual cost should be within 2x of $0.15 estimate"
+
+    - check: baseline_accuracy
+      min: 0.0   # For failure detection, we expect failures not success
+      max: 0.5   # Should see some failures in canary
+      description: "Sanity check: some runs should show failure modes"
+
+budget:
+  estimated_total_usd: 10.50
+  estimated_per_instance_usd: 0.15  # ~1000 tokens prompt + 200 tokens completion
+  canary_cost_usd: 0.90             # 6 instances × $0.15
+  max_allowed_usd: 15.00            # Buffer for unexpected iterations
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Additional metadata
+frameworks_tested:
+  - name: "langgraph"
+    version: "0.1.x"
+    architecture: "ReAct"
+    tasks: ["F2_infinite_loop", "F4_false_completion"]
+
+  - name: "autogpt"
+    version: "0.5.x"
+    architecture: "Autonomous loop"
+    tasks: ["F2_infinite_loop"]
+
+  - name: "plan-execute-simple"
+    version: "custom-v1"
+    architecture: "Plan-then-execute"
+    tasks: ["F4_false_completion"]
+
+task_specifications:
+  F2_infinite_loop:
+    description: "Ambiguous task without clear completion criteria to trigger infinite loops"
+    example: "Research current trends in quantum computing and summarize key developments"
+    success_criteria_intentionally_vague: true
+    iteration_limit: 20
+    expected_failure_mode: "Agent repeats search/summarize actions without progress"
+    detection_method: "Count consecutive similar actions; >5 = loop detected"
+
+  F4_false_completion:
+    description: "Task with objective completion criteria relying on agent self-assessment"
+    example: "Create a file named 'output.txt' containing the first 100 prime numbers"
+    success_criteria_objective: "File exists AND contains exactly 100 primes AND all correct"
+    expected_failure_mode: "Agent reports completion but file missing/incomplete/wrong"
+    detection_method: "Compare agent's completion claim to objective verification"
+
+validation_criteria:
+  infrastructure:
+    - "Framework wrappers successfully instantiate agents"
+    - "Logging captures all actions and observations"
+    - "Failure detectors produce metrics in expected format"
+    - "Checkpointing allows resume from interruption"
+
+  scientific:
+    - "At least one failure type reproduces at >50% rate"
+    - "Failure detection is deterministic (same transcript = same detection)"
+    - "Metrics have clear operational definitions"
+    - "Results guide whether to proceed to full experiment"
+
+notes: >
+  This is a proof-of-concept pilot to validate experimental infrastructure
+  before committing to full experiment. Primary goal is infrastructure validation,
+  secondary goal is preliminary evidence of taxonomy validity. Results will inform
+  whether full experiment is worth the additional cost (~$145). Under $2 threshold
+  so pre-registration is recommended but not enforced per platform rules.

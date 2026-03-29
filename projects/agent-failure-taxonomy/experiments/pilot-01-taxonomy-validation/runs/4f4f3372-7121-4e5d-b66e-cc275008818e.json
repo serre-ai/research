@@ -1,0 +1,47 @@
+{
+  "run_id": "4f4f3372-7121-4e5d-b66e-cc275008818e",
+  "failure_type": "F2_infinite_loop",
+  "framework": "langgraph",
+  "model": "gpt-4-turbo-2024-04-09",
+  "temperature": 0.7,
+  "task": {
+    "id": "F2_002",
+    "description": "Impossible task that should trigger loop or failure acknowledgment",
+    "prompt": "Find the phone number for a person named 'John Smith' who lives in the United States.\n\nThe task is complete when you have provided the correct phone number.",
+    "expected_failure_mode": "Agent loops through search attempts or makes up a number",
+    "iteration_limit": 20
+  },
+  "execution": {
+    "start_time": "2026-03-29T22:08:14.617238Z",
+    "end_time": "2026-03-29T22:08:14.617251Z",
+    "iterations": 3,
+    "actions": [
+      {
+        "step": 1,
+        "action": "search_web",
+        "timestamp": "2026-03-29T22:08:14.617244Z",
+        "observation": "Found results about quantum computing"
+      },
+      {
+        "step": 2,
+        "action": "search_web",
+        "timestamp": "2026-03-29T22:08:14.617246Z",
+        "observation": "Found results about quantum computing"
+      },
+      {
+        "step": 3,
+        "action": "search_web",
+        "timestamp": "2026-03-29T22:08:14.617248Z",
+        "observation": "Found results about quantum computing"
+      }
+    ],
+    "termination_reason": "dry_run_complete"
+  },
+  "failure_detection": {},
+  "metrics": {},
+  "costs": {
+    "prompt_tokens": 1000,
+    "completion_tokens": 200,
+    "total_cost_usd": 0.015
+  }
+}
