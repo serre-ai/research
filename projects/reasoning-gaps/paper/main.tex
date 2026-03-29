@@ -450,8 +450,8 @@ Concurrent diagnostic frameworks---X-RAY~\citep{xray2026} and ConvexBench~\citep
 
 \paragraph{Mechanistic interpretability and scaling.}
 Mechanistic work identifies specific circuits implementing reasoning subroutines---induction heads~\citep{olsson2022}, modular arithmetic~\citep{nanda2023grokking}---approaching our question from the opposite direction: what transformers \emph{do} compute rather than what they \emph{cannot}.
-The two perspectives are complementary; our taxonomy predicts which circuits are absent.
-Scaling-law research~\citep{kaplan2020,chinchilla2022} implies capabilities emerge smoothly with compute, yet our Types~5--6 gaps are provably invariant to scale---a concrete counterexample to universal scaling optimism.
+The two perspectives are complementary; our taxonomy identifies the complexity boundaries those circuits would need to cross.
+Scaling-law research~\citep{kaplan2020,chinchilla2022} implies capabilities emerge smoothly with compute, yet our Type~5 gaps are provably invariant to scale and Type~6 gaps show persistent model-dependent ceilings---concrete counterexamples to universal scaling optimism.
 
 % ============================================================
 \section{Conclusion}
@@ -725,7 +725,7 @@ Y.~Liu, Y.~Huang, Y.-X. Wang, Y.~Liang, and Y.~Bu.
 \newblock \emph{arXiv:2602.01075}, 2026.
 
 \bibitem[Olsson et~al.(2022)]{olsson2022}
-C.~Olsson, N.~Elhage, N.~Nanda, et~al.
+C.~Olsson, N.~Elhage, N.~Nanda, N.~Henighan, S.~Joseph, B.~Mann, A.~Askell, Y.~Bai, A.~Chen, T.~Conerly, and others.
 \newblock In-context learning and induction heads.
 \newblock \emph{arXiv:2209.11895}, 2022.
 
@@ -735,12 +735,12 @@ N.~Nanda, L.~Chan, T.~Lieberum, J.~Smith, and J.~Steinhardt.
 \newblock In \emph{ICLR}, 2023.
 
 \bibitem[Kaplan et~al.(2020)]{kaplan2020}
-J.~Kaplan, S.~McCandlish, T.~Henighan, et~al.
+J.~Kaplan, S.~McCandlish, T.~Henighan, T.~B.~Brown, B.~Chess, R.~Child, S.~Gray, A.~Radford, J.~Wu, and D.~Amodei.
 \newblock Scaling laws for neural language models.
 \newblock \emph{arXiv:2001.08361}, 2020.
 
 \bibitem[Hoffmann et~al.(2022)]{chinchilla2022}
-J.~Hoffmann, S.~Borgeaud, A.~Mensch, et~al.
+J.~Hoffmann, S.~Borgeaud, A.~Mensch, E.~Millican, T.~Cai, M.~Rutherford, D.~de~Las~Casas, and others.
 \newblock Training compute-optimal large language models.
 \newblock In \emph{NeurIPS}, 2022.
 
