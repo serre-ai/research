@@ -236,6 +236,7 @@ For Type~5 gaps, accuracy at the $\NP$-hard phase transition does not improve be
 % ============================================================
 
 We design nine diagnostic tasks, each targeting a specific gap type with procedurally generated instances to avoid contamination (\Cref{tab:tasks}).
+B5 (Graph Reachability) serves as a bridge task: as an $\NL$-complete problem, it sits between depth gaps (Type~2) and algorithmic gaps (Type~4), probing the boundary where additional depth may or may not suffice.
 Each task is evaluated at five difficulty levels (100 instances each) under four conditions: direct, short CoT, budget CoT (task-calibrated token limits), and tool-augmented (code execution, where applicable).
 Full task specifications appear in \Cref{app:benchmarks}.
 
@@ -446,6 +447,11 @@ The prediction that CoT effectiveness varies by gap \emph{type} rather than task
 Standard benchmarks~\citep{gsm8k,bigbench,math2021,frontiermath2024} measure aggregate performance without isolating computational mechanisms.
 \bench{} addresses this with controlled difficulty parameters and testable predictions per gap type.
 Concurrent diagnostic frameworks---X-RAY~\citep{xray2026} and ConvexBench~\citep{convexbench2026}---confirm our predictions about depth bottlenecks and tool-based mitigation.
+
+\paragraph{Mechanistic interpretability and scaling.}
+Mechanistic work identifies specific circuits implementing reasoning subroutines---induction heads~\citep{olsson2022}, modular arithmetic~\citep{nanda2023grokking}---approaching our question from the opposite direction: what transformers \emph{do} compute rather than what they \emph{cannot}.
+The two perspectives are complementary; our taxonomy predicts which circuits are absent.
+Scaling-law research~\citep{kaplan2020,chinchilla2022} implies capabilities emerge smoothly with compute, yet our Types~5--6 gaps are provably invariant to scale---a concrete counterexample to universal scaling optimism.
 
 % ============================================================
 \section{Conclusion}
@@ -717,6 +723,26 @@ T.~Gao, Y.~Cai, Y.~Yuan, and J.~S. Dong.
 Y.~Liu, Y.~Huang, Y.-X. Wang, Y.~Liang, and Y.~Bu.
 \newblock {ConvexBench}: Can {LLMs} recognize convex functions?
 \newblock \emph{arXiv:2602.01075}, 2026.
+
+\bibitem[Olsson et~al.(2022)]{olsson2022}
+C.~Olsson, N.~Elhage, N.~Nanda, et~al.
+\newblock In-context learning and induction heads.
+\newblock \emph{arXiv:2209.11895}, 2022.
+
+\bibitem[Nanda et~al.(2023)]{nanda2023grokking}
+N.~Nanda, L.~Chan, T.~Lieberum, J.~Smith, and J.~Steinhardt.
+\newblock Progress measures for grokking via mechanistic interpretability.
+\newblock In \emph{ICLR}, 2023.
+
+\bibitem[Kaplan et~al.(2020)]{kaplan2020}
+J.~Kaplan, S.~McCandlish, T.~Henighan, et~al.
+\newblock Scaling laws for neural language models.
+\newblock \emph{arXiv:2001.08361}, 2020.
+
+\bibitem[Hoffmann et~al.(2022)]{chinchilla2022}
+J.~Hoffmann, S.~Borgeaud, A.~Mensch, et~al.
+\newblock Training compute-optimal large language models.
+\newblock In \emph{NeurIPS}, 2022.
 
 \end{thebibliography}
 
