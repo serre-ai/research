@@ -1,0 +1,194 @@
+# Experiment Pre-Registration Spec
+# Pilot experiment to validate agent failure taxonomy categories
+
+name: "agent-failure-taxonomy-pilot"
+
+status: draft
+
+hypothesis: >
+  Agent failure modes cluster into distinct, reproducible categories that
+  manifest differently across agent architectures. Specifically: (1) Tool
+  fabrication rate increases with tool count (Category 1.1), (2) Agents
+  without external progress monitoring enter infinite loops on ambiguous
+  tasks (Category 3.1), and (3) Agents report false task completion when
+  self-evaluation is the only verification mechanism (Category 5.1).
+
+predictions:
+  - tasks: ["tool_fabrication_3", "tool_fabrication_10", "tool_fabrication_30", "tool_fabrication_100"]
+    metric: "fabrication_rate"
+    direction: "positive"
+    min_effect: 0.20  # expect at least 20% increase from 3 tools to 100 tools
+    max_effect: null
+    rationale: "Instance 18 and C6 limitation mapping predict scaling degradation"
+
+  - tasks: ["infinite_loop_ambiguous"]
+    metric: "loop_occurrence_rate"
+    direction: "positive"
+    min_effect: 0.30  # expect loops in at least 30% of ambiguous tasks
+    max_effect: null
+    rationale: "Instance 14 shows medium reproducibility; C3 limitation predicts no self-monitoring"
+
+  - tasks: ["false_completion_file_ops"]
+    metric: "false_completion_rate"
+    direction: "positive"
+    min_effect: 0.20  # expect false completion in at least 20% of instances
+    max_effect: null
+    rationale: "Instance 19 and 25 show medium reproducibility; C7 limitation predicts unreliable self-evaluation"
+
+design:
+  conditions:
+    - name: "tool_fabrication_langraph"
+      framework: "langraph"
+      architecture: "react"
+      failure_category: "1.1_tool_selection"
+      tasks: ["tool_fabrication_3", "tool_fabrication_10", "tool_fabrication_30", "tool_fabrication_100"]
+      instances_per_task: 10
+
+    - name: "infinite_loop_langraph"
+      framework: "langraph"
+      architecture: "react"
+      failure_category: "3.1_progress_monitoring"
+      tasks: ["infinite_loop_ambiguous"]
+      instances_per_task: 10
+
+    - name: "infinite_loop_plan_execute"
+      framework: "plan_execute_custom"
+      architecture: "plan_then_execute"
+      failure_category: "3.1_progress_monitoring"
+      tasks: ["infinite_loop_ambiguous"]
+      instances_per_task: 10
+
+    - name: "false_completion_langraph"
+      framework: "langraph"
+      architecture: "react"
+      failure_category: "5.1_verification_failures"
+      tasks: ["false_completion_file_ops"]
+      instances_per_task: 10
+
+    - name: "false_completion_plan_execute"
+      framework: "plan_execute_custom"
+      architecture: "plan_then_execute"
+      failure_category: "5.1_verification_failures"
+      tasks: ["false_completion_file_ops"]
+      instances_per_task: 10
+
+  temperature: 0.0  # deterministic for pilot
+  models:
+    - "claude-3-5-sonnet-20241022"
+  num_samples: 1
+  instances_per_difficulty: 10
+  difficulties: [1]  # single difficulty for pilot
+
+  controls:
+    - "All tasks have deterministic ground truth"
+    - "Tool names in fabrication test are randomized per instance to prevent memorization"
+    - "Loop detection uses external counter, not agent self-report"
+    - "Completion verification compares actual system state to expected state"
+    - "Same model and temperature across all conditions"
+    - "Randomized instance order to prevent ordering effects"
+
+canary:
+  tasks: ["tool_fabrication_10", "infinite_loop_ambiguous", "false_completion_file_ops"]
+  instances_per_task: 5
+  frameworks: ["langraph"]  # canary on single framework first
+  diagnostics:
+    - check: "pipeline_completion"
+      description: "All instances produce parseable output"
+      pass_threshold: 1.0
+
+    - check: "extraction_failure_rate"
+      description: "Agent responses can be parsed for actions and tool calls"
+      max: 0.10
+
+    - check: "accuracy_sanity"
+      description: "Not all passing or all failing (0% < failure_rate < 100%)"
+      min_failure_rate: 0.05
+      max_failure_rate: 0.95
+
+    - check: "cost_within_budget"
+      description: "Actual cost per instance within 2x of estimate"
+      max_multiple_of_estimate: 2.0
+
+    - check: "detector_accuracy"
+      description: "Failure detectors validated by manual inspection of first 20 instances"
+      min_accuracy: 0.90
+
+budget:
+  estimated_total_usd: 8.00
+  breakdown:
+    tool_fabrication: 0.80  # 10 instances × 4 tool-count conditions × $0.02
+    infinite_loops: 2.00    # 10 instances × 2 frameworks × $0.10 (higher due to iterations)
+    false_completion: 0.40  # 10 instances × 2 frameworks × $0.02
+    canary: 1.50            # 5 instances × 3 tasks × $0.10 (conservative)
+    buffer: 3.30            # ~40% buffer for unexpected iterations/errors
+  estimated_per_instance_usd: 0.10  # conservative average across all tasks
+  canary_cost_usd: 1.50
+  max_allowed_usd: 15.00  # hard stop if costs exceed
+
+theoretical_grounding:
+  framework_mapping:
+    - category: "1.1_tool_selection"
+      llm_limitations: ["C6_tool_grounding", "C1_factual_grounding"]
+      prediction_source: "taxonomy notes/04-llm-limitation-mapping.md, Instance 18"
+      fundamental: true
+
+    - category: "3.1_progress_monitoring"
+      llm_limitations: ["C3_meta_cognitive_monitoring"]
+      prediction_source: "taxonomy notes/04-llm-limitation-mapping.md, Instance 14"
+      fundamental: true
+
+    - category: "5.1_verification_failures"
+      llm_limitations: ["C7_self_correction_capability", "C3_meta_cognitive_monitoring"]
+      prediction_source: "taxonomy notes/04-llm-limitation-mapping.md, Instances 19 and 25"
+      fundamental: true
+
+  design_principles_tested:
+    - "Principle 1: Never Trust Self-Evaluation (tests false completion)"
+    - "Principle 4: Validate All Generated Information (tests tool fabrication)"
+
+  architecture_correlation_predictions:
+    - architecture: "react"
+      high_risk_failures: ["progress_monitoring", "context_exhaustion"]
+      source: "taxonomy notes/05-taxonomy-final-structure.md line 231"
+
+    - architecture: "plan_then_execute"
+      high_risk_failures: ["false_completion", "state_verification_absence"]
+      source: "taxonomy notes/05-taxonomy-final-structure.md line 232"
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Additional metadata for experiment tracking
+metadata:
+  project: "agent-failure-taxonomy"
+  phase: "pilot"
+  purpose: "infrastructure_validation_and_proof_of_concept"
+  expected_duration_hours: 4
+  parallelizable: true
+  dependencies: []
+
+  reproducibility_targets:
+    tool_fabrication: "easy"      # Instance 18 rating
+    infinite_loops: "medium"       # Instance 14 rating
+    false_completion: "medium"     # Instances 19, 25 rating
+
+  success_criteria:
+    infrastructure:
+      - "100% pipeline completion rate"
+      - "Failure detectors >90% accuracy"
+      - "Costs within 2x of estimates"
+      - "Checkpoint system enables crash recovery"
+    scientific:
+      - "At least 2 of 3 failure types reproduced with rate >30%"
+      - "Measurable difference in failure rates across frameworks (where predicted)"
+      - "Results align with literature reproducibility ratings"
+    practical:
+      - "Total cost <$15"
+      - "Infrastructure reusable for full experiments"
+      - "Clear insights for scaling to full experiment design"
