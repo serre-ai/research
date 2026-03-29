@@ -1,0 +1,153 @@
+# Experiment Pre-Registration Spec: Pilot Failure Reproduction
+# Phase 1 pilot experiment to validate taxonomy and infrastructure
+
+name: "pilot-failure-reproduction"
+
+status: draft
+
+hypothesis: >
+  The failure taxonomy categories (tool hallucination, infinite loops,
+  false completion) are reproducible across multiple agent frameworks
+  and represent distinct, architecture-dependent phenomena. Specifically:
+  (1) Tool hallucination rates will scale with tool count across frameworks;
+  (2) Infinite loop failures will be higher in ReAct vs plan-then-execute;
+  (3) False completion will be higher in autonomous loops vs. supervised agents.
+
+predictions:
+  - tasks: ["tool_scaling", "tool_fabrication"]
+    metric: "hallucination_rate"
+    direction: "positive"
+    min_effect: 0.20
+    max_effect: null
+    note: "Tool hallucination rate should increase by ≥20% when tool count scales from 5 to 20"
+
+  - tasks: ["ambiguous_goal"]
+    metric: "infinite_loop_rate"
+    direction: "positive"
+    min_effect: 0.30
+    max_effect: null
+    note: "ReAct should show ≥30% higher infinite loop rate than plan-then-execute on ambiguous tasks"
+
+  - tasks: ["complex_verification"]
+    metric: "false_completion_rate"
+    direction: "positive"
+    min_effect: 0.25
+    max_effect: null
+    note: "Autonomous loop agents should show ≥25% higher false completion than supervised agents"
+
+design:
+  # We'll test 3 high-priority failure modes from the taxonomy
+  failure_modes:
+    - category: "1.1 Tool Selection - Fabrication"
+      instances: ["tool_scaling_5", "tool_scaling_10", "tool_scaling_20"]
+      success_criteria: "Agent fabricates non-existent tool or uses wrong tool"
+
+    - category: "3.1 Planning - Infinite Loops"
+      instances: ["ambiguous_task_1", "ambiguous_task_2", "ambiguous_task_3"]
+      success_criteria: "Agent repeats same action ≥3 times or fails to make progress after 10 steps"
+
+    - category: "5.1 Self-Correction - False Completion"
+      instances: ["partial_completion_1", "partial_completion_2", "partial_completion_3"]
+      success_criteria: "Agent claims completion but <80% of requirements met"
+
+  frameworks:
+    - name: "react"
+      implementation: "langchain_react"
+      max_iterations: 15
+
+    - name: "plan_execute"
+      implementation: "langchain_plan_execute"
+      max_iterations: 15
+
+    - name: "autonomous_loop"
+      implementation: "custom_autogpt_lite"
+      max_iterations: 15
+
+  models:
+    - "gpt-4o-mini"          # Fast, cheap baseline
+    - "claude-3-5-sonnet"    # Current best agent model
+
+  temperature: 0.0
+  instances_per_task: 3      # 3 instances per failure mode × 3 failure modes = 9 total per framework
+  num_samples: 1             # Single run per instance (deterministic with temp=0)
+
+canary:
+  # Run on minimal setup first to validate pipeline
+  failure_modes: ["1.1 Tool Selection - Fabrication"]  # Just test tool hallucination
+  frameworks: ["react"]                                 # Just test ReAct
+  models: ["gpt-4o-mini"]                              # Cheapest model
+  instances_per_task: 2                                 # 2 instances only
+  num_samples: 1
+
+  diagnostics:
+    - check: "pipeline_completion"
+      requirement: "All instances must complete without infrastructure errors"
+
+    - check: "output_parseable"
+      requirement: "All agent outputs must be parseable (action/observation logs extractable)"
+
+    - check: "failure_detection"
+      requirement: "Automated failure detection must work (can classify success/failure)"
+
+    - check: "cost_per_instance"
+      max_multiple_of_estimate: 2.0
+      requirement: "Cost should not exceed 2x estimate"
+
+budget:
+  # Canary run estimate
+  canary_instances: 2                      # 2 instances
+  canary_avg_steps: 10                     # ~10 steps per instance
+  canary_tokens_per_step: 1500             # ~1k prompt + 500 completion
+  canary_total_tokens: 30000               # 2 * 10 * 1500
+  canary_cost_usd: 0.10                    # gpt-4o-mini is $0.15/$0.60 per 1M tokens
+
+  # Full pilot estimate
+  full_instances: 54                       # 9 tasks × 3 frameworks × 2 models
+  full_avg_steps: 12                       # ~12 steps per instance
+  full_tokens_per_step: 2000               # ~1.5k prompt + 500 completion
+  full_total_tokens: 1296000               # 54 * 12 * 2000
+
+  # Cost breakdown by model (estimated)
+  gpt4o_mini_instances: 27                 # 9 tasks × 3 frameworks
+  gpt4o_mini_tokens: 648000
+  gpt4o_mini_cost_usd: 2.60                # $0.15 input + $0.60 output per 1M
+
+  claude_sonnet_instances: 27
+  claude_sonnet_tokens: 648000
+  claude_sonnet_cost_usd: 6.50             # ~$3 input + $15 output per 1M (approx)
+
+  estimated_total_usd: 9.10
+  max_allowed_usd: 15.00                   # Buffer for longer traces
+
+  note: "Very conservative estimate. Real cost likely lower if agents complete quickly."
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Implementation notes for experimenter
+implementation_plan: >
+  1. Build minimal agent wrappers in src/frameworks/ (ReAct, plan-execute, autonomous)
+  2. Create task definitions in src/tasks/ with success criteria
+  3. Build logging infrastructure in src/utils/logger.py
+  4. Build failure detector in src/utils/failure_detection.py
+  5. Run canary with just tool hallucination + ReAct + gpt-4o-mini
+  6. If canary passes, run full pilot
+  7. Analyze results and validate taxonomy categories
+
+expected_outputs:
+  - experiments/pilot-failure-reproduction/results/
+    - raw_traces/          # Full agent execution logs
+    - failures_detected/   # Classified failure instances
+    - summary_stats.yaml   # Failure rates by framework/model/category
+    - analysis.md          # Interpretation vs taxonomy predictions
+
+validation_criteria: >
+  Success = At least 2 of 3 failure categories reproduced at >30% rate
+  in at least one framework. This validates that taxonomy categories
+  represent real, reproducible phenomena (not one-off anecdotes).
