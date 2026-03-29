@@ -1,40 +1,12 @@
 'use client';
 
 import { use } from 'react';
-import { GitBranch } from 'lucide-react';
 import { useDecisions } from '@/hooks';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
+import { TuiBox, TuiSkeleton } from '@/components/tui';
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function DecisionSkeleton() {
-  return (
-    <div className="space-y-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div
-          key={i}
-          className="border-b border-border pb-4 last:border-0 last:pb-0"
-        >
-          <div className="flex gap-6">
-            <Skeleton className="h-3 w-20 shrink-0" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-full" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const d = new Date(dateStr);
+  return d.toISOString().slice(0, 10);
 }
 
 export default function DecisionsPage({
@@ -45,52 +17,55 @@ export default function DecisionsPage({
   const { name } = use(params);
   const { data: decisions, isLoading, error } = useDecisions(name);
 
+  if (isLoading) {
+    return (
+      <TuiBox title="DECISIONS">
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex gap-4">
+              <TuiSkeleton width={10} />
+              <TuiSkeleton width={40} />
+            </div>
+          ))}
+        </div>
+      </TuiBox>
+    );
+  }
+
+  if (error) {
+    return (
+      <TuiBox title="DECISIONS" variant="error">
+        <span className="text-text-secondary">failed to load: {error.message}</span>
+      </TuiBox>
+    );
+  }
+
+  if (!decisions || decisions.length === 0) {
+    return (
+      <TuiBox title="DECISIONS">
+        <span className="text-text-muted">no decisions recorded</span>
+      </TuiBox>
+    );
+  }
+
   return (
-    <div>
-      {isLoading ? (
-        <Card>
-          <DecisionSkeleton />
-        </Card>
-      ) : error ? (
-        <Card>
-          <p className="text-sm text-[--color-status-error]">
-            Failed to load decisions: {error.message}
-          </p>
-        </Card>
-      ) : decisions && decisions.length > 0 ? (
-        <Card>
-          <div className="space-y-0">
-            {decisions.map((decision, i) => (
-              <div
-                key={`${decision.date}-${i}`}
-                className="border-b border-border py-4 first:pt-0 last:border-0 last:pb-0"
-              >
-                <div className="flex gap-6">
-                  <div className="shrink-0 pt-0.5">
-                    <span className="font-mono text-xs tabular-nums text-text-muted">
-                      {formatDate(decision.date)}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-mono text-sm font-semibold text-text-bright">
-                      {decision.decision}
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-text-secondary">
-                      {decision.rationale}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <TuiBox title="DECISIONS">
+      {decisions.map((decision, i) => (
+        <div
+          key={`${decision.date}-${i}`}
+          className="border-b border-border py-2 first:pt-0 last:border-0 last:pb-0"
+        >
+          <div className="flex gap-4">
+            <span className="shrink-0 tabular-nums text-text-muted">
+              {formatDate(decision.date)}
+            </span>
+            <div className="flex-1 min-w-0">
+              <span className="text-text-bright">{decision.decision}</span>
+              <p className="mt-0.5 text-text-secondary">{decision.rationale}</p>
+            </div>
           </div>
-        </Card>
-      ) : (
-        <EmptyState
-          icon={GitBranch}
-          message="No decisions recorded"
-          description="Decisions made during research sessions will appear here"
-        />
-      )}
-    </div>
+        </div>
+      ))}
+    </TuiBox>
   );
 }
