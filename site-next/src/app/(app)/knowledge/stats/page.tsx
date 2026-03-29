@@ -9,17 +9,27 @@ export default function KnowledgeStatsPage() {
   const { data: stats, isLoading } = useKnowledgeStats();
   const snapshot = useKnowledgeSnapshot();
 
-  if (isLoading) {
+  if (isLoading || !stats) {
     return (
-      <div className="space-y-3">
-        <TuiSkeleton width={40} />
-        <TuiSkeleton width={50} />
-        <TuiSkeleton width={50} />
-      </div>
+      <>
+        <div className="mb-3"><TuiSkeleton width={40} /></div>
+        <TuiBox title="CLAIMS BY TYPE" className="mb-3">
+          <div className="space-y-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex gap-2"><TuiSkeleton width={10} /><TuiSkeleton width={20} /></div>
+            ))}
+          </div>
+        </TuiBox>
+        <TuiBox title="RELATIONS BY TYPE">
+          <div className="space-y-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex gap-2"><TuiSkeleton width={10} /><TuiSkeleton width={20} /></div>
+            ))}
+          </div>
+        </TuiBox>
+      </>
     );
   }
-
-  if (!stats) return null;
 
   const maxTypeCount = Math.max(1, ...Object.values(stats.by_type));
   const maxRelCount = Math.max(1, ...Object.values(stats.by_relation));
@@ -55,7 +65,7 @@ export default function KnowledgeStatsPage() {
         <div className="space-y-1">
           {Object.entries(stats.by_relation).map(([type, count]) => (
             <div key={type} className="flex items-center gap-2">
-              <span className="w-20 shrink-0 text-text-secondary">{type.replace('_', ' ')}</span>
+              <span className="w-20 shrink-0 text-text-secondary">{type.replaceAll('_', ' ')}</span>
               <TuiProgress value={Math.round((count / maxRelCount) * 100)} width={20} showPercent={false} color="accent" />
               <span className="w-6 shrink-0 text-right tabular-nums text-text-bright">{count}</span>
             </div>
