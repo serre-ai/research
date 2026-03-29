@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { AlertTriangle, Download, BookOpen, BarChart3, ArrowLeft } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 export default function ReasoningGapsPaperPage() {
   return (
@@ -24,7 +23,7 @@ export default function ReasoningGapsPaperPage() {
           <span className="stat-label">Oddur Sigurdsson</span>
           <span className="text-[var(--color-text-muted)]">&middot;</span>
           <span className="stat-label">NeurIPS 2026</span>
-          <Badge variant="outline">Pre-print</Badge>
+          <span className="font-mono text-xs border border-[var(--color-border)] px-2 py-0.5 text-[var(--color-text-muted)]">Pre-print</span>
         </div>
       </div>
 
@@ -55,7 +54,7 @@ export default function ReasoningGapsPaperPage() {
             Large language models exhibit systematic reasoning failures that resist scaling and prompt engineering. We present a formal framework that characterizes these failures through the lens of computational complexity theory. By mapping the transformer architecture to the complexity class TC&#x2070; (constant-depth threshold circuits), we identify six distinct types of reasoning gaps corresponding to specific complexity-theoretic boundaries: sensitivity gaps (AC&#x2070;), depth gaps (TC&#x2070;/NC&#xB9;), serial composition gaps (bounded-depth vs. linear depth), algorithmic gaps (within P), intractability gaps (NP-hard), and architectural gaps (autoregressive constraints).
           </p>
           <p>
-            We construct ReasonGap, a diagnostic benchmark suite of nine procedurally generated tasks (B1&ndash;B9), each targeting a specific gap type with controlled difficulty scaling. Evaluating eleven models from five families &mdash; including GPT-4o, o3, Claude Haiku 4.5, Sonnet 4.6, Llama 3.1, Qwen 2.5, and Mistral &mdash; across 148,068 instances under direct-answer, chain-of-thought, and budget-constrained conditions, we find that chain-of-thought prompting produces a mean accuracy lift of +0.340 for depth and serial composition gaps (Types 2&ndash;3) but only +0.086 for intractability and architectural gaps (Types 5&ndash;6), confirming the framework&apos;s central prediction.
+            We construct ReasonGap, a diagnostic benchmark suite of nine procedurally generated tasks (B1&ndash;B9), each targeting a specific gap type with controlled difficulty scaling. Evaluating twelve models from five families &mdash; including GPT-4o, o3, Claude Haiku 4.5, Sonnet 4.6, Opus 4.6, Llama 3.1, Qwen 2.5, and Mistral &mdash; across 176,477 instances under direct-answer, chain-of-thought, budget-constrained, and answer-only conditions, we find that chain-of-thought prompting produces a mean accuracy lift of +0.351 for depth and serial composition gaps (Types 2&ndash;3) but only +0.037 for intractability and architectural gaps (Types 5&ndash;6), confirming the framework&apos;s central prediction.
           </p>
           <p>
             The framework provides practitioners with a principled basis for determining when prompting strategies can address reasoning limitations versus when tool augmentation or architectural changes are required.
@@ -71,13 +70,13 @@ export default function ReasoningGapsPaperPage() {
           <div className="flex flex-col sm:flex-row gap-8 items-center justify-center">
             <div className="text-center">
               <p className="stat-label mb-2">CoT Lift &mdash; Types 2&ndash;3</p>
-              <p className="font-mono text-4xl font-bold text-emerald-400 tabular-nums">+0.340</p>
+              <p className="font-mono text-4xl font-bold text-emerald-400 tabular-nums">+0.351</p>
               <p className="stat-label mt-1">depth &amp; serial gaps</p>
             </div>
             <div className="hidden sm:block w-px h-16 bg-[var(--color-border)]"></div>
             <div className="text-center">
               <p className="stat-label mb-2">CoT Lift &mdash; Types 5&ndash;6</p>
-              <p className="font-mono text-4xl font-bold text-red-400 tabular-nums">+0.086</p>
+              <p className="font-mono text-4xl font-bold text-red-400 tabular-nums">+0.037</p>
               <p className="stat-label mt-1">intractability &amp; architectural gaps</p>
             </div>
           </div>
@@ -86,7 +85,7 @@ export default function ReasoningGapsPaperPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
             <p className="stat-label mb-1">Models</p>
-            <p className="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">11</p>
+            <p className="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">12</p>
           </div>
           <div className="border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
             <p className="stat-label mb-1">Tasks</p>
@@ -94,11 +93,11 @@ export default function ReasoningGapsPaperPage() {
           </div>
           <div className="border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
             <p className="stat-label mb-1">Conditions</p>
-            <p className="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">3</p>
+            <p className="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">4</p>
           </div>
           <div className="border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
             <p className="stat-label mb-1">Instances</p>
-            <p className="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">148K</p>
+            <p className="font-mono text-2xl font-bold text-[var(--color-text-bright)] tabular-nums">176K</p>
           </div>
         </div>
       </section>
