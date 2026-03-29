@@ -1,37 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { StatusDot } from '@/components/ui/status-dot';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { TuiStatusDot, TuiSkeleton } from '@/components/tui';
 import { usePaperStatus, usePaperBuild } from '@/hooks';
-import type { StatusKey } from '@/lib/constants';
 import type { BuildStatus } from '@/lib/paper-types';
 
-const statusDotMap: Record<BuildStatus, { status: StatusKey; pulse: boolean }> = {
-  idle: { status: 'idle', pulse: false },
-  running: { status: 'warn', pulse: true },
-  success: { status: 'ok', pulse: false },
-  failed: { status: 'error', pulse: false },
+const dotMap: Record<BuildStatus, 'ok' | 'warn' | 'error' | 'idle'> = {
+  idle: 'idle',
+  running: 'warn',
+  success: 'ok',
+  failed: 'error',
 };
-
-const statusLabel: Record<BuildStatus, { text: string; className: string }> = {
-  idle: { text: 'Idle', className: 'text-text-muted' },
-  running: { text: 'Building...', className: 'text-[--color-status-warn]' },
-  success: { text: 'Success', className: 'text-[--color-status-ok]' },
-  failed: { text: 'Failed', className: 'text-[--color-status-error]' },
-};
-
-function formatDuration(ms: number): string {
-  if (ms < 60_000) {
-    return `${(ms / 1000).toFixed(1)}s`;
-  }
-  const minutes = Math.floor(ms / 60_000);
-  const seconds = Math.round((ms % 60_000) / 1000);
-  return `${minutes}m ${seconds}s`;
-}
 
 export function BuildStatusCard() {
   const { data: status, isLoading } = usePaperStatus();
@@ -41,80 +20,62 @@ export function BuildStatusCard() {
 
   if (isLoading) {
     return (
-      <Card className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-2 w-2 rounded-full" />
-        </div>
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-8 w-full" />
-      </Card>
+      <div className="space-y-1">
+        <TuiSkeleton width={20} />
+        <TuiSkeleton width={30} />
+      </div>
     );
   }
 
   const buildStatus = status?.status ?? 'idle';
-  const dot = statusDotMap[buildStatus];
-  const label = statusLabel[buildStatus];
   const isRunning = buildStatus === 'running' || paperBuild.isPending;
 
   return (
-    <Card className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Label>Paper Build</Label>
-        <StatusDot status={dot.status} pulse={dot.pulse} />
+    <div className="space-y-2">
+      {/* Status */}
+      <div className="flex items-center gap-2">
+        <TuiStatusDot status={dotMap[buildStatus]} />
+        <span className="text-text-secondary">{buildStatus}</span>
+        {status?.duration_ms != null && buildStatus !== 'running' && (
+          <span className="text-text-muted">{(status.duration_ms / 1000).toFixed(1)}s</span>
+        )}
       </div>
 
-      {/* Status text */}
-      <p className={`font-mono text-sm font-medium ${label.className}`}>
-        {label.text}
-      </p>
-
-      {/* Duration */}
-      {status?.duration_ms != null && status.status !== 'running' && (
-        <p className="font-mono text-xs text-text-muted">
-          Duration: {formatDuration(status.duration_ms)}
-        </p>
-      )}
-
       {/* Error */}
-      {status?.status === 'failed' && status.error && (
-        <p className="truncate font-mono text-xs text-[--color-status-error]">
-          {status.error}
-        </p>
+      {buildStatus === 'failed' && status?.error && (
+        <span className="text-[--color-danger]">{status.error}</span>
       )}
 
-      {/* Checkboxes */}
+      {/* Options */}
       <div className="flex items-center gap-4">
-        <label className="flex items-center gap-1.5 font-mono text-xs text-text-secondary">
+        <label className="flex items-center gap-1 text-text-secondary cursor-pointer">
           <input
             type="checkbox"
             checked={skipAnalysis}
             onChange={(e) => setSkipAnalysis(e.target.checked)}
             className="accent-primary"
           />
-          Skip Analysis
+          skip analysis
         </label>
-        <label className="flex items-center gap-1.5 font-mono text-xs text-text-secondary">
+        <label className="flex items-center gap-1 text-text-secondary cursor-pointer">
           <input
             type="checkbox"
             checked={skipCompile}
             onChange={(e) => setSkipCompile(e.target.checked)}
             className="accent-primary"
           />
-          Skip Compile
+          skip compile
         </label>
       </div>
 
       {/* Build button */}
-      <Button
-        variant="primary"
-        size="sm"
+      <button
         disabled={isRunning}
         onClick={() => paperBuild.mutate({ skipAnalysis, skipCompile })}
+        className="border border-border bg-bg-elevated px-2 py-1 font-mono text-xs text-text-secondary hover:text-text-bright disabled:opacity-50"
       >
-        {isRunning ? 'Building...' : 'Build Paper'}
-      </Button>
-    </Card>
+        {isRunning ? 'building...' : '[build paper]'}
+      </button>
+    </div>
   );
 }

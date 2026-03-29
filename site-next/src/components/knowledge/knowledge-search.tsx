@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search } from 'lucide-react';
-import { ClaimTypeBadge } from './claim-type-badge';
+import { TuiBadge } from '@/components/tui';
 import { useKnowledgeSearch } from '@/hooks/use-knowledge-mutations';
 import type { Claim } from '@/lib/knowledge-types';
 
@@ -21,41 +20,45 @@ export function KnowledgeSearch({ onSelectClaim }: KnowledgeSearchProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search knowledge..."
-            className="w-full bg-bg border border-border pl-8 pr-3 py-2 font-mono text-sm text-text placeholder:text-text-muted"
-          />
-        </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="search claims..."
+          className="flex-1 border border-border bg-bg-elevated px-2 py-1 font-mono text-xs text-text-bright placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <button
+          type="submit"
+          className="border border-border bg-bg-elevated px-2 py-1 font-mono text-xs text-text-secondary hover:text-text-bright"
+        >
+          [search]
+        </button>
       </form>
-      {search.isPending && (
-        <p className="font-mono text-xs text-text-muted">Searching...</p>
-      )}
+
+      {search.isPending && <span className="text-text-muted mt-1 block">searching...</span>}
+
       {search.data && search.data.length > 0 && (
-        <div className="space-y-2">
+        <div className="mt-2 space-y-1">
           {search.data.map((claim: Claim) => (
             <div
               key={claim.id}
               onClick={() => onSelectClaim?.(claim.id)}
-              className="p-3 border border-border bg-bg-elevated cursor-pointer hover:border-primary transition-colors"
+              className="cursor-pointer border-b border-border py-1 last:border-0 hover:bg-bg-hover"
             >
-              <div className="flex items-center gap-2 mb-1">
-                <ClaimTypeBadge type={claim.type} />
-                <span className="font-mono text-[10px] text-text-muted">{claim.project}</span>
+              <div className="flex items-center gap-2">
+                <TuiBadge color="accent">{claim.type}</TuiBadge>
+                <span className="text-text-muted">{claim.project}</span>
               </div>
-              <p className="font-mono text-xs text-text-secondary line-clamp-2">{claim.statement}</p>
+              <span className="text-text-secondary">{claim.statement.slice(0, 80)}</span>
             </div>
           ))}
         </div>
       )}
+
       {search.data && search.data.length === 0 && (
-        <p className="font-mono text-xs text-text-muted">No results found.</p>
+        <span className="text-text-muted mt-1 block">no results found</span>
       )}
     </div>
   );

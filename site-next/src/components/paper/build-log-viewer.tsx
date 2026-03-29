@@ -1,8 +1,6 @@
 'use client';
 
-import { FileText } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
+import { TuiSkeleton } from '@/components/tui';
 import { TerminalOutput } from '@/components/terminal-output';
 import { usePaperLog } from '@/hooks';
 
@@ -10,16 +8,17 @@ export function BuildLogViewer() {
   const { data, isLoading } = usePaperLog();
 
   if (isLoading) {
-    return <Skeleton className="h-64" />;
+    return (
+      <div className="space-y-1">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <TuiSkeleton key={i} width={50} />
+        ))}
+      </div>
+    );
   }
 
   if (!data) {
-    return (
-      <EmptyState
-        icon={FileText}
-        message="No build log available"
-      />
-    );
+    return <span className="text-text-muted">no build log available</span>;
   }
 
   return (

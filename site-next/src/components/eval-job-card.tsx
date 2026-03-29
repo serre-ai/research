@@ -1,9 +1,6 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { TuiBadge } from '@/components/tui';
 import { useCancelEvalJob } from '@/hooks/use-eval-jobs';
 
 interface EvalJob {
@@ -16,27 +13,13 @@ interface EvalJob {
   created_at: string;
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function statusVariant(status: string): 'default' | 'success' | 'warning' | 'error' {
+function statusColor(status: string): 'ok' | 'warn' | 'error' | 'muted' {
   switch (status) {
-    case 'completed':
-      return 'success';
-    case 'running':
-      return 'warning';
+    case 'completed': return 'ok';
+    case 'running': return 'warn';
     case 'failed':
-    case 'cancelled':
-      return 'error';
-    default:
-      return 'default';
+    case 'cancelled': return 'error';
+    default: return 'muted';
   }
 }
 
@@ -45,33 +28,27 @@ export function EvalJobCard({ job }: { job: EvalJob }) {
   const cancellable = job.status === 'queued' || job.status === 'running';
 
   return (
-    <Card className="flex items-center justify-between gap-4 p-3">
-      <div className="flex items-center gap-3 min-w-0">
-        <Badge variant={statusVariant(job.status)}>{job.status}</Badge>
-        <span className="font-mono text-xs text-text-secondary truncate">
-          {job.model}
-        </span>
-        <span className="font-mono text-xs text-text-muted">
-          {job.task}
-        </span>
-        <Badge variant="outline">{job.condition}</Badge>
+    <div className="flex items-center justify-between gap-4 border-b border-border py-1.5 last:border-0 first:pt-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <TuiBadge color={statusColor(job.status)}>{job.status}</TuiBadge>
+        <span className="text-text-secondary truncate">{job.model}</span>
+        <span className="text-text-muted">{job.task}</span>
+        <TuiBadge color="accent">{job.condition}</TuiBadge>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="font-mono text-[10px] text-text-muted whitespace-nowrap">
-          {formatDate(job.created_at)}
+        <span className="text-text-muted">
+          {new Date(job.created_at).toISOString().slice(0, 16).replace('T', ' ')}
         </span>
         {cancellable && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={() => cancelJob.mutate(job.id)}
             disabled={cancelJob.isPending}
-            className="p-1"
+            className="text-text-muted hover:text-text-bright disabled:opacity-50"
           >
-            <X className="h-3 w-3" />
-          </Button>
+            [x]
+          </button>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

@@ -1,9 +1,6 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { ProgressBar } from '@/components/ui/progress-bar';
+import { TuiBadge, TuiProgress } from '@/components/tui';
 import type { VerificationReport as VerificationReportType } from '@/lib/verification-types';
 
 interface VerificationReportProps {
@@ -17,54 +14,43 @@ export function VerificationReport({ report }: VerificationReportProps) {
   const hasIssues = report.inconsistencies > 0 || report.missingEvidence > 0;
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <Label>Verification Report</Label>
-        <Badge variant={hasIssues ? 'warning' : 'success'}>
-          {hasIssues ? 'Issues Found' : 'Clean'}
-        </Badge>
+    <div className="space-y-2">
+      {/* Status */}
+      <div className="flex items-center gap-2">
+        <TuiBadge color={hasIssues ? 'warn' : 'ok'}>
+          {hasIssues ? 'ISSUES FOUND' : 'CLEAN'}
+        </TuiBadge>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        <div className="text-center">
-          <p className="font-mono text-lg font-bold text-text-bright tabular-nums">
-            {report.totalClaims}
-          </p>
-          <p className="font-mono text-[10px] text-text-muted">Total Claims</p>
-        </div>
-        <div className="text-center">
-          <p className="font-mono text-lg font-bold text-text-bright tabular-nums">
-            {report.verified}
-          </p>
-          <p className="font-mono text-[10px] text-text-muted">Verified</p>
-        </div>
-        <div className="text-center">
-          <p className="font-mono text-lg font-bold tabular-nums" style={{ color: report.inconsistencies > 0 ? '#ef4444' : 'var(--color-text-bright)' }}>
+      {/* Metrics */}
+      <div className="flex flex-wrap gap-x-6 gap-y-1">
+        <span><span className="text-text-bright tabular-nums">{report.totalClaims}</span> <span className="text-text-muted">total</span></span>
+        <span><span className="text-text-bright tabular-nums">{report.verified}</span> <span className="text-text-muted">verified</span></span>
+        <span>
+          <span className={`tabular-nums ${report.inconsistencies > 0 ? 'text-[--color-danger]' : 'text-text-bright'}`}>
             {report.inconsistencies}
-          </p>
-          <p className="font-mono text-[10px] text-text-muted">Inconsistencies</p>
-        </div>
-        <div className="text-center">
-          <p className="font-mono text-lg font-bold tabular-nums" style={{ color: report.missingEvidence > 0 ? '#EAB308' : 'var(--color-text-bright)' }}>
+          </span>
+          {' '}<span className="text-text-muted">inconsistencies</span>
+        </span>
+        <span>
+          <span className={`tabular-nums ${report.missingEvidence > 0 ? 'text-[--color-secondary]' : 'text-text-bright'}`}>
             {report.missingEvidence}
-          </p>
-          <p className="font-mono text-[10px] text-text-muted">Missing Evidence</p>
-        </div>
+          </span>
+          {' '}<span className="text-text-muted">missing evidence</span>
+        </span>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-mono text-xs text-text-muted">Verified</span>
-          <span className="font-mono text-xs text-text-secondary">{verifiedPct}%</span>
-        </div>
-        <ProgressBar value={verifiedPct} />
+      {/* Progress */}
+      <div className="flex items-center gap-2">
+        <span className="text-text-muted">verified</span>
+        <TuiProgress value={verifiedPct} width={20} color={hasIssues ? 'warn' : 'ok'} />
       </div>
 
       {report.created_at && (
-        <p className="font-mono text-[10px] text-text-muted mt-3">
-          Run at {new Date(report.created_at).toLocaleString()}
-        </p>
+        <span className="text-text-muted">
+          run at {new Date(report.created_at).toISOString().slice(0, 16).replace('T', ' ')}
+        </span>
       )}
-    </Card>
+    </div>
   );
 }

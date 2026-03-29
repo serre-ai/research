@@ -1,130 +1,51 @@
 'use client';
 
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
+import { TuiSparkline } from '@/components/tui';
 
 interface BurnChartProps {
   data: Array<{ date: string; total_usd: number }>;
   dailyLimit?: number;
 }
 
-function formatDateLabel(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function formatDollar(value: number): string {
-  return `$${value.toFixed(0)}`;
-}
-
-interface TooltipProps {
-  active?: boolean;
-  payload?: Array<{ value: number }>;
-  label?: string;
-}
-
-function CustomTooltip({ active, payload, label }: TooltipProps) {
-  if (!active || !payload?.length) return null;
-
-  return (
-    <div
-      style={{
-        backgroundColor: 'var(--color-bg-elevated)',
-        border: '1px solid var(--color-border)',
-        padding: '8px 12px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '11px',
-      }}
-    >
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-        {label ? formatDateLabel(label) : ''}
-      </p>
-      <p style={{ color: 'var(--color-text-bright)', fontWeight: 600 }}>
-        ${payload[0].value.toFixed(2)}
-      </p>
-    </div>
-  );
-}
-
 export function BurnChart({ data, dailyLimit }: BurnChartProps) {
   if (!data.length) {
-    return (
-      <div className="flex h-[300px] items-center justify-center text-sm text-text-muted">
-        No spend data available
-      </div>
-    );
+    return <span className="text-text-muted">no spend data</span>;
   }
 
+  const values = data.map((d) => d.total_usd);
+  const max = Math.max(...values, dailyLimit ?? 0);
+  const min = Math.min(...values);
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="burnFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.15} />
-            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke="var(--color-border)"
-          strokeOpacity={0.3}
-          vertical={false}
-        />
-        <XAxis
-          dataKey="date"
-          tickFormatter={formatDateLabel}
-          tick={{
-            fill: 'var(--color-text-muted)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-          }}
-          axisLine={{ stroke: 'var(--color-border)' }}
-          tickLine={false}
-          interval="preserveStartEnd"
-        />
-        <YAxis
-          tickFormatter={formatDollar}
-          tick={{
-            fill: 'var(--color-text-muted)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-          }}
-          axisLine={false}
-          tickLine={false}
-          width={50}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        {dailyLimit != null && (
-          <ReferenceLine
-            y={dailyLimit}
-            stroke="var(--color-status-warn)"
-            strokeDasharray="6 4"
-            strokeWidth={1.5}
-            label={{
-              value: `Limit $${dailyLimit}`,
-              fill: 'var(--color-status-warn)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              position: 'insideTopRight',
-            }}
-          />
-        )}
-        <Area
-          type="monotone"
-          dataKey="total_usd"
-          stroke="var(--color-primary)"
-          strokeWidth={2}
-          fill="url(#burnFill)"
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="space-y-2">
+      {/* Sparkline */}
+      <div className="flex items-end gap-1">
+        <span className="text-text-muted shrink-0">${min.toFixed(0)}</span>
+        <TuiSparkline data={values} />
+        <span className="text-text-muted shrink-0">${max.toFixed(0)}</span>
+      </div>
+
+      {dailyLimit != null && (
+        <span className="text-text-muted">limit: ${dailyLimit}/day</span>
+      )}
+
+      {/* Last 7 days as text table */}
+      <div className="space-y-0">
+        {data.slice(-7).map((d) => {
+          const overLimit = dailyLimit != null && d.total_usd > dailyLimit;
+          return (
+            <div key={d.date} className="flex items-center gap-2">
+              <span className="w-16 shrink-0 tabular-nums text-text-muted">
+                {d.date.slice(5)}
+              </span>
+              <span className={`tabular-nums ${overLimit ? 'text-[--color-danger]' : 'text-text-bright'}`}>
+                ${d.total_usd.toFixed(2)}
+              </span>
+              {overLimit && <span className="text-[--color-danger]">!</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

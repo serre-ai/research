@@ -1,10 +1,6 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Radio } from 'lucide-react';
+import { TuiSkeleton } from '@/components/tui';
 import { ActivityItem } from './activity-item';
 import type { DomainEvent } from '@/lib/collective-types';
 
@@ -16,30 +12,25 @@ interface ActivityFeedProps {
 export function ActivityFeed({ events, isLoading }: ActivityFeedProps) {
   if (isLoading) {
     return (
-      <Card className="space-y-3">
-        <Label>Recent Activity</Label>
+      <div className="space-y-1">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Skeleton className="h-6 w-6" />
-            <Skeleton className="h-3 w-full" />
-          </div>
+          <TuiSkeleton key={i} width={30} />
         ))}
-      </Card>
+      </div>
     );
   }
 
+  if (!events || events.length === 0) {
+    return <span className="text-text-muted">no recent activity</span>;
+  }
+
   return (
-    <Card>
-      <Label>Recent Activity</Label>
-      {events && events.length > 0 ? (
-        <div className="mt-3 max-h-[480px] overflow-y-auto divide-y divide-border">
-          {events.map((event) => (
-            <ActivityItem key={event.id} event={event} />
-          ))}
+    <div className="max-h-[480px] overflow-y-auto space-y-0">
+      {events.map((event) => (
+        <div key={event.id} className="border-b border-border py-1 last:border-0">
+          <ActivityItem event={event} />
         </div>
-      ) : (
-        <EmptyState icon={Radio} message="No recent activity" className="py-8" />
-      )}
-    </Card>
+      ))}
+    </div>
   );
 }

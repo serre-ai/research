@@ -1,5 +1,3 @@
-import { Database, GitBranch, FolderOpen, Tag } from 'lucide-react';
-import { MetricCard } from '@/components/ui/metric-card';
 import type { KnowledgeStats } from '@/lib/knowledge-types';
 
 interface KnowledgeStatsBarProps {
@@ -7,12 +5,13 @@ interface KnowledgeStatsBarProps {
 }
 
 export function KnowledgeStatsBar({ stats }: KnowledgeStatsBarProps) {
+  const types = Object.keys(stats.by_type).length;
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <MetricCard label="Total Claims" value={stats.total_claims} icon={Database} />
-      <MetricCard label="Relations" value={stats.total_relations} icon={GitBranch} />
-      <MetricCard label="Projects" value={stats.projects.length} icon={FolderOpen} />
-      <MetricCard label="Types" value={Object.keys(stats.by_type).length} icon={Tag} />
+    <div className="flex flex-wrap gap-x-6 gap-y-1">
+      <span><span className="text-text-bright">{stats.total_claims}</span> <span className="text-text-muted">claims</span></span>
+      <span><span className="text-text-bright">{stats.total_relations}</span> <span className="text-text-muted">relations</span></span>
+      <span><span className="text-text-bright">{stats.projects.length}</span> <span className="text-text-muted">projects</span></span>
+      <span><span className="text-text-bright">{types}</span> <span className="text-text-muted">types</span></span>
     </div>
   );
 }
