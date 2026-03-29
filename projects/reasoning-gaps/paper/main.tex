@@ -411,19 +411,14 @@ Between-model error correlation analysis reveals that failure universality varie
 Algorithmic gaps (B6) show the highest pairwise error correlation ($\rho = 0.42$): at difficulty~5, 98\% of instances are unanimously wrong across all twelve models, confirming a shared knowledge bottleneck---no model has learned patience sorting or dynamic programming.
 In contrast, intractability gaps (B7) show the \emph{lowest} correlation ($\rho = 0.06$): models fail on different 3-SAT instances, reflecting model-specific heuristics rather than a shared structural limitation.
 Serial gaps (B3: $\rho = 0.31$) and depth gaps (B2: $\rho = 0.22$) fall in between, consistent with partially shared computational bottlenecks.
-This distinction---shared bottlenecks (high $\rho$, Types~2--4) versus instance-specific hardness (low $\rho$, Type~5)---has implications for ensemble methods: majority voting is most effective precisely where error correlation is lowest.
 
 \paragraph{Future directions.}
-Two extensions follow naturally: \emph{gap composition}---real-world tasks mix multiple gap types (e.g., planning requires both serial composition and algorithmic subroutines), and understanding whether gaps compose additively or exhibit phase transitions would bridge our synthetic benchmarks to realistic settings; and \emph{architectural interventions}---modifications such as PaTH attention~\citep{yang2025path}, scratchpad memory, or recursive computation could close gaps that are currently architectural, and our taxonomy provides concrete targets for such design.
+Two extensions follow naturally: \emph{gap composition}---understanding whether mixed-type tasks exhibit additive or phase-transition interactions---and \emph{architectural interventions} targeting specific gap types (e.g., PaTH attention~\citep{yang2025path} for depth gaps, scratchpad memory for serial gaps).
 
 \paragraph{Limitations.}
 The taxonomy's grounding is conditional on $\TC \neq \NC$ (standard but unproven); if this separation were to fail, Types~2 and~3 would collapse, though the empirical distinctions would remain.
-Tasks are synthetic by design, isolating individual gap types rather than realistic combinations; this is a feature for controlled evaluation but limits direct applicability claims.
-Our evaluation is a snapshot of twelve models as of early 2026 and does not include the most recent reasoning-specialized models beyond o3.
-Type~6 evidence at inference time rests primarily on B9 (negation sensitivity); B8 (reversal) shows a strong ceiling effect ($>$92\%) that limits discriminative power.
-B9 shows unexpectedly large CoT lift for some model families ($+$0.42 for Claude vs.\ $+$0.02 for GPT-4o), suggesting the Type~6 prediction requires refinement into distributional (B8-like) and attentional (B9-like) subtypes.
-Tool-augmented evaluation covers only two tasks (B5, B6) with three models (Sonnet, Haiku, GPT-4o), and the tool interface (Python code execution) represents just one class of augmentation---retrieval, symbolic solvers, and external verifiers remain unexplored.
-Finally, the taxonomy assumes a fixed computational model; as architectures evolve beyond standard transformers (e.g., state-space models, mixture-of-experts with adaptive computation), the complexity-theoretic grounding may require revision.
+Tasks are synthetic by design, isolating individual gap types rather than realistic combinations.
+Our evaluation is a snapshot of twelve models as of early 2026; see \Cref{app:limitations} for extended discussion of Type~6 subtypes, tool-augmentation scope, and architectural assumptions.
 
 % ============================================================
 \section{Related Work}
@@ -438,10 +433,9 @@ Architectural modifications such as PaTH attention~\citep{yang2025path} can achi
 Our work shifts focus from what transformers \emph{can} compute to what they \emph{cannot}, connecting impossibility results to observed failures.
 
 \paragraph{Empirical failures and CoT.}
-Documented failure patterns---compositional degradation~\citep{dziri2023faith}, irrelevant-information sensitivity~\citep{gsmsymbolic}, planning failures~\citep{kambhampati2024}, causal fallacies~\citep{joshi2024}---have been catalogued comprehensively by \citet{song2026failures}, but without complexity-theoretic grounding that yields testable intervention predictions.
+Documented failure patterns have been catalogued comprehensively by \citet{song2026failures}, but without complexity-theoretic grounding that yields testable intervention predictions.
 On CoT, \citet{wei2022cot} established the paradigm; subsequent work found benefits concentrated on math/symbolic tasks~\citep{sprague2024}, diminishing returns at scale~\citep{meincke2025}, and performance collapse with excessive~\citep{mirage2025} or insufficient~\citep{li2026cot_compression} budget.
 Our framework provides a complexity-theoretic explanation: CoT is necessary and effective for Types~2--3 where the forward pass provably cannot solve the problem, and unnecessary for Types~5--6.
-The prediction that CoT effectiveness varies by gap \emph{type} rather than task domain is, to our knowledge, novel.
 
 \paragraph{Diagnostic benchmarks.}
 Standard benchmarks~\citep{gsm8k,bigbench,math2021,frontiermath2024} measure aggregate performance without isolating computational mechanisms.
@@ -751,6 +745,14 @@ J.~Hoffmann, S.~Borgeaud, A.~Mensch, E.~Millican, T.~Cai, M.~Rutherford, D.~de~L
 % APPENDIX
 % ============================================================
 \appendix
+
+\section{Extended Limitations}
+\label{app:limitations}
+
+Type~6 evidence at inference time rests primarily on B9 (negation sensitivity); B8 (reversal) shows a strong ceiling effect ($>$92\%) that limits discriminative power.
+B9 shows unexpectedly large CoT lift for some model families ($+$0.42 for Claude vs.\ $+$0.02 for GPT-4o), suggesting the Type~6 prediction requires refinement into distributional (B8-like) and attentional (B9-like) subtypes.
+Tool-augmented evaluation covers only two tasks (B5, B6) with three models (Sonnet, Haiku, GPT-4o), and the tool interface (Python code execution) represents just one class of augmentation---retrieval, symbolic solvers, and external verifiers remain unexplored.
+Finally, the taxonomy assumes a fixed computational model; as architectures evolve beyond standard transformers (e.g., state-space models, mixture-of-experts with adaptive computation), the complexity-theoretic grounding may require revision.
 
 \section{Formal Proofs}
 \label{app:proofs}
