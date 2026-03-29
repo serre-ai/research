@@ -1,0 +1,194 @@
+# Experiment Pre-Registration Spec: Tool Fabrication
+
+name: "tool_fabrication_scaling"
+
+status: draft
+
+hypothesis: >
+  Agent tool fabrication (hallucinating non-existent tools) scales with tool count,
+  confirming C6 (Tool Grounding) limitation. We predict tool fabrication rate increases
+  significantly when available tools exceed working memory capacity (~20-30 tools),
+  and this pattern generalizes across agent architectures (ReAct, autonomous, plan-execute).
+
+predictions:
+  - tasks: ["info_retrieval_10tools", "info_retrieval_20tools", "info_retrieval_30tools", "info_retrieval_40tools"]
+    metric: "tool_fabrication_rate"
+    direction: "positive"
+    min_effect: 0.15  # expect >15% increase from 10→40 tools
+    max_effect: null
+
+  - tasks: ["info_retrieval_30tools"]
+    metric: "architecture_difference"
+    direction: "near_zero"  # expect all architectures vulnerable (C6 is LLM-level, not architecture-level)
+    min_effect: null
+    max_effect: 0.10  # <10% difference across architectures
+
+design:
+  conditions:
+    - name: "low_tool_count"
+      tool_count: 10
+      tasks: ["info_retrieval_10tools"]
+    - name: "medium_tool_count"
+      tool_count: 20
+      tasks: ["info_retrieval_20tools"]
+    - name: "high_tool_count"
+      tool_count: 30
+      tasks: ["info_retrieval_30tools"]
+    - name: "very_high_tool_count"
+      tool_count: 40
+      tasks: ["info_retrieval_40tools"]
+
+  temperature: 0.0
+
+  models:
+    - "gpt-4o"
+    - "claude-3-5-sonnet-20241022"
+
+  frameworks:
+    - "langgraph-react"
+    - "autogpt-simplified"
+    - "langgraph-plan-execute"
+
+  tasks:
+    - "info_retrieval_10tools"
+    - "info_retrieval_20tools"
+    - "info_retrieval_30tools"
+    - "info_retrieval_40tools"
+
+  num_samples: 1  # deterministic at temp=0
+  instances_per_condition: 20
+
+  total_runs: 960  # 4 conditions × 20 instances × 3 frameworks × 2 models
+
+canary:
+  tasks: ["info_retrieval_20tools", "info_retrieval_30tools"]
+  instances_per_condition: 5
+  frameworks: ["langgraph-react", "autogpt-simplified"]
+  models: ["gpt-4o"]
+
+  # Canary: 2 tasks × 5 instances × 2 frameworks × 1 model = 20 runs
+
+  diagnostics:
+    - check: "pipeline_completion"
+      description: "All runs produce parseable output"
+      threshold: 1.0  # 100% success
+
+    - check: "extraction_success"
+      description: "Tool calls can be extracted from agent trace"
+      threshold: 0.95  # >95% extraction success
+
+    - check: "baseline_fabrication_rate"
+      description: "At least some fabrication observed at 30 tools"
+      min: 0.10  # expect >10% fabrication at 30 tools
+      max: 0.90  # not all fabrication (task still solvable)
+
+    - check: "scaling_signal"
+      description: "Fabrication rate higher at 30 tools than 20 tools"
+      threshold: "30tools > 20tools"  # directional check
+
+    - check: "cost_per_instance"
+      description: "Actual cost within 2x of estimate"
+      max_multiple_of_estimate: 2.0
+
+budget:
+  # Cost estimation:
+  # Avg tokens per run: ~2000 input (task + tools) + 500 output (agent actions)
+  # GPT-4o: $2.50/1M input, $10/1M output
+  # Claude Sonnet 3.5: $3/1M input, $15/1M output
+  # Avg cost per run: $0.01 (GPT-4o) to $0.015 (Claude)
+
+  estimated_per_instance_usd: 0.012
+  estimated_total_usd: 11.52  # 960 runs × $0.012
+  canary_cost_usd: 0.24  # 20 runs × $0.012
+  max_allowed_usd: 25.00  # buffer for longer traces
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Theoretical grounding (cross-reference with taxonomy)
+theoretical_basis:
+  taxonomy_category: "1.1 Tool-Use Failures: Selection Failures"
+  instances: [18, 32]
+  llm_limitations: ["C6: Tool Grounding", "C1: Factual Grounding"]
+  fixability: "partially_correctable"
+
+  prediction_from_theory: >
+    C6 limitation predicts tool representations degrade as tool count exceeds
+    working memory capacity. LLM fills retrieval gaps with plausible generation
+    (C1), producing fabricated tool names. Architectural mitigations (retrieval,
+    organization) reduce but don't eliminate the problem at scale.
+
+# Success criteria
+success_criteria:
+  reproduction: >
+    Observe tool fabrication in >50% of runs at 40 tools, confirming Instance 18
+
+  scaling_pattern: >
+    Statistically significant (p<0.05) increase in fabrication rate from 10→40 tools
+
+  architecture_generalization: >
+    All 3 frameworks show fabrication, confirming C6 is LLM-level (not architecture bug)
+
+  publication_readiness: >
+    Produce scaling curve figure (fabrication rate vs. tool count) and
+    architecture comparison table for paper Section 6
+
+# Data collection
+data_schema:
+  per_run:
+    - "run_id: uuid"
+    - "framework: str"
+    - "model: str"
+    - "tool_count: int"
+    - "instance_id: int"
+    - "agent_trace: list[dict]"  # full step-by-step trace
+    - "tool_calls: list[str]"  # all tool names invoked
+    - "fabricated_tools: list[str]"  # tools not in available set
+    - "fabrication_detected: bool"
+    - "task_solved: bool"
+    - "steps: int"
+    - "tokens: {input: int, output: int}"
+    - "cost_usd: float"
+    - "timestamp: str"
+
+  aggregated:
+    - "fabrication_rate_by_tool_count: dict"
+    - "fabrication_rate_by_framework: dict"
+    - "fabrication_rate_by_model: dict"
+    - "mean_fabrications_per_run: float"
+    - "task_success_rate: float"
+
+# Analysis plan
+analysis:
+  statistical_tests:
+    - name: "Chi-square test: fabrication rate vs. tool count"
+      null_hypothesis: "Fabrication rate independent of tool count"
+      expected: "Reject null (p < 0.05)"
+
+    - name: "Cohen's h: effect size for 10 vs. 40 tools"
+      expected: "Medium to large effect (h > 0.5)"
+
+    - name: "Chi-square test: fabrication rate vs. framework"
+      null_hypothesis: "Fabrication rate independent of framework"
+      expected: "Fail to reject (architectures similar)"
+      multiple_comparison_correction: "Bonferroni"
+
+  visualizations:
+    - "Scaling curve: Fabrication rate (y) vs. Tool count (x), with 95% CI error bars"
+    - "Bar chart: Fabrication rate by framework, grouped by tool count"
+    - "Heatmap: Framework × Tool count, cell color = fabrication rate"
+
+# Notes
+notes: >
+  This is the highest-priority experiment for taxonomy validation. Tool fabrication
+  is the most frequent failure type (16 instances) and easiest to reproduce (80%
+  reproducibility). Successful reproduction establishes experimental infrastructure
+  and validates that taxonomy categories are empirically observable, not just
+  conceptual. Budget is minimal (<$15 full run, <$1 canary), making this a low-risk
+  high-value starting point.
