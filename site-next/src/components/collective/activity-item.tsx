@@ -1,6 +1,6 @@
 'use client';
 
-import { AgentAvatar } from './agent-avatar';
+import { getAgentColor } from '@/lib/agents';
 import type { DomainEvent } from '@/lib/collective-types';
 
 interface ActivityItemProps {
@@ -38,7 +38,7 @@ function eventDescription(event: DomainEvent): string {
     case 'ritual.completed':
       return `completed ${(payload.ritual_type as string) ?? 'a ritual'}`;
     default:
-      return event.event_type.replace(/[._]/g, ' ');
+      return event.event_type.replaceAll(/[._]/g, ' ');
   }
 }
 
@@ -46,19 +46,13 @@ export function ActivityItem({ event }: ActivityItemProps) {
   const agent = event.agent ?? (event.payload.agent as string) ?? (event.payload.author as string);
 
   return (
-    <div className="flex items-start gap-3 py-2">
-      {agent ? (
-        <AgentAvatar agentId={agent} size="sm" />
-      ) : (
-        <div className="h-6 w-6 border border-border bg-bg-elevated" />
+    <div className="flex items-baseline gap-2 py-0.5">
+      {agent && (
+        <span style={{ color: getAgentColor(agent) }}>{'●'}</span>
       )}
-      <div className="min-w-0 flex-1">
-        <p className="font-mono text-xs text-text-secondary truncate">
-          {agent && <span className="text-text-bright">{agent}</span>}{' '}
-          {eventDescription(event)}
-        </p>
-        <p className="font-mono text-[10px] text-text-muted">{formatTime(event.created_at)}</p>
-      </div>
+      <span className="text-text-bright">{agent ?? 'system'}</span>
+      <span className="text-text-secondary truncate">{eventDescription(event)}</span>
+      <span className="text-text-muted shrink-0 ml-auto">{formatTime(event.created_at)}</span>
     </div>
   );
 }

@@ -29,9 +29,9 @@ export function BurnChart({ data, dailyLimit }: BurnChartProps) {
         <span className="text-text-muted">limit: ${dailyLimit}/day</span>
       )}
 
-      {/* Last 7 days as text table */}
-      <div className="space-y-0">
-        {data.slice(-7).map((d) => {
+      {/* Daily breakdown */}
+      <div className="space-y-0 max-h-[240px] overflow-y-auto">
+        {data.map((d) => {
           const overLimit = dailyLimit != null && d.total_usd > dailyLimit;
           return (
             <div key={d.date} className="flex items-center gap-2">

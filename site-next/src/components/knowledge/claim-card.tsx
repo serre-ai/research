@@ -1,5 +1,3 @@
-'use client';
-
 import { clsx } from 'clsx';
 import { TuiBadge, TuiProgress } from '@/components/tui';
 import { relativeTime } from '@/lib/format';
