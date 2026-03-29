@@ -286,7 +286,7 @@ Overall accuracy is 0.519 (direct), 0.739 (short CoT), and 0.637 (budget CoT), w
 
 \begin{table}[t]
 \centering
-\caption{Overall accuracy by task and model (averaged across conditions). Bold: best model per task. Accuracy varies far more across tasks than models, confirming gap type as the primary difficulty determinant. Random baselines: 0.50 for B1, B2, B5, B7--B9 (binary/boolean); 0.20 for B3 (5-way); 0.25 for B4 (4-way); task-dependent for B6 (numeric).}
+\caption{Overall accuracy by task and model (averaged across conditions). Bold: best model per task. Accuracy varies far more across tasks than models, confirming gap type as the primary difficulty determinant. Random baselines: 0.50 for B1, B2, B5, B7, B9 (binary/boolean); 0.20 for B3 (5-way); 0.25 for B4 (4-way); ${\sim}1/(d{+}1)$ for B8 ($d$ distractors); ${\sim}1/n$ for B6 (numeric).}
 \label{tab:main-accuracy-results}
 \small
 \setlength{\tabcolsep}{2pt}
@@ -361,9 +361,8 @@ B7 (3-SAT) provides a direct test of \Cref{prop:intractable}: accuracy drops fro
 
 Two case studies illuminate the taxonomy's robustness across model architectures.
 \textbf{o3 (reasoning model):} o3's internal chain-of-thought closes depth and serial gaps just as external CoT does---achieving 0.78 on B2, 0.73 on B3, 0.76 on B4---while providing no systematic help on intractability gaps.
-Under the direct condition, o3 exhibits near-zero accuracy on several tasks (B1, B3, B4, B9) due to instruction-following conflicts with its internal reasoning process, not capability limitations.
-Specifically, o3's internal chain-of-thought activates even under the direct condition, producing extended deliberation that conflicts with our answer-extraction pipeline.
-When the short-CoT condition legitimizes extended reasoning, o3 recovers strongly (B4: 0.76, B9: 0.91), confirming that the direct-condition failures reflect evaluation methodology constraints rather than capability limitations.
+Under the direct condition, o3 exhibits near-zero accuracy on several tasks (B1, B3, B4, B9) because its internal chain-of-thought activates regardless of the prompt, producing extended deliberation that conflicts with our answer-extraction pipeline.
+When the short-CoT condition legitimizes extended reasoning, o3 recovers strongly (B4: 0.76, B9: 0.91), confirming that these failures reflect evaluation methodology constraints, not capability limitations.
 This confirms that the taxonomy is robust to the \emph{mechanism} of extended computation.
 
 \textbf{Claude family (within-family scaling):}
