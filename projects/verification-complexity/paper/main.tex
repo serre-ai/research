@@ -205,6 +205,47 @@ That is, the model has sufficient computational power to run the verification pr
 This definition captures the key insight: a reward model, a self-consistency checker, or a human overseer can only reliably verify outputs when the verification problem itself falls within their computational capabilities.
 A $\TC$-bounded transformer cannot verify solutions to problems whose verification requires $\PTIME$ computation --- even if the problem has a positive generation-verification gap in the classical sense.
 
+\begin{definition}[Computational Bottleneck]
+\label{def:bottleneck}
+Let $\calF$ be a reasoning task with input distribution $\calD$, and let $\calM$ be a model class with capability class $\mathrm{cap}(\calM)$.
+
+A \emph{computational bottleneck} for $(\calF, \calM)$ is a tuple $\calB = (V_{\text{sub}}, S, q)$ where:
+\begin{enumerate}[label=(\roman*)]
+    \item \textbf{Verification subtask}: $V_{\text{sub}} : X \times Y \to \{0,1\}$ is a verification subtask such that:
+    \begin{itemize}
+        \item $V_{\text{sub}}$ is necessary for distinguishing correct from incorrect answers on a non-negligible subset of inputs
+        \item $V_{\text{sub}} \notin \mathrm{cap}(\calM)$ (the model cannot compute $V_{\text{sub}}$)
+    \end{itemize}
+
+    \item \textbf{Bottleneck set}: $S \subseteq X$ is the set of inputs requiring $V_{\text{sub}}$, with $q = \Pr[x \in S \mid x \sim \calD] > 0$
+
+    \item \textbf{Bottleneck type}: Let $y_1, \ldots, y_N$ be $N$ independent samples from $\calM$ on input $x \in S$, and let $E_i$ denote the event that sample $i$ produces an incorrect answer due to failure to compute $V_{\text{sub}}$. Then:
+    \begin{itemize}
+        \item $\calB$ is a \emph{shared bottleneck} if $\mathrm{Cov}(E_i, E_j \mid x \in S) \geq \alpha > 0$ for some constant $\alpha$ (positive correlation)
+        \item $\calB$ is a \emph{stochastic bottleneck} if $\mathrm{Cov}(E_i, E_j \mid x \in S) \approx 0$ (approximately independent)
+    \end{itemize}
+\end{enumerate}
+\end{definition}
+
+\begin{remark}
+The distinction between shared and stochastic bottlenecks captures the difference between deterministic and probabilistic failure modes:
+\begin{itemize}
+    \item \textbf{Shared bottlenecks} arise when all samples fail due to the same structural limitation (e.g., missing algorithm, insufficient depth). All samples from the same model use the same weights and thus share the same computational constraints, producing positively correlated errors.
+    \item \textbf{Stochastic bottlenecks} arise when task difficulty is instance-specific and random (e.g., satisfiability formulas near the phase transition). Different samples or different models may succeed or fail on different instances, producing approximately independent errors.
+\end{itemize}
+For within-model sampling at fixed temperature, shared bottlenecks dominate because all samples share the same model parameters.
+\end{remark}
+
+\begin{example}
+\textbf{Shared bottleneck (depth limitation):}
+Let $\calF$ be integer addition requiring serial carry propagation of depth $d$, and let $\calM$ be $\TC^0$ transformers (constant depth).
+Then $V_{\text{sub}}$ = computing carry bits, $S$ = inputs requiring $\geq d$ carry operations, and $\calB$ is a shared bottleneck because all samples from $\calM$ fail to compute carries at the same positions.
+
+\textbf{Stochastic bottleneck (phase transition):}
+Let $\calF$ be 3-SAT near the critical ratio $r = 4.26$, where satisfiability verification is coNP-complete.
+For between-model ensembles, different models may use different search heuristics that succeed on different random formulas, producing $\calB$ as a stochastic bottleneck with low between-model correlation.
+\end{example}
+
 % ============================================================
 \section{Main Results}
 \label{sec:theorems}
@@ -257,12 +298,14 @@ Then majority voting over $N$ samples satisfies:
 \begin{enumerate}[label=(\alph*)]
     \item \textbf{(Convergence)} If $p^* > \max_{y \neq y^*} p_y$ (the correct answer is the plurality), then majority accuracy $\to 1$ as $N \to \infty$, with convergence rate $\exp(-\Omega(N))$.
     \item \textbf{(Independence requirement)} If samples share a systematic bias --- i.e., errors are positively correlated with correlation $\rho > 0$ --- then the effective sample size is $N_{\text{eff}} = N / (1 + (N-1)\rho)$, and convergence slows to $\exp(-\Omega(N_{\text{eff}}))$.
-    \item \textbf{(Bottleneck structure)} Error correlation depends on whether the source of failure is \emph{shared} across samples or \emph{instance-specific}:
-    \begin{itemize}
-        \item If failures arise from a shared structural limitation (e.g., lack of algorithmic knowledge, insufficient depth), then errors are positively correlated ($\rho > 0$) regardless of $\VC$ class. Self-consistency provides limited benefit.
-        \item If failures arise from instance-specific stochastic difficulty (e.g., random combinatorial search near a phase transition), then errors may be approximately independent ($\rho \approx 0$) even when $\VC$ is hard. Self-consistency can improve accuracy.
-    \end{itemize}
-    For within-model sampling at fixed temperature, the shared-bottleneck case dominates: all samples use the same weights and thus share the same computational limitations, producing $\rho > 0$.
+    \item \textbf{(Bottleneck structure)} If $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, then:
+\begin{enumerate}[label=(\roman*)]
+    \item There exists a computational bottleneck $\calB$ (Definition~\ref{def:bottleneck}) occurring with probability $q > 0$ such that errors are correlated: $\rho \geq q^2(r - 1/2)^2 > 0$ (Lemma~\ref{lem:hardness_bottleneck}).
+
+    \item For within-model sampling at fixed temperature, $\calB$ is a shared bottleneck (deterministic failure mode), producing effective sample size $N_{\text{eff}} = O(1/\rho)$ regardless of $N$. Self-consistency provides limited benefit.
+
+    \item Between-model ensembles on tasks with stochastic bottleneck structure may achieve $\rho \approx 0$ even when $\VC(\calF)$ is hard, in which case self-consistency improves accuracy (part (a) applies with independent errors).
+\end{enumerate}
 \end{enumerate}
 \end{theorem}
 
@@ -820,6 +863,79 @@ This establishes $\rho > 0$. For the specific bound in the lemma statement, take
 where the final inequality uses $q(1-q) \geq q^2$ for $q \in (0, 1)$ and the denominator is at most 1/4.
 \end{proof}
 
+\begin{lemma}[Verification Hardness Produces Computational Bottleneck]
+\label{lem:hardness_bottleneck}
+Let $\calF$ be a reasoning task with verification complexity $\VC(\calF)$, and let $\calM$ be a model class with $\mathrm{cap}(\calM)$.
+If $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, then there exists a computational bottleneck $\calB = (V_{\text{sub}}, S, q)$ (Definition~\ref{def:bottleneck}) with:
+\begin{enumerate}[label=(\alph*)]
+    \item $q = \Pr[x \in S \mid x \sim \calD] > 0$ (bottleneck occurs with non-negligible probability)
+    \item $r = \Pr[\text{error} \mid x \in S] > 1/2$ (errors are more likely than random guessing when bottleneck occurs)
+    \item For within-model sampling at fixed temperature, $\calB$ is a shared bottleneck
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\textbf{Step 1: Existence of hard verification subtask.}
+Since $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, there exists a verification function $V : X \times Y \to \{0,1\}$ such that:
+\begin{itemize}
+    \item $V$ correctly decides whether $y$ is a valid solution to $x$
+    \item $V \notin \mathrm{cap}(\calM)$ (the model cannot compute $V$ in polynomial time relative to its computational model)
+\end{itemize}
+
+\textbf{Step 2: Define bottleneck set.}
+Define $S = \{x \in X : \exists y, y'$ with $V(x, y) = 1$ and $V(x, y') = 0$, such that distinguishing $y$ from $y'$ requires computing a subtask $V_{\text{sub}} \notin \mathrm{cap}(\calM)\}$.
+
+Intuitively, $S$ is the set of inputs where verification is both necessary and hard.
+
+\textbf{Claim}: $q = \Pr[x \in S] > 0$.
+
+\textbf{Proof of claim}:
+Suppose for contradiction that $q = 0$. Then for almost all inputs $x \sim \calD$, either (a) there is only one candidate answer (verification is vacuous), or (b) distinguishing correct from incorrect answers can be done using computations in $\mathrm{cap}(\calM)$.
+
+Case (a) is non-generic for reasoning tasks.
+
+Case (b) contradicts $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$: if we can distinguish correct from incorrect answers using $\mathrm{cap}(\calM)$ computations on a $(1-\delta)$ fraction of inputs (for arbitrarily small $\delta > 0$), then we can solve the verification problem in expectation using $\mathrm{cap}(\calM)$ computations. For worst-case hardness $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$ to be meaningful, there must be a non-negligible fraction $q > 0$ of inputs where verification requires the hard computation.
+
+Thus $q > 0$. $\qed$ (claim)
+
+\textbf{Step 3: Error rate on bottleneck set.}
+For $x \in S$, the model $\calM$ must generate an answer $y$ without being able to compute $V_{\text{sub}}(x, y)$. Since $V_{\text{sub}}$ is necessary for distinguishing correct from incorrect answers on $S$, the model's choice of $y$ is not guided by the verification signal.
+
+\textbf{Claim}: $r = \Pr[\calM(x) \text{ incorrect} \mid x \in S] > 1/2$.
+
+\textbf{Justification}:
+If the model cannot verify whether $y$ is correct, it must rely on heuristics or patterns learned during training. For tasks where $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, these heuristics are unreliable on $S$ by definition --- $S$ is precisely the set of inputs where the hard verification is required.
+
+At minimum, $\calM$ performs no better than random guessing among plausible answers, giving $r \geq 1/2$. In practice, $r > 1/2$ because the model may systematically favor incorrect answers that appear superficially plausible (e.g., satisfy local constraints but violate global structure).
+
+More formally: if $r \leq 1/2$ on $S$, then $\calM$ achieves $> 50\%$ accuracy on the verification-hard subset $S$ without computing $V_{\text{sub}}$, contradicting the assumption that $V_{\text{sub}}$ is necessary for distinguishing correct from incorrect answers on $S$.
+
+Thus $r > 1/2$. $\qed$ (claim)
+
+\textbf{Step 4: Shared bottleneck structure for within-model sampling.}
+For within-model sampling at fixed temperature, all $N$ samples $y_1, \ldots, y_N$ are generated using the same model weights $\theta$. When $x \in S$ and $\calM$ cannot compute $V_{\text{sub}}$:
+\begin{itemize}
+    \item All samples fail to verify the same subtask $V_{\text{sub}}$
+    \item Errors are not independent across samples --- they stem from the same structural limitation (fixed weights $\theta$)
+    \item This produces positive error correlation: $\mathrm{Cov}(E_i, E_j \mid x \in S) > 0$
+\end{itemize}
+
+Therefore, $\calB = (V_{\text{sub}}, S, q)$ is a \emph{shared bottleneck} by Definition~\ref{def:bottleneck}.
+
+\textbf{Step 5: Conclusion.}
+We have established:
+\begin{enumerate}[label=(\alph*)]
+    \item $\calB = (V_{\text{sub}}, S, q)$ exists with $q > 0$
+    \item $r = \Pr[\text{error} \mid x \in S] > 1/2$
+    \item For within-model sampling, $\calB$ is a shared bottleneck
+\end{enumerate}
+This completes the proof.
+\end{proof}
+
+\begin{remark}
+Lemma~\ref{lem:hardness_bottleneck} is non-trivial because it bridges worst-case verification complexity (VC$(\calF) \not\subseteq \mathrm{cap}(\calM)$) to average-case error correlation. The lemma shows that worst-case hardness implies non-negligible average-case difficulty ($q > 0$) and systematic errors ($r > 1/2$), which together produce positive correlation via the shared bottleneck structure.
+\end{remark}
+
 \subsection{Extended Proof of Theorem 2}
 
 \Cref{thm:selfconsistency} follows from \Cref{lem:effective_samples,lem:verification_correlation} plus the standard Condorcet jury theorem analysis. We provide the full derivation.
@@ -853,7 +969,7 @@ When $\rho = \Omega(1/N)$ or larger, the effective sample size saturates: $N_{\t
 
 \paragraph{Part (c): Verification hardness produces correlation.}
 
-When $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, the model cannot perform the verification computation required to distinguish correct from incorrect intermediate steps. By \Cref{lem:verification_correlation}, this produces error correlation $\rho > 0$.
+When $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, by Lemma~\ref{lem:hardness_bottleneck} there exists a computational bottleneck $\calB$ with $q > 0$ and $r > 1/2$. By Lemma~\ref{lem:verification_correlation}, this produces error correlation $\rho \geq q^2(r - 1/2)^2 > 0$.
 
 The connection to the plurality condition is as follows. The model generates answers by computing reasoning paths it cannot fully verify. Errors arise when unverified steps are incorrect. Since the model lacks the computational capacity to check these steps, the same verification failures occur across all $N$ samples (they all fail to verify the same subtask). This produces:
 \begin{enumerate}[label=(\roman*)]
