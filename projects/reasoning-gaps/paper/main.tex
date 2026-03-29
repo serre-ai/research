@@ -153,8 +153,9 @@ A model class $\calM$ has a \emph{reasoning gap} on task $\calF$ if:
 \begin{enumerate}[nosep]
     \item $\calF \in \PTIME$ (the task is tractable);
     \item $\calF \notin \calC(\calM)$ (the task exceeds the model's capability class);
-    \item The model's accuracy on $\calF$ decreases monotonically with input size $n$ (the failure is systematic, not random).
+    \item The failure is systematic: accuracy either (a)~degrades with input size $n$, or (b)~remains bounded below perfect accuracy independently of $n$, with the bound persisting across model scaling.
 \end{enumerate}
+Condition~(3a) captures \emph{computational} gaps where difficulty overwhelms the model as instances grow; condition~(3b) captures \emph{structural} gaps where the model achieves partial but never complete accuracy due to architectural or training limitations (e.g., B8's $>$92\% ceiling across all standard models).
 A gap is \emph{structural} if condition (2) follows from a proven complexity separation, and \emph{empirical} if observed experimentally.
 \end{definition}
 
