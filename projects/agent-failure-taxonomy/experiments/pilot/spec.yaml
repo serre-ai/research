@@ -1,0 +1,66 @@
+# Experiment Pre-Registration Spec
+# Pilot experiment: Tool Fabrication + Infinite Loops
+# Estimated cost: $0.03 (well under $2 threshold, but documenting for practice)
+
+name: "pilot-failure-reproduction"
+
+status: draft
+
+hypothesis: >
+  Two high-priority failure modes from our taxonomy (Tool Fabrication and Infinite Loops)
+  can be reliably reproduced in controlled settings using a ReAct agent architecture.
+  Tool fabrication (F1) will occur when tool count exceeds working memory capacity,
+  and infinite loops (F2) will occur on ambiguous tasks due to lack of meta-cognitive
+  monitoring (C3 limitation). Both failures should appear in >60% of instances.
+
+predictions:
+  - tasks: ["tool_fabrication"]
+    metric: "fabrication_rate"
+    direction: "positive"
+    min_effect: 0.40  # at least 40% of instances show tool fabrication
+    max_effect: null
+  - tasks: ["infinite_loop"]
+    metric: "loop_rate"
+    direction: "positive"
+    min_effect: 0.40  # at least 40% of instances enter infinite loops
+    max_effect: null
+  - tasks: ["infinite_loop"]
+    metric: "self_detection_rate"
+    direction: "near_zero"
+    min_effect: null
+    max_effect: 0.10  # <10% of loops self-detected (C3 limitation)
+
+design:
+  condition: "baseline"  # no mitigations; testing raw failure rate
+  temperature: 0.0
+  models: ["gpt-4o-2024-11-20"]
+  tasks: ["tool_fabrication", "infinite_loop"]
+  num_samples: 1
+  instances_per_difficulty: 5
+  difficulties: ["medium"]  # single difficulty for pilot
+
+canary:
+  tasks: ["tool_fabrication"]  # test F1 first, simplest
+  instances_per_difficulty: 2
+  num_samples: 1
+  diagnostics:
+    - check: pipeline_completion
+      description: "All instances produce parseable logs with tool calls extracted"
+      min: 1.0  # 100% must complete without infrastructure errors
+    - check: cost_per_instance
+      max_multiple_of_estimate: 3.0  # allow 3x cost variance for pilot
+
+budget:
+  estimated_total_usd: 0.031
+  estimated_per_instance_usd: 0.0031  # F1: ~500 tokens, F2: ~2000 tokens avg
+  canary_cost_usd: 0.003
+  max_allowed_usd: 0.10  # conservative for pilot
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
