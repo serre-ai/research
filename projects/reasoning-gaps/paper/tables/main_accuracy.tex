@@ -1,0 +1,16 @@
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{lcccccccccccc}
+\toprule
+ & \rotatebox{70}{Haiku 4.5} & \rotatebox{70}{Sonnet 4.6} & \rotatebox{70}{Opus 4.6} & \rotatebox{70}{GPT-4o-m} & \rotatebox{70}{GPT-4o} & \rotatebox{70}{o3} & \rotatebox{70}{Llama 8B} & \rotatebox{70}{Llama 70B} & \rotatebox{70}{Ministral 8B} & \rotatebox{70}{Mistral 24B} & \rotatebox{70}{Qwen 7B} & \rotatebox{70}{Qwen 72B} \\
+\midrule
+B1: Majority & .63 & .68 & .70 & .72 & .78 & .13 & .55 & .68 & .72 & .72 & .67 & \textbf{.81} \\
+B2: Bool Eval & .80 & .72 & .83 & .83 & .82 & .50 & .67 & \textbf{.84} & .81 & .80 & .74 & .84 \\
+B3: Perm Comp & .41 & .30 & \textbf{.81} & .58 & .53 & .25 & .27 & .60 & .62 & .57 & .31 & .62 \\
+B4: State Track & .71 & .74 & \textbf{.79} & .62 & .55 & .35 & .48 & .69 & .66 & .68 & .52 & .72 \\
+B5: Graph Reach & .79 & .72 & .79 & .79 & .83 & .46 & .51 & .70 & .78 & .65 & .66 & \textbf{.83} \\
+B6: LIS & .48 & .50 & \textbf{.62} & .30 & .37 & -- & .21 & .24 & .24 & .22 & .28 & .35 \\
+B7: 3-SAT & .37 & .41 & .56 & .63 & \textbf{.67} & .12 & .32 & .34 & .42 & .51 & .56 & .61 \\
+B8: Reversal & 1.00 & \textbf{1.00} & \textbf{1.00} & .94 & .99 & .74 & .97 & 1.00 & .99 & .98 & .95 & .99 \\
+B9: Negation & .73 & .78 & \textbf{.79} & .54 & .57 & .31 & .50 & .74 & .56 & .57 & .59 & .75 \\
+\bottomrule
+\end{tabular}
