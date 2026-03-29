@@ -192,6 +192,7 @@ sigma.ai, sigurd.ai, signet.ai, axiom.ai, theorem.ai, rigor.ai, lemma.ai, conjec
 - 2026-03-23: Reopened for broader exploration. This document tracks candidates.
 - 2026-03-23: Broad sweep completed — 3 waves, ~120 domains checked. Tier 1 shortlist: verisig, sigil, euler, polaris, refine, aeon, deepnorth.
 - 2026-03-23: Agent-driven sweep — 200+ domains across CS, math, astronomy. Major finds below.
+- **2026-03-29: FINAL DECISION — serre.ai selected.** Jean-Pierre Serre (Fields Medal, Abel Prize). Research group rebranded to "Serre AI". Platform renamed to "Forge". Darkreach.ai retired. Full rebrand plan in docs/SERRE.md and Linear project "Serre AI Rebrand & Launch" (DW-328 through DW-345).
 
 ## Agent Sweep Results (2026-03-23)
 
