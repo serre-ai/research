@@ -1,0 +1,291 @@
+# Experiment Pre-Registration Spec: Agent Failure Taxonomy Pilot Validation
+# Created: 2026-03-29
+# Experimenter: Claude (Experimenter Agent)
+# Status: draft (awaiting critic review)
+
+name: "pilot-validation"
+
+status: draft
+
+hypothesis: >
+  Agent failure modes documented in literature (tool fabrication, infinite loops,
+  false completion, context degradation, tool hallucination, state divergence) are
+  reproducible in controlled settings and exhibit architecture-specific frequency
+  distributions. Specifically: (1) Tool fabrication rate scales with tool count,
+  (2) ReAct architecture exhibits higher loop rates than plan-then-execute,
+  (3) CoT prompting increases tool hallucination rates, and (4) context degradation
+  appears at 16k+ tokens across all architectures.
+
+predictions:
+  - tasks: ["tool_fabrication_n5", "tool_fabrication_n10", "tool_fabrication_n20", "tool_fabrication_n40"]
+    metric: "fabrication_rate"
+    direction: "positive"
+    min_effect: 0.15
+    max_effect: null
+
+  - tasks: ["infinite_loops_ambiguous"]
+    metric: "loop_rate"
+    direction: "positive"
+    min_effect: 0.20
+    max_effect: null
+
+  - tasks: ["false_completion_multistep"]
+    metric: "false_positive_rate"
+    direction: "positive"
+    min_effect: 0.10
+    max_effect: null
+
+  - tasks: ["context_degradation_16k", "context_degradation_24k"]
+    metric: "accuracy_drop"
+    direction: "negative"
+    min_effect: -0.30
+    max_effect: null
+
+  - tasks: ["tool_hallucination_cot"]
+    metric: "hallucination_rate_diff"
+    direction: "positive"
+    min_effect: 0.15
+    max_effect: null
+
+  - tasks: ["state_divergence_multistep"]
+    metric: "state_accuracy"
+    direction: "negative"
+    min_effect: -0.25
+    max_effect: null
+
+design:
+  condition: "pilot_validation"
+  temperature: 0.0
+  models:
+    - "gpt-4o-mini-2024-07-18"  # LangGraph and ReAct frameworks
+    - "claude-3-5-sonnet-20241022"  # MCP framework
+  tasks:
+    - "tool_fabrication_n5"
+    - "tool_fabrication_n10"
+    - "tool_fabrication_n20"
+    - "tool_fabrication_n40"
+    - "infinite_loops_ambiguous"
+    - "false_completion_multistep"
+    - "context_degradation_8k"
+    - "context_degradation_16k"
+    - "context_degradation_24k"
+    - "tool_hallucination_direct"
+    - "tool_hallucination_cot"
+    - "state_divergence_multistep"
+  num_samples: 1
+  instances_per_difficulty: 10
+  difficulties: [1]  # Single difficulty for pilot (medium complexity)
+
+  # Framework-specific parameters
+  frameworks:
+    - name: "langgraph"
+      backend: "gpt-4o-mini-2024-07-18"
+      architecture: "react"
+      max_iterations: 10
+
+    - name: "react_direct"
+      backend: "gpt-4o-mini-2024-07-18"
+      architecture: "plan_then_execute"
+      max_iterations: 10
+
+    - name: "anthropic_mcp"
+      backend: "claude-3-5-sonnet-20241022"
+      architecture: "direct_tool_use"
+      max_iterations: 10
+
+canary:
+  tasks:
+    - "tool_fabrication_n5"
+    - "infinite_loops_ambiguous"
+    - "false_completion_multistep"
+  instances_per_difficulty: 5
+  num_samples: 1
+  diagnostics:
+    - check: "pipeline_completion"
+      description: "All instances produce parseable JSON output"
+      threshold: 1.0
+
+    - check: "extraction_failure_rate"
+      description: "Can parse agent actions from trajectory logs"
+      max: 0.05
+
+    - check: "baseline_accuracy"
+      description: "Control instances (unambiguous tasks) succeed"
+      min: 0.80
+      max: 1.0
+
+    - check: "fabrication_baseline"
+      description: "Tool fabrication on N=5 tools is 0-20%"
+      metric: "fabrication_rate"
+      min: 0.0
+      max: 0.20
+      condition: "task == 'tool_fabrication_n5'"
+
+    - check: "loop_baseline"
+      description: "No loops on unambiguous control tasks"
+      metric: "loop_rate"
+      max: 0.0
+      condition: "control_instances == True"
+
+    - check: "cost_per_instance"
+      description: "Actual cost within 2x of estimate"
+      max_multiple_of_estimate: 2.0
+
+    - check: "framework_stability"
+      description: "No framework crashes or unrecoverable errors"
+      error_rate_max: 0.0
+
+budget:
+  estimated_total_usd: 40.00
+  estimated_per_instance_usd: 0.10
+  canary_cost_usd: 2.00
+  max_allowed_usd: 50.00
+
+  # Detailed breakdown
+  breakdown:
+    tool_fabrication:
+      instances: 120  # 10 instances × 4 tool counts × 3 frameworks
+      cost_per_instance: 0.05
+      total: 6.00
+
+    infinite_loops:
+      instances: 30  # 10 instances × 3 frameworks
+      cost_per_instance: 0.10
+      total: 3.00
+
+    false_completion:
+      instances: 30
+      cost_per_instance: 0.08
+      total: 2.40
+
+    context_degradation:
+      instances: 90  # 10 instances × 3 context lengths × 3 frameworks
+      cost_per_instance: 0.15
+      total: 13.50
+
+    tool_hallucination:
+      instances: 60  # 10 instances × 2 prompting modes × 3 frameworks
+      cost_per_instance: 0.08
+      total: 4.80
+
+    state_divergence:
+      instances: 30
+      cost_per_instance: 0.10
+      total: 3.00
+
+    canary_runs:
+      instances: 45  # 5 instances × 3 tasks × 3 frameworks
+      cost_per_instance: 0.05
+      total: 2.25
+
+    buffer_15pct:
+      total: 5.25
+
+# Cross-reference to theoretical framework
+theoretical_grounding:
+  taxonomy_categories_tested:
+    - "1.1 Tool Selection Failures (Tool Fabrication)"
+    - "3.1 Progress Monitoring (Infinite Loops)"
+    - "5.1 Verification Failures (False Completion)"
+    - "4.3 Context Management (Context Degradation)"
+    - "1.2 Execution Failures (Hallucinated Execution)"
+    - "4.1 State Divergence (False State Reporting)"
+
+  llm_limitations_tested:
+    - "C6: Tool Grounding (tool fabrication, scaling)"
+    - "C3: Meta-Cognitive Monitoring (loops, false completion)"
+    - "C2: Long-Range Coherence (context degradation)"
+    - "C8: Reasoning-Reliability Trade-off (CoT hallucination)"
+    - "C5: State Tracking (state divergence)"
+
+  design_principles_validated:
+    - "Principle 1: Never trust self-evaluation (false completion test)"
+    - "Principle 2: Assume state divergence will occur (state tracking test)"
+    - "Principle 3: External memory for complex tasks (context degradation)"
+
+  architecture_correlations_tested:
+    - "ReAct → higher loop rate vs. plan-then-execute"
+    - "All architectures → context degradation at 16k+ (C2 fundamental)"
+    - "All architectures → tool fabrication scales with tool count (C6 fundamental)"
+
+# Pre-registered statistical analyses
+analyses:
+  - id: "A1_taxonomy_validation"
+    hypothesis: "Documented failure modes reproduce in controlled settings"
+    test: "One-sample proportion test: failure_rate > 0.05 for each mode"
+    success_criterion: "At least 4 of 6 failure modes show rate >5%, p < 0.0083 (Bonferroni)"
+
+  - id: "A2_architecture_correlation"
+    hypothesis: "Different architectures exhibit different failure profiles"
+    test: "Chi-square test of independence: architecture × failure_type"
+    success_criterion: "p < 0.0083, Cramér's V > 0.3 (medium effect)"
+
+  - id: "A3_tool_count_scaling"
+    hypothesis: "Tool fabrication scales linearly with tool count"
+    test: "Linear regression: fabrication_rate ~ tool_count"
+    success_criterion: "Positive slope, R² > 0.7, p < 0.0083"
+
+  - id: "A4_context_length_effect"
+    hypothesis: "Performance degrades linearly with context length >16k"
+    test: "Linear regression: accuracy ~ context_length (16k-24k range only)"
+    success_criterion: "Negative slope, p < 0.0083, effect size >0.3"
+
+  - id: "A5_cot_hallucination_tradeoff"
+    hypothesis: "CoT prompting increases tool hallucination (C8 trade-off)"
+    test: "Paired t-test: hallucination_rate(CoT) vs hallucination_rate(Direct)"
+    success_criterion: "CoT > Direct, p < 0.0083, Cohen's d > 0.5"
+
+  - id: "A6_react_loop_rate"
+    hypothesis: "ReAct (LangGraph) has higher loop rate than plan-then-execute"
+    test: "Proportion test: loop_rate(LangGraph) vs loop_rate(ReAct_Direct)"
+    success_criterion: "LangGraph > ReAct_Direct, p < 0.0083, effect size >0.2"
+
+# Multiple testing correction
+multiple_testing:
+  method: "Bonferroni"
+  family_wise_alpha: 0.05
+  num_tests: 6
+  corrected_alpha: 0.0083
+
+# Data collection specification
+data_format:
+  trajectory_log: "JSON with step-by-step observations, reasoning, actions, results"
+  required_fields:
+    - "instance_id"
+    - "framework"
+    - "task_type"
+    - "ground_truth"
+    - "agent_trajectory"
+    - "completion_status"
+    - "failure_detected"
+    - "failure_type"
+    - "cost_usd"
+    - "latency_seconds"
+    - "token_counts"
+
+  checkpointing: "After every instance; can resume from any point"
+
+  validation: "Ground truth programmatically verified for all instances"
+
+# Success criteria for proceeding to full run
+canary_success_criteria: >
+  ALL canary diagnostics must pass. If any diagnostic fails, status → failed,
+  document failure reason, and STOP. Do not proceed to full run. Fix issue and
+  re-submit spec for review.
+
+full_run_success_criteria: >
+  (1) At least 4 of 6 failure modes reproduce (rate >5%),
+  (2) At least 2 architecture-specific patterns confirmed,
+  (3) All data collected without >10% missing instances,
+  (4) Results tables and figures generated.
+
+# Review tracking
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+# Timestamps
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
