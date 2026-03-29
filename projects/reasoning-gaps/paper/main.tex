@@ -153,10 +153,10 @@ A model class $\calM$ has a \emph{reasoning gap} on task $\calF$ if:
 \begin{enumerate}[nosep]
     \item $\calF \in \PTIME$ (the task is tractable);
     \item $\calF \notin \calC(\calM)$ (the task exceeds the model's capability class);
-    \item The failure is systematic: accuracy either (a)~degrades with input size $n$, or (b)~remains bounded below perfect accuracy independently of $n$, with the bound persisting across model scaling.
+    \item The failure is systematic: accuracy either (a)~degrades with input size $n$, or (b)~remains bounded away from perfect accuracy by a non-vanishing margin, independently of $n$ and model scaling.
 \end{enumerate}
-Condition~(3a) captures \emph{computational} gaps where difficulty overwhelms the model as instances grow; condition~(3b) captures \emph{structural} gaps where the model achieves partial but never complete accuracy due to architectural or training limitations (e.g., B8's $>$92\% ceiling across all standard models).
-A gap is \emph{structural} if condition (2) follows from a proven complexity separation, and \emph{empirical} if observed experimentally.
+Condition~(3a) captures \emph{computational} gaps where difficulty overwhelms the model as instances grow; condition~(3b) captures \emph{architectural} gaps where the model achieves partial but never complete accuracy due to structural or training limitations.
+A gap is \emph{provable} if condition (2) follows from a proven complexity separation, and \emph{empirical} if observed experimentally.
 \end{definition}
 
 \begin{definition}[Gap Closure]
@@ -220,7 +220,7 @@ For Type~3 gaps on tasks with serial depth $k$, accuracy under CoT with budget $
 \end{proposition}
 
 \begin{remark}
-Beyond the sufficient budget $O(k)$, empirical evidence shows accuracy may plateau or decrease---a phenomenon termed ``overthinking''~\citep{mirage2025}. Our budget sensitivity experiments (\Cref{sec:budget}) confirm monotonicity within the theoretical regime.
+Beyond the sufficient budget $O(k)$, empirical evidence shows accuracy can plateau or decrease---a phenomenon termed ``overthinking''~\citep{mirage2025}. Our budget sensitivity experiments (\Cref{sec:budget}) confirm monotonicity within the theoretical regime.
 \end{remark}
 
 \begin{proposition}[Intractability Invariance]
@@ -824,7 +824,7 @@ With budget $b < k$, the model can compute at most $b$ of the $k$ serial steps. 
 After $k$ steps the computation is complete and additional CoT cannot provide new information, so $A(b) = A(k)$ for $b \geq k$ in the ideal case. Empirically, \citet{mirage2025} document accuracy degradation with excessive test-time computation (``overthinking''); see the remark following \Cref{prop:monotone}.
 
 \textbf{Caveats.}
-Monotonicity assumes the model has learned to use CoT productively on the task. For out-of-distribution tasks where the model has not learned the correct serial algorithm, additional CoT budget may introduce noise rather than resolve dependencies.
+Monotonicity assumes the model has learned to use CoT productively on the task. For out-of-distribution tasks where the model has not learned the correct serial algorithm, additional CoT budget introduces noise rather than resolving dependencies.
 \end{proof}
 
 \subsection{Proof of \Cref{prop:intractable} (Intractability Invariance)}
