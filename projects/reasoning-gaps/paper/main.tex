@@ -62,7 +62,7 @@
 \newcommand{\bench}{{\fontfamily{cmr}\selectfont\textsc{ReasonGap}}}
 
 % Auto-generated statistics from analysis pipeline
-\input{../benchmarks/results/analysis/stats}
+\input{stats}
 
 \title{On the Reasoning Gaps of Large Language Models:\\ A Formal Characterization}
 
@@ -283,12 +283,12 @@ Overall accuracy is 0.519 (direct), 0.739 (short CoT), and 0.637 (budget CoT), w
 \label{tab:main-accuracy-results}
 \small
 \setlength{\tabcolsep}{2pt}
-\input{../benchmarks/results/analysis/tables/main_accuracy}
+\input{tables/main_accuracy}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/accuracy_vs_difficulty.pdf}
+\includegraphics[width=\textwidth]{figures/accuracy_vs_difficulty.pdf}
 \caption{Accuracy versus difficulty level by task and condition. Serial tasks (B3, B4) degrade most steeply; architectural tasks (B8) remain near ceiling. Error bars: 95\% bootstrap CIs.}
 \label{fig:accuracy-difficulty}
 \end{figure}
@@ -314,7 +314,7 @@ This distinction---distributional vs.\ attentional architectural gaps---refines 
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/cot_lift_heatmap.pdf}
+\includegraphics[width=0.85\textwidth]{figures/cot_lift_heatmap.pdf}
 \caption{CoT lift heatmap by gap type and condition. Serial gaps (Type~3) benefit most; intractability gaps (Type~5) show no benefit, confirming the taxonomy's predictions.}
 \label{fig:cot-heatmap}
 \end{figure}
@@ -328,7 +328,7 @@ This divergence is itself a taxonomy prediction: depth gaps have sharp threshold
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../benchmarks/results/analysis/figures/budget_sensitivity.pdf}
+\includegraphics[width=\textwidth]{figures/budget_sensitivity.pdf}
 \caption{Budget sensitivity for B2 (depth) and B3 (serial). B2 plateaus at $1.0\times$; B3 improves monotonically---confirming \Cref{prop:monotone}.}
 \label{fig:budget-sensitivity}
 \end{figure}
@@ -344,7 +344,7 @@ B7 (3-SAT) provides a direct test of \Cref{prop:intractable}: accuracy drops fro
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.75\textwidth]{../benchmarks/results/analysis/figures/phase_transition.pdf}
+\includegraphics[width=0.75\textwidth]{figures/phase_transition.pdf}
 \caption{Accuracy on B7 (3-SAT) versus difficulty. Models show a sharp cliff near the phase transition. CoT (dashed) provides no improvement over direct (solid).}
 \label{fig:phase}
 \end{figure}
@@ -373,7 +373,7 @@ The overall Type~4 tool-use lift is $+$0.635---over four times the $+$0.148 from
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{../benchmarks/results/analysis/figures/tool_use_comparison.pdf}
+\includegraphics[width=0.85\textwidth]{figures/tool_use_comparison.pdf}
 \caption{Accuracy by condition for tasks with tool-use data. On B6, tool augmentation raises accuracy from 25\% to near-perfect for Claude models, validating the Type~4 prediction.}
 \label{fig:tool-use}
 \end{figure}
