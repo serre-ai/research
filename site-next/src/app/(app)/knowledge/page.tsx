@@ -1,29 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Brain } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { ClaimCard } from '@/components/knowledge/claim-card';
+import { TuiBox, TuiPanel, TuiList, TuiSkeleton, TuiBadge } from '@/components/tui';
 import { ClaimDetail } from '@/components/knowledge/claim-detail';
 import { KnowledgeGraphViz } from '@/components/knowledge/knowledge-graph-viz';
 import { KnowledgeSearch } from '@/components/knowledge/knowledge-search';
 import { useKnowledgeClaims, useKnowledgeSubgraph, useKnowledgeStats } from '@/hooks';
-import { useKnowledgeSnapshot } from '@/hooks/use-knowledge-mutations';
 import type { ClaimType } from '@/lib/knowledge-types';
 
 const CLAIM_TYPES: ClaimType[] = [
-  'hypothesis',
-  'finding',
-  'definition',
-  'proof',
-  'citation',
-  'method',
-  'result',
-  'observation',
-  'decision',
-  'question',
+  'hypothesis', 'finding', 'definition', 'proof', 'citation',
+  'method', 'result', 'observation', 'decision', 'question',
 ];
 
 export default function KnowledgeBrowserPage() {
@@ -41,99 +28,104 @@ export default function KnowledgeBrowserPage() {
   const { data: claims, isLoading: claimsLoading } = useKnowledgeClaims(filters);
   const { data: subgraph } = useKnowledgeSubgraph(selectedId, 2);
   const { data: stats } = useKnowledgeStats();
-  const snapshot = useKnowledgeSnapshot();
 
   const projects = stats?.projects ?? [];
+  const claimList = claims ?? [];
 
   return (
-    <div className="flex gap-6" style={{ minHeight: 'calc(100vh - 220px)' }}>
-      {/* Left panel — claim list */}
-      <div className="w-2/5 flex flex-col min-w-0">
-        {/* Filter bar */}
-        <div className="flex gap-2 mb-4">
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="flex-1 border border-border bg-bg-elevated px-2 py-1.5 font-mono text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">All projects</option>
-            {projects.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="flex-1 border border-border bg-bg-elevated px-2 py-1.5 font-mono text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">All types</option>
-            {CLAIM_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => snapshot.mutate(projectFilter || 'reasoning-gaps')}
-            disabled={snapshot.isPending}
-            className="shrink-0"
-          >
-            {snapshot.isPending ? 'Snapshotting...' : 'Snapshot'}
-          </Button>
-        </div>
-
-        <div className="mb-4">
+    <>
+      {/* Filters */}
+      <div className="flex gap-2 mb-3">
+        <select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          className="border border-border bg-bg-elevated px-2 py-1 font-mono text-xs text-text-bright focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">all projects</option>
+          {projects.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="border border-border bg-bg-elevated px-2 py-1 font-mono text-xs text-text-bright focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">all types</option>
+          {CLAIM_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <div className="flex-1">
           <KnowledgeSearch onSelectClaim={setSelectedId} />
         </div>
+      </div>
 
-        {/* Claim list */}
-        <div className="flex-1 overflow-y-auto space-y-2">
-          {claimsLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full" />
-            ))
-          ) : claims && claims.length > 0 ? (
-            claims.map((claim) => (
-              <ClaimCard
-                key={claim.id}
-                claim={claim}
-                isSelected={claim.id === selectedId}
-                onClick={() => setSelectedId(claim.id)}
+      <div className="grid gap-3 lg:grid-cols-5" style={{ minHeight: 'calc(100vh - 220px)' }}>
+        {/* Left: claim list */}
+        <div className="lg:col-span-2">
+          <TuiPanel
+            id="claims"
+            title="CLAIMS"
+            order={1}
+            itemCount={claimList.length}
+          >
+            {claimsLoading ? (
+              <div className="space-y-1">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TuiSkeleton key={i} width={40} />
+                ))}
+              </div>
+            ) : (
+              <TuiList
+                panelId="claims"
+                items={claimList}
+                keyFn={(c) => c.id}
+                onActivate={(c) => setSelectedId(c.id)}
+                emptyMessage="no claims found"
+                renderItem={(claim, _i, active) => (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <TuiBadge color="accent">{claim.type}</TuiBadge>
+                      <span className={active ? 'text-text-bright' : 'text-text-secondary'}>
+                        {claim.statement.slice(0, 60)}{claim.statement.length > 60 ? '...' : ''}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 text-text-muted mt-0.5">
+                      <span>{claim.project}</span>
+                      {claim.confidence != null && (
+                        <span>{(claim.confidence * 100).toFixed(0)}%</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               />
-            ))
+            )}
+          </TuiPanel>
+        </div>
+
+        {/* Right: graph + detail */}
+        <div className="lg:col-span-3 space-y-3">
+          {selectedId && subgraph ? (
+            <>
+              <TuiBox title="KNOWLEDGE GRAPH">
+                <KnowledgeGraphViz
+                  subgraph={subgraph}
+                  selectedId={selectedId}
+                  onSelectClaim={setSelectedId}
+                />
+              </TuiBox>
+              <TuiBox title="CLAIM DETAIL">
+                <ClaimDetail claimId={selectedId} />
+              </TuiBox>
+            </>
           ) : (
-            <EmptyState
-              icon={Brain}
-              message="No claims found"
-              description="Adjust filters or wait for claims to be added."
-            />
+            <TuiBox title="KNOWLEDGE GRAPH">
+              <span className="text-text-muted">select a claim to view its subgraph and evidence chain</span>
+            </TuiBox>
           )}
         </div>
       </div>
-
-      {/* Right panel — graph + detail */}
-      <div className="w-3/5 flex flex-col min-w-0 space-y-4">
-        {selectedId && subgraph ? (
-          <>
-            <KnowledgeGraphViz
-              subgraph={subgraph}
-              selectedId={selectedId}
-              onSelectClaim={setSelectedId}
-            />
-            <ClaimDetail claimId={selectedId} />
-          </>
-        ) : (
-          <EmptyState
-            icon={Brain}
-            message="Select a claim"
-            description="Choose a claim from the list to view its subgraph and evidence chain."
-          />
-        )}
-      </div>
-    </div>
+    </>
   );
 }
