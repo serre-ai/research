@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AgentAvatar } from '@/components/collective/agent-avatar';
+import { TuiBox, TuiPanel, TuiList, TuiSkeleton } from '@/components/tui';
 import { StatsBar } from '@/components/collective/stats-bar';
 import { ActivityFeed } from '@/components/collective/activity-feed';
 import { useCollectiveHealth, useCollectiveEvents } from '@/hooks/use-collective';
@@ -13,35 +11,48 @@ export default function CollectivePage() {
   const { data: health, isLoading: healthLoading } = useCollectiveHealth();
   const { data: events, isLoading: eventsLoading } = useCollectiveEvents(20);
 
-  return (
-    <div className="space-y-6">
-      <StatsBar health={health} isLoading={healthLoading} />
+  const agentList = Object.values(AGENTS);
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Agent Status Grid */}
+  return (
+    <>
+      <div className="mb-3">
+        <StatsBar health={health} isLoading={healthLoading} />
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        {/* Agent grid */}
         <div className="lg:col-span-2">
-          <div className="grid grid-cols-3 gap-3">
-            {Object.values(AGENTS).map((agent) => (
-              <Link key={agent.id} href={`/collective/agents/${agent.id}`}>
-                <Card className="flex items-center gap-3 p-4 transition-colors hover:bg-bg-hover cursor-pointer">
-                  <AgentAvatar agentId={agent.id} size="md" showStatus status="idle" />
-                  <div className="min-w-0">
-                    <p className="font-mono text-sm font-medium text-text-bright truncate">
-                      {agent.displayName}
-                    </p>
-                    <p className="font-mono text-[10px] text-text-muted">{agent.role}</p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          <TuiPanel
+            id="agents"
+            title="AGENTS"
+            order={1}
+            itemCount={agentList.length}
+          >
+            <TuiList
+              panelId="agents"
+              items={agentList}
+              keyFn={(a) => a.id}
+              onActivate={(a) => {
+                window.location.href = `/collective/agents/${a.id}`;
+              }}
+              renderItem={(agent, _i, active) => (
+                <div className="flex items-center gap-2">
+                  <span style={{ color: agent.color }}>{'●'}</span>
+                  <span className={active ? 'text-text-bright' : 'text-text-secondary'}>{agent.displayName}</span>
+                  <span className="text-text-muted">{agent.role}</span>
+                </div>
+              )}
+            />
+          </TuiPanel>
         </div>
 
-        {/* Activity Feed */}
+        {/* Activity feed */}
         <div>
-          <ActivityFeed events={events} isLoading={eventsLoading} />
+          <TuiBox title="ACTIVITY">
+            <ActivityFeed events={events} isLoading={eventsLoading} />
+          </TuiBox>
         </div>
       </div>
-    </div>
+    </>
   );
 }

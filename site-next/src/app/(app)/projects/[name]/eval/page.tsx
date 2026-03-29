@@ -2,28 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { FlaskConical } from 'lucide-react';
+import { TuiBox, TuiPanel, TuiList, TuiBadge, TuiStatusDot, TuiSkeleton } from '@/components/tui';
 import { useEvalData, useEvalStatus } from '@/hooks';
 import { useEvalJobs } from '@/hooks/use-eval-jobs';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatusDot } from '@/components/ui/status-dot';
-import { EmptyState } from '@/components/ui/empty-state';
 import { ConditionTabs } from '@/components/condition-tabs';
 import { AccuracyHeatmap } from '@/components/accuracy-heatmap';
 import { EnqueueEvalDialog } from '@/components/enqueue-eval-dialog';
 import { EvalJobCard } from '@/components/eval-job-card';
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(dateStr).toISOString().slice(0, 16).replace('T', ' ');
 }
 
 export default function EvalPage() {
@@ -47,7 +35,6 @@ export default function EvalPage() {
     return sorted.length > 0 ? sorted : ['direct', 'cot', 'budget_cot'];
   }, [evalData]);
 
-  // Ensure active condition is valid
   const validCondition = conditions.includes(activeCondition)
     ? activeCondition
     : conditions[0] ?? 'direct';
@@ -61,126 +48,98 @@ export default function EvalPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <>
+        <TuiBox title="EVAL STATUS" className="mb-3"><TuiSkeleton width={30} /></TuiBox>
+        <TuiBox title="RESULTS" className="mb-3">
+          <div className="space-y-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <TuiSkeleton key={i} width={50} />
+            ))}
+          </div>
+        </TuiBox>
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="font-mono text-lg font-semibold text-text-bright">
-          Evaluation Results
-        </h2>
+    <>
+      {/* Status bar */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           {evalStatus && (
-            <div className="flex items-center gap-2">
-              <StatusDot
-                status={evalStatus.running ? 'ok' : 'idle'}
-                pulse={evalStatus.running}
-              />
-              <span className="font-mono text-xs text-text-muted">
+            <span className="flex items-center gap-1">
+              <TuiStatusDot status={evalStatus.running ? 'ok' : 'idle'} />
+              <span className="text-text-secondary">
                 {evalStatus.running
-                  ? `Running (${evalStatus.queued} queued)`
+                  ? `running (${evalStatus.queued} queued)`
                   : evalStatus.completed > 0
                     ? `${evalStatus.completed} completed`
-                    : 'Idle'}
+                    : 'idle'}
               </span>
-            </div>
+            </span>
           )}
-          <EnqueueEvalDialog />
         </div>
+        <EnqueueEvalDialog />
       </div>
 
-      {/* Job queue */}
+      {/* Active jobs */}
       {activeJobs.length > 0 && (
-        <section>
-          <Label className="mb-3 block">Active Jobs ({activeJobs.length})</Label>
-          <div className="space-y-2">
-            {activeJobs.map((job) => (
-              <EvalJobCard key={job.id} job={job} />
-            ))}
-          </div>
-        </section>
+        <TuiBox title={`ACTIVE JOBS (${activeJobs.length})`} className="mb-3">
+          {activeJobs.map((job) => (
+            <EvalJobCard key={job.id} job={job} />
+          ))}
+        </TuiBox>
       )}
 
       {!evalData || evalData.runs.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={FlaskConical}
-            message="No evaluation data"
-            description="Evaluation results will appear here once eval runs are completed"
-          />
-        </Card>
+        <TuiBox title="RESULTS">
+          <span className="text-text-muted">no evaluation data -- enqueue a run above</span>
+        </TuiBox>
       ) : (
         <>
           {/* Condition tabs */}
-          <ConditionTabs
-            conditions={conditions}
-            active={validCondition}
-            onChange={setActiveCondition}
-          />
+          <div className="mb-3">
+            <ConditionTabs
+              conditions={conditions}
+              active={validCondition}
+              onChange={setActiveCondition}
+            />
+          </div>
 
           {/* Accuracy heatmap */}
-          <section>
-            <Label className="mb-3 block">Accuracy (Model x Task)</Label>
-            <Card padding={false} className="overflow-hidden">
-              <AccuracyHeatmap
-                runs={evalData.runs}
-                condition={validCondition}
-              />
-            </Card>
-          </section>
+          <TuiBox title="ACCURACY (MODEL x TASK)" className="mb-3">
+            <AccuracyHeatmap runs={evalData.runs} condition={validCondition} />
+          </TuiBox>
 
           {/* Run history */}
-          <section>
-            <Label className="mb-3 block">Recent Runs</Label>
-            <Card padding={false}>
-              <div className="overflow-x-auto">
-                <table className="w-full font-mono text-xs">
-                  <thead>
-                    <tr className="border-b border-border text-left text-text-muted">
-                      <th className="px-4 py-2 font-medium">Model</th>
-                      <th className="px-4 py-2 font-medium">Task</th>
-                      <th className="px-4 py-2 font-medium">Condition</th>
-                      <th className="px-4 py-2 font-medium text-right">Accuracy</th>
-                      <th className="px-4 py-2 font-medium text-right">Instances</th>
-                      <th className="px-4 py-2 font-medium text-right">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {recentRuns.map((run) => (
-                      <tr key={run.id} className="hover:bg-bg-elevated transition-colors">
-                        <td className="px-4 py-2 text-text-secondary whitespace-nowrap">
-                          {run.model}
-                        </td>
-                        <td className="px-4 py-2 text-text-secondary">
-                          <Badge variant="outline">{run.task}</Badge>
-                        </td>
-                        <td className="px-4 py-2 text-text-muted">{run.condition}</td>
-                        <td className="px-4 py-2 text-right tabular-nums text-text-bright">
-                          {(run.accuracy * 100).toFixed(1)}%
-                        </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-text-muted">
-                          {run.instances.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right text-text-muted whitespace-nowrap">
-                          {formatDate(run.created_at)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </section>
+          <TuiBox title="RECENT RUNS">
+            <table className="tui-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Task</th>
+                  <th>Cond</th>
+                  <th className="text-right">Acc</th>
+                  <th className="text-right">N</th>
+                  <th className="text-right">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentRuns.map((run) => (
+                  <tr key={run.id}>
+                    <td className="text-text-secondary">{run.model}</td>
+                    <td><TuiBadge color="accent">{run.task}</TuiBadge></td>
+                    <td className="text-text-muted">{run.condition}</td>
+                    <td className="text-right tabular-nums text-text-bright">{(run.accuracy * 100).toFixed(1)}%</td>
+                    <td className="text-right tabular-nums text-text-muted">{run.instances.toLocaleString()}</td>
+                    <td className="text-right text-text-muted">{formatDate(run.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TuiBox>
         </>
       )}
-    </div>
+    </>
   );
 }

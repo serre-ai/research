@@ -1,22 +1,13 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { TuiBox, TuiBadge, TuiSkeleton, TuiStatusDot } from '@/components/tui';
 import { PlannerInsights } from '@/components/planner-insights';
 import { usePlannerEvaluations } from '@/hooks/use-planner';
 import { useQuality } from '@/hooks/use-quality';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return new Date(dateStr).toISOString().slice(0, 10);
 }
 
 function summarizeResult(result: unknown): string {
@@ -39,101 +30,64 @@ export default function PlannerPage() {
   const { data: quality, isLoading: qualityLoading } = useQuality(name);
 
   return (
-    <div className="space-y-8">
+    <>
       {/* Planner insights */}
-      <section>
+      <div className="mb-3">
         <PlannerInsights project={name} />
-      </section>
+      </div>
 
       {/* Recent Evaluations */}
-      <section>
-        <Label className="mb-4 block">Recent Evaluations</Label>
+      <TuiBox title="EVALUATIONS" className="mb-3">
         {evalsLoading ? (
-          <Card className="space-y-4">
+          <div className="space-y-1">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-1.5">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-4 w-full" />
-              </div>
+              <div key={i} className="flex gap-2"><TuiSkeleton width={10} /><TuiSkeleton width={40} /></div>
             ))}
-          </Card>
+          </div>
         ) : evaluations && evaluations.length > 0 ? (
-          <Card padding={false}>
-            <div className="divide-y divide-border">
-              {evaluations.map((ev) => (
-                <div key={ev.id} className="px-6 py-4">
-                  <div className="flex items-center gap-3 mb-1">
-                    <Badge variant="outline">{ev.type}</Badge>
-                    {ev.project && (
-                      <span className="font-mono text-xs text-text-muted">{ev.project}</span>
-                    )}
-                    <span className="font-mono text-xs text-text-muted ml-auto">
-                      {formatDate(ev.created_at)}
-                    </span>
-                  </div>
-                  <p className="font-mono text-sm text-text-bright">
-                    {summarizeResult(ev.result)}
-                  </p>
-                </div>
-              ))}
+          evaluations.map((ev) => (
+            <div key={ev.id} className="border-b border-border py-1.5 first:pt-0 last:border-0 last:pb-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <TuiBadge color="accent">{ev.type}</TuiBadge>
+                {ev.project && <span className="text-text-muted">{ev.project}</span>}
+                <span className="text-text-muted ml-auto">{formatDate(ev.created_at)}</span>
+              </div>
+              <span className="text-text-secondary">{summarizeResult(ev.result)}</span>
             </div>
-          </Card>
+          ))
         ) : (
-          <Card>
-            <EmptyState
-              message="No evaluations yet"
-              description="Planner evaluations will appear here once generated"
-            />
-          </Card>
+          <span className="text-text-muted">no evaluations yet</span>
         )}
-      </section>
+      </TuiBox>
 
       {/* Quality score */}
-      <section>
-        <Label className="mb-4 block">Quality Score</Label>
+      <TuiBox title="QUALITY SCORE">
         {qualityLoading ? (
-          <Card className="space-y-3">
-            <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-          </Card>
+          <div className="space-y-1">
+            <TuiSkeleton width={10} />
+            <TuiSkeleton width={40} />
+          </div>
         ) : quality ? (
-          <Card className="space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="font-mono text-2xl font-bold text-text-bright">
-                {quality.score}
-              </span>
-              <span className="font-mono text-xs text-text-muted">/ 100</span>
-              <span className="font-mono text-xs text-text-muted ml-auto">
-                Generated: {formatDate(quality.generated_at)}
-              </span>
+          <>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-text-bright font-bold">{quality.score}</span>
+              <span className="text-text-muted">/ 100</span>
+              <span className="text-text-muted ml-auto">{formatDate(quality.generated_at)}</span>
             </div>
-
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               {(quality.checks ?? []).map((check, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${
-                      check.passed ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                  />
-                  <span className="font-mono text-xs text-text-bright">{check.name}</span>
-                  {check.details && (
-                    <span className="font-mono text-xs text-text-muted">{check.details}</span>
-                  )}
+                <div key={i} className="flex items-center gap-2">
+                  <TuiStatusDot status={check.passed ? 'ok' : 'error'} />
+                  <span className="text-text-bright">{check.name}</span>
+                  {check.details && <span className="text-text-muted">{check.details}</span>}
                 </div>
               ))}
             </div>
-          </Card>
+          </>
         ) : (
-          <Card>
-            <EmptyState
-              message="No quality report"
-              description="Quality scores will appear here once generated"
-            />
-          </Card>
+          <span className="text-text-muted">no quality report</span>
         )}
-      </section>
-    </div>
+      </TuiBox>
+    </>
   );
 }
