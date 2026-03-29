@@ -1,0 +1,173 @@
+# Experiment Pre-Registration Spec: Pilot Failure Reproduction
+# Purpose: Validate taxonomy categories through controlled reproduction
+# of key failure modes across multiple agent frameworks
+
+name: "pilot-failure-reproduction"
+
+status: draft
+
+hypothesis: >
+  The taxonomy's 9 failure categories represent distinct, reproducible failure
+  modes that occur across different agent architectures. Specifically, we predict
+  that: (1) Tool fabrication (Cat 1.1) occurs reliably when tool count exceeds
+  ~10 tools, (2) Infinite loops (Cat 3.1) occur on ambiguous tasks without
+  explicit progress monitoring, and (3) Self-correction failure (Cat 5.2)
+  demonstrates confirmation bias in reflection-based architectures. Reproducing
+  these failures under controlled conditions validates the taxonomy's empirical
+  grounding and tests whether failure patterns are architecture-specific or
+  generalizable.
+
+predictions:
+  - tasks: [tool_fabrication]
+    metric: "fabrication_rate"
+    direction: "positive"
+    min_effect: 0.15
+    max_effect: null
+    rationale: "Instance 18 shows tool fabrication increases with tool count. We expect >15% fabrication rate when tools exceed 10."
+
+  - tasks: [ambiguous_task_loop]
+    metric: "infinite_loop_rate"
+    direction: "positive"
+    min_effect: 0.20
+    max_effect: null
+    rationale: "Instance 14 shows ReAct enters loops on ambiguous tasks. We expect >20% loop rate without iteration limits."
+
+  - tasks: [reflection_error_persistence]
+    metric: "error_repetition_rate"
+    direction: "positive"
+    min_effect: 0.25
+    max_effect: null
+    rationale: "Instance 43 shows Reflexion repeats errors despite reflection. We expect >25% error persistence after reflection."
+
+# Experimental design
+design:
+  # Three failure scenarios, each testing a specific taxonomy category
+  scenarios:
+    - id: tool_fabrication
+      category: "1.1 Tool Selection Failures"
+      description: "Test tool hallucination under high tool count (15-20 tools)"
+      task_type: "tool_selection"
+
+    - id: ambiguous_task_loop
+      category: "3.1 Progress Monitoring"
+      description: "Test infinite loop detection on vague/impossible tasks"
+      task_type: "ambiguous_goal"
+
+    - id: reflection_error_persistence
+      category: "5.2 Reflection Failures"
+      description: "Test confirmation bias in self-correction loops"
+      task_type: "error_correction"
+
+  # Frameworks to test (minimum 3 per research standards)
+  frameworks:
+    - name: "react"
+      implementation: "langchain_react"
+      version: "0.1.0"
+      supports_scenarios: [tool_fabrication, ambiguous_task_loop]
+
+    - name: "autogpt"
+      implementation: "autogpt_standalone"
+      version: "0.5.0"
+      supports_scenarios: [tool_fabrication, ambiguous_task_loop]
+
+    - name: "reflexion"
+      implementation: "reflexion_langchain"
+      version: "custom"
+      supports_scenarios: [reflection_error_persistence]
+
+    - name: "plan_execute"
+      implementation: "langchain_plan_execute"
+      version: "0.1.0"
+      supports_scenarios: [tool_fabrication, ambiguous_task_loop]
+
+  # Model configuration
+  models:
+    - "gpt-4o-2024-08-06"      # OpenAI flagship
+    - "claude-3-5-sonnet-20241022"  # Anthropic flagship
+
+  # Sampling parameters
+  temperature: 0.7   # Moderate temperature to allow diverse failures
+  num_samples: 1     # Single pass per instance (deterministic failures expected)
+  max_iterations: 20 # Iteration cap to prevent infinite loops
+  timeout_seconds: 300  # 5-minute timeout per instance
+
+  # Instance counts
+  instances_per_scenario: 10  # 10 instances × 3 scenarios = 30 total instances
+
+# Canary run configuration
+canary:
+  scenarios: [tool_fabrication, ambiguous_task_loop]  # Test 2 of 3 scenarios
+  instances_per_scenario: 3
+  num_samples: 1
+
+  diagnostics:
+    - check: pipeline_completion
+      description: "All instances produce parseable output"
+      threshold: 1.0
+      critical: true
+
+    - check: extraction_failure_rate
+      description: "Can extract failure signals from agent logs"
+      max: 0.10
+      critical: true
+
+    - check: cost_per_instance
+      description: "Actual cost within 2x of estimate"
+      max_multiple_of_estimate: 2.0
+      critical: true
+
+    - check: timeout_rate
+      description: "Timeout rate acceptable (some expected for infinite loops)"
+      max: 0.30
+      critical: false
+
+# Budget and resource estimates
+budget:
+  # Cost breakdown:
+  # - 30 instances × 2 models × 4 frameworks = 240 evaluations (with overlap)
+  # - Actual: 10 tool_fab × 2 models × 3 frameworks = 60 evals
+  #         + 10 loop × 2 models × 3 frameworks = 60 evals
+  #         + 10 reflection × 2 models × 1 framework = 20 evals
+  # Total: 140 evaluations
+  # - Avg tokens per eval: ~8k input, ~4k output (agent traces are verbose)
+  # - GPT-4o: $2.50/1M input, $10/1M output → ~$0.05/eval
+  # - Claude 3.5 Sonnet: $3/1M input, $15/1M output → ~$0.06/eval
+  # - Total: 70 GPT-4o evals × $0.05 + 70 Claude evals × $0.06 = $3.50 + $4.20 = $7.70
+
+  estimated_total_usd: 8.00
+  estimated_per_instance_usd: 0.057
+  canary_cost_usd: 0.40
+  max_allowed_usd: 12.00  # 50% buffer for unexpected complexity
+
+# Review tracking
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+# Timestamps
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Additional metadata
+metadata:
+  theoretical_grounding: >
+    This experiment directly tests the empirical validity of taxonomy categories
+    1.1 (Tool Selection), 3.1 (Progress Monitoring), and 5.2 (Reflection Failures).
+    These categories emerged from grounded theory analysis of 50 literature instances
+    and are mapped to LLM capability dimensions C6 (Tool Grounding), C3 (Meta-Cognitive
+    Monitoring), and C7 (Self-Correction Capability) respectively.
+
+  expected_outcomes: >
+    Success criteria: (1) Reproduce each failure type in ≥50% of instances for at
+    least one framework-model combination, confirming the failure mode is real and
+    reproducible. (2) Observe architecture-specific patterns (e.g., ReAct shows
+    higher loop rates than plan-execute). (3) Collect detailed failure traces for
+    paper examples and taxonomy validation.
+
+  paper_contribution: >
+    Results will provide: (1) Empirical validation of taxonomy categories through
+    controlled reproduction, (2) Quantitative failure frequency baselines across
+    frameworks, (3) Concrete agent traces for paper examples, (4) Initial data for
+    architecture-failure correlation matrix (Table in Section 6).
