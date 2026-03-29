@@ -215,8 +215,12 @@ Iterated composition of $k$ functions on a finite domain requires $\Theta(k)$ Co
 
 \begin{proposition}[CoT Budget Monotonicity]
 \label{prop:monotone}
-For Type~3 gaps, accuracy is non-decreasing in CoT budget up to $O(n)$, after which additional computation may degrade performance.
+For Type~3 gaps on tasks with serial depth $k$, accuracy under CoT with budget $b$ is non-decreasing in $b$ for $b \leq O(k)$.
 \end{proposition}
+
+\begin{remark}
+Beyond the sufficient budget $O(k)$, empirical evidence shows accuracy may plateau or decrease---a phenomenon termed ``overthinking''~\citep{mirage2025}. Our budget sensitivity experiments (\Cref{sec:budget}) confirm monotonicity within the theoretical regime.
+\end{remark}
 
 \begin{proposition}[Intractability Invariance]
 \label{prop:intractable}
@@ -808,26 +812,15 @@ The lower bound ($\Omega(k)$) and upper bound ($O(k)$) match, so the bound is ti
 
 \begin{proof}
 \textbf{Setup.}
-Consider a Type~3 (serial composition) task requiring $n$ sequential steps. Let $B$ denote the CoT budget (number of reasoning steps) and $A(B)$ the expected accuracy as a function of budget.
+Consider a Type~3 (serial composition) task with serial depth $k$. Let $b$ denote the CoT budget (number of reasoning steps) and $A(b)$ the expected accuracy as a function of budget.
 
-\textbf{Monotonicity for $B \leq n$.}
-We argue that $A(B) \leq A(B')$ for $B < B' \leq n$.
+\textbf{Monotonicity for $b \leq k$.}
+We argue that $A(b) \leq A(b')$ for $b < b' \leq k$.
 
-With budget $B < n$, the model can compute at most $B$ of the $n$ serial steps. With budget $B' > B$, the model can compute at most $B'$ steps. Since each additional step resolves one serial dependency, computing more steps provides strictly more information about the final answer. In the worst case, the model with budget $B'$ can replicate the budget-$B$ strategy and ignore the extra steps, achieving at least the same accuracy. Therefore, accuracy is monotonically non-decreasing in budget for $B \leq n$.
+With budget $b < k$, the model can compute at most $b$ of the $k$ serial steps. With budget $b' > b$, the model can compute at most $b'$ steps. Since each additional step resolves one serial dependency, computing more steps provides strictly more information about the final answer. In the worst case, the model with budget $b'$ can replicate the budget-$b$ strategy and ignore the extra steps, achieving at least the same accuracy. Therefore, accuracy is monotonically non-decreasing in budget for $b \leq k$.
 
-\textbf{Plateau for $B \geq n$.}
-After $n$ steps, the computation is complete: $v_n = g(x)$ has been determined. Additional CoT steps cannot provide new information, so $A(B) = A(n)$ for all $B \geq n$ in the ideal case.
-
-\textbf{Overthinking regime ($B \gg n$).}
-Empirically, \citet{mirage2025} document accuracy degradation with excessive test-time computation. We conjecture that this arises from the model introducing spurious reasoning steps or second-guessing correct intermediate results. This yields a piecewise characterization:
-\[
-A(B) \approx \begin{cases}
-\text{non-decreasing in } B & \text{for } B \leq n, \\
-\approx A(n) & \text{for } n < B < B_{\mathrm{overthink}}, \\
-\text{potentially decreasing} & \text{for } B > B_{\mathrm{overthink}},
-\end{cases}
-\]
-where $B_{\mathrm{overthink}}$ is the empirically determined threshold beyond which additional computation degrades performance.
+\textbf{Plateau and overthinking ($b > k$).}
+After $k$ steps the computation is complete and additional CoT cannot provide new information, so $A(b) = A(k)$ for $b \geq k$ in the ideal case. Empirically, \citet{mirage2025} document accuracy degradation with excessive test-time computation (``overthinking''); see the remark following \Cref{prop:monotone}.
 
 \textbf{Caveats.}
 Monotonicity assumes the model has learned to use CoT productively on the task. For out-of-distribution tasks where the model has not learned the correct serial algorithm, additional CoT budget may introduce noise rather than resolve dependencies.
