@@ -304,8 +304,8 @@ Overall accuracy is 0.519 (direct), 0.739 (short CoT), and 0.637 (budget CoT), w
 \label{sec:cot_results}
 
 The central empirical finding is that \textbf{CoT effectiveness is strongly predicted by gap type} (\Cref{fig:cot-heatmap}).
-Types~2--3 (depth and serial) show mean short-CoT lift of $+$0.351.
-Type~5 (intractability) shows negligible lift ($+$0.003), confirming \Cref{prop:intractable}: the computational bottleneck for $\NP$-hard problems is hardness, not parallelism.
+Types~2--3 (depth and serial) show mean short-CoT lift of $+$0.351 (ranging from $+$0.13 for B2 to $+$0.50 for B3 across tasks).
+Type~5 (intractability) shows negligible lift ($+$0.003; not significant, $p = 0.42$, McNemar's test), confirming \Cref{prop:intractable}: the computational bottleneck for $\NP$-hard problems is hardness, not parallelism.
 Type~6 (architectural) presents a nuanced picture: B8 (reversal) shows near-zero lift ($+$0.060) for standard models, but B9 (negation sensitivity) shows substantial model-dependent lift ($+$0.235), with Claude models gaining $+$0.36--0.57 while GPT-4o gains only $+$0.02.
 This suggests architectural gaps are not monolithic---CoT can compensate for inference-time manifestations (B9) but not training-time limitations (B8).
 Type~3 shows the largest single lift ($+$0.502): on B3, direct accuracy is 0.20 but CoT raises it to 0.79, consistent with the $O(k)$ sequential steps the forward pass cannot parallelize.
@@ -362,12 +362,14 @@ B7 (3-SAT) provides a direct test of \Cref{prop:intractable}: accuracy drops fro
 Two case studies illuminate the taxonomy's robustness across model architectures.
 \textbf{o3 (reasoning model):} o3's internal chain-of-thought closes depth and serial gaps just as external CoT does---achieving 0.78 on B2, 0.73 on B3, 0.76 on B4---while providing no systematic help on intractability gaps.
 Under the direct condition, o3 exhibits near-zero accuracy on several tasks (B1, B3, B4, B9) due to instruction-following conflicts with its internal reasoning process, not capability limitations.
+Specifically, o3's internal chain-of-thought activates even under the direct condition, producing extended deliberation that conflicts with our answer-extraction pipeline.
+When the short-CoT condition legitimizes extended reasoning, o3 recovers strongly (B4: 0.76, B9: 0.91), confirming that the direct-condition failures reflect evaluation methodology constraints rather than capability limitations.
 This confirms that the taxonomy is robust to the \emph{mechanism} of extended computation.
 
 \textbf{Claude family (within-family scaling):}
 \label{sec:opus}
 On B3, Opus~4.6 achieves \emph{perfect} accuracy (1.00) with short CoT versus Haiku's 0.93, confirming that serial gaps are fully closable (\Cref{prop:serial}).
-On B6 (LIS), Opus reaches 0.75 under CoT---nearly double the next-best model---suggesting the algorithmic gap boundary shifts with capability, though tool use would still outperform.
+On B6 (LIS), Opus reaches 0.75 $[0.71, 0.78]$ under CoT---nearly double the next-best model---suggesting the algorithmic gap boundary shifts with capability, though tool use would still outperform.
 On B7 (3-SAT), Opus's CoT lift is negligible ($+$0.02), consistent with \Cref{prop:intractable}: even the most capable model cannot systematically solve $\NP$-hard instances via additional reasoning.
 On B2, Opus reaches 0.99 with CoT, approaching the theoretical ceiling for depth gaps.
 
@@ -376,7 +378,7 @@ On B2, Opus reaches 0.99 with CoT, approaching the theoretical ceiling for depth
 
 Tool-augmented evaluation (Python code execution) on B5 and B6 for Sonnet~4.6, Haiku~4.5, and GPT-4o provides striking Type~4 validation.
 On B6 (LIS), tool use raises accuracy from 25\% (direct) and 40\% (CoT) to near-perfect: Sonnet 100\%, Haiku 99\%.
-The overall Type~4 tool-use lift is $+$0.635---over four times the $+$0.148 from CoT alone---confirming that algorithmic gaps require code execution, not more reasoning tokens.
+The overall Type~4 tool-use lift is $+$0.635 (per-model B6: Sonnet 1.00 $[0.99, 1.00]$, Haiku 0.99 $[0.98, 1.00]$)---over four times the $+$0.148 from CoT alone---confirming that algorithmic gaps require code execution, not more reasoning tokens.
 
 \begin{figure}[t]
 \centering
