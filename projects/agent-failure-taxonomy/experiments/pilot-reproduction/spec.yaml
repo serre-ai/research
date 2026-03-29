@@ -1,0 +1,199 @@
+# Experiment Pre-Registration Spec
+# Pilot experiment to validate taxonomy through controlled failure reproduction
+
+name: "pilot-reproduction"
+
+status: draft
+
+hypothesis: >
+  Agent failure modes documented in the taxonomy can be systematically reproduced
+  in controlled settings, with failure rates varying predictably across agent
+  architectures. Specifically: (1) ReAct agents will exhibit higher rates of
+  tool hallucination and infinite loops due to tight action loops without
+  explicit planning; (2) Reflexion agents will exhibit confirmation bias and
+  degeneration-of-thought in self-correction tasks due to same-model reflection.
+
+predictions:
+  - tasks: ["tool_hallucination_001", "tool_hallucination_002", "tool_hallucination_003"]
+    metric: "hallucination_rate"
+    direction: "positive"
+    min_effect: 0.50
+    max_effect: null
+    details: "ReAct agents expected to hallucinate tools in ≥50% of runs with 20+ tools"
+
+  - tasks: ["infinite_loop_001", "infinite_loop_002"]
+    metric: "loop_detection_rate"
+    direction: "positive"
+    min_effect: 0.40
+    max_effect: null
+    details: "ReAct agents expected to enter loops in ≥40% of ambiguous tasks"
+
+  - tasks: ["self_correction_001", "self_correction_002", "self_correction_003"]
+    metric: "reflection_failure_rate"
+    direction: "positive"
+    min_effect: 0.60
+    max_effect: null
+    details: "Reflexion agents expected to fail self-correction in ≥60% of complex constraint tasks"
+
+design:
+  architectures: ["react", "reflexion"]
+  llms: ["gpt-4-turbo-2024-04-09", "claude-3-5-sonnet-20241022"]
+  failure_modes:
+    - id: "tool_hallucination"
+      category: "1.1"
+      tasks: 3
+      instances_per_task: 5
+    - id: "infinite_loop"
+      category: "3.1"
+      tasks: 2
+      instances_per_task: 5
+    - id: "self_correction_failure"
+      category: "5.2"
+      tasks: 3
+      instances_per_task: 5
+
+  total_tasks: 8
+  total_instances: 40
+  runs_per_instance: 2  # 2 LLMs
+  total_runs: 80        # 40 instances × 2 LLMs
+
+  temperature: 0.0
+  max_iterations: 15    # Hard cap to prevent runaway costs
+  timeout_seconds: 300  # 5 minutes per run
+
+canary:
+  tasks: ["tool_hallucination_001", "infinite_loop_001", "self_correction_001"]
+  instances_per_task: 3
+  llms: ["gpt-4-turbo-2024-04-09"]  # Single LLM for canary
+  total_runs: 9  # 3 tasks × 3 instances × 1 LLM
+
+  diagnostics:
+    - check: pipeline_completion
+      description: "All runs complete without crashes"
+      target: 1.0
+      min_acceptable: 0.90
+
+    - check: extraction_success_rate
+      description: "Agent outputs can be parsed"
+      target: 1.0
+      min_acceptable: 0.85
+
+    - check: detector_execution
+      description: "Failure detectors run without errors"
+      target: 1.0
+      min_acceptable: 1.0
+
+    - check: cost_per_run_usd
+      description: "Actual cost within 2x of estimate"
+      max_acceptable: 1.00
+      estimated: 0.40
+
+    - check: manual_review_feasibility
+      description: "Runs are human-reviewable in reasonable time"
+      max_minutes_per_run: 5
+      target_minutes: 2
+
+budget:
+  estimated_total_usd: 32.00
+  breakdown:
+    canary: 3.60          # 9 runs × $0.40
+    full_pilot: 28.40     # 71 runs × $0.40 (80 total - 9 canary)
+  estimated_per_instance_usd: 0.40
+  max_allowed_usd: 50.00  # 50% buffer for overruns
+
+  assumptions:
+    avg_llm_calls_per_run: 8
+    avg_tokens_per_call: 2000
+    gpt4_cost_per_1k_tokens: 0.01
+    claude_cost_per_1k_tokens: 0.015
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Theoretical grounding
+theoretical_basis:
+  taxonomy_categories:
+    - "1.1: Tool-Use Failures → Selection Failures"
+    - "3.1: Planning Failures → Progress Monitoring"
+    - "5.2: Self-Correction Failures → Reflection Failures"
+
+  llm_limitations_tested:
+    - "C6: Tool Grounding (tool hallucination)"
+    - "C3: Meta-Cognitive Monitoring (infinite loops)"
+    - "C7: Self-Correction Capability (reflection failure)"
+
+  architecture_predictions:
+    - "ReAct: High tool hallucination due to tight loop without planning"
+    - "ReAct: High loop rate due to no explicit progress monitoring"
+    - "Reflexion: High reflection failure due to same-model confirmation bias"
+
+# Success criteria for pilot
+pilot_success_criteria:
+  infrastructure:
+    - "All framework wrappers execute without errors"
+    - "Task generators produce valid instances"
+    - "Failure detectors correctly identify known patterns"
+    - "Checkpointing enables crash recovery"
+    - "Cost tracking prevents budget overruns"
+
+  reproduction:
+    - "At least 2 of 3 failure modes reproduce at ≥50% rate"
+    - "Framework differences are observable (≥10% difference in rates)"
+    - "Manual review confirms detector accuracy (≥85% agreement)"
+
+  validation:
+    - "False positive rate <10% (detectors don't fire on control tasks)"
+    - "Results are interpretable and paper-ready"
+
+# Risk assessment
+risks:
+  - risk: "Cost overruns from infinite loops"
+    mitigation: "Hard iteration cap (15) and timeout (5min) per run"
+    likelihood: "low"
+
+  - risk: "Framework installation complexity"
+    mitigation: "Docker containers with pinned dependencies"
+    likelihood: "medium"
+
+  - risk: "Non-reproducibility of literature failures"
+    mitigation: "Start with 'Easy' reproducibility failures, document non-repro as finding"
+    likelihood: "medium"
+
+  - risk: "Detector implementation bugs"
+    mitigation: "Canary run validates detectors before full experiment"
+    likelihood: "medium"
+
+# Expected outputs
+deliverables:
+  data:
+    - "80 agent run traces with full action logs"
+    - "Detector outputs for each run"
+    - "Ground truth verification results"
+    - "Cost tracking logs"
+
+  analysis:
+    - "Frequency table: Failure mode × Framework → Reproduction rate"
+    - "Statistical tests for architecture differences"
+    - "Manual review agreement statistics"
+    - "Cost and resource usage summary"
+
+  paper_artifacts:
+    - "Experimental methodology section draft"
+    - "Results table (preliminary)"
+    - "Architecture-failure correlation matrix"
+
+# Notes for critic review
+notes_for_reviewer: >
+  This pilot tests 3 high-priority failure modes across 2 frameworks with
+  strong theoretical grounding. The experiment directly tests predictions from
+  the taxonomy's LLM limitation mapping (C6, C3, C7). Budget is conservative
+  (<$50) and includes canary run to validate infrastructure before full pilot.
+  Success requires ≥50% reproduction rate for at least 2 of 3 failure modes,
+  which would validate the taxonomy's empirical basis. Canary diagnostics
+  ensure pipeline robustness before committing to full runs.
