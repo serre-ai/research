@@ -1,3 +1,0 @@
-module.exports=[91627,a=>{"use strict";var b=a.i(75403),c=a.i(93253);a.s(["default",0,function(){return(0,b.jsxs)("div",{className:"pt-20 text-center",children:[(0,b.jsx)("p",{className:"text-text-muted text-sm",children:"404"}),(0,b.jsx)("p",{className:"text-sm mt-2",children:(0,b.jsx)(c.default,{href:"/",children:"Back to home"})})]})}])},68395,a=>{a.n(a.i(91627))}];
-
-//# sourceMappingURL=site_src_app_not-found_tsx_0aheyo9._.js.map
