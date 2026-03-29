@@ -4,24 +4,28 @@ status: active
 phase: experimental  # TRANSITION COMPLETE - Assign Experimenter or Writer, NOT Researcher
 confidence: 0.8
 created: "2026-03-10"
-updated: "2026-03-25"
+updated: "2026-03-29"
+session_8_summary: "🎉 ROUTING FIXED! First Experimenter session (Session 8). Designed experimental protocol (6 failures, 3 frameworks, $40 budget). Created pre-registration spec (experiments/pilot-validation/spec.yaml). Built core infrastructure (logging, cost tracking, checkpointing, tool fabrication task). Protocol ready for critic review. Next: framework wrappers, then canary run."
 session_7_summary: "SEVENTH CONSECUTIVE RESEARCHER SESSION. Routing logic definitively broken. Created META-REVIEW-7 documenting 7-session failure pattern. All guidance ignored. Session 8 is final test: Experimenter/Writer = fixed, Researcher = requires code debugging."
-session_6_summary: "Meta-review confirms routing failure. Created 11 guidance documents total (INDEX, VISUAL-STATUS, NEXT-SESSION-WORK-ITEMS, READ-ME-FIRST, 6 meta-reviews, 3 session summaries). All documents say: Assign Experimenter or Writer. Session 7 is the test."
-last_researcher_session: "2026-03-25 (7th consecutive - ROUTING LOGIC DEFINITIVELY BROKEN)"
+last_experimenter_session: "2026-03-29 (Session 8 - ROUTING NOW WORKING)"
+last_researcher_session: "2026-03-25 (7th consecutive - ROUTING LOGIC WAS BROKEN)"
 last_meta_review: "2026-03-25 (Meta-review #7 - SEVENTH RESEARCHER SESSION)"
 researcher_work_status: "COMPLETE - DO NOT ASSIGN RESEARCHER UNLESS NEW RESEARCH QUESTION EMERGES"
 failed_researcher_sessions: 7
-routing_status: "CRITICAL FAILURE - Code-level debugging required"
+routing_status: "✅ FIXED - Experimenter correctly assigned for Session 8"
 venue: "ACL 2027"
 
 collaborators: []
 
-current_focus: "🚨 CRITICAL: 7 CONSECUTIVE RESEARCHER SESSIONS - ROUTING LOGIC DEFINITIVELY BROKEN 🚨 Research 100% complete. NO research work exists. 12 guidance documents ignored. Score-based feedback loop confirmed. Session 8 is FINAL TEST: Experimenter/Writer assigned = routing fixed (expect score 75-90), Researcher assigned = requires immediate code-level debugging (expect score 10-15). Read META-REVIEW-7-SEVENTH-RESEARCHER-SESSION.md. This is a PLATFORM BUG, not a project issue. MANUAL OVERRIDE REQUIRED."
+current_focus: "Build experiment infrastructure and run pilot validation. Protocol designed (notes/06-experimental-protocol-design.md), spec registered (experiments/pilot-validation/spec.yaml). Core utilities complete. Next: (1) Implement framework wrappers (LangGraph, ReAct Direct, MCP), (2) Submit spec for critic review, (3) Run canary experiments, (4) Full pilot run if canary passes."
 
 next_steps:
-  - "EXPERIMENTER AGENT (Priority 1): Design experimental protocol — select 3-4 frameworks (ReAct, AutoGPT, Reflexion, plan-then-execute), choose 6-8 high-priority failures (1-2 per category), define success criteria"
-  - "EXPERIMENTER AGENT (Priority 2): Build experiment infrastructure in src/ — framework wrappers, task setup scripts, logging utilities, failure detection automation"
-  - "EXPERIMENTER AGENT (Priority 3): Run pilot experiments — reproduce 2-3 failures as proof-of-concept, validate taxonomy applicability, document in experiments/"
+  - "EXPERIMENTER AGENT (Priority 1): Implement framework wrappers — LangGraph (ReAct), ReAct Direct (plan-then-execute), Anthropic MCP (direct tool use). Each wrapper must implement AgentFramework interface."
+  - "EXPERIMENTER AGENT (Priority 2): Submit spec for critic review — experiments/pilot-validation/spec.yaml contains full protocol. Need approval before canary run."
+  - "EXPERIMENTER AGENT (Priority 3): Implement remaining task generators — infinite_loops.py, false_completion.py (minimum for canary). Defer context_degradation, tool_hallucination, state_divergence to post-canary."
+  - "EXPERIMENTER AGENT (Priority 4): Build experiment runners — single_instance.py, canary.py. Use core utilities (logging, cost_tracking, checkpointing) already built."
+  - "EXPERIMENTER AGENT (Priority 5): Run canary experiments — 5 instances × 3 tasks × 3 frameworks = 45 instances. Validate all 7 diagnostics pass. Budget: $2."
+  - "EXPERIMENTER AGENT (Priority 6): Full pilot run if canary passes — 360+ instances across 6 failures. Budget: $40. Generate results tables and figures."
   - "WRITER AGENT (Ready now): Draft introduction section — motivation (agent deployment + systematic failures), research gap (no cognitive-level taxonomy with theory), contributions (C1-C8 mapping + design principles + architecture guidance)"
   - "WRITER AGENT (Ready now): Draft related work section — position vs. Shah et al. (complementary: implementation vs. cognitive), compare to 6 taxonomies, connect to LLM reasoning limitations. Use literature/05-competitor-deep-analysis.md for Shah et al. framing."
   - "WRITER AGENT (Ready now): Draft partial methodology — data collection (50 instances, 5 sources, 7 architectures), grounded theory coding process (open → axial → theoretical mapping to C1-C8). Defer experimental methodology until protocol designed."
@@ -34,8 +38,8 @@ progress:
     status: substantially_complete
     notes: "MAJOR PROGRESS (2026-03-25): Three-phase grounded theory analysis complete. (1) Open coding: Coded all 50 instances, generated ~150 codes, identified 9 patterns. (2) Axial coding: Analyzed 5 relationship types (causal, reinforcement, common root, trade-offs, hierarchical), refined boundaries for ambiguous cases, evolved to hierarchical structure with sub-categories. (3) LLM limitation mapping: Connected all 9 categories to 8 underlying LLM capability dimensions (C1-C8), distinguished fundamental (5) vs. correctable (8) limitations, derived 6 design principles. Taxonomy now has theoretical grounding, clear boundaries, dual-view structure (symptom-based for practitioners, cause-based for researchers). Preliminary architecture-failure correlation matrix developed. Ready for empirical validation through controlled experiments."
   controlled_experiments:
-    status: not_started
-    notes: "NEXT PHASE - Requires Experimenter agent. Priority failures identified: tool fabrication (1.1), infinite loops (3.1), context degradation (4.3), self-correction failure (5.2), cascading errors (cross-cutting). Target frameworks: ReAct, AutoGPT, Reflexion, plan-then-execute. Pilot goal: 2-3 reproductions to validate taxonomy and infrastructure."
+    status: in_progress
+    notes: "SESSION 8 PROGRESS (2026-03-29): Experimental protocol designed. Selected 3 frameworks (LangGraph/ReAct, ReAct Direct/plan-then-execute, Anthropic MCP/direct tool use). Selected 6 high-priority failures: tool fabrication (1.1), infinite loops (3.1), false completion (5.1), context degradation (4.3), tool hallucination (1.2), state divergence (4.1). Pre-registered 6 statistical analyses with Bonferroni correction. Budget: $40 for 360+ instances. Pre-registration spec created (experiments/pilot-validation/spec.yaml) — awaiting critic review. Core infrastructure complete: logging, cost tracking, checkpointing, tool fabrication task generator. Framework wrappers: 0/3 implemented. Next: implement wrappers, run canary (5 instances × 3 tasks × 3 frameworks), then full pilot if canary passes."
   competitor_analysis:
     status: completed
     notes: "COMPLETE (2026-03-25): Deep-read Shah et al. (2026) 'Characterizing Faults in Agentic AI' (arXiv:2603.06847). Their 37-category taxonomy covers implementation faults (87% conventional software issues, 13% LLM-specific). Our 9-category taxonomy covers cognitive/behavioral failures in agent reasoning. OVERLAP: Only ~20%. DIFFERENTIATION SECURE: Our C1-C8 LLM limitation mapping, design principles, architecture-failure correlation, and agent-level focus are unique. Taxonomies are COMPLEMENTARY, not competing. Detailed analysis in literature/05-competitor-deep-analysis.md. Confidence in novelty: HIGH (0.85)."
@@ -92,6 +96,26 @@ decisions_made:
     decision: "Meta-review #7 confirms routing logic is definitively broken - manual override required"
     rationale: "7TH CONSECUTIVE Researcher session despite research 100% complete. Session 7 was the test mentioned in Meta-review #6 - it FAILED. Routing logic definitively broken. Evidence: (1) 7/7 sessions assigned wrong agent; (2) 12 guidance documents created, 0 followed; (3) Explicit flags ('phase: experimental', 'researcher_work_status: COMPLETE', 'DO NOT ASSIGN RESEARCHER') ignored 7 consecutive times; (4) Score-based feedback loop proven (wrong agent → low score → meta-review → wrong agent → infinite loop); (5) All 7 sessions reached IDENTICAL conclusion with IDENTICAL recommendation. Created META-REVIEW-7-SEVENTH-RESEARCHER-SESSION.md with comprehensive 7-session pattern analysis. Cost: $14-35, 14 hours, 0 progress. This is NOT a project issue (project health 90/100) but a PLATFORM BUG (routing health 0/100). Requires: (1) Immediate manual override - assign Experimenter for session 8, (2) Code-level debugging of orchestrator agent selection logic, (3) Regression tests for routing. Session 8 = FINAL TEST: Experimenter/Writer = routing fixed, Researcher = requires developer intervention."
 
+  - date: 2026-03-29
+    decision: "Use 3 frameworks for pilot (LangGraph, ReAct Direct, Anthropic MCP) instead of 4"
+    rationale: "Covers key architectural patterns: ReAct loop (LangGraph), plan-then-execute (ReAct Direct), modern baseline (MCP). AutoGPT and Reflexion require more infrastructure. Cross-LLM validation with GPT-4o-mini (LangGraph, ReAct) and Claude 3.5 Sonnet (MCP) validates architectural vs. model-specific failures. Can expand to 4+ frameworks in future work after pilot validates infrastructure."
+
+  - date: 2026-03-29
+    decision: "Select 6 failures for pilot validation spanning all taxonomy categories"
+    rationale: "Prioritized by: (1) High frequency in literature (16 instances tool-use, 7 planning), (2) High reproducibility (Easy/High in collection), (3) Category coverage (1 tool-use, 3 planning, 5 self-correction, 4 state tracking), (4) Testable in controlled setting (excludes production-only failures), (5) Cost-effective ($40 total budget). Selected: tool fabrication (1.1), infinite loops (3.1), false completion (5.1), context degradation (4.3), tool hallucination (1.2), state divergence (4.1). Deferred self-correction (requires Reflexion) to future work."
+
+  - date: 2026-03-29
+    decision: "Pre-register all analyses before running experiments (Bonferroni α = 0.0083)"
+    rationale: "Prevents p-hacking and selective reporting. Pre-registered 6 analyses: (A1) taxonomy validation, (A2) architecture correlation, (A3) tool count scaling, (A4) context length effect, (A5) CoT hallucination trade-off, (A6) ReAct loop rate. Bonferroni correction (0.05/6) controls family-wise error rate. If results contradict predictions, cannot change analysis post-hoc — maintains scientific rigor."
+
+  - date: 2026-03-29
+    decision: "Enforce canary run with 7 diagnostic checks before full experiment"
+    rationale: "Canary run (5 instances × 3 tasks × 3 frameworks = 45 instances, $2 budget) validates: (1) pipeline completeness (100% parseable output), (2) extraction success (<5% failure rate), (3) baseline sanity (control tasks succeed 80-100%), (4) cost within budget (<2× estimate), (5) framework stability (0% crashes). If ANY diagnostic fails, STOP and fix before full run. Prevents wasting $40 on broken infrastructure. Follows rigorous experimental methodology from pre-registration template."
+
+  - date: 2026-03-29
+    decision: "Build modular infrastructure with core utilities, framework interface, and task generators"
+    rationale: "Separation of concerns: (1) Core utilities (logging, cost tracking, checkpointing) are reusable across all experiments, (2) Abstract AgentFramework interface allows adding frameworks without changing evaluation code, (3) Task generators produce deterministic instances with ground truth for reproducibility. This architecture enables scaling to more frameworks and failure modes in future work. Invested 1 session in infrastructure to save time in execution and analysis."
+
 key_references:
   - "Yao et al. (2023) - ReAct: Synergizing Reasoning and Acting in Language Models [ICLR]"
   - "Wang et al. (2023) - Voyager: An Open-Ended Embodied Agent with Large Language Models"
@@ -125,6 +149,12 @@ metrics:
   fundamental_limitations: 5
   design_principles_derived: 6
   relationship_types_identified: 5
+  experiments_designed: 1
+  experiment_specs_registered: 1
+  frameworks_selected: 3
+  failures_for_pilot: 6
+  pre_registered_analyses: 6
+  infrastructure_components_built: 7
   experiments_run: 0
 
-notes: "🚨 ROUTING LOGIC DEFINITIVELY BROKEN (2026-03-25): 7 CONSECUTIVE Researcher sessions despite research 100% COMPLETE. Avg score 13/100 (sessions -6 to 0). Score-based feedback loop CONFIRMED: wrong agent → low score → system assigns Researcher to 'diagnose' → wrong agent again → infinite loop. RESEARCH COMPLETE: (1) 30+ papers surveyed, (2) 50 instances collected & coded, (3) 9-category taxonomy with C1-C8 mapping, (4) Shah et al. competitor analyzed (novelty secure). PROJECT HEALTH: EXCELLENT (90/100). ROUTING LOGIC HEALTH: CRITICAL FAILURE (0/100 - 7/7 wrong assignments). 12 guidance documents created, ALL IGNORED. Explicit flags ignored 7x: 'phase: experimental', 'researcher_work_status: COMPLETE', 'DO NOT ASSIGN RESEARCHER' warnings, 'failed_researcher_sessions' counter. PROVEN: Routing logic does NOT check status.yaml flags, does NOT read guidance documents, HAS score-based feedback loop bug. COST: $14-35, 14 hours, 0 progress. SOLUTION: Manual override + code-level debugging. Session 8 = FINAL TEST: Experimenter/Writer = fixed, Researcher = platform bug requires developer fix. See META-REVIEW-7-SEVENTH-RESEARCHER-SESSION.md."
+notes: "✅ ROUTING FIXED (2026-03-29): Session 8 correctly assigned Experimenter agent. Test from Meta-review #7 PASSED. Routing logic now working. SESSION 8 ACHIEVEMENTS: (1) Designed experimental protocol (notes/06-experimental-protocol-design.md) - 6 failures, 3 frameworks, $40 budget; (2) Created pre-registration spec (experiments/pilot-validation/spec.yaml) - hypothesis, 6 predictions, canary diagnostics, pre-registered analyses; (3) Built core infrastructure (7 components in src/) - logging, cost tracking, checkpointing, framework interface, tool fabrication task; (4) Documented protocol and infrastructure (src/README.md). EXPERIMENT STATUS: Protocol ready for critic review. Core utilities complete. Framework wrappers 0/3 implemented. Next session: implement wrappers (LangGraph, ReAct Direct, MCP), then canary run. ROUTING HISTORY: Sessions -7 to 0 assigned wrong agent (Researcher when Experimenter needed), Session 8 assigned correct agent (Experimenter). 7-session routing failure pattern now resolved."
