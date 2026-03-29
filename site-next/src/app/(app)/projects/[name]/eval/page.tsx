@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { TuiBox, TuiPanel, TuiList, TuiBadge, TuiStatusDot, TuiSkeleton } from '@/components/tui';
+import { TuiBox, TuiBadge, TuiStatusDot, TuiSkeleton } from '@/components/tui';
 import { useEvalData, useEvalStatus } from '@/hooks';
 import { useEvalJobs } from '@/hooks/use-eval-jobs';
 import { ConditionTabs } from '@/components/condition-tabs';
@@ -49,11 +49,20 @@ export default function EvalPage() {
   if (isLoading) {
     return (
       <>
-        <TuiBox title="EVAL STATUS" className="mb-3"><TuiSkeleton width={30} /></TuiBox>
-        <TuiBox title="RESULTS" className="mb-3">
+        <div className="flex items-center gap-3 mb-3">
+          <TuiSkeleton width={20} />
+        </div>
+        <TuiBox title="ACCURACY (MODEL x TASK)" className="mb-3">
           <div className="space-y-1">
             {Array.from({ length: 4 }).map((_, i) => (
               <TuiSkeleton key={i} width={50} />
+            ))}
+          </div>
+        </TuiBox>
+        <TuiBox title="RECENT RUNS">
+          <div className="space-y-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <TuiSkeleton key={i} width={60} />
             ))}
           </div>
         </TuiBox>

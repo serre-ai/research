@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { TuiBox, TuiSkeleton, TuiStatusDot, TuiBadge } from '@/components/tui';
+import { TuiBox, TuiSkeleton, TuiStatusDot } from '@/components/tui';
 import { BuildLogViewer } from '@/components/paper/build-log-viewer';
 import { PdfViewer } from '@/components/paper/pdf-viewer';
 import { usePaperStatus } from '@/hooks';
@@ -19,7 +19,7 @@ export default function PaperPage() {
         ) : (
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             <span className="flex items-center gap-1">
-              <TuiStatusDot status={status?.status === 'success' ? 'ok' : status?.status === 'running' ? 'warn' : 'idle'} />
+              <TuiStatusDot status={status?.status === 'success' ? 'ok' : status?.status === 'failed' ? 'error' : status?.status === 'running' ? 'warn' : 'idle'} />
               <span className="text-text-secondary">{status?.status ?? 'idle'}</span>
             </span>
             {status?.finished_at && (

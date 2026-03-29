@@ -1,13 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { TuiBox, TuiPanel, TuiList, TuiSkeleton } from '@/components/tui';
+import { useRouter } from 'next/navigation';
+import { TuiBox, TuiPanel, TuiList } from '@/components/tui';
 import { StatsBar } from '@/components/collective/stats-bar';
 import { ActivityFeed } from '@/components/collective/activity-feed';
 import { useCollectiveHealth, useCollectiveEvents } from '@/hooks/use-collective';
 import { AGENTS } from '@/lib/agents';
 
 export default function CollectivePage() {
+  const router = useRouter();
   const { data: health, isLoading: healthLoading } = useCollectiveHealth();
   const { data: events, isLoading: eventsLoading } = useCollectiveEvents(20);
 
@@ -33,7 +34,7 @@ export default function CollectivePage() {
               items={agentList}
               keyFn={(a) => a.id}
               onActivate={(a) => {
-                window.location.href = `/collective/agents/${a.id}`;
+                router.push(`/collective/agents/${a.id}`);
               }}
               renderItem={(agent, _i, active) => (
                 <div className="flex items-center gap-2">
