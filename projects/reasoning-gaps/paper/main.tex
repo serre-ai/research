@@ -121,6 +121,8 @@ Our central thesis: reasoning gaps are \emph{predictable}---given the complexity
 We use standard complexity classes ordered by inclusion: $\AC \subseteq \TC \subseteq \NC \subseteq \LOGSPACE \subseteq \NL \subseteq \PTIME \subseteq \NP$.
 $\AC$ consists of constant-depth polynomial-size circuits with unbounded fan-in; $\TC$ adds threshold gates; $\NC$ allows $O(\log n)$ depth.
 All inclusions are believed strict.
+Intuitively, each boundary marks a qualitative jump: $\AC$ captures what a single parallel pass can recognize (pattern matching), $\TC$ adds counting and threshold operations (a transformer's forward pass), $\NC$ permits $O(\log n)$ sequential steps (tree-structured recursion), and $\PTIME$ captures arbitrary polynomial-time algorithms.
+For a transformer bounded by $\TC$, any problem requiring even logarithmic-depth sequential reasoning lies beyond the forward pass---chain-of-thought is the mechanism that extends computation up this hierarchy.
 Key separations: PARITY $\notin \AC$~\citep{furst1984,hastad1986}; Boolean formula evaluation is $\NC$-complete; 3-SAT is $\NP$-complete.
 
 \paragraph{Transformer expressiveness.}
@@ -410,11 +412,7 @@ Serial gaps (B3: $\rho = 0.31$) and depth gaps (B2: $\rho = 0.22$) fall in betwe
 This distinction---shared bottlenecks (high $\rho$, Types~2--4) versus instance-specific hardness (low $\rho$, Type~5)---has implications for ensemble methods: majority voting is most effective precisely where error correlation is lowest.
 
 \paragraph{Future directions.}
-Several extensions follow naturally.
-First, \emph{gap composition}: real-world tasks typically involve multiple gap types simultaneously (e.g., a planning problem requiring both serial composition and algorithmic subroutines). Understanding how gaps interact---whether they compose additively, multiplicatively, or exhibit phase-transition-like behavior---would bridge our synthetic benchmarks to realistic settings.
-Second, \emph{adaptive intervention selection}: our taxonomy suggests a decision tree for choosing interventions, but automating this---detecting the gap type from a task description and selecting the appropriate augmentation---would be practically valuable. Preliminary experiments with gap-type classifiers trained on our benchmark data show promising results.
-Third, \emph{architectural interventions}: our current analysis focuses on inference-time augmentations (CoT, tools), but architectural modifications such as PaTH attention~\citep{yang2025path}, scratchpad memory, or recursive computation could close gaps that are currently architectural. The taxonomy provides concrete targets for architecture design.
-Finally, \emph{longitudinal tracking}: as model capabilities evolve, the boundaries between gap types may shift. Tracking how the taxonomy's predictions change across model generations would test whether complexity-theoretic bounds remain the right abstraction or whether empirical scaling invalidates specific predictions.
+Two extensions follow naturally: \emph{gap composition}---real-world tasks mix multiple gap types (e.g., planning requires both serial composition and algorithmic subroutines), and understanding whether gaps compose additively or exhibit phase transitions would bridge our synthetic benchmarks to realistic settings; and \emph{architectural interventions}---modifications such as PaTH attention~\citep{yang2025path}, scratchpad memory, or recursive computation could close gaps that are currently architectural, and our taxonomy provides concrete targets for such design.
 
 \paragraph{Limitations.}
 The taxonomy's grounding is conditional on $\TC \neq \NC$ (standard but unproven); if this separation were to fail, Types~2 and~3 would collapse, though the empirical distinctions would remain.
