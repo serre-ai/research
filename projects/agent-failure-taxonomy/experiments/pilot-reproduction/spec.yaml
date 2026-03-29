@@ -1,0 +1,253 @@
+# Experiment Pre-Registration Spec
+# Pilot Failure Reproduction Study
+
+name: "pilot-failure-reproduction"
+
+status: draft
+
+hypothesis: >
+  Agent failures documented in our taxonomy can be systematically reproduced
+  in controlled settings, and failure rates differ across agent architectures
+  in predictable ways based on underlying LLM limitations. Specifically:
+  (1) Failures rooted in fundamental LLM limitations (C2, C3, C7) will occur
+  at similar rates across all architectures, while (2) failures rooted in
+  partially correctable limitations (C4, C5, C6) will show architecture-dependent
+  rates, and (3) at least 4 of 6 targeted failure types will reproduce at ≥20%
+  base rate across conditions.
+
+predictions:
+  - tasks: ["tool-fabrication"]
+    metric: "fabrication_rate"
+    direction: "positive"
+    min_effect: 0.20
+    max_effect: 0.60
+    note: "Tool fabrication occurs at ≥20% rate across architectures due to C6 limitation"
+
+  - tasks: ["infinite-loop"]
+    metric: "loop_rate"
+    direction: "architecture_dependent"
+    min_effect: 0.30
+    max_effect: null
+    note: "ReAct and AutoGPT show ≥30% loop rate; plan-then-execute shows lower rate"
+
+  - tasks: ["false-completion"]
+    metric: "false_completion_rate"
+    direction: "positive"
+    min_effect: 0.20
+    max_effect: 0.40
+    note: "False completion occurs at 20-40% rate across architectures due to C3+C7"
+
+  - tasks: ["context-degradation"]
+    metric: "accuracy_drop_8k_to_32k"
+    direction: "negative"
+    min_effect: 0.20
+    max_effect: 0.50
+    note: "Accuracy drops ≥20% from 8k to 32k tokens across all architectures (C2 fundamental)"
+
+  - tasks: ["confirmation-bias"]
+    metric: "error_persistence_rate"
+    direction: "positive"
+    min_effect: 0.40
+    max_effect: null
+    note: "Reflexion shows ≥40% error persistence despite reflection (C7 fundamental)"
+
+  - tasks: ["state-divergence"]
+    metric: "divergence_rate"
+    direction: "positive"
+    min_effect: 0.25
+    max_effect: 0.45
+    note: "State divergence occurs at 25-45% rate without external verification (C5)"
+
+design:
+  frameworks:
+    - "react-langchain"        # ReAct with LangChain
+    - "plan-execute-langgraph" # Plan-then-execute with LangGraph
+  models:
+    - "gpt-4-turbo-2024-04-09"
+    - "claude-3-5-sonnet-20241022"
+  tasks:
+    - "tool-fabrication"
+    - "infinite-loop"
+    - "false-completion"
+    - "context-degradation"
+    - "confirmation-bias"
+    - "state-divergence"
+  temperature: 0.0
+  num_samples: 1
+  instances_per_task_framework_model: 5
+  total_trials: 120  # 6 tasks × 2 frameworks × 2 models × 5 trials
+
+canary:
+  frameworks:
+    - "react-langchain"
+    - "plan-execute-langgraph"
+  models:
+    - "gpt-4-turbo-2024-04-09"
+    - "claude-3-5-sonnet-20241022"
+  tasks:
+    - "tool-fabrication"
+    - "infinite-loop"
+    - "false-completion"
+  instances_per_task_framework_model: 2
+  total_trials: 24  # 3 tasks × 2 frameworks × 2 models × 2 trials
+  diagnostics:
+    - check: pipeline_completion
+      description: "All trials produce parseable output"
+      min_success_rate: 0.95
+
+    - check: failure_detection_runs
+      description: "Automated failure detection executes without errors"
+      min_success_rate: 1.0
+
+    - check: cost_within_budget
+      description: "Actual per-trial cost within 2× of estimate"
+      max_multiple_of_estimate: 2.0
+      estimated_per_trial: 0.039
+
+    - check: checkpoint_recovery
+      description: "Checkpoint system successfully recovers from simulated crash"
+      manual_test: true
+
+    - check: baseline_sanity
+      description: "Failure rates not 0% or 100% (task difficulty appropriate)"
+      min_rate: 0.05
+      max_rate: 0.95
+
+budget:
+  estimated_total_usd: 4.68
+  estimated_per_instance_usd: 0.039
+  breakdown: |
+    Assumptions:
+    - GPT-4-turbo: $10/1M input, $30/1M output
+    - Claude-3.5-Sonnet: $3/1M input, $15/1M output
+    - Average: 2.5k input tokens, 1k output tokens per trial
+
+    Per-trial cost:
+    - GPT-4: (2.5k × $10 + 1k × $30) / 1M = $0.055
+    - Claude-3.5: (2.5k × $3 + 1k × $15) / 1M = $0.0225
+    - Weighted average (50/50): $0.039
+
+    Canary: 24 trials × $0.039 = $0.94
+    Full pilot: 120 trials × $0.039 = $4.68
+    Total: $5.62
+
+    Note: If actual costs exceed estimates, reduce sample size to 4 trials
+    per condition (96 total trials → $3.74) to stay within $5 budget.
+
+  canary_cost_usd: 0.94
+  max_allowed_usd: 5.00
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-29"
+updated_at: "2026-03-29"
+
+# Additional experiment-specific metadata
+metadata:
+  purpose: "Infrastructure validation and baseline establishment for full-scale experiments"
+  taxonomy_categories_tested:
+    - "1.1: Tool-use failures → Selection failures (Tool fabrication)"
+    - "3.1: Planning failures → Progress monitoring (Infinite loops)"
+    - "5.1: Self-correction failures → Verification failures (False completion)"
+    - "4.3: State tracking failures → Context management (Context degradation)"
+    - "5.2: Self-correction failures → Reflection failures (Confirmation bias)"
+    - "4.1: State tracking failures → State divergence"
+
+  llm_limitations_tested:
+    - "C1: Factual Grounding (tool fabrication)"
+    - "C2: Long-Range Coherence (context degradation)"
+    - "C3: Meta-Cognitive Monitoring (loops, false completion, state divergence)"
+    - "C5: State Tracking (state divergence)"
+    - "C6: Tool Grounding (tool fabrication)"
+    - "C7: Self-Correction Capability (false completion, confirmation bias)"
+
+  architecture_diversity:
+    - "ReAct: Interleaved reasoning-action loop"
+    - "Plan-then-execute: Hierarchical planning with execution separation"
+    - "Note: AutoGPT and Reflexion deferred to full-scale due to budget/complexity"
+
+  statistical_power:
+    description: "With n=5 per condition, can detect large effects (d ≥ 0.8) at 80% power"
+    note: "Pilot is for validation, not definitive testing; full-scale will increase n"
+
+  data_format: "JSON Lines with per-trial metadata, traces, and evaluations"
+
+  replication_materials:
+    - "Full protocol: experiments/pilot-reproduction/protocol.md"
+    - "Source code: projects/agent-failure-taxonomy/src/"
+    - "Tasks: projects/agent-failure-taxonomy/src/tasks/"
+    - "Results: experiments/pilot-reproduction/results/"
+
+# Pre-registered analyses (must be run exactly as specified)
+analyses:
+  primary:
+    - name: "A1: Failure Reproduction Validation"
+      hypothesis: "Each of 6 targeted failure types reproduces at ≥20% base rate"
+      method: "Proportion test with Wilson score 95% CI for each failure type"
+      success_criterion: "≥4 of 6 failure types occur at p ≥ 0.20"
+
+    - name: "A2: Architecture-Failure Correlation"
+      hypothesis: "Failure rates differ across architectures as predicted by taxonomy"
+      method: "Chi-square test for independence (architecture × failure type)"
+      effect_size: "Cramér's V"
+      predictions:
+        - "ReAct loops more than plan-then-execute (p < 0.05)"
+        - "Context degradation shows NO architecture effect (fundamental limitation)"
+
+    - name: "A3: Model Comparison"
+      hypothesis: "GPT-4 and Claude-3.5 show similar failure profiles"
+      method: "Proportion test for each failure type across models"
+      success_criterion: "No failure type shows >20% absolute difference between models"
+
+    - name: "A4: Fundamental vs. Correctable Distinction"
+      hypothesis: "Fundamental limitations show consistent failure rates; correctable show architecture-dependent rates"
+      method: "Mixed-effects logistic regression (failure type × architecture interaction)"
+      success_criterion: "Significant interaction term (p < 0.05)"
+
+  exploratory:
+    - "Cost-performance trade-off analysis"
+    - "Iteration count effects on failure probability"
+    - "Cascading failure co-occurrence patterns"
+
+# Quality assurance
+quality_checks:
+  - "Manual review of 20 random trials to validate automated failure detection (target: ≥95% agreement)"
+  - "Code review of all task implementations and failure detectors"
+  - "Checkpoint recovery test: simulate crash mid-run and verify successful resume"
+  - "Cost tracking validation: compare logged costs to API billing"
+
+# Deviations protocol
+deviations:
+  allowed_without_reapproval:
+    - "Reducing sample size if costs exceed estimates (minimum n=3 per condition)"
+    - "Bug fixes in task implementation if canary reveals issues"
+    - "Framework version updates if current version incompatible"
+
+  require_reapproval:
+    - "Changing tasks or failure types"
+    - "Adding or removing frameworks or models"
+    - "Modifying pre-registered analyses"
+    - "Changing success criteria or predictions"
+
+# Notes for critic review
+notes_for_reviewer: |
+  This is a PILOT experiment designed to:
+  1. Validate experimental infrastructure before full-scale studies
+  2. Establish baseline failure rates for comparison
+  3. Test taxonomy applicability in controlled settings
+
+  Budget constraint ($5) limits sample size to n=5 per condition. This provides
+  ~80% power to detect large effects (d ≥ 0.8) but is insufficient for definitive
+  conclusions. Pilot serves as infrastructure validation; full-scale experiments
+  (with n=20-30 per condition) will follow if pilot succeeds.
+
+  Key risk: Framework implementation complexity. ReAct is straightforward;
+  plan-then-execute requires careful design. AutoGPT and Reflexion deferred due
+  to integration complexity and budget constraints.
+
+  Canary run (24 trials, $0.94) will validate all infrastructure before full pilot.
+  If canary fails any diagnostic, will halt, fix issues, and re-submit for review.
