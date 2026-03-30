@@ -55,18 +55,115 @@ Serre AI                          ← the institution
 
 ## Visual Identity
 
-- **Typography**: IBM Plex Mono (monospace everywhere)
-- **Palette**: Dark, minimal. Terminal-inspired but not a TUI on the public site
-- **Logo**: The name in monospace IS the logo: `SERRE AI`
-- **No icons, no illustrations** — authority through content, not decoration
+### Typography
+
+IBM Plex Mono everywhere. No secondary font on public materials. Weights:
+- **600 (SemiBold)** — headings, lab name, paper titles
+- **500 (Medium)** — navigation, labels, emphasis
+- **400 (Regular)** — body text, descriptions, abstracts
+
+### Color Palette
+
+```
+Background          #0a0a0a
+Surface             #111111
+Border              #1a1a1a
+
+Text (body)         #b0b0b0
+Text (bright)       #e5e5e5
+Text (muted)        #555555
+
+Status: published   #10b981  (green)
+Status: active      #60a5fa  (blue)
+Status: draft       #555555  (muted)
+
+Accent              #60a5fa  (blue — links, active states)
+Error/warn          #ef4444 / #f59e0b
+```
+
+### Logo
+
+The name in monospace IS the logo. No symbol, no icon, no mark.
+
+```
+SERRE AI
+```
+
+Rendered in IBM Plex Mono SemiBold, tracking-widest, uppercase. Use on dark backgrounds only. Minimum clear space: 2em on all sides.
+
+For contexts requiring a very compact mark (favicon, avatar): `S` in monospace on dark bg.
+
+### Design Principles
+
+1. **No icons** — use text labels, Unicode glyphs (●, ─), or nothing
+2. **No illustrations** — the content is the visual
+3. **No rounded corners** — square everything
+4. **No shadows** — flat, no depth illusions
+5. **No gradients** — solid colors only
+6. **Horizontal rules** as section dividers (1px, `#1a1a1a`)
+7. **Generous whitespace** — let the text breathe
 
 ### Public Site (serre.ai)
 
-Clean, authoritative research portfolio. NOT a TUI. Think Anthropic's research page or Mila's. Monospace typography, dark theme, clean whitespace. Paper cards with abstracts, simple nav. The rigor is in the content, not the chrome.
+Clean, vertical document flow. Dark background, monospace text, paper listings with venue/status. Not a TUI — no borders, no panels, no keyboard nav. Think: a well-formatted research document rendered in a terminal. Deployed on Vercel.
 
 ### Operations Dashboard (forge.serre.ai)
 
-Full TUI terminal interface. Authenticated. Real-time session monitoring, budget tracking, project management. This is the internal tool, not the public face.
+Full TUI terminal interface. CSS borders, focusable panels, keyboard navigation, status bars. Authenticated. Real-time session monitoring, budget tracking, project management. Deployed on VPS.
+
+## Paper & Conference Identity
+
+### LaTeX Affiliation Block
+
+```latex
+\author{Oddur Sigurdsson}
+\affiliation{Serre AI}
+\email{oddur@serre.ai}
+```
+
+For multi-author papers (future):
+```latex
+\author{Oddur Sigurdsson\textsuperscript{1}, [Collaborator]\textsuperscript{2}}
+\affiliation{\textsuperscript{1}Serre AI, \textsuperscript{2}[Institution]}
+```
+
+### Conference Poster/Badge
+
+```
+Oddur Sigurdsson
+Serre AI
+serre.ai
+```
+
+No logo graphic. Name + institution + URL in monospace. Dark badge background if custom badges are supported.
+
+### Paper Repository Naming
+
+Public code releases: `serre-ai/<project-slug>`
+Example: `serre-ai/reasoning-gaps`, `serre-ai/verification-complexity`
+
+HuggingFace: `serre-ai/reasongap-benchmark`
+WandB: `serre-ai`
+
+## Email Signature
+
+```
+Oddur Sigurdsson
+Serre AI
+oddur@serre.ai · serre.ai
+```
+
+No image, no social links, no title. Plain text only.
+
+## Social & External Accounts
+
+Claim when ready (not urgent):
+- GitHub org: `serre-ai`
+- HuggingFace org: `serre-ai`
+- Twitter/X: `@serre_ai`
+- Google Scholar: update affiliation to "Serre AI"
+- Semantic Scholar: claim author profile
+- ORCID: update affiliation
 
 ## Rename Plan
 
