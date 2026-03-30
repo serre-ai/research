@@ -138,17 +138,17 @@ jobs:
             echo "deepwork-daemon restarted successfully"
 
             # Restart site
-            echo "Restarting deepwork-site..."
-            sudo systemctl restart deepwork-site
+            echo "Restarting forge-site..."
+            sudo systemctl restart forge-site
             sleep 3
 
             # Check site status
-            if ! sudo systemctl is-active --quiet deepwork-site; then
-              echo "ERROR: deepwork-site failed to start"
-              sudo systemctl status deepwork-site --no-pager || true
+            if ! sudo systemctl is-active --quiet forge-site; then
+              echo "ERROR: forge-site failed to start"
+              sudo systemctl status forge-site --no-pager || true
               exit 1
             fi
-            echo "deepwork-site restarted successfully"
+            echo "forge-site restarted successfully"
 
             echo "Services restarted at $(date -u)"
 
@@ -232,7 +232,7 @@ jobs:
               # Restart services
               sudo systemctl restart deepwork-daemon
               sleep 3
-              sudo systemctl restart deepwork-site
+              sudo systemctl restart forge-site
               sleep 3
 
               echo "Rollback complete to commit: $(git rev-parse --short HEAD)"

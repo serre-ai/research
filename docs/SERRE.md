@@ -175,7 +175,7 @@ Claim when ready (not urgent):
 | deepwork (npm packages) | @serre/orchestrator, @serre/forge |
 | research.oddurs.com | serre.ai (public), forge.serre.ai (dashboard) |
 | darkreach.ai | Retired |
-| site-next/ | forge/ (TUI dashboard) |
+| site-next/ | forge/ (TUI dashboard) — done |
 | New: site/ | Institutional website |
 | deepwork-daemon.service | forge-daemon.service |
 | deepwork-site.service | forge-site.service |

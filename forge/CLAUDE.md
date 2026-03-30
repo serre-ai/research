@@ -7,7 +7,7 @@ Next.js 16 (App Router), React 19, TanStack Query 5, Tailwind CSS 4, NextAuth v5
 
 ## Critical: React Version Conflict
 
-This repo is an npm workspace. The root `node_modules/` has React 18 (from orchestrator/cli), while `site-next/node_modules/` has React 19. This causes runtime errors when packages resolve the wrong copy.
+This repo is an npm workspace. The root `node_modules/` has React 18 (from orchestrator/cli), while `forge/node_modules/` has React 19. This causes runtime errors when packages resolve the wrong copy.
 
 **For tests**: Vitest setup mocks `lucide-react` and `next/link` globally in `src/test/setup.ts` to avoid the conflict. If you add a new test that renders a component importing from a package with React internals, you may need to add it to the mock list.
 
