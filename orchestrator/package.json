@@ -1,5 +1,5 @@
 {
-  "name": "@deepwork/orchestrator",
+  "name": "@serre/orchestrator",
   "version": "0.1.0",
   "private": true,
   "type": "module",
