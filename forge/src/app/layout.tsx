@@ -18,8 +18,8 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Deepwork',
-  description: 'AI-driven research platform',
+  title: 'Forge',
+  description: 'Serre AI research operations',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

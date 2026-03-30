@@ -1,6 +1,6 @@
-# site-next
+# Forge
 
-Dashboard frontend for the Deepwork research platform. See `ARCHITECTURE.md` for full details.
+TUI dashboard for the Serre AI research platform (Forge). See `ARCHITECTURE.md` for full details.
 
 ## Stack
 Next.js 16 (App Router), React 19, TanStack Query 5, Tailwind CSS 4, NextAuth v5.
@@ -68,10 +68,10 @@ Neo-brutalist: sharp corners, monospace (IBM Plex Mono), dark-only, high contras
 
 ```bash
 # On VPS after pushing:
-cd ~/deepwork/site-next && npm run build
+cd ~/deepwork/forge && npm run build
 sudo systemctl restart deepwork-site
 ```
 
-Service: `deepwork-site.service` on port 3000 behind nginx at `research.oddurs.com`.
+Service: `forge-site.service` on port 3000 behind nginx at `forge.serre.ai`.
 
 @AGENTS.md

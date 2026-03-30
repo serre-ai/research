@@ -11,7 +11,7 @@ interface TuiFrameProps {
  * Full-viewport bordered frame with title bar and status bar.
  * Server component — TuiKeyHints is the only client island.
  */
-export function TuiFrame({ title = 'DEEPWORK', titleRight, children }: TuiFrameProps) {
+export function TuiFrame({ title = 'FORGE', titleRight, children }: TuiFrameProps) {
   return (
     <div className="tui-frame">
       {/* Title bar */}

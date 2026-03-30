@@ -31,7 +31,7 @@ That's it. No `develop`, no `research/*`, no `feature/*`. The old `research/<pro
 ### Infrastructure changes (orchestrator, dashboard, CI)
 - Work directly on `main`
 - Commit scope: `feat(orchestrator): add experiment pre-registration protocol`
-- Run `npm run build --workspace=orchestrator && npm run test --workspace=site-next` before pushing
+- Run `npm run build --workspace=orchestrator && npm run test --workspace=forge` before pushing
 
 ### Agent team sprints (parallel worktrees)
 - Each agent gets a worktree branch: `worktree-agent-<hash>`
@@ -51,7 +51,7 @@ type(scope): description
 
 Types: paper, research, feat, fix, chore, docs, data, test
 Scopes: reasoning-gaps, verification-complexity, self-improvement-limits,
-        orchestrator, site-next, ci, shared
+        orchestrator, forge, ci, shared
 ```
 
 Examples:
@@ -59,7 +59,7 @@ Examples:
 paper(reasoning-gaps): reframe Type 6 predictions
 research(verification-complexity): between-model error correlation analysis
 feat(orchestrator): add experiment pre-registration protocol
-fix(site-next): re-subscribe to WS channels on reconnect
+fix(forge): re-subscribe to WS channels on reconnect
 chore(ci): remove stale openclaw job
 ```
 
@@ -75,7 +75,7 @@ chore(ci): remove stale openclaw job
 
 Main is always deployable. After pushing to main:
 ```bash
-ssh deepwork-vps "cd ~/deepwork && git pull && npm run build --workspace=orchestrator && npm run build --workspace=site-next"
+ssh deepwork-vps "cd ~/deepwork && git pull && npm run build --workspace=orchestrator && npm run build --workspace=forge"
 ssh deepwork-vps-root "systemctl restart deepwork-daemon && systemctl restart deepwork-site"
 ```
 

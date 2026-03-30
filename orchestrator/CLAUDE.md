@@ -57,7 +57,7 @@ PostgreSQL. Schema migrations in `sql/` (001–009), applied manually. Tables us
 Key tables: `projects`, `sessions`, `eval_results`, `eval_runs`, `budget_logs`, `activity_log`, plus collective/knowledge/governance tables in later migrations.
 
 ### WebSocket
-Broadcasts events to connected clients on channels (`eval-progress`, `logs`, `budget`, `health`). The site-next dashboard subscribes to these for real-time updates.
+Broadcasts events to connected clients on channels (`eval-progress`, `logs`, `budget`, `health`). The forge dashboard subscribes to these for real-time updates.
 
 ## Adding a new endpoint
 
@@ -76,7 +76,7 @@ Broadcasts events to connected clients on channels (`eval-progress`, `logs`, `bu
    ```ts
    app.use('/api', myRoutes(pool));
    ```
-3. Add corresponding hook in `site-next/src/hooks/` and export from index.
+3. Add corresponding hook in `forge/src/hooks/` and export from index.
 4. Rebuild and restart: `npm run build && sudo systemctl restart deepwork-daemon`
 
 ## Deploy

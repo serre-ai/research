@@ -24,8 +24,8 @@ jobs:
       - run: npm run build --workspace=orchestrator
       - run: npm run test --workspace=orchestrator -- --passWithNoTests
 
-  site-next:
-    name: Site-Next — build & test
+  forge:
+    name: Forge — build & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +34,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build --workspace=site-next
-      - run: npm run test --workspace=site-next
+      - run: npm run build --workspace=forge
+      - run: npm run test --workspace=forge
 
   python-tests:
     name: Python — reasoning-gaps tests
@@ -52,7 +52,7 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    needs: [orchestrator, site-next, python-tests]
+    needs: [orchestrator, forge, python-tests]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -83,12 +83,12 @@ jobs:
             npm ci
             npm run build --workspace=orchestrator
 
-            # Build site-next and prepare standalone output
-            npm run build --workspace=site-next
-            STANDALONE_DIR=site-next/.next/standalone/site-next
-            cp -r site-next/public "$STANDALONE_DIR/public" 2>/dev/null || true
-            cp -r site-next/.next/static "$STANDALONE_DIR/.next/static"
-            ln -sf /opt/deepwork/site-next/.env.local "$STANDALONE_DIR/.env.local"
+            # Build forge and prepare standalone output
+            npm run build --workspace=forge
+            STANDALONE_DIR=forge/.next/standalone/forge
+            cp -r forge/public "$STANDALONE_DIR/public" 2>/dev/null || true
+            cp -r forge/.next/static "$STANDALONE_DIR/.next/static"
+            ln -sf /opt/deepwork/forge/.env.local "$STANDALONE_DIR/.env.local"
 
             # Sync agent clone to match main checkout
             if [ -d /opt/deepwork-agent/.git ]; then
@@ -221,13 +221,13 @@ jobs:
               # Rebuild both services
               npm ci
               npm run build --workspace=orchestrator
-              npm run build --workspace=site-next
+              npm run build --workspace=forge
 
               # Prepare standalone output
-              STANDALONE_DIR=site-next/.next/standalone/site-next
-              cp -r site-next/public "$STANDALONE_DIR/public" 2>/dev/null || true
-              cp -r site-next/.next/static "$STANDALONE_DIR/.next/static"
-              ln -sf /opt/deepwork/site-next/.env.local "$STANDALONE_DIR/.env.local"
+              STANDALONE_DIR=forge/.next/standalone/forge
+              cp -r forge/public "$STANDALONE_DIR/public" 2>/dev/null || true
+              cp -r forge/.next/static "$STANDALONE_DIR/.next/static"
+              ln -sf /opt/deepwork/forge/.env.local "$STANDALONE_DIR/.env.local"
 
               # Restart services
               sudo systemctl restart deepwork-daemon

@@ -7,7 +7,7 @@ AI-driven research platform that uses Claude Code to autonomously research, writ
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌────────────┐
-│   site-next/    │────▶│  orchestrator/   │────▶│ PostgreSQL │
+│   forge/    │────▶│  orchestrator/   │────▶│ PostgreSQL │
 │  Next.js 16     │     │  Express + WS    │     │            │
 │  port 3000      │     │  port 3001       │     │  deepwork  │
 └─────────────────┘     └──────────────────┘     └────────────┘
@@ -21,7 +21,7 @@ Everything runs on a single Hetzner VPS at `research.oddurs.com` (89.167.5.50). 
 
 ## Repository Structure
 - `orchestrator/` — Express REST API + WebSocket + daemon engine (TypeScript)
-- `site-next/` — Next.js 16 dashboard (React 19, TanStack Query, Tailwind)
+- `forge/` — Next.js 16 dashboard (React 19, TanStack Query, Tailwind)
 - `cli/` — Terminal dashboard (Ink/React) — legacy, not actively developed
 - `projects/<name>/` — Individual research projects (papers, benchmarks, data)
 - `shared/` — Templates and prompts shared across projects
@@ -32,7 +32,7 @@ Everything runs on a single Hetzner VPS at `research.oddurs.com` (89.167.5.50). 
 ### VPS Services (systemd)
 | Service | Unit | Port | What |
 |---------|------|------|------|
-| Dashboard | `deepwork-site.service` | 3000 | Next.js production server |
+| Dashboard | `forge-site.service` | 3000 | Next.js production server |
 | API | `deepwork-daemon.service` | 3001 | Express + WebSocket + daemon |
 
 ### Deploy workflow
@@ -41,8 +41,8 @@ Everything runs on a single Hetzner VPS at `research.oddurs.com` (89.167.5.50). 
 ssh deepwork-vps "cd ~/deepwork && git pull"
 
 # Site changes:
-ssh deepwork-vps "cd ~/deepwork/site-next && npm run build"
-ssh deepwork-vps-root "systemctl restart deepwork-site"
+ssh deepwork-vps "cd ~/deepwork/forge && npm run build"
+ssh deepwork-vps-root "systemctl restart forge-site"
 
 # API changes:
 ssh deepwork-vps-root "systemctl restart deepwork-daemon"
@@ -65,14 +65,14 @@ ssh deepwork-vps-root "systemctl restart deepwork-daemon"
 - Create PRs to `main` at milestones
 
 ### Code Style
-- TypeScript everywhere (orchestrator, site-next, cli)
+- TypeScript everywhere (orchestrator, forge, cli)
 - ESM modules (`"type": "module"` in package.json) for orchestrator
 - Use `node:` prefix for Node.js built-in imports in orchestrator
 - Prefer async/await over callbacks
 - Minimal dependencies — use Node.js built-ins where possible
 
 ### Workspace
-This is an npm workspace. Root `package.json` lists `orchestrator`, `cli`, `site`, `site-next`. Be aware that dependency hoisting can cause React version conflicts — see `site-next/CLAUDE.md` for details.
+This is an npm workspace. Root `package.json` lists `orchestrator`, `cli`, `site`, `forge`. Be aware that dependency hoisting can cause React version conflicts — see `forge/CLAUDE.md` for details.
 
 ### Research Projects
 - Each project has `BRIEF.md` (goals), `status.yaml` (state), `CLAUDE.md` (agent instructions)

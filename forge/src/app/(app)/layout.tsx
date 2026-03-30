@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <CommandPalette />
       <TuiScreen>
         <TuiFrame
-          title="DEEPWORK"
+          title="FORGE"
           titleRight={session.user.name ?? session.user.email}
         >
           <TuiAppShell>
