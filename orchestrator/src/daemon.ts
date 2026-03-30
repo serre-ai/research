@@ -431,7 +431,7 @@ export class Daemon {
     // Sync filesystem projects to DB before first cycle
     await this.syncProjectsToDb();
 
-    console.log("Deepwork daemon started");
+    console.log("Forge daemon started");
     console.log("  Poll interval: " + Math.round(this.config.pollIntervalMs / 60000) + "m");
     console.log("  Max concurrent: " + this.config.maxConcurrentSessions);
     console.log("  Daily budget: $" + this.config.dailyBudgetUsd);
@@ -467,7 +467,7 @@ export class Daemon {
     }
 
     await this.logger.log({ type: "daemon_stop", data: { cyclesCompleted: this.cycleCount } });
-    console.log("Deepwork daemon stopped cleanly");
+    console.log("Forge daemon stopped cleanly");
   }
 
   async getHealth() {

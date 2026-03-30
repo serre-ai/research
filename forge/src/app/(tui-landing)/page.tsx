@@ -24,7 +24,7 @@ const posts = [
   { date: '2026-03-16', title: 'Building a Research Paper with AI Agents', href: '/blog/building-a-paper-with-ai' },
   { date: '2026-03-13', title: 'When Chain-of-Thought Works (and When It\'s Theater)', href: '/blog/when-cot-works' },
   { date: '2026-03-12', title: 'The $75 Experiment: 121,000 Reasoning Tasks', href: '/blog/the-75-dollar-experiment' },
-  { date: '2026-03-10', title: 'Introducing Deepwork Research', href: '/blog/introducing-deepwork' },
+  { date: '2026-03-10', title: 'Introducing Serre AI', href: 'https://serre.ai' },
 ];
 
 const VPS_API_URL = process.env.VPS_API_URL ?? 'http://localhost:3001';

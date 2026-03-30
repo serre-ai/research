@@ -171,7 +171,7 @@ async function main() {
     }
 
     default:
-      console.log("Deepwork Research Platform v0.1.0");
+      console.log("Forge v0.1.0");
       console.log("Commands: run, start <project>, list");
   }
 }

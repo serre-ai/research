@@ -16,7 +16,7 @@ export default function SignInPage() {
   return (
     <main className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-sm border border-border bg-bg-elevated p-8">
-        <h1 className="font-mono text-2xl font-bold text-text-bright">deepwork</h1>
+        <h1 className="font-mono text-2xl font-bold text-text-bright">forge</h1>
         <p className="mt-2 text-sm text-text-secondary">
           Sign in to access the research dashboard
         </p>

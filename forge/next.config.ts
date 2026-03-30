@@ -15,7 +15,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
-      "connect-src 'self' wss://research.oddurs.com",
+      "connect-src 'self' wss://forge.serre.ai",
       "frame-ancestors 'none'",
     ].join('; '),
   },
