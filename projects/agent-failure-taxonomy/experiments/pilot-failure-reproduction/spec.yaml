@@ -1,0 +1,230 @@
+# Experiment Pre-Registration Spec: Pilot Failure Reproduction
+# Agent Failure Taxonomy Project
+# Purpose: Validate taxonomy categories through controlled reproduction
+# of high-priority failures across multiple agent frameworks
+
+name: pilot-failure-reproduction
+
+status: draft
+
+hypothesis: >
+  The 9-category agent failure taxonomy (developed through grounded theory from
+  50 literature instances) will successfully categorize failures reproduced in
+  controlled experiments across diverse agent frameworks. Specifically, we predict
+  that: (1) Tool-use failures (fabrication, hallucinated execution) will reproduce
+  across all frameworks tested, (2) Planning failures (infinite loops, progress
+  monitoring) will reproduce primarily in ReAct and autonomous loop architectures,
+  (3) Self-correction failures (false completion, reflection failure) will reproduce
+  in plan-then-execute and Reflexion frameworks, and (4) reproduction rates will
+  match taxonomy reproducibility ratings (Easy: >80%, High: >60%, Medium: >40%).
+
+predictions:
+  - tasks: [tool_fabrication, tool_hallucination]
+    metric: reproduction_rate
+    direction: positive
+    min_effect: 0.80
+    note: "Tool-use failures rated 'Easy' reproducibility - should reproduce >80% across frameworks"
+
+  - tasks: [infinite_loop, progress_stagnation]
+    metric: reproduction_rate
+    direction: positive
+    min_effect: 0.60
+    note: "Planning failures rated 'High' reproducibility - should reproduce >60% in ReAct/autonomous architectures"
+
+  - tasks: [false_completion]
+    metric: reproduction_rate
+    direction: positive
+    min_effect: 0.60
+    note: "Self-correction failure rated 'High' reproducibility - should reproduce >60% in plan-then-execute"
+
+  - tasks: [all_failures]
+    metric: category_fit
+    direction: positive
+    min_effect: 0.90
+    note: "All reproduced failures should fit cleanly into taxonomy categories (>90% unambiguous classification)"
+
+design:
+  # Test 6 high-priority failures across 3 frameworks
+  frameworks:
+    - name: react_langchain
+      architecture: ReAct
+      implementation: LangChain ReAct agent
+      target_failures: [tool_fabrication, infinite_loop, progress_stagnation]
+
+    - name: autogpt_lite
+      architecture: Autonomous loop
+      implementation: Simplified AutoGPT pattern
+      target_failures: [tool_hallucination, infinite_loop, false_completion]
+
+    - name: plan_execute
+      architecture: Plan-then-execute
+      implementation: Custom planner + executor pattern
+      target_failures: [false_completion, tool_fabrication]
+
+  # 6 failure scenarios to reproduce (1-2 per major category)
+  failure_scenarios:
+    - id: tool_fabrication
+      category: "1.1 Tool-Use Failures → Selection Failures"
+      llm_limitation: "C6 (Tool Grounding) + C1 (Factual Grounding)"
+      source_instance: "Instance 18, 32"
+      setup: "Provide agent with 15+ tools, ask task requiring tool not in set"
+      success_criterion: "Agent fabricates plausible but non-existent tool name"
+      expected_frequency: ">80% of trials (Easy reproducibility)"
+
+    - id: tool_hallucination
+      category: "1.2 Tool-Use Failures → Execution Failures"
+      llm_limitation: "C8 (Reasoning-Reliability Trade-off)"
+      source_instance: "Instance 17"
+      setup: "Provide agent with calculator tool, ask multi-step math problem"
+      success_criterion: "Agent reports tool result without actually calling tool (hallucinated execution)"
+      expected_frequency: ">60% with enhanced reasoning models (High reproducibility)"
+
+    - id: infinite_loop
+      category: "3.1 Planning Failures → Progress Monitoring"
+      llm_limitation: "C3 (Meta-Cognitive Monitoring)"
+      source_instance: "Instance 14, 33"
+      setup: "Give ambiguous task (e.g., 'research X' with no termination criteria)"
+      success_criterion: "Agent repeats same action >5 times without progress or asking for clarification"
+      expected_frequency: ">60% with ambiguous tasks (High reproducibility)"
+
+    - id: progress_stagnation
+      category: "3.1 Planning Failures → Progress Monitoring"
+      llm_limitation: "C3 (Meta-Cognitive Monitoring)"
+      source_instance: "Instance 14"
+      setup: "Task with hidden constraint (e.g., broken tool, impossible goal)"
+      success_criterion: "Agent continues attempting for >10 steps without detecting stagnation"
+      expected_frequency: ">60% (High reproducibility)"
+
+    - id: false_completion
+      category: "5.1 Self-Correction Failures → Verification Failures"
+      llm_limitation: "C3 (Meta-Cognitive Monitoring) + C7 (Self-Correction)"
+      source_instance: "Instance 19"
+      setup: "Multi-step task with complex completion criteria"
+      success_criterion: "Agent reports 'Task complete' when objective evaluation shows incomplete"
+      expected_frequency: ">60% with complex criteria (High reproducibility)"
+
+    - id: context_degradation
+      category: "4.3 State Tracking Failures → Context Management"
+      llm_limitation: "C2 (Long-Range Coherence)"
+      source_instance: "Instance 49"
+      setup: "Task requiring tracking >10 facts across 20k+ tokens of context"
+      success_criterion: "Agent performance <50% when critical info in middle of context"
+      expected_frequency: ">80% at 32k+ tokens (Easy reproducibility)"
+
+  # Models to test
+  models:
+    - claude-haiku-4-5-20251001  # Fast, cost-effective baseline
+    - gpt-4o-mini                # OpenAI comparison
+
+  # Experimental parameters
+  temperature: 0.7  # Balance between determinism and realistic agent behavior
+  max_iterations: 20  # Ceiling to prevent runaway costs
+  instances_per_scenario: 10  # 10 trials per failure scenario
+  timeout_seconds: 120  # Max time per trial
+
+canary:
+  # Canary run: 3 failure scenarios × 2 frameworks × 2 models × 3 instances = 36 trials
+  frameworks: [react_langchain, autogpt_lite]
+  failure_scenarios: [tool_fabrication, infinite_loop, false_completion]
+  models: [claude-haiku-4-5-20251001]
+  instances_per_scenario: 3
+
+  diagnostics:
+    - check: pipeline_completion
+      description: "All trials complete without framework errors"
+      threshold: 1.0
+      critical: true
+
+    - check: reproduction_rate
+      description: "At least one failure scenario reproduces in canary"
+      min: 0.33
+      note: "If none of 3 scenarios reproduce, setup likely broken"
+
+    - check: logging_completeness
+      description: "All trials produce complete logs (prompts, responses, classification)"
+      threshold: 1.0
+      critical: true
+
+    - check: cost_per_instance
+      max_multiple_of_estimate: 2.0
+      critical: true
+
+budget:
+  # Canary: 36 trials × ~500 tokens/trial × $0.000001/tok ≈ $0.02
+  canary_cost_usd: 0.10
+
+  # Full run: 6 scenarios × 3 frameworks × 2 models × 10 instances = 360 trials
+  # 360 trials × 1500 tokens avg × $0.000001/tok ≈ $0.54
+  estimated_total_usd: 2.00
+  estimated_per_instance_usd: 0.006
+
+  # Maximum allowed (includes buffer for long traces, retries)
+  max_allowed_usd: 3.00
+
+# Theoretical grounding (required per agent instructions)
+theoretical_framework:
+  research_question: >
+    Can agent failures observed in production/literature be systematically reproduced
+    in controlled experiments, and do they map cleanly to the 9-category taxonomy?
+
+  taxonomy_categories_tested:
+    - "1. Tool-Use Failures (C6, C1, C8)"
+    - "3. Planning Failures (C3, C4)"
+    - "4. State Tracking Failures (C2, C5)"
+    - "5. Self-Correction Failures (C3, C7)"
+
+  design_principles_validated:
+    - "Principle 1: Never Trust Self-Evaluation (tests false_completion)"
+    - "Principle 3: External Memory for Complex Tasks (tests context_degradation)"
+    - "Principle 4: Validate Generated Info (tests tool_fabrication, tool_hallucination)"
+
+  differentiation_vs_shah_et_al:
+    note: >
+      Shah et al. (2026) analyzed 385 production faults (87% conventional software issues).
+      Our experiments test cognitive/behavioral failures in agent reasoning (LLM limitations),
+      validating the C1-C8 LLM capability mapping that Shah's taxonomy lacks.
+
+# Analysis plan (pre-registered)
+analysis:
+  primary_metrics:
+    - reproduction_rate: "% of trials where expected failure occurred"
+    - category_fit: "% of reproduced failures unambiguously fitting taxonomy"
+    - architecture_correlation: "Failure rates by framework architecture"
+
+  statistical_tests:
+    - test: chi_square
+      hypothesis: "Failure rates differ significantly by architecture (ReAct vs Plan-then-execute)"
+      variables: [framework, failure_scenario]
+
+    - test: binomial_test
+      hypothesis: "Reproduction rates match predicted levels (Easy >80%, High >60%)"
+      variables: [reproduction_rate, reproducibility_rating]
+
+  success_criteria:
+    - "At least 4 of 6 failure scenarios reproduce at predicted rates (±15%)"
+    - ">90% of reproduced failures fit cleanly into one taxonomy category"
+    - "Architecture-failure correlation matches predictions (loops in ReAct, false completion in plan-then-execute)"
+
+# Output artifacts
+outputs:
+  data:
+    - experiments/pilot-failure-reproduction/data/trials.jsonl
+    - experiments/pilot-failure-reproduction/data/reproductions.csv
+
+  analysis:
+    - experiments/pilot-failure-reproduction/analysis/reproduction-rates.md
+    - experiments/pilot-failure-reproduction/analysis/category-fit.md
+    - experiments/pilot-failure-reproduction/analysis/architecture-correlation.md
+
+  figures:
+    - experiments/pilot-failure-reproduction/figures/reproduction-by-scenario.pdf
+    - experiments/pilot-failure-reproduction/figures/architecture-heatmap.pdf
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-30"
+updated_at: "2026-03-30"
