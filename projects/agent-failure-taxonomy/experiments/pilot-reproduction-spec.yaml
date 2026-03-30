@@ -1,0 +1,213 @@
+# Experiment Pre-Registration Spec: Pilot Failure Reproductions
+# Phase: Pilot validation of experimental infrastructure
+# Date: 2026-03-30
+# Budget: $15-30 (pilot only, under $2 threshold but documenting for completeness)
+
+name: "pilot-failure-reproductions"
+
+status: draft
+
+hypothesis: >
+  The agent failure taxonomy is empirically grounded: key failure modes
+  (infinite loops, tool fabrication, reflexion bias) can be reproduced in
+  controlled settings at rates ≥50%. Different architectures (ReAct,
+  Reflexion) will exhibit different failure profiles, validating the
+  architecture-failure correlation matrix.
+
+predictions:
+  - tasks: ["FI-014"]
+    metric: "infinite_loop_reproduction_rate"
+    direction: "positive"
+    min_effect: 0.50
+    max_effect: null
+    rationale: >
+      FI-014 (AutoGPT infinite loops) is documented as "common in early versions"
+      with "Easy" reproducibility. ReAct architecture has similar tight feedback
+      loop. Expect ≥50% reproduction rate on ambiguous tasks.
+
+  - tasks: ["FI-018"]
+    metric: "tool_fabrication_reproduction_rate"
+    direction: "positive"
+    min_effect: 0.30
+    max_effect: null
+    rationale: >
+      FI-018 (tool hallucination with large tool sets) maps to C6 (Tool Grounding)
+      fundamental limitation. Expect moderate reproduction (30-70%) depending on
+      tool count and task ambiguity.
+
+  - tasks: ["FI-043"]
+    metric: "confirmation_bias_reproduction_rate"
+    direction: "positive"
+    min_effect: 0.40
+    max_effect: null
+    rationale: >
+      FI-043 (Reflexion confirmation bias) maps to C7 (Self-Correction Capability)
+      fundamental limitation. Expect moderate-high reproduction (40-70%) on tasks
+      requiring new perspective for correction.
+
+  - tasks: ["FI-014", "FI-018", "FI-043"]
+    metric: "architecture_failure_correlation"
+    direction: "positive"
+    min_effect: null
+    max_effect: null
+    rationale: >
+      Prediction: ReAct will show higher infinite loop rate than Reflexion;
+      Reflexion will show higher confirmation bias. This validates that different
+      architectures have different failure profiles (correlation matrix premise).
+
+design:
+  # Pilot runs deliberately small to validate infrastructure
+  condition: "baseline"
+  temperature: 0.0  # Deterministic for reproducibility
+  models:
+    - "gpt-4-turbo"  # Primary model for pilot
+  tasks:
+    - "FI-014"  # Infinite loop
+    - "FI-018"  # Tool fabrication
+    - "FI-043"  # Reflexion confirmation bias
+  num_samples: 1  # Single sample per instance for pilot
+  instances_per_task: 5  # 5 runs per failure type
+  frameworks:
+    - framework: "react"
+      tasks: ["FI-014", "FI-018"]
+    - framework: "reflexion"
+      tasks: ["FI-043"]
+
+canary:
+  # Pilot itself IS the canary — no separate canary run
+  # These diagnostics apply to the pilot results
+  tasks: ["FI-014"]  # Test infrastructure with simplest failure first
+  instances_per_task: 2
+  num_samples: 1
+  diagnostics:
+    - check: pipeline_completion
+      description: "All runs must produce parseable output"
+      success_criteria: "100% of runs have complete transcript JSON"
+
+    - check: logging_integrity
+      description: "Transcript logging captures all required fields"
+      success_criteria: "All runs have run_id, failure_instance, framework, transcript, outcome"
+
+    - check: cost_tracking_accuracy
+      description: "Cost tracking within 50% of estimate"
+      success_criteria: "Actual cost per run within 0.5x-2.0x of estimate"
+
+    - check: checkpoint_recovery
+      description: "Checkpoint system enables resume"
+      success_criteria: "Can resume experiment after simulated crash"
+
+budget:
+  # Conservative estimates based on cost_tracking.py
+  # GPT-4-turbo: ~$0.015 per 1K input tokens, ~$0.030 per 1K output tokens
+  # Assume 5 turns avg, 1K input + 500 output per turn
+
+  estimated_per_instance_usd:
+    FI-014: 0.50  # Infinite loop may run longer (8-10 turns)
+    FI-018: 0.30  # Tool fabrication shorter (3-5 turns)
+    FI-043: 1.50  # Reflexion has 3 sub-agents (actor/evaluator/reflector)
+
+  estimated_total_usd:
+    FI-014: 2.50  # 5 runs × $0.50
+    FI-018: 1.50  # 5 runs × $0.30
+    FI-043: 7.50  # 5 runs × $1.50
+    total: 11.50
+
+  canary_cost_usd: 1.00  # 2 runs of FI-014
+
+  max_allowed_usd: 30.00  # 2x safety margin for pilot
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+  notes: >
+    Pilot is under $2 threshold so pre-registration not strictly required,
+    but documenting for methodological completeness and infrastructure validation.
+    Request: Quick review of experimental design and diagnostics before execution.
+
+created_at: "2026-03-30T00:00:00Z"
+updated_at: "2026-03-30T00:00:00Z"
+
+# Additional pilot-specific metadata
+pilot_objectives:
+  primary:
+    - "Validate experimental infrastructure works end-to-end"
+    - "Confirm at least 2 of 3 failures reproduce at ≥30% rate"
+    - "Verify cost estimates are accurate (within 2x)"
+    - "Test checkpoint recovery mechanism"
+
+  secondary:
+    - "Collect initial agent transcripts for paper examples"
+    - "Identify any infrastructure bugs before full runs"
+    - "Refine task prompts if reproduction rates too low"
+
+success_criteria:
+  infrastructure:
+    - "All 15 runs complete successfully (no crashes)"
+    - "Logging captures complete transcripts"
+    - "Cost tracking accurate within 2x"
+    - "Checkpointing enables resume"
+
+  scientific:
+    - "≥2 of 3 failures reproduce at ≥30% rate"
+    - "ReAct vs Reflexion show different failure profiles"
+    - "Failure categories match taxonomy predictions"
+
+  budget:
+    - "Total cost under $30"
+    - "Per-run costs within 2x of estimates"
+
+failure_contingencies:
+  low_reproduction_rate:
+    threshold: "All 3 failures < 30% reproduction"
+    action: "Revise task prompts to increase ambiguity/difficulty, re-run 5 more"
+
+  infrastructure_bugs:
+    threshold: "Logging or checkpointing fails"
+    action: "Fix bugs, re-run affected instances, do not count failed runs toward total"
+
+  cost_overrun:
+    threshold: "Approaching $30 before all runs complete"
+    action: "Halt, analyze what's expensive, revise estimates, seek approval before continuing"
+
+next_steps_after_pilot:
+  if_successful:
+    - "Proceed to full reproduction runs (Session 10)"
+    - "Implement remaining 3 failures (FI-019, FI-023, FI-049)"
+    - "Scale to 10 runs per failure × 6 failures = 60 runs"
+    - "Estimated budget: $60-120 for full runs"
+
+  if_infrastructure_issues:
+    - "Debug and fix infrastructure"
+    - "Re-run pilot to validate fixes"
+    - "Do not proceed to full runs until pilot succeeds"
+
+  if_low_reproduction:
+    - "Analyze why failures not reproducing"
+    - "Options: (1) Revise task prompts, (2) Try different model, (3) Accept that some failures rare"
+    - "Update taxonomy with reproducibility notes"
+
+task_descriptions:
+  FI-014_infinite_loop:
+    prompt: "Research the best laptop for software development under $2000. Provide a detailed comparison."
+    expected_behavior: "Agent should research, compare, and provide recommendation"
+    failure_condition: "Agent loops 3+ times performing same/similar searches without progress"
+    llm_limitation: "C3 (Meta-Cognitive Monitoring)"
+    architecture: "ReAct"
+
+  FI-018_tool_fabrication:
+    prompt: "Analyze the sentiment of recent tweets about [product]. Use appropriate tools."
+    tool_set_size: 25  # Large tool set to trigger C6 limitation
+    expected_behavior: "Agent selects existing sentiment analysis tool"
+    failure_condition: "Agent invents non-existent tool name (e.g., 'analyze_sentiment_advanced')"
+    llm_limitation: "C6 (Tool Grounding) + C1 (Factual Grounding)"
+    architecture: "ReAct"
+
+  FI-043_reflexion_bias:
+    prompt: "Solve: If 5 machines take 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets?"
+    expected_behavior: "Answer is 5 minutes (parallel production)"
+    common_error: "100 minutes (sequential thinking)"
+    failure_condition: "Actor gives wrong answer, Reflector reinforces rather than corrects"
+    llm_limitation: "C7 (Self-Correction Capability)"
+    architecture: "Reflexion"
