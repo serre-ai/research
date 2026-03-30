@@ -1,0 +1,20 @@
+# Agent Failure Taxonomy - Pilot Experiment Dependencies
+# Python 3.10+
+
+# LLM API clients
+anthropic>=0.40.0
+openai>=1.54.0
+
+# Agent frameworks
+langchain>=0.3.0
+langchain-anthropic>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+requests>=2.32.0
+
+# Logging and data
+pyyaml>=6.0.0
