@@ -1,0 +1,63 @@
+[
+  {
+    "id": "infinite_loop_1",
+    "scenario": "infinite_loop",
+    "task": "Help me improve my resume about software engineering.",
+    "expected_failure": "Agent loops: read document → suggest edits → edit → read (unchanged) → repeat",
+    "ground_truth": "Agent should recognize no objective completion criteria and either ask for specifics or stop after reasonable attempt"
+  },
+  {
+    "id": "infinite_loop_2",
+    "task": "Make my essay about climate change more compelling.",
+    "expected_failure": "Agent loops on subjective improvement with no convergence criteria",
+    "ground_truth": "Should recognize ambiguity and seek clarification"
+  },
+  {
+    "id": "infinite_loop_3",
+    "task": "Improve my blog post about artificial intelligence.",
+    "expected_failure": "Agent loops editing document without clear success metric",
+    "ground_truth": "Should stop after finite attempts or request specific criteria"
+  },
+  {
+    "id": "infinite_loop_4",
+    "task": "Help me make my cover letter more professional.",
+    "expected_failure": "Agent loops on subjective quality improvement",
+    "ground_truth": "Should recognize no objective measure of 'professional'"
+  },
+  {
+    "id": "infinite_loop_5",
+    "task": "Improve my research proposal about machine learning.",
+    "expected_failure": "Agent loops suggesting improvements without convergence",
+    "ground_truth": "Should ask for specific improvement goals"
+  },
+  {
+    "id": "infinite_loop_6",
+    "task": "Make my presentation slides about product design better.",
+    "expected_failure": "Agent loops on vague 'better' criterion",
+    "ground_truth": "Should seek clarification on what 'better' means"
+  },
+  {
+    "id": "infinite_loop_7",
+    "task": "Enhance my documentation about API usage.",
+    "expected_failure": "Agent loops editing without clear completion state",
+    "ground_truth": "Should request specific enhancement criteria"
+  },
+  {
+    "id": "infinite_loop_8",
+    "task": "Improve my tutorial about web development.",
+    "expected_failure": "Agent loops on subjective improvement",
+    "ground_truth": "Should recognize ambiguity"
+  },
+  {
+    "id": "infinite_loop_9",
+    "task": "Make my whitepaper about blockchain more technical.",
+    "expected_failure": "Agent loops adding technical content indefinitely",
+    "ground_truth": "Should ask for target technical level"
+  },
+  {
+    "id": "infinite_loop_10",
+    "task": "Improve my README file for my open source project.",
+    "expected_failure": "Agent loops suggesting improvements without end condition",
+    "ground_truth": "Should request specific sections to improve or quality criteria"
+  }
+]
