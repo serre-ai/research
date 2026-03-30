@@ -66,19 +66,19 @@ node orchestrator/dist/index.js run --interval 30 --max-sessions 2 --budget 40
 ## CLI Commands
 
 ```
-deepwork run                     Start daemon scheduler
+forge run                     Start daemon scheduler
   --interval <minutes>           Poll interval (default: 30)
   --max-sessions <n>             Max concurrent sessions (default: 2)
   --budget <usd>                 Daily budget (default: 40)
 
-deepwork start <project>         Run a single session
+forge start <project>         Run a single session
   --agent <type>                 researcher|writer|reviewer|editor|strategist
   --turns <n>                    Max turns (default: 50)
 
-deepwork list                    List all projects
-deepwork health                  Daemon status, budget, disk, errors
-deepwork budget                  Spending breakdown
-deepwork activity [count]        Recent event log
+forge list                    List all projects
+forge health                  Daemon status, budget, disk, errors
+forge budget                  Spending breakdown
+forge activity [count]        Recent event log
 ```
 
 ## Environment
@@ -113,4 +113,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full documentation index covering
 
 ---
 
-Oddur Sigurdsson · [Serre AI](https://oddurs.github.io/deepwork)
+Oddur Sigurdsson · [Serre AI](https://serre.ai)

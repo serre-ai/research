@@ -69,7 +69,7 @@ Neo-brutalist: sharp corners, monospace (IBM Plex Mono), dark-only, high contras
 ```bash
 # On VPS after pushing:
 cd ~/deepwork/forge && npm run build
-sudo systemctl restart deepwork-site
+sudo systemctl restart forge-site
 ```
 
 Service: `forge-site.service` on port 3000 behind nginx at `forge.serre.ai`.

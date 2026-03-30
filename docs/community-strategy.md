@@ -70,7 +70,7 @@ Every Serre AI research project produces six outputs. The paper is one of them.
 
 ### 5. Blog Post
 
-- 1500-word accessible summary published on `deepwork.site/blog/`
+- 1500-word accessible summary published on `serre.ai/blog/`
 - Structure: motivation (why should practitioners care?), key finding (one sentence), methodology (high-level), results (with figures), practical implications (what should you do differently?), limitations, link to paper and code
 - Written by the blog post agent, reviewed by human
 - Cross-posted on social media with thread format
@@ -79,7 +79,7 @@ Every Serre AI research project produces six outputs. The paper is one of them.
 
 ### 6. Leaderboard
 
-- Public page on `deepwork.site/leaderboards/<benchmark>`
+- Public page on `serre.ai/leaderboards/<benchmark>`
 - Auto-updated from PostgreSQL when new evaluation results are ingested
 - Columns: model name, model family, parameter count, overall accuracy, per-task breakdown, CoT lift, evaluation date, submitted by
 - Community submissions accepted via PR to `leaderboard-submissions/` directory in the benchmark repository
@@ -103,8 +103,8 @@ Every Serre AI research project produces six outputs. The paper is one of them.
 
 ### Release Timeline
 
-1. **At submission**: arXiv preprint + GitHub repo with benchmark code and evaluation scripts. Data on HuggingFace. Blog post on deepwork.site. This is non-negotiable -- no "code available upon request."
-2. **At acceptance**: Tagged release matching camera-ready. Updated dataset with any revisions. Leaderboard live on deepwork.site.
+1. **At submission**: arXiv preprint + GitHub repo with benchmark code and evaluation scripts. Data on HuggingFace. Blog post on serre.ai. This is non-negotiable -- no "code available upon request."
+2. **At acceptance**: Tagged release matching camera-ready. Updated dataset with any revisions. Leaderboard live on serre.ai.
 3. **Post-publication**: Ongoing maintenance. New models added to leaderboard as they release. Bug fixes. Community PRs reviewed within 1 week.
 4. **Platform open-source (v1.0 stable)**: Orchestrator, agent definitions, session runner, daemon. Documentation as blueprint for autonomous research workflows. Target: 3-6 months after first paper accepted.
 
@@ -127,7 +127,7 @@ Every Serre AI research project produces six outputs. The paper is one of them.
 ### At Publication
 
 - **Twitter/X thread**: 8-12 tweet thread summarizing key findings. Include one figure, one table, one surprising result. Tag relevant researchers whose work we build on. Post at 9am EST on a weekday.
-- **Blog post**: Published on deepwork.site within 48 hours of preprint. Cross-posted where relevant (e.g., r/MachineLearning for empirical work).
+- **Blog post**: Published on serre.ai within 48 hours of preprint. Cross-posted where relevant (e.g., r/MachineLearning for empirical work).
 - **GitHub repository**: Public with issues enabled. Pin "Getting Started" issue with quickstart guide.
 
 ### Post-Publication
@@ -149,7 +149,7 @@ Targets for each research project (first 12 months post-publication):
 | Benchmark adoption | Used by 10+ other papers | Semantic Scholar citation context search |
 | HuggingFace dataset downloads | 1,000+ | HuggingFace Hub API |
 | GitHub stars | 100+ | GitHub API |
-| Blog post views | 5,000+ | deepwork.site analytics |
+| Blog post views | 5,000+ | serre.ai analytics |
 | Leaderboard submissions | 20+ models | PR count in benchmark repo |
 | Community Issues/PRs | 15+ | GitHub API |
 
@@ -159,7 +159,7 @@ These are leading indicators. The lagging indicator is: **does the community use
 
 - Weekly cron job queries Semantic Scholar, HuggingFace Hub, and GitHub APIs
 - Results stored in PostgreSQL `impact_metrics` table
-- Dashboard view on deepwork.site showing trajectory per project
+- Dashboard view on serre.ai showing trajectory per project
 - Slack alert when milestones are crossed (first external citation, 100 downloads, 50 stars)
 
 ---
@@ -207,7 +207,7 @@ These are leading indicators. The lagging indicator is: **does the community use
 - Include the 6-type taxonomy as a practical diagnostic tool
 - Practical takeaway: how to identify which type of failure your application hits, and what to do about it
 
-**Leaderboard**: `deepwork.site/leaderboards/reasongap`
+**Leaderboard**: `serre.ai/leaderboards/reasongap`
 - 11 models at launch (9 complete + Sonnet 4 + o3)
 - Per-task breakdown showing which gap types each model handles well
 - Community submission pipeline via GitHub PR
@@ -230,7 +230,7 @@ These are leading indicators. The lagging indicator is: **does the community use
 **Blog Post**: "A Field Guide to Agent Failures" (planned)
 - Practitioner-oriented guide to diagnosing and mitigating agent failure modes
 
-**Leaderboard**: `deepwork.site/leaderboards/agentfail` (planned)
+**Leaderboard**: `serre.ai/leaderboards/agentfail` (planned)
 
 ---
 
