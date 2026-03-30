@@ -230,7 +230,7 @@ Every paper should have accompanying open-source artifacts. Release:
 4. **Post-conference**: Address community feedback, fix issues, add features
 
 ### Naming Convention
-Repository name: `deepwork-<project-slug>` (e.g., `deepwork-reasoning-gaps`)
+Repository name: `deepwork-<project-slug>` (e.g., `serre-reasoning-gaps`)
 
 ## Social Media and Visibility
 

@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-11
 
-This document surveys the current landscape of automated and semi-automated AI research systems. It covers production systems, tools, infrastructure, and critical analysis from the literature. Each entry includes an honest assessment of strengths, weaknesses, architectural insights, and relevance to Deepwork.
+This document surveys the current landscape of automated and semi-automated AI research systems. It covers production systems, tools, infrastructure, and critical analysis from the literature. Each entry includes an honest assessment of strengths, weaknesses, architectural insights, and relevance to Forge.
 
 ---
 
@@ -12,7 +12,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 2. [Tools and Infrastructure](#tools-and-infrastructure)
 3. [Critical Analysis from Literature](#critical-analysis-from-literature)
 4. [Comparative Table](#comparative-table)
-5. [Where Deepwork Fits](#where-deepwork-fits)
+5. [Where Forge Fits](#where-deepwork-fits)
 
 ---
 
@@ -36,7 +36,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Separate generation from evaluation completely. Let the LLM be creative and prolific; let a deterministic evaluator be the quality filter. This is the most robust pattern in the landscape.
 
-**Relevance to Deepwork.** The generate-evaluate separation is directly applicable. Our benchmark evaluation pipeline for reasoning-gaps follows the same pattern: generate model responses, evaluate against known ground truth. For future projects involving algorithm design or optimization, AlphaEvolve's evolutionary approach is worth studying.
+**Relevance to Forge.** The generate-evaluate separation is directly applicable. Forge's benchmark evaluation pipeline for reasoning-gaps follows the same pattern: generate model responses, evaluate against known ground truth. For future projects involving algorithm design or optimization, AlphaEvolve's evolutionary approach is worth studying.
 
 ---
 
@@ -58,7 +58,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Search in program space, not solution space. Programs are compact, composable, and can encode structural patterns that flat solutions cannot.
 
-**Relevance to Deepwork.** The program-space search idea is powerful for benchmark design and analysis. When we need to find minimal examples that expose reasoning gaps, searching in the space of problem generators rather than individual problems is more effective.
+**Relevance to Forge.** The program-space search idea is powerful for benchmark design and analysis. When we need to find minimal examples that expose reasoning gaps, searching in the space of problem generators rather than individual problems is more effective.
 
 ---
 
@@ -81,7 +81,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Formal verification as the evaluation function transforms proof search from a generative problem into a search problem with perfect feedback. This is the cleanest instantiation of the generate-evaluate paradigm.
 
-**Relevance to Deepwork.** Our reasoning-gaps project uses formal complexity-theoretic claims that could benefit from machine-checked proofs. More broadly, the principle of grounding claims in verifiable formalism aligns with our methodology. We should track Lean formalization tools as they mature.
+**Relevance to Forge.** Our reasoning-gaps project uses formal complexity-theoretic claims that could benefit from machine-checked proofs. More broadly, the principle of grounding claims in verifiable formalism aligns with our methodology. We should track Lean formalization tools as they mature.
 
 ---
 
@@ -104,7 +104,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Multi-agent debate as a quality filter. Instead of one model generating and one evaluating, multiple models argue, which surfaces different failure modes and assumptions.
 
-**Relevance to Deepwork.** The debate/adversarial review pattern maps directly to our quality gate system. Our Gate 4 (adversarial review) should simulate this kind of multi-perspective critique. The generate-debate-evolve loop is worth implementing for hypothesis generation in future projects.
+**Relevance to Forge.** The debate/adversarial review pattern maps directly to our quality gate system. Our Gate 4 (adversarial review) should simulate this kind of multi-perspective critique. The generate-debate-evolve loop is worth implementing for hypothesis generation in future projects.
 
 ---
 
@@ -128,7 +128,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** The failure of keyword-based literature review is the single most important lesson in this landscape. If a system cannot distinguish "no one has done X" from "X is well-known under different terminology," it will waste effort on rediscovery. Deep literature synthesis is a prerequisite, not an optional feature.
 
-**Relevance to Deepwork.** AI Scientist is the closest system to what we are building, and its failures are our design requirements. Our literature integration system exists specifically because of AI Scientist's literature review failure. Our quality gates exist because AI Scientist has none. Our persistent state exists because AI Scientist's lack of memory means it cannot learn from its own work. AI Scientist is the baseline we must definitively surpass.
+**Relevance to Forge.** AI Scientist is the closest system to what we are building, and its failures are our design requirements. Our literature integration system exists specifically because of AI Scientist's literature review failure. Our quality gates exist because AI Scientist has none. Our persistent state exists because AI Scientist's lack of memory means it cannot learn from its own work. AI Scientist is the baseline we must definitively surpass.
 
 ---
 
@@ -151,7 +151,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Sustained autonomous operation is achievable but insufficient. The bottleneck is not runtime or scale but research taste: the ability to distinguish important questions from trivial ones.
 
-**Relevance to Deepwork.** FARS represents the opposite end of our design philosophy. We explicitly do not want to produce 100 papers; we want 3-4 papers that matter. FARS validates the multi-agent architecture but demonstrates that scaling quantity without quality produces expensive mediocrity. Our budget constraints ($1,000/month) are actually an advantage here: they force us to be selective.
+**Relevance to Forge.** FARS represents the opposite end of our design philosophy. We explicitly do not want to produce 100 papers; we want 3-4 papers that matter. FARS validates the multi-agent architecture but demonstrates that scaling quantity without quality produces expensive mediocrity. Our budget constraints ($1,000/month) are actually an advantage here: they force us to be selective.
 
 ---
 
@@ -174,7 +174,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Benchmark the benchmarker. Creating Scientist-Bench recognizes that we cannot improve automated research without measuring it. The meta-level contribution (how to evaluate automated research) may be more important than the system itself.
 
-**Relevance to Deepwork.** Scientist-Bench is worth using to evaluate our own system. The three-stage framework provides a useful comparison point, but our iterative approach (hypothesize-formalize-test-assess-revise) is more faithful to actual research practice than a linear pipeline.
+**Relevance to Forge.** Scientist-Bench is worth using to evaluate our own system. The three-stage framework provides a useful comparison point, but our iterative approach (hypothesize-formalize-test-assess-revise) is more faithful to actual research practice than a linear pipeline.
 
 ---
 
@@ -196,7 +196,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Co-evolve theory and implementation. Keeping them coupled prevents the drift that occurs when a system writes a paper about one thing and implements another.
 
-**Relevance to Deepwork.** The paired theory+code evolution is relevant to our benchmark development process, where formal framework claims and benchmark implementations should evolve together. The 31.6% validation rate also calibrates expectations: even good systems produce mostly false leads.
+**Relevance to Forge.** The paired theory+code evolution is relevant to our benchmark development process, where formal framework claims and benchmark implementations should evolve together. The 31.6% validation rate also calibrates expectations: even good systems produce mostly false leads.
 
 ---
 
@@ -218,7 +218,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Model selection matters enormously. Using a reasoning-specialized model (o1-preview) for research tasks outperforms using a general-purpose model, even if the general-purpose model is otherwise stronger.
 
-**Relevance to Deepwork.** Validates the importance of model selection for different research phases. Our evaluation of reasoning-gaps uses different models for different purposes (Claude for analysis, open-source models as evaluation targets). The cost reduction approach is worth studying.
+**Relevance to Forge.** Validates the importance of model selection for different research phases. Our evaluation of reasoning-gaps uses different models for different purposes (Claude for analysis, open-source models as evaluation targets). The cost reduction approach is worth studying.
 
 ---
 
@@ -240,7 +240,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Research is cumulative. Any system that treats each run as independent is leaving significant value on the table. Shared memory and shared artifacts are force multipliers.
 
-**Relevance to Deepwork.** This validates our persistent state architecture. Our status.yaml, research logs, and cross-project knowledge bases serve the same function as AgentRxiv but within a single platform. We should consider whether publishing intermediate artifacts could benefit the broader community.
+**Relevance to Forge.** This validates our persistent state architecture. Our status.yaml, research logs, and cross-project knowledge bases serve the same function as AgentRxiv but within a single platform. We should consider whether publishing intermediate artifacts could benefit the broader community.
 
 ---
 
@@ -262,7 +262,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Domain-specific tool access transforms what agents can do. General-purpose LLMs are weak at biology; LLMs with access to AlphaFold, gene expression models, and molecular dynamics simulators can make genuine contributions.
 
-**Relevance to Deepwork.** The principle of domain-specific tool access applies to our work. For reasoning-gaps, our "tools" are evaluation infrastructure and complexity theory formalisms. For future projects, integrating domain-specific models (theorem provers, code analyzers, statistical packages) would follow BioLab's pattern.
+**Relevance to Forge.** The principle of domain-specific tool access applies to our work. For reasoning-gaps, our "tools" are evaluation infrastructure and complexity theory formalisms. For future projects, integrating domain-specific models (theorem provers, code analyzers, statistical packages) would follow BioLab's pattern.
 
 ---
 
@@ -284,7 +284,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Key architectural insight.** Operationalize novelty quantitatively. "Is this new?" is a question that can be answered (approximately) by measuring surprise against a comprehensive literature model.
 
-**Relevance to Deepwork.** The Bayesian surprise approach could improve our Gate 1 (literature novelty check). Currently our novelty check relies on synthesis and judgment; a quantitative surprise metric would add rigor. Worth integrating their approach or building a simplified version.
+**Relevance to Forge.** The Bayesian surprise approach could improve our Gate 1 (literature novelty check). Currently our novelty check relies on synthesis and judgment; a quantitative surprise metric would add rigor. Worth integrating their approach or building a simplified version.
 
 ---
 
@@ -298,7 +298,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** A research assistant, not a research agent. It retrieves and synthesizes information but does not generate hypotheses, design experiments, or write papers. No persistent state across sessions.
 
-**Relevance to Deepwork.** Useful as a tool within our pipeline, particularly for literature review and competitive landscape research. Not a competitor to our end-to-end approach.
+**Relevance to Forge.** Useful as a tool within our pipeline, particularly for literature review and competitive landscape research. Not a competitor to our end-to-end approach.
 
 ### OpenAI Prism (Jan 2026)
 
@@ -308,7 +308,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** Writing tool, not a research tool. Helps with the final 20% of the research process (paper writing) but not the preceding 80% (ideation, experimentation, analysis). No experiment execution or data analysis capabilities.
 
-**Relevance to Deepwork.** Our paper writing phase could potentially use Prism, but integrating it would add a dependency without much benefit since Claude handles LaTeX writing well.
+**Relevance to Forge.** Our paper writing phase could potentially use Prism, but integrating it would add a dependency without much benefit since Claude handles LaTeX writing well.
 
 ### OpenAI Codex
 
@@ -318,7 +318,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** Engineering-focused. Strong at building software, not at scientific research. No understanding of experimental design, statistical analysis, or theoretical reasoning.
 
-**Relevance to Deepwork.** Could be useful for infrastructure development (building the orchestrator, analysis pipeline tooling) but not for research itself.
+**Relevance to Forge.** Could be useful for infrastructure development (building the orchestrator, analysis pipeline tooling) but not for research itself.
 
 ### Stanford Agentic Reviewer (PaperReview.ai)
 
@@ -328,7 +328,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** Correlation of 0.42 is still low in absolute terms, meaning reviews are only weakly predictive. Automated reviewers may share systematic biases that differ from human biases. Cannot assess true novelty (only perceived novelty based on training data).
 
-**Relevance to Deepwork.** Directly relevant to our Gate 4 (adversarial review). We should use this or a similar system as part of our quality gate pipeline, while recognizing its limitations.
+**Relevance to Forge.** Directly relevant to our Gate 4 (adversarial review). We should use this or a similar system as part of our quality gate pipeline, while recognizing its limitations.
 
 ### LitLLM
 
@@ -338,7 +338,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** Retrieval quality determines output quality. Still generates hallucinated references 74-82% as often as baseline, which is not acceptable for publication. RAG approaches struggle with synthesis (connecting ideas across papers) versus retrieval (finding relevant papers).
 
-**Relevance to Deepwork.** A partial solution to the literature review problem. Better than AI Scientist's keyword search but not sufficient for deep synthesis. Could be used as a first-pass filter before deeper analysis.
+**Relevance to Forge.** A partial solution to the literature review problem. Better than AI Scientist's keyword search but not sufficient for deep synthesis. Could be used as a first-pass filter before deeper analysis.
 
 ### HELM (Stanford)
 
@@ -348,7 +348,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** Static benchmarks are subject to contamination over time. Does not evaluate research-specific capabilities (hypothesis generation, experimental design, literature synthesis).
 
-**Relevance to Deepwork.** Our reasoning-gaps benchmark suite (B1-B9) is complementary to HELM: we focus specifically on reasoning capabilities that HELM covers only shallowly.
+**Relevance to Forge.** Our reasoning-gaps benchmark suite (B1-B9) is complementary to HELM: we focus specifically on reasoning capabilities that HELM covers only shallowly.
 
 ### RE-Bench (METR)
 
@@ -358,7 +358,7 @@ This document surveys the current landscape of automated and semi-automated AI r
 
 **Weaknesses.** Only 7 tasks, which limits statistical power. ML engineering is narrower than research in general. 2x gap may narrow quickly as models improve.
 
-**Relevance to Deepwork.** Provides calibration for our expectations. At the 32h mark, AI is roughly half as effective as a human researcher on engineering tasks. For more open-ended research (our focus), the gap is likely larger.
+**Relevance to Forge.** Provides calibration for our expectations. At the 32h mark, AI is roughly half as effective as a human researcher on engineering tasks. For more open-ended research (our focus), the gap is likely larger.
 
 ---
 
@@ -400,7 +400,7 @@ This paper identifies six failure modes of LLM-based research systems and propos
 
 4. **Log everything.** Create persistent, append-only records of all decisions, findings, and failures. This is the only way to build negative-space knowledge.
 
-**Relevance to Deepwork.** This paper is essentially our design specification. Our architecture addresses each failure mode: persistent state addresses memory degradation, quality gates address weak scientific taste, the research log addresses negative-space knowledge, and the decision protocol addresses implementation drift. The three unsolved problems (long-horizon coherence, research taste, negative-space knowledge) are our primary research challenges as a platform.
+**Relevance to Forge.** This paper is essentially our design specification. Our architecture addresses each failure mode: persistent state addresses memory degradation, quality gates address weak scientific taste, the research log addresses negative-space knowledge, and the decision protocol addresses implementation drift. The three unsolved problems (long-horizon coherence, research taste, negative-space knowledge) are our primary research challenges as a platform.
 
 ---
 
@@ -418,7 +418,7 @@ A survey of 25 AI researchers (mix of academia and industry) on their expectatio
 
 - **Practical consensus.** All 25 agreed that current systems are useful for literature review, experimental code generation, and paper formatting. Disagreement is about whether systems can ever handle the creative core of research.
 
-**Relevance to Deepwork.** The automation ordering (coding first, taste last) aligns with our experience: our benchmark implementation was straightforward, but ensuring the research question itself is novel and important required human judgment. The institutional asymmetry prediction is relevant to our positioning: we are building in the open, which puts us at a disadvantage for raw model access but an advantage for community contribution and reproducibility.
+**Relevance to Forge.** The automation ordering (coding first, taste last) aligns with our experience: our benchmark implementation was straightforward, but ensuring the research question itself is novel and important required human judgment. The institutional asymmetry prediction is relevant to our positioning: we are building in the open, which puts us at a disadvantage for raw model access but an advantage for community contribution and reproducibility.
 
 ---
 
@@ -441,9 +441,9 @@ A survey of 25 AI researchers (mix of academia and industry) on their expectatio
 
 ---
 
-## Where Deepwork Fits
+## Where Forge Fits
 
-Deepwork occupies a distinct position in this landscape. We are not trying to compete on volume (FARS), algorithm optimization (AlphaEvolve), or narrow domain expertise (BioLab). Our position is defined by four design choices:
+Forge occupies a distinct position in this landscape. We are not trying to compete on volume (FARS), algorithm optimization (AlphaEvolve), or narrow domain expertise (BioLab). Our position is defined by four design choices:
 
 ### 1. Quality over quantity
 

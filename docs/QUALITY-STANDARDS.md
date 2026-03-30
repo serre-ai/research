@@ -1,6 +1,6 @@
 # Research Quality Standards
 
-This document defines the minimum quality bar for every research output produced by the Deepwork platform. Every paper, benchmark, and artifact must meet these standards before submission. There are no exceptions.
+This document defines the minimum quality bar for every research output produced by the Forge platform. Every paper, benchmark, and artifact must meet these standards before submission. There are no exceptions.
 
 ## What Makes a Paper Publishable at a Top Venue
 

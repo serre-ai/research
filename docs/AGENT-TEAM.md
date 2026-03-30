@@ -1,6 +1,6 @@
 # Agent Team Architecture
 
-This document defines the agent team structure, coordination protocols, and operational standards for the Deepwork research platform. Each agent is a specialized Claude Code session configured with a specific system prompt, tool set, and behavioral profile.
+This document defines the agent team structure, coordination protocols, and operational standards for the Serre AI research platform. Each agent is a specialized Claude Code session configured with a specific system prompt, tool set, and behavioral profile.
 
 ## Agent Roles
 

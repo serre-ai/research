@@ -109,7 +109,7 @@ export class EventBus {
     }
     if (this.listenClient) {
       try {
-        await this.listenClient.query("UNLISTEN deepwork_events");
+        await this.listenClient.query("UNLISTEN forge_events");
       } catch { /* shutting down */ }
       this.listenClient.release();
       this.listenClient = null;
@@ -259,7 +259,7 @@ export class EventBus {
   private async connect(): Promise<void> {
     try {
       this.listenClient = await this.pool.connect();
-      await this.listenClient.query("LISTEN deepwork_events");
+      await this.listenClient.query("LISTEN forge_events");
 
       this.listenClient.on("notification", (msg) => {
         if (!msg.payload) return;

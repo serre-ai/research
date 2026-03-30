@@ -2,7 +2,7 @@
 
 ## Why Portfolio Diversification Matters
 
-A single research project is a gamble. A portfolio is a strategy. The Deepwork platform runs multiple concurrent research projects precisely because academic research has high variance: novel ideas get scooped, experiments produce null results, reviewers have unpredictable preferences, and theoretical directions can dead-end. Portfolio diversification across research types, venues, timelines, and risk levels converts that variance into a reliable submission cadence.
+A single research project is a gamble. A portfolio is a strategy. The Forge platform runs multiple concurrent research projects precisely because academic research has high variance: novel ideas get scooped, experiments produce null results, reviewers have unpredictable preferences, and theoretical directions can dead-end. Portfolio diversification across research types, venues, timelines, and risk levels converts that variance into a reliable submission cadence.
 
 The logic follows from modern portfolio theory adapted to research:
 - **Risk reduction**: If one project fails (negative results, scooped, reviewer mismatch), others continue. A portfolio of 5-6 projects with uncorrelated failure modes ensures at least 2-3 reach submission.

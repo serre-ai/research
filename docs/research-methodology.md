@@ -1,8 +1,8 @@
-# Deepwork Research Methodology
+# Serre AI Methodology
 
 Last updated: 2026-03-11
 
-This document defines how autonomous research works in Deepwork. It is the methodology reference for all research projects on the platform. Every agent session should be consistent with the principles and processes described here.
+This document defines how autonomous research works in Forge. It is the methodology reference for all research projects on the platform. Every agent session should be consistent with the principles and processes described here.
 
 ---
 
@@ -21,7 +21,7 @@ This document defines how autonomous research works in Deepwork. It is the metho
 
 ## 1. The Research Loop
 
-Research is not a pipeline. It does not flow from literature review to hypothesis to experiment to paper in a straight line. Research is an evolutionary process: ideas are born, tested, revised, and sometimes killed. The Deepwork research loop reflects this reality.
+Research is not a pipeline. It does not flow from literature review to hypothesis to experiment to paper in a straight line. Research is an evolutionary process: ideas are born, tested, revised, and sometimes killed. The Serre AI research loop reflects this reality.
 
 ### The Core Cycle
 
@@ -161,7 +161,7 @@ At any given time, the portfolio should be generating information that helps us 
 
 The single most common failure mode in automated research systems is inadequate literature review. AI Scientist (Sakana) used keyword search over Semantic Scholar and repeatedly classified well-known concepts as novel discoveries. This is unacceptable.
 
-Literature integration in Deepwork is not a phase that happens once at the beginning of a project. It is a continuous process that runs throughout the project lifecycle.
+Literature integration in Forge is not a phase that happens once at the beginning of a project. It is a continuous process that runs throughout the project lifecycle.
 
 ### The Problem with Keyword Search
 
@@ -220,7 +220,7 @@ The distinction between "no one has done X" and "X is well-known under different
 
 ## 4. Experiment Design Standards
 
-All experiments in Deepwork follow these standards. These are not guidelines; they are requirements.
+All experiments in Forge follow these standards. These are not guidelines; they are requirements.
 
 ### Pre-Registration
 
@@ -451,7 +451,7 @@ Each of these documents captures reasoning and decisions that would be lost with
 
 ## 7. Decision Protocol
 
-All research decisions in Deepwork are made autonomously by Claude. No human approval is required for standard research decisions. This is a deliberate design choice: requiring human approval creates bottlenecks that slow research to the pace of human availability. Autonomous decision-making with transparent logging enables 24/7 operation while maintaining accountability.
+All research decisions in Forge are made autonomously by Claude. No human approval is required for standard research decisions. This is a deliberate design choice: requiring human approval creates bottlenecks that slow research to the pace of human availability. Autonomous decision-making with transparent logging enables 24/7 operation while maintaining accountability.
 
 ### Decision Categories
 

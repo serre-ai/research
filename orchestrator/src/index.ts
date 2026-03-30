@@ -154,7 +154,7 @@ async function main() {
     case "start": {
       const projectName = args[1];
       if (!projectName) {
-        console.error("Usage: deepwork start <project-name>");
+        console.error("Usage: forge start <project-name>");
         process.exit(1);
       }
       await sessionManager.startProject(projectName);

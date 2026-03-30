@@ -1,6 +1,6 @@
 # Integration Roadmap — APIs & Services
 
-External API and service integrations for the Deepwork autonomous research platform. This is a **parallel workstream** to the [Intelligence Stack Master Roadmap](../MASTER-ROADMAP.md) — that roadmap covers internal capabilities (knowledge graph, event bus, research planner), this one covers external service integrations.
+External API and service integrations for the Serre AI autonomous research platform. This is a **parallel workstream** to the [Intelligence Stack Master Roadmap](../MASTER-ROADMAP.md) — that roadmap covers internal capabilities (knowledge graph, event bus, research planner), this one covers external service integrations.
 
 Sprint labels use the `INT-` prefix to distinguish from OpenClaw sprints (1-9) and Intelligence Stack sprints (1-10).
 

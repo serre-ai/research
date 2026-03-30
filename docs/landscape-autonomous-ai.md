@@ -2,7 +2,7 @@
 
 *Last updated: 2026-03-29*
 
-The landscape of autonomous AI research systems as of early 2026. Covers the major projects, design patterns, results, and failure modes relevant to Deepwork's daemon architecture.
+The landscape of autonomous AI research systems as of early 2026. Covers the major projects, design patterns, results, and failure modes relevant to Forge's daemon architecture.
 
 ---
 
@@ -167,12 +167,12 @@ Same prompt every time. Progress lives in files and git, not context window. Eac
 | Pattern | Used by |
 |---------|---------|
 | Objective metrics (val_bpb, test pass rate) | AutoResearch, AlphaEvolve |
-| Revert-on-regression (git) | AutoResearch, Deepwork |
+| Revert-on-regression (git) | AutoResearch, Forge |
 | Simplicity gates | AutoResearch |
-| Cost budgets (time/tokens/spend) | AutoResearch, Deepwork |
+| Cost budgets (time/tokens/spend) | AutoResearch, Forge |
 | Two-layer safety classifiers | Claude Code |
-| Stuck detection ("give up after N") | AutoResearch, Deepwork |
-| Pre-registration for expensive experiments | Deepwork |
+| Stuck detection ("give up after N") | AutoResearch, Forge |
+| Pre-registration for expensive experiments | Forge |
 
 ---
 
@@ -191,11 +191,11 @@ Same prompt every time. Progress lives in files and git, not context window. Eac
 
 ---
 
-## Relevance to Deepwork
+## Relevance to Forge
 
-Deepwork's daemon architecture shares DNA with these systems but occupies a distinct niche:
+Forge's daemon architecture shares DNA with these systems but occupies a distinct niche:
 
-| Dimension | AutoResearch | AI Scientist | Deepwork |
+| Dimension | AutoResearch | AI Scientist | Forge |
 |-----------|-------------|--------------|----------|
 | Scope | Single training loop | Full paper pipeline | Multi-project research + engineering |
 | Metric | val_bpb | Reviewer score | Quality gate (human + automated) |

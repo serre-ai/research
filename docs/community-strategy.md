@@ -1,6 +1,6 @@
 # Community Strategy
 
-**How Deepwork serves the research community. Not just papers -- artifacts.**
+**How Serre AI serves the research community. Not just papers -- artifacts.**
 
 **Created**: 2026-03-11
 
@@ -10,7 +10,7 @@
 
 The most-cited papers in AI provide **tools**, not just insights. GSM8K (Cobbe et al., 2021) has 2000+ citations because researchers use it daily. BIG-Bench, HELM, SWE-Bench, MMLU -- these are infrastructure. A paper that introduces a benchmark used by 100 other papers has more impact than a paper cited 100 times for a sentence in Related Work.
 
-Deepwork optimizes for **community adoption**, not just publication acceptance. Every research project must produce artifacts that other researchers can install, run, and build on. The paper is the narrative wrapper; the artifacts are the contribution.
+Serre AI optimizes for **community adoption**, not just publication acceptance. Every research project must produce artifacts that other researchers can install, run, and build on. The paper is the narrative wrapper; the artifacts are the contribution.
 
 Concretely, this means:
 - Code ships before the paper is submitted, not after
@@ -23,7 +23,7 @@ Concretely, this means:
 
 ## Artifact Types
 
-Every Deepwork research project produces six outputs. The paper is one of them.
+Every Serre AI research project produces six outputs. The paper is one of them.
 
 ### 1. Paper
 
@@ -49,16 +49,16 @@ Every Deepwork research project produces six outputs. The paper is one of them.
 
 ### 3. Dataset
 
-- Hosted on HuggingFace Hub (e.g., `deepwork/reasongap-benchmark`)
+- Hosted on HuggingFace Hub (e.g., `serre-ai/reasongap-benchmark`)
 - Dataset card with: description, intended use, data format, column definitions, splits, usage examples, citation BibTeX, license, limitations, known issues
 - Multiple splits: `test` (standard evaluation), `challenge` (harder subset), `diagnostic` (per-type breakdown)
-- Evaluation results included as separate dataset (e.g., `deepwork/reasongap-results`): model outputs, extracted answers, correctness labels, metadata
+- Evaluation results included as separate dataset (e.g., `serre-ai/reasongap-results`): model outputs, extracted answers, correctness labels, metadata
 - CC-BY-4.0 license for data
 - Versioned: dataset version matches paper version (v1.0 = submission data, v1.1 = camera-ready data)
 
 ### 4. Code Repository
 
-- Public GitHub repository (e.g., `deepwork-research/reasongap`)
+- Public GitHub repository (e.g., `serre-ai/reasongap`)
 - Clean directory structure: `src/`, `tests/`, `scripts/`, `data/`, `paper/`
 - `requirements.txt` with pinned versions
 - `run.sh` that reproduces all results end-to-end
@@ -189,13 +189,13 @@ These are leading indicators. The lagging indicator is: **does the community use
 - CLI: `pip install reasongap && python -m reasongap.evaluate --model openai:gpt-4o --tasks all`
 - Includes 4 model clients (Anthropic, OpenAI, OpenRouter, vLLM) with rate limiting and retry
 
-**Dataset**: `deepwork/reasongap-benchmark` on HuggingFace
+**Dataset**: `serre-ai/reasongap-benchmark` on HuggingFace
 - 121,614+ evaluation instances across 11 models
 - Columns: task, model, condition, input, expected_output, model_output, extracted_answer, correct, latency_ms, token_count
 - Splits: `full` (all instances), `by_model` (per-model subsets), `by_type` (per-gap-type subsets)
-- Results dataset: `deepwork/reasongap-results` with aggregated accuracy, CIs, and CoT lift per model per task
+- Results dataset: `serre-ai/reasongap-results` with aggregated accuracy, CIs, and CoT lift per model per task
 
-**Code Repository**: `deepwork-research/reasongap`
+**Code Repository**: `serre-ai/reasongap`
 - Benchmark generation, evaluation, and analysis code
 - `run.sh` reproducing all results from scratch
 - `expected_outputs/` with reference accuracy numbers for validation
@@ -234,7 +234,7 @@ These are leading indicators. The lagging indicator is: **does the community use
 
 ---
 
-## Deepwork Platform as Meta-Contribution
+## Forge Platform as Meta-Contribution
 
 The platform itself is a research artifact. The methodology -- autonomous AI agents conducting research, writing papers, running experiments -- is novel and worth documenting.
 
@@ -251,7 +251,7 @@ The platform itself is a research artifact. The methodology -- autonomous AI age
 ### Documentation
 
 - Architecture guide: how the daemon works, how agents are selected, how sessions run
-- Setup guide: how to deploy your own Deepwork instance (VPS + PostgreSQL + Claude Code)
+- Setup guide: how to deploy your own Forge instance (VPS + PostgreSQL + Claude Code)
 - Agent authoring guide: how to define new agent roles for your research domain
 - Project template: `BRIEF.md` + `status.yaml` + `CLAUDE.md` starter files
 
@@ -264,4 +264,4 @@ A single researcher with a $1,000/month budget can run an autonomous research la
 - Produces community artifacts (benchmarks, datasets, leaderboards)
 - Tracks impact and maintains published work post-publication
 
-This is the meta-contribution: not just the research papers Deepwork produces, but the demonstration that this workflow is viable, reproducible, and effective.
+This is the meta-contribution: not just the research papers Serre AI produces, but the demonstration that this workflow is viable, reproducible, and effective.

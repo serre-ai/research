@@ -377,7 +377,7 @@ Pages:
   /papers — Publication list (empty for now, ready for entries)
   /blog — Blog index
   /blog/[slug] — Individual blog posts
-  /about — About Oddur Sigurdsson + Deepwork Research
+  /about — About Oddur Sigurdsson + Serre AI
 Components:
   Header, Footer, PaperCard, BlogCard
 Content collections:
@@ -388,7 +388,7 @@ Content collections:
 **Task 9.3: Write first blog post**
 ```
 File: site/src/content/blog/introducing-deepwork.md
-Content: What Deepwork Research is, what we're working on,
+Content: What Serre AI is, what we're working on,
   the vision for AI-augmented research.
   Honest about the approach. Sets the narrative.
 ```
@@ -404,7 +404,7 @@ Setup: Enable GitHub Pages in repo settings, source: GitHub Actions
 **Task 9.5: About page**
 ```
 File: site/src/pages/about.astro
-Content: Oddur Sigurdsson bio, Deepwork Research description,
+Content: Oddur Sigurdsson bio, Serre AI description,
   research agenda, links to profiles (Google Scholar, ORCID, Bluesky, GitHub)
 ```
 
@@ -466,9 +466,9 @@ Action (manual, not code):
   - Google Scholar profile
   - ORCID iD
   - Semantic Scholar page
-  - OpenReview profile (Deepwork Research affiliation)
+  - OpenReview profile (Serre AI affiliation)
   - Bluesky account
-  - GitHub organization: deepwork-research
+  - GitHub organization: serre-ai
 ```
 
 ### Sprint 3 Milestone: PUBLIC PRESENCE + THREE PROJECTS ✓

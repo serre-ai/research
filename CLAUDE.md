@@ -1,4 +1,4 @@
-# Deepwork Research Platform
+# Serre AI — Forge Research Platform
 
 ## Project Overview
 AI-driven research platform that uses Claude Code to autonomously research, write, and iterate on Turing Award-caliber papers, lectures, and experiments. Multiple projects run simultaneously with human oversight.
@@ -17,7 +17,7 @@ AI-driven research platform that uses Claude Code to autonomously research, writ
        └────────────────────────┘
 ```
 
-Everything runs on a single Hetzner VPS at `research.oddurs.com` (89.167.5.50). Nginx terminates SSL and proxies to both services.
+Everything runs on a single Hetzner VPS at `forge.serre.ai` (89.167.5.50). Nginx terminates SSL and proxies to both services.
 
 ## Repository Structure
 - `orchestrator/` — Express REST API + WebSocket + daemon engine (TypeScript)

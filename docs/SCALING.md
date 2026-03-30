@@ -1,6 +1,6 @@
 # Scaling Strategy
 
-This document covers the economics and capacity planning for the Deepwork research platform: how much projects cost, how many can run concurrently, and how to grow from 1 project to 6+.
+This document covers the economics and capacity planning for the Serre AI research platform: how much projects cost, how many can run concurrently, and how to grow from 1 project to 6+.
 
 Related documents:
 - [Research Operations](OPERATIONS.md) -- project lifecycle, sessions, monitoring

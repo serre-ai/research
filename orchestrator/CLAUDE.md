@@ -1,6 +1,6 @@
 # orchestrator
 
-Backend engine for the Deepwork research platform. Express REST API, WebSocket server, and autonomous daemon that runs Claude Code research sessions.
+Backend engine for the Serre AI research platform (Forge). Express REST API, WebSocket server, and autonomous daemon that runs Claude Code research sessions.
 
 ## Stack
 TypeScript, Express, WebSocket (ws), PostgreSQL (pg), ESM modules.

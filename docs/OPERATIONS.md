@@ -1,6 +1,6 @@
 # Research Operations Playbook
 
-This is the operating manual for the Deepwork research platform. It covers everything from how a single research session works to how the portfolio of projects is managed across months.
+This is the operating manual for the Serre AI research platform. It covers everything from how a single research session works to how the portfolio of projects is managed across months.
 
 Related documents:
 - [Infrastructure and Deployment](INFRASTRUCTURE.md) -- server setup, daemons, API keys
@@ -200,7 +200,7 @@ A session is a single Claude agent working on a project in an isolated git workt
 
 ### How a Session Starts
 
-1. **Orchestrator receives a start command** -- either `deepwork start <project>` from the CLI or the scheduling loop picks a project.
+1. **Orchestrator receives a start command** -- either `forge start <project>` from the CLI or the scheduling loop picks a project.
 2. **ProjectManager reads `status.yaml`** to determine the project's current phase, focus, and next steps.
 3. **GitEngine creates a worktree** at `.worktrees/<project>/` on the project's branch (`research/<project>`). If the branch exists, it checks it out; if not, it creates it from `main`.
 4. **SessionManager builds an agent prompt** combining the project's `BRIEF.md`, `CLAUDE.md`, `status.yaml` state, and workflow instructions.
@@ -247,7 +247,7 @@ This means multiple agents can work on different projects simultaneously without
 
 ## Daily Operations
 
-A typical day in the Deepwork platform looks like this:
+A typical day in the Forge platform looks like this:
 
 ### Morning (automatic or human-initiated)
 
@@ -257,7 +257,7 @@ A typical day in the Deepwork platform looks like this:
    - Prioritizes based on deadlines, phase, and resource availability
    - Starts sessions for top-priority projects
 
-2. **If running manually:** Human starts sessions with `deepwork start <project>`
+2. **If running manually:** Human starts sessions with `forge start <project>`
 
 ### Throughout the Day
 
@@ -439,7 +439,7 @@ gh pr list --state open
 
 **Recovery:**
 1. Check if the session process is still running
-2. If dead: restart with `deepwork start <project>` -- the worktree will be recreated
+2. If dead: restart with `forge start <project>` -- the worktree will be recreated
 3. If alive but stuck: stop the session, review the worktree for partial work, restart
 4. If worktree has uncommitted changes: manually commit from `.worktrees/<project>/`, then restart
 
@@ -536,7 +536,7 @@ git worktree list
 
 ## The Human Role
 
-The Deepwork platform is designed for maximum agent autonomy, but humans play critical roles.
+The Forge platform is designed for maximum agent autonomy, but humans play critical roles.
 
 ### Always Human
 

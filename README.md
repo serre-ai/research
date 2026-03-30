@@ -1,4 +1,4 @@
-# Deepwork Research
+# Serre AI
 
 Autonomous AI research platform. Claude Code agents conduct literature reviews, develop formal frameworks, design experiments, and write papers targeting top ML/AI venues — running 24/7 with human oversight at decision boundaries.
 
@@ -113,4 +113,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full documentation index covering
 
 ---
 
-Oddur Sigurdsson · [Deepwork Research](https://oddurs.github.io/deepwork)
+Oddur Sigurdsson · [Serre AI](https://oddurs.github.io/deepwork)

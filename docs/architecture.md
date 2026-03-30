@@ -1,4 +1,4 @@
-# Deepwork Platform Architecture
+# Serre AI Platform Architecture
 
 **Version**: 1.0
 **Updated**: 2026-03-11
@@ -587,7 +587,7 @@ Agent encounters decision
 ```ini
 # /etc/systemd/system/deepwork-daemon.service
 [Unit]
-Description=Deepwork Research Platform Daemon
+Description=Serre AI Research Platform Daemon
 After=network.target postgresql.service
 Requires=postgresql.service
 

@@ -484,7 +484,7 @@ The intelligence stack adds minimal ongoing cost. The biggest expense (review si
 - [ ] Weekly meta-learning insights posted to forum
 
 ### North Star
-A single researcher with Deepwork produces work that competes with well-funded lab teams — not by working harder, but by having an intelligent system that reasons about research, learns from its own process, and continuously improves.
+A single researcher with Forge produces work that competes with well-funded lab teams — not by working harder, but by having an intelligent system that reasons about research, learns from its own process, and continuously improves.
 
 ---
 

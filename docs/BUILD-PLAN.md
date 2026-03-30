@@ -1,6 +1,6 @@
 # Build Plan: What Needs to Be Built
 
-Detailed technical specification of every service, component, and system required to make Deepwork a fully autonomous, always-running research platform.
+Detailed technical specification of every service, component, and system required to make Forge a fully autonomous, always-running research platform.
 
 ---
 
@@ -215,7 +215,7 @@ every 30 minutes:
   8. Sleep until next poll
 ```
 
-### CLI entry point: `deepwork run`
+### CLI entry point: `forge run`
 
 ```typescript
 // orchestrator/src/index.ts additions
@@ -479,7 +479,7 @@ Automates the path from research output to public-facing content.
 
 ### 6a. Research Website
 
-Static site generated from project outputs. Serves as the public face of Deepwork Research.
+Static site generated from project outputs. Serves as the public face of Serre AI.
 
 ### File structure
 
@@ -758,7 +758,7 @@ Budget Tracker (Service 3)     ← needed before daemon can enforce limits
 Daemon Scheduler (Service 2)   ← the main loop that ties it all together
 ```
 
-**Milestone:** `deepwork run` starts the daemon, which autonomously launches Claude sessions on the reasoning-gaps project, commits work, tracks spending.
+**Milestone:** `forge run` starts the daemon, which autonomously launches Claude sessions on the reasoning-gaps project, commits work, tracks spending.
 
 **Estimated total: 16-20 hours of implementation**
 

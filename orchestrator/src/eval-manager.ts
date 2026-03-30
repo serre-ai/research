@@ -221,7 +221,7 @@ export class EvalJobManager {
   private async startJob(job: EvalJob): Promise<void> {
     // Instance format: model::task::condition (using :: delimiter)
     const instanceName = `${job.model}::${job.task}::${job.condition}`;
-    const unitName = `deepwork-eval@${instanceName}.service`;
+    const unitName = `forge-eval@${instanceName}.service`;
 
     try {
       await execFileAsync("systemctl", ["start", unitName]);

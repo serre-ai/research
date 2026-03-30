@@ -1,6 +1,6 @@
 # Infrastructure and Deployment Guide
 
-This document covers everything needed to run the Deepwork research platform: server setup, process management, API configuration, disk planning, and security.
+This document covers everything needed to run the Serre AI research platform: server setup, process management, API configuration, disk planning, and security.
 
 Related documents:
 - [Research Operations](OPERATIONS.md) -- project lifecycle, sessions, monitoring
@@ -155,7 +155,7 @@ cd cli && npm install && npm run build && cd ..
 Create a `.env` file in the repository root. This file is gitignored and must be managed separately on each machine.
 
 ```bash
-# .env -- Deepwork platform configuration
+# .env -- Forge platform configuration
 
 # Anthropic API (for Claude Agent SDK sessions)
 ANTHROPIC_API_KEY=sk-ant-...
@@ -187,7 +187,7 @@ Create the service file:
 # /etc/systemd/system/deepwork.service
 
 [Unit]
-Description=Deepwork Research Platform Orchestrator
+Description=Serre AI Research Platform Orchestrator
 After=network-online.target
 Wants=network-online.target
 
@@ -721,7 +721,7 @@ THRESHOLD_GB=2
 AVAILABLE=$(df --output=avail -BG "$WORKTREE_DIR" | tail -1 | tr -d 'G ')
 
 if [ "$AVAILABLE" -lt "$THRESHOLD_GB" ]; then
-    echo "WARNING: Deepwork disk space low: ${AVAILABLE}GB remaining"
+    echo "WARNING: Forge disk space low: ${AVAILABLE}GB remaining"
     # Could send notification here (email, Slack webhook, etc.)
 fi
 ```

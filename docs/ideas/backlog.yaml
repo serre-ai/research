@@ -137,7 +137,7 @@ ideas:
     portfolio_fit: |
       Extends reasoning-gaps into the agent setting: if reasoning-gaps characterizes LLM limits,
       this project characterizes how those limits manifest when LLMs act autonomously. Also directly
-      relevant to improving the Deepwork platform itself. Survey type diversifies the portfolio.
+      relevant to improving the Forge platform itself. Survey type diversifies the portfolio.
     status: idea
     # composite: 4*0.30 + 5*0.25 + 4*0.25 + 4*0.20 = 1.20 + 1.25 + 1.00 + 0.80 = 4.25
 

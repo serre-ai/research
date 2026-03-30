@@ -13,7 +13,7 @@ The current analysis pipeline (`projects/reasoning-gaps/benchmarks/results/analy
 - **Free tier:** Unlimited experiments, 100GB storage, public projects only (sufficient for this project)
 - **Paid:** $50/user/month for private projects (not needed unless we want privacy)
 - **Cost:** $0 on free tier
-- **Entity:** Create a `deepwork-research` team on wandb.ai
+- **Entity:** Create a `serre-ai` team on wandb.ai
 
 ### Key Concepts
 
@@ -112,7 +112,7 @@ Create these W&B dashboards:
 ## Roadmap
 
 ### Phase 1: Eval Run Logging (INT-3)
-- [ ] Create `deepwork-research` team on wandb.ai
+- [ ] Create `serre-ai` team on wandb.ai
 - [ ] Add `wandb` to orchestrator dependencies (or Python venv on VPS)
 - [ ] Create `orchestrator/src/wandb-logger.ts` — core logging module
 - [ ] Backfill: log existing 121k eval results as historical runs

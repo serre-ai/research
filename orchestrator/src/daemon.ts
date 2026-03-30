@@ -2155,7 +2155,7 @@ export class Daemon {
   }
 
   private async writeHeartbeat(): Promise<void> {
-    const heartbeatPath = join(this.config.rootDir, ".deepwork.heartbeat");
+    const heartbeatPath = join(this.config.rootDir, ".forge.heartbeat");
     const data = {
       timestamp: new Date().toISOString(),
       cycle: this.cycleCount,

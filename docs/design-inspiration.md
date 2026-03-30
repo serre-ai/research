@@ -2,7 +2,7 @@
 
 *Last updated: 2026-03-29*
 
-Reference collection for Deepwork's web design direction. Our TUI aesthetic (monospace, keyboard-navigable, dark) is unique in the space — no one else ships a literal terminal UI as a website.
+Reference collection for Forge's web design direction. Our TUI aesthetic (monospace, keyboard-navigable, dark) is unique in the space — no one else ships a literal terminal UI as a website.
 
 ---
 
@@ -131,7 +131,7 @@ Reference collection for Deepwork's web design direction. Our TUI aesthetic (mon
 
 ---
 
-## Deepwork Positioning
+## Forge Positioning
 
 Our TUI aesthetic is genuinely unique — no one else ships a literal terminal UI as a website. Closest precedents:
 
@@ -142,7 +142,7 @@ Our TUI aesthetic is genuinely unique — no one else ships a literal terminal U
 
 **Our differentiator**: Not another dark-mode SaaS site. An actual keyboard-navigable terminal interface where the research is the content. The TUI IS the brand — it signals "we build autonomous research agents" more than any illustration or animation could.
 
-**Design principles for Deepwork:**
+**Design principles for Forge:**
 - Monospace everywhere (IBM Plex Mono)
 - Keyboard-first navigation (Tab, arrows, Enter)
 - Information density over whitespace

@@ -1,4 +1,4 @@
-# Deepwork Multi-Agent System
+# Serre AI Multi-Agent System
 
 **Version**: 1.0
 **Updated**: 2026-03-11
@@ -7,7 +7,7 @@
 
 ## 1. Agent Philosophy
 
-The Deepwork platform uses specialized agents rather than a single general-purpose agent. This design is rooted in three principles:
+The Forge platform uses specialized agents rather than a single general-purpose agent. This design is rooted in three principles:
 
 **Specialization over generality.** A researcher agent with a narrow mandate (find gaps, synthesize literature) produces better output than a general agent told to "work on the project." Constraints sharpen performance. Each agent has explicit permissions, budgets, and output formats.
 
@@ -503,7 +503,7 @@ Layer 5: Session Workflow Instructions
 
 # Researcher Agent
 
-You are a deep research agent for the Deepwork platform. Your role is to
+You are a deep research agent for the Forge platform. Your role is to
 conduct thorough literature reviews, identify research gaps, and synthesize
 findings.
 
@@ -759,7 +759,7 @@ New agent definitions should follow this structure:
 ```markdown
 # <Agent Name> Agent
 
-You are a <role description> for the Deepwork platform.
+You are a <role description> for the Forge platform.
 
 ## Purpose
 <1-2 sentences on what this agent does and why it matters>
@@ -810,4 +810,4 @@ To add a new agent type to the platform:
 
 5. **Add budget allocation** in the daemon's per-project budget calculation if the agent type has different cost characteristics.
 
-6. **Test**: Run a manual session with `deepwork start <project>` and verify the agent receives the correct prompt layers and operates within its constraints.
+6. **Test**: Run a manual session with `forge start <project>` and verify the agent receives the correct prompt layers and operates within its constraints.

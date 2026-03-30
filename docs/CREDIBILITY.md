@@ -1,6 +1,6 @@
 # Credibility & Visibility Strategy
 
-How Oddur Sigurdsson and Deepwork Research earn recognition in the ML/AI research community — without traditional academic credentials.
+How Oddur Sigurdsson and Serre AI earn recognition in the ML/AI research community — without traditional academic credentials.
 
 ---
 
@@ -10,7 +10,7 @@ Top ML venues (NeurIPS, ICML, ICLR) are credential-heavy environments. PhDs, uni
 
 **The good news:** Double-blind review means your work is judged on merit, not affiliation. When ICLR switched to double-blind review, scores for prestigious authors actually decreased — the playing field leveled. Newcomers are roughly 2x more common at double-blind venues than single-blind ones.
 
-**The core strategy:** Let the work speak. Build credibility through a sustained pipeline of high-quality, publicly visible research output — papers, tools, benchmarks, blog posts — until the name "Oddur Sigurdsson" and "Deepwork Research" become synonymous with rigorous, novel AI research.
+**The core strategy:** Let the work speak. Build credibility through a sustained pipeline of high-quality, publicly visible research output — papers, tools, benchmarks, blog posts — until the name "Oddur Sigurdsson" and "Serre AI" become synonymous with rigorous, novel AI research.
 
 ---
 
@@ -51,10 +51,10 @@ Top ML venues (NeurIPS, ICML, ICLR) are credential-heavy environments. PhDs, uni
 
 ---
 
-## Positioning: Deepwork Research
+## Positioning: Serre AI
 
 ### Affiliation
-List **"Deepwork Research"** as institutional affiliation on all papers, arXiv submissions, and conference profiles. This is standard practice — independent researchers commonly use their own entity name. No verification exists at submission time.
+List **"Serre AI"** as institutional affiliation on all papers, arXiv submissions, and conference profiles. This is standard practice — independent researchers commonly use their own entity name. No verification exists at submission time.
 
 Consider registering as a formal entity (LLC or nonprofit) for additional legitimacy when engaging with conferences, reviewers, and collaborators.
 
@@ -77,11 +77,11 @@ Consider registering as a formal entity (LLC or nonprofit) for additional legiti
 - **Epoch AI**: Data-first research nonprofit. Called "the best-researched survey work in the industry." Database called "an invaluable resource for policymakers" by RAND Corporation.
 - **Distill.pub**: Peer-reviewed interactive ML journal. Registered with Library of Congress. Articles appear in Google Scholar. Co-founded by Chris Olah.
 
-### The Deepwork Angle
+### The Serre AI Angle
 The AI-augmented research platform itself is a unique angle. Lean into it:
 - The meta-narrative — an independent researcher using AI tools to produce top-venue research — is inherently interesting.
 - Write about the methodology of AI-assisted research, not just the research itself.
-- This positions Deepwork Research at a novel intersection (like Olah's ML + visualization).
+- This positions Serre AI at a novel intersection (like Olah's ML + visualization).
 
 ---
 
@@ -207,9 +207,9 @@ Set up immediately:
 - [ ] **Google Scholar** profile (scholar.google.com)
 - [ ] **ORCID iD** (orcid.org)
 - [ ] **Semantic Scholar** author page (semanticscholar.org)
-- [ ] **OpenReview** profile — list "Independent Researcher" at "Deepwork Research"
+- [ ] **OpenReview** profile — list "Independent Researcher" at "Serre AI"
 - [ ] **arXiv** account (get endorsement early)
-- [ ] **GitHub** organization: `deepwork-research`
+- [ ] **GitHub** organization: `serre-ai`
 - [ ] **Bluesky** account focused on ML research
 - [ ] **Twitter/X** account (secondary)
 - [ ] Research website (deepwork.ai or similar)
@@ -248,7 +248,7 @@ Set up immediately:
 ### Months 9-12: Recognition
 1. Aim for first main-track acceptance
 2. Build toward a signature contribution — one thing people associate with your name
-3. Register Deepwork Research formally (LLC or nonprofit)
+3. Register Serre AI formally (LLC or nonprofit)
 4. Professional website with 5+ publications, active blog, research tools
 5. Present at conferences
 6. 1,000+ followers, regular engagement, recognized in your subfield
@@ -259,7 +259,7 @@ Set up immediately:
 
 The story to tell — on the website, in bios, at conferences:
 
-> Oddur Sigurdsson is an independent AI researcher and founder of Deepwork Research, investigating [your key areas]. His work focuses on [specific contributions]. He builds open-source tools for [purpose] and publishes at [venues].
+> Oddur Sigurdsson is an independent AI researcher and founder of Serre AI, investigating [your key areas]. His work focuses on [specific contributions]. He builds open-source tools for [purpose] and publishes at [venues].
 
 Keep it simple. Let publications and tools fill in the credibility. The more specific the contributions listed, the more weight the bio carries.
 

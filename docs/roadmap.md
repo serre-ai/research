@@ -2,7 +2,7 @@
 
 Starting date: March 2026.
 
-This roadmap charts the growth of the Deepwork platform from a single active research project to a steady-state autonomous research lab producing monthly submissions to top ML/AI venues.
+This roadmap charts the growth of the Forge platform from a single active research project to a steady-state autonomous research lab producing monthly submissions to top ML/AI venues.
 
 ## Phase 1: Foundation (Months 1-2, March-April 2026)
 

@@ -57,7 +57,7 @@ export class Monitor {
   }
 
   private async getDaemonStatus(): Promise<HealthStatus["daemon"]> {
-    const heartbeatPath = join(this.rootDir, ".deepwork.heartbeat");
+    const heartbeatPath = join(this.rootDir, ".forge.heartbeat");
     try {
       const content = await readFile(heartbeatPath, "utf-8");
       const data = JSON.parse(content) as {

@@ -224,7 +224,7 @@ export class SessionManager {
     // Exclude status.yaml-only changes (just timestamp bumps)
     const meaningfulFiles = files.filter(f => {
       // Always noise
-      if (/^\.deepwork|^\.worktrees|^node_modules|\.log$|^\.claude\/worktrees/.test(f)) return false;
+      if (/^\.forge|^\.worktrees|^node_modules|\.log$|^\.claude\/worktrees/.test(f)) return false;
       // Meaningful if matches whitelist
       return MEANINGFUL_PATTERNS.some(p => p.test(f));
     });
@@ -251,7 +251,7 @@ export class SessionManager {
       } else if (/\.py$/.test(f)) {
         // Python outside projects/ (scripts/, orchestrator/) is infra
         infra++;
-      } else if (/status\.yaml$|docs\/reports\/|docs\/sessions\/|\.deepwork/.test(f)) {
+      } else if (/status\.yaml$|docs\/reports\/|docs\/sessions\/|\.forge/.test(f)) {
         meta++;
       }
     }
