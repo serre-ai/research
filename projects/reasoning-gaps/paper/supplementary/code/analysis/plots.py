@@ -106,7 +106,7 @@ def plot_accuracy_vs_difficulty(
 
     fig, axes = pub_style.figure(
         width="full",
-        height=2.0 * n_rows + 0.6,  # extra for shared legend
+        height=1.75 * n_rows + 1.0,  # extra for shared legend
         nrows=n_rows,
         ncols=n_cols,
     )
@@ -194,11 +194,11 @@ def plot_accuracy_vs_difficulty(
         fig.legend(
             unique_h, unique_l,
             loc="lower center",
-            ncol=4,
+            ncol=6,
             bbox_to_anchor=(0.5, -0.02),
-            fontsize=6,
-            handlelength=1.5,
-            columnspacing=1.0,
+            fontsize=5.5,
+            handlelength=1.2,
+            columnspacing=0.8,
         )
 
     pub_style.savefig(fig, Path(output_dir) / "accuracy_vs_difficulty")
@@ -289,7 +289,7 @@ def plot_phase_transition(df: pd.DataFrame, output_dir: str) -> None:
     models = sorted(b7_df["model"].unique())
     family_map = {m: _extract_model_family(m) for m in models}
 
-    fig, ax = pub_style.figure(width="col", height=2.5)
+    fig, ax = pub_style.figure(width="col", height=2.3)
 
     from collections import defaultdict
     family_models: dict[str, list[str]] = defaultdict(list)
@@ -531,7 +531,7 @@ def plot_tool_use_comparison(df: pd.DataFrame, output_dir: str) -> None:
     ax.set_ylabel("Accuracy")
     ax.set_ylim(0, 1.05)
     ax.set_title("Tool Use vs.\\ Other Conditions")
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper left")
 
     pub_style.savefig(fig, Path(output_dir) / "tool_use_comparison")
 
@@ -567,7 +567,7 @@ def plot_budget_sensitivity(df: pd.DataFrame, output_dir: str) -> None:
     n_plots = len(tasks_present)
     fig, axes = pub_style.figure(
         width="full",
-        height=2.8,
+        height=2.3,
         nrows=1,
         ncols=n_plots,
         squeeze=False,
