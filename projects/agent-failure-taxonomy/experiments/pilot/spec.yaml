@@ -1,0 +1,172 @@
+# Pilot Experiment Pre-Registration Spec
+# Agent Failure Taxonomy Validation - Controlled Reproduction
+
+name: pilot-taxonomy-validation
+
+status: draft
+
+hypothesis: >
+  The 9-category agent failure taxonomy is empirically valid and architecture-specific.
+  Specifically: (1) Failures in categories 1.1 (tool fabrication), 3.1 (infinite loops),
+  and 5.1 (false completion) can be reliably reproduced in controlled settings with
+  reproduction rate ≥70%; (2) Failure rates differ measurably between ReAct and AutoGPT
+  architectures (effect size > 0.3), with AutoGPT showing higher rates for planning
+  failures (3.1) and false completion (5.1) due to autonomous operation, while ReAct
+  shows comparable tool fabrication (1.1) due to shared LLM limitations (C6, C1).
+
+predictions:
+  - tasks: [tool_fabrication]
+    metric: fabrication_rate
+    direction: moderate
+    min_effect: 0.30
+    max_effect: 0.80
+    note: "Both frameworks affected by C6 (Tool Grounding) and C1 (Factual Grounding) - fundamental LLM limitations. Expect 30-80% fabrication rate depending on task difficulty."
+
+  - tasks: [tool_fabrication]
+    metric: architecture_difference
+    direction: small_positive
+    min_effect: 0.05
+    max_effect: 0.20
+    note: "AutoGPT may show slightly higher fabrication due to autonomous exploration, but difference should be small since this is an LLM limitation (C6+C1), not architectural."
+
+  - tasks: [infinite_loop]
+    metric: loop_rate
+    direction: positive
+    min_effect: 0.50
+    max_effect: 1.00
+    note: "Ambiguous/impossible tasks should trigger loops in most trials. C3 (Meta-Cognitive Monitoring) limitation prevents stagnation detection."
+
+  - tasks: [infinite_loop]
+    metric: architecture_difference
+    direction: positive
+    min_effect: 0.20
+    max_effect: 0.50
+    note: "AutoGPT should show significantly higher loop rate than ReAct - autonomous operation without explicit reasoning steps. Expect AutoGPT: 70-100%, ReAct: 30-60%."
+
+  - tasks: [false_completion]
+    metric: false_completion_rate
+    direction: moderate
+    min_effect: 0.20
+    max_effect: 0.60
+    note: "C3 and C7 limitations (meta-cognitive monitoring + self-correction) lead to premature completion claims. Expect 20-60% false completion rate."
+
+  - tasks: [false_completion]
+    metric: architecture_difference
+    direction: positive
+    min_effect: 0.15
+    max_effect: 0.40
+    note: "AutoGPT higher false completion rate due to autonomous goal decomposition without external verification. Expect AutoGPT: 40-70%, ReAct: 20-40%."
+
+design:
+  condition: pilot_validation
+  temperature: 1.0
+  models: [claude-haiku-4-5-20251001]
+  tasks: [tool_fabrication, infinite_loop, false_completion]
+  num_samples: 1  # Single execution per instance (not self-consistency)
+  instances_per_task: 10
+  frameworks: [react, autogpt]  # 2 frameworks tested
+  total_instances: 60  # 3 tasks × 10 instances × 2 frameworks
+
+canary:
+  tasks: [tool_fabrication, infinite_loop]  # Exclude false_completion from canary
+  instances_per_task: 3
+  frameworks: [react, autogpt]
+  total_instances: 12  # 2 tasks × 3 instances × 2 frameworks
+  diagnostics:
+    - check: pipeline_completion
+      description: "Every instance produces parseable log output"
+      success: "100% of instances produce valid JSON logs"
+
+    - check: cost_per_instance
+      max_multiple_of_estimate: 2.0
+      description: "Actual cost within 2× of estimate ($0.15)"
+      success: "Mean cost per instance ≤ $0.30"
+
+    - check: execution_time
+      max_seconds_per_instance: 300
+      description: "No instance takes >5 minutes (suggests timeout issues)"
+      success: "All instances complete within 5 minutes"
+
+    - check: framework_parity
+      description: "Both frameworks execute without errors"
+      success: "ReAct and AutoGPT both complete all instances"
+
+    - check: failure_detection
+      min_detection_rate: 0.30
+      description: "At least 30% of instances trigger target failure mode"
+      success: "≥30% of tool_fabrication instances show fabrication, ≥30% of infinite_loop instances exceed 10 iterations"
+
+budget:
+  estimated_total_usd: 10.50
+  estimated_per_instance_usd: 0.175  # Conservative estimate: 15 steps × $0.0117/step
+  canary_cost_usd: 2.10  # 12 instances × $0.175
+  max_allowed_usd: 15.00  # Buffer for unexpected complexity
+
+review:
+  status: pending
+  reviewer: ""
+  date: ""
+  verdict_file: ""
+
+created_at: "2026-03-30"
+updated_at: "2026-03-30"
+
+# Additional metadata for agent experiments
+metadata:
+  theoretical_grounding:
+    - category: "1.1 - Tool Fabrication (Tool-Use Failures)"
+      llm_limitations: ["C6: Tool Grounding", "C1: Factual Grounding"]
+      fixability: "Partially correctable"
+    - category: "3.1 - Infinite Loops (Planning Failures)"
+      llm_limitations: ["C3: Meta-Cognitive Monitoring"]
+      fixability: "Architecturally correctable (external monitoring)"
+    - category: "5.1 - False Completion (Self-Correction Failures)"
+      llm_limitations: ["C3: Meta-Cognitive Monitoring", "C7: Self-Correction Capability"]
+      fixability: "Not fixable with same-model self-evaluation"
+
+  architecture_predictions:
+    react:
+      tool_fabrication: "Moderate (40-60%) - LLM limitation, not architectural"
+      infinite_loop: "Lower (30-50%) - explicit reasoning may help detect circularity"
+      false_completion: "Lower (20-40%) - step-by-step reasoning provides checkpoints"
+    autogpt:
+      tool_fabrication: "Moderate-high (50-70%) - autonomous exploration may trigger more"
+      infinite_loop: "Higher (70-90%) - autonomous operation without meta-monitoring"
+      false_completion: "Higher (40-70%) - goal decomposition without external verification"
+
+  differentiation:
+    vs_shah_et_al_2026:
+      their_contribution: "385 production faults, empirical scale"
+      our_contribution: "Controlled reproduction, architecture comparison, LLM limitation mapping"
+      complementarity: "Their data validates our categories; our theory explains their observations"
+
+  infrastructure_validation:
+    primary_goal: "Validate experimental infrastructure as much as taxonomy"
+    components_tested:
+      - "Framework wrappers (ReAct, AutoGPT)"
+      - "Task generators (tool_fabrication, infinite_loop, false_completion)"
+      - "Logging utilities (action-observation traces, costs)"
+      - "Evaluation scripts (fabrication detection, loop detection, completion verification)"
+    success_criteria: "Infrastructure runs without errors, produces reproducible results, validates cost estimates"
+
+  risk_mitigation:
+    framework_complexity:
+      risk: "AutoGPT implementation too complex for timeline"
+      mitigation: "Use simplified autonomous-loop architecture if needed"
+      fallback: "Substitute plan-then-execute framework"
+
+    non_reproduction:
+      risk: "Failures don't reproduce in controlled setting"
+      mitigation: "Carefully design tasks based on documented instances"
+      fallback: "Document non-reproduction as finding; update taxonomy boundaries"
+
+    budget_overrun:
+      risk: "Costs exceed estimates due to long loops"
+      mitigation: "Hard iteration limits (50 steps max), kill switch on cost threshold"
+      fallback: "Reduce instances from 10 to 5 per task"
+
+  timeline:
+    session_8: "Protocol design and pre-registration spec (this session)"
+    session_9: "Infrastructure development, unit tests"
+    session_10: "Canary run, full pilot execution if canary passes"
+    sessions_11_13: "Full validation (6-8 failures, 3-4 frameworks) if pilot succeeds"
