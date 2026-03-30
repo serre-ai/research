@@ -1,0 +1,14 @@
+# Core dependencies for agent failure experiments
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-anthropic>=0.1.0
+openai>=1.0.0
+anthropic>=0.18.0
+
+# Utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Optional frameworks (install as needed)
+# reflexion  # Custom implementation or from source
+# autogen>=0.2.0  # For multi-agent experiments (future)
