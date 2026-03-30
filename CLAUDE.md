@@ -33,7 +33,7 @@ Everything runs on a single Hetzner VPS at `forge.serre.ai` (89.167.5.50). Nginx
 | Service | Unit | Port | What |
 |---------|------|------|------|
 | Dashboard | `forge-site.service` | 3000 | Next.js production server |
-| API | `deepwork-daemon.service` | 3001 | Express + WebSocket + daemon |
+| API | `forge-daemon.service` | 3001 | Express + WebSocket + daemon |
 
 ### Deploy workflow
 ```bash
@@ -45,7 +45,7 @@ ssh deepwork-vps "cd ~/deepwork/forge && npm run build"
 ssh deepwork-vps-root "systemctl restart forge-site"
 
 # API changes:
-ssh deepwork-vps-root "systemctl restart deepwork-daemon"
+ssh deepwork-vps-root "systemctl restart forge-daemon"
 ```
 
 ### SSH aliases

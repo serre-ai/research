@@ -125,17 +125,17 @@ jobs:
             set -e
 
             # Restart daemon first (API)
-            echo "Restarting deepwork-daemon..."
-            sudo systemctl restart deepwork-daemon
+            echo "Restarting forge-daemon..."
+            sudo systemctl restart forge-daemon
             sleep 3
 
             # Check daemon status
-            if ! sudo systemctl is-active --quiet deepwork-daemon; then
-              echo "ERROR: deepwork-daemon failed to start"
-              sudo systemctl status deepwork-daemon --no-pager || true
+            if ! sudo systemctl is-active --quiet forge-daemon; then
+              echo "ERROR: forge-daemon failed to start"
+              sudo systemctl status forge-daemon --no-pager || true
               exit 1
             fi
-            echo "deepwork-daemon restarted successfully"
+            echo "forge-daemon restarted successfully"
 
             # Restart site
             echo "Restarting forge-site..."
@@ -230,7 +230,7 @@ jobs:
               ln -sf /opt/deepwork/forge/.env.local "$STANDALONE_DIR/.env.local"
 
               # Restart services
-              sudo systemctl restart deepwork-daemon
+              sudo systemctl restart forge-daemon
               sleep 3
               sudo systemctl restart forge-site
               sleep 3

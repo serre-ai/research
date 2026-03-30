@@ -8,7 +8,7 @@
 
 DW-280 throttle is failing because `getLastStrategistRun()` returns 0 on every call.
 
-Evidence from daemon logs (`journalctl -u deepwork-daemon`):
+Evidence from daemon logs (`journalctl -u forge-daemon`):
 ```
 [Daemon] Scheduling daily strategist session (492869h since last)
 [Daemon] Scheduling daily strategist session (492870h since last)

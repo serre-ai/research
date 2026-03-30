@@ -184,7 +184,7 @@ Claim when ready (not urgent):
 
 - VPS user `deepwork` and paths `/opt/deepwork` — rename later to avoid breaking running services
 - Database name `deepwork` — rename later
-- GitHub repo `oddurs/deepwork` — rename on GitHub (old URLs auto-redirect)
+- GitHub repo → `serre-ai/research` — done (old URLs auto-redirect)
 
 ### Timeline
 

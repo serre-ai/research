@@ -14,7 +14,7 @@ npm start       # node dist/index.js
 
 Requires `.env` at repo root with `DATABASE_URL`, `API_PORT`, `DEEPWORK_API_KEY`, and API keys for Anthropic/OpenAI/OpenRouter.
 
-VPS service: `deepwork-daemon.service` on port 3001.
+VPS service: `forge-daemon.service` on port 3001.
 
 ## Architecture
 
@@ -77,12 +77,12 @@ Broadcasts events to connected clients on channels (`eval-progress`, `logs`, `bu
    app.use('/api', myRoutes(pool));
    ```
 3. Add corresponding hook in `forge/src/hooks/` and export from index.
-4. Rebuild and restart: `npm run build && sudo systemctl restart deepwork-daemon`
+4. Rebuild and restart: `npm run build && sudo systemctl restart forge-daemon`
 
 ## Deploy
 
 ```bash
 # On VPS after pushing:
 cd ~/deepwork && npm run build --workspace=orchestrator
-sudo systemctl restart deepwork-daemon
+sudo systemctl restart forge-daemon
 ```

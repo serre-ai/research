@@ -76,7 +76,7 @@ chore(ci): remove stale openclaw job
 Main is always deployable. After pushing to main:
 ```bash
 ssh deepwork-vps "cd ~/deepwork && git pull && npm run build --workspace=orchestrator && npm run build --workspace=forge"
-ssh deepwork-vps-root "systemctl restart deepwork-daemon && systemctl restart deepwork-site"
+ssh deepwork-vps-root "systemctl restart forge-daemon && systemctl restart deepwork-site"
 ```
 
 The CI workflow runs on push to main and auto-deploys if all checks pass.

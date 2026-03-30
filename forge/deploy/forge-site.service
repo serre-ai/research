@@ -1,7 +1,7 @@
 [Unit]
-Description=Deepwork Dashboard — Next.js
-Documentation=https://github.com/oddurs/deepwork
-After=network-online.target deepwork-daemon.service
+Description=Forge Dashboard — Next.js
+Documentation=https://github.com/serre-ai/research
+After=network-online.target forge-daemon.service
 Wants=network-online.target
 
 [Service]
@@ -32,7 +32,7 @@ PrivateTmp=true
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=deepwork-site
+SyslogIdentifier=forge-site
 
 [Install]
 WantedBy=multi-user.target

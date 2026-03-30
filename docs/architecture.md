@@ -40,7 +40,7 @@
     |  +----------------------------+-----------------------+  |
     |                               |                          |
     |  +----------------------------v-----------------------+  |
-    |  |  deepwork-daemon (systemd)                          | |
+    |  |  forge-daemon (systemd)                          | |
     |  |                                                     | |
     |  |  Daemon Loop (30 min poll)                          | |
     |  |  +-- Score active projects                          | |
@@ -277,7 +277,7 @@ All endpoints require `X-Api-Key` header (except `/api/health`). WebSocket authe
 **Cost**: ~$8/month
 
 **systemd services**:
-- `deepwork-daemon.service`: Runs the orchestrator daemon + API. Auto-restart on failure.
+- `forge-daemon.service`: Runs the orchestrator daemon + API. Auto-restart on failure.
 - `postgresql.service`: PostgreSQL 16
 
 **nginx**: Reverse proxy on port 80, forwards to `localhost:3001`. HTTPS via certbot planned.
@@ -585,7 +585,7 @@ Agent encounters decision
 ### systemd Service
 
 ```ini
-# /etc/systemd/system/deepwork-daemon.service
+# /etc/systemd/system/forge-daemon.service
 [Unit]
 Description=Serre AI Research Platform Daemon
 After=network.target postgresql.service
@@ -639,8 +639,8 @@ Pool config: max 10 connections, 30s idle timeout, 5s connection timeout.
 
 ```bash
 cd orchestrator && npm run build   # tsc -> dist/
-sudo systemctl restart deepwork-daemon
-sudo systemctl status deepwork-daemon
+sudo systemctl restart forge-daemon
+sudo systemctl status forge-daemon
 ```
 
 ### Backup Strategy

@@ -1,6 +1,6 @@
 [Unit]
-Description=Deepwork Research Platform Daemon
-Documentation=https://github.com/oddurs/deepwork
+Description=Forge Research Daemon
+Documentation=https://github.com/serre-ai/research
 After=network-online.target postgresql.service
 Wants=network-online.target
 
@@ -29,7 +29,7 @@ PrivateTmp=true
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=deepwork-daemon
+SyslogIdentifier=forge-daemon
 
 [Install]
 WantedBy=multi-user.target

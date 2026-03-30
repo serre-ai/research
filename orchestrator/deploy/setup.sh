@@ -15,7 +15,7 @@
 #
 set -euo pipefail
 
-REPO_URL="https://github.com/oddurs/deepwork.git"
+REPO_URL="https://github.com/serre-ai/research.git"
 INSTALL_DIR="/opt/deepwork"
 DB_NAME="deepwork"
 DB_USER="deepwork"
@@ -150,7 +150,7 @@ DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}" \
 echo "[8/8] Installing services..."
 
 # Copy systemd units
-cp "${INSTALL_DIR}/orchestrator/deploy/deepwork-daemon.service" /etc/systemd/system/
+cp "${INSTALL_DIR}/orchestrator/deploy/forge-daemon.service" /etc/systemd/system/
 cp "${INSTALL_DIR}/orchestrator/deploy/deepwork-eval@.service" /etc/systemd/system/
 cp "${INSTALL_DIR}/site-next/deploy/deepwork-site.service" /etc/systemd/system/
 
@@ -224,7 +224,7 @@ nginx -t
 
 # Reload services
 systemctl daemon-reload
-systemctl enable deepwork-daemon
+systemctl enable forge-daemon
 systemctl enable deepwork-site
 systemctl restart nginx
 
@@ -240,9 +240,9 @@ echo "     Homepage URL: https://research.oddurs.com"
 echo "     Callback URL: https://research.oddurs.com/api/auth/callback/github"
 echo "  3. Edit /opt/deepwork/site-next/.env.local with OAuth credentials"
 echo "  4. Set up SSL:  certbot --nginx -d research.oddurs.com"
-echo "  5. Start services: systemctl start deepwork-daemon deepwork-site"
-echo "  6. Check status:   systemctl status deepwork-daemon deepwork-site"
-echo "  7. View logs:      journalctl -u deepwork-daemon -f"
+echo "  5. Start services: systemctl start forge-daemon deepwork-site"
+echo "  6. Check status:   systemctl status forge-daemon deepwork-site"
+echo "  7. View logs:      journalctl -u forge-daemon -f"
 echo "                     journalctl -u deepwork-site -f"
 echo "  6. Backfill eval data:"
 echo "     cd /opt/deepwork && .venv/bin/python orchestrator/sql/backfill_checkpoints.py"

@@ -4,7 +4,7 @@ export function LandingFooter() {
   return (
     <div className="py-8 font-mono text-xs text-text-muted">
       <div className="flex flex-wrap gap-4">
-        <Link href="https://github.com/oddurs/deepwork" className="hover:text-text-secondary">
+        <Link href="https://github.com/serre-ai/research" className="hover:text-text-secondary">
           github
         </Link>
         <Link href="/about" className="hover:text-text-secondary">about</Link>

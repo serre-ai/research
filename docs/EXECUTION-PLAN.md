@@ -165,7 +165,7 @@ Action: Start daemon locally, verify it:
 **Task 4.1: Clone repo to VPS**
 ```
 ssh deepwork-vps
-git clone git@github.com:oddurs/deepwork.git
+git clone git@github.com:serre-ai/research.git
 cd deepwork && npm install --workspaces
 npm run build --workspaces
 ```

@@ -1,6 +1,6 @@
 [Unit]
-Description=Deepwork Eval Job — %i
-Documentation=https://github.com/oddurs/deepwork
+Description=Forge Eval Job — %i
+Documentation=https://github.com/serre-ai/research
 After=network-online.target postgresql.service
 Wants=network-online.target
 
@@ -11,7 +11,7 @@ Group=deepwork
 WorkingDirectory=/opt/deepwork/projects/reasoning-gaps/benchmarks
 
 # Instance name format: model::task::condition (using :: delimiter)
-# Example: systemctl start deepwork-eval@openai:o3::B5::budget_cot
+# Example: systemctl start forge-eval@openai:o3::B5::budget_cot
 # Runs eval then auto-ingests results into PostgreSQL
 ExecStart=/bin/bash -c '/opt/deepwork/.venv/bin/python3 run_evaluation.py --instance %i && /opt/deepwork/.venv/bin/python3 ingest_results.py'
 
@@ -36,7 +36,7 @@ PrivateTmp=true
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=deepwork-eval-%i
+SyslogIdentifier=forge-eval-%i
 
 [Install]
 WantedBy=multi-user.target
