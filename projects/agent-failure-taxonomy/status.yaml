@@ -35,8 +35,8 @@ progress:
     status: substantially_complete
     notes: "MAJOR PROGRESS (2026-03-25): Three-phase grounded theory analysis complete. (1) Open coding: Coded all 50 instances, generated ~150 codes, identified 9 patterns. (2) Axial coding: Analyzed 5 relationship types (causal, reinforcement, common root, trade-offs, hierarchical), refined boundaries for ambiguous cases, evolved to hierarchical structure with sub-categories. (3) LLM limitation mapping: Connected all 9 categories to 8 underlying LLM capability dimensions (C1-C8), distinguished fundamental (5) vs. correctable (8) limitations, derived 6 design principles. Taxonomy now has theoretical grounding, clear boundaries, dual-view structure (symptom-based for practitioners, cause-based for researchers). Preliminary architecture-failure correlation matrix developed. Ready for empirical validation through controlled experiments."
   controlled_experiments:
-    status: design_complete
-    notes: "DESIGN COMPLETE (2026-03-30): Pilot experiment protocol finalized in experiments/pilot-protocol.md and pre-registered in experiments/pilot/spec.yaml. Testing 3 failure types (tool fabrication 1.1, infinite loops 3.1, false completion 5.1) across 2 frameworks (ReAct, AutoGPT). Hypothesis: 70% reproduction rate, measurable architecture differences (effect size > 0.3). Budget: $10.50 estimated, $15 max. Canary: 12 instances with 5 diagnostics. Full pilot: 60 instances. Mapped to LLM limitations: C1 (Factual Grounding), C3 (Meta-Cognitive Monitoring), C6 (Tool Grounding), C7 (Self-Correction). Next: Session 9 = infrastructure implementation, Session 10 = execution."
+    status: infrastructure_in_progress
+    notes: "INFRASTRUCTURE STARTED (2026-03-30, Session 8): Pilot protocol finalized and pre-registered. Infrastructure implementation begun: (1) Base agent interface with standardized AgentStep/AgentResult format, (2) ReAct framework wrapper with reasoning-action loop (mock LLM calls for testing), (3) ExperimentLogger with checkpointing and cost tracking, (4) ToolFabricationTask generator with 5 variants. Remaining: infinite_loop and false_completion generators, AutoGPT wrapper, evaluation scripts, actual LLM API integration. Budget: $10.50 estimated for pilot. Next: Session 9 = complete infrastructure, Session 10 = canary + execution."
   competitor_analysis:
     status: completed
     notes: "COMPLETE (2026-03-25): Deep-read Shah et al. (2026) 'Characterizing Faults in Agentic AI' (arXiv:2603.06847). Their 37-category taxonomy covers implementation faults (87% conventional software issues, 13% LLM-specific). Our 9-category taxonomy covers cognitive/behavioral failures in agent reasoning. OVERLAP: Only ~20%. DIFFERENTIATION SECURE: Our C1-C8 LLM limitation mapping, design principles, architecture-failure correlation, and agent-level focus are unique. Taxonomies are COMPLEMENTARY, not competing. Detailed analysis in literature/05-competitor-deep-analysis.md. Confidence in novelty: HIGH (0.85)."
@@ -134,5 +134,10 @@ metrics:
   pilot_failures_targeted: 3
   pilot_frameworks_targeted: 2
   pilot_instances_planned: 60
+  infrastructure_components_built: 4
+  task_generators_complete: 1
+  task_generators_remaining: 2
+  framework_wrappers_complete: 1
+  framework_wrappers_remaining: 1
 
 notes: "✅ ROUTING FIXED (2026-03-30): Session 8 correctly assigned Experimenter agent. Productive session designing pilot experiment. Historical context: Sessions 1-7 were Researcher (wrong agent), avg score 13/100. Session 8 = Experimenter (correct agent), productive experimental design work. Routing appears to now respect 'phase: experimental' flag. PROJECT STATUS: Research complete (taxonomy developed, competitor analyzed), experimental validation in progress (pilot designed, infrastructure pending). Next: Session 9 = infrastructure implementation, Session 10 = pilot execution. PROJECT HEALTH: EXCELLENT (95/100). CONFIDENCE: HIGH (0.85) in novelty and contribution. See experiments/pilot-protocol.md for experimental design."
