@@ -49,6 +49,78 @@ def fetch_papers(api_url: str, limit: int = 200) -> list[dict]:
         sys.exit(1)
 
 
+def store_signals(signals: list[dict], db_url: str) -> int:
+    """Write signals to the research_signals PostgreSQL table."""
+    try:
+        import psycopg2  # type: ignore
+    except ImportError:
+        # Fall back to subprocess psql
+        return _store_via_psql(signals, db_url)
+
+    conn = psycopg2.connect(db_url)
+    cur = conn.cursor()
+    stored = 0
+    for sig in signals:
+        try:
+            cur.execute(
+                """INSERT INTO research_signals
+                   (detector, signal_type, title, description, confidence,
+                    source_papers, source_claims, topics, relevance, timing_score, metadata)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    sig.get("detector", ""),
+                    sig.get("signal_type", ""),
+                    sig.get("title", ""),
+                    sig.get("description", ""),
+                    sig.get("confidence", 0.5),
+                    sig.get("source_papers", []),
+                    sig.get("source_claims", []),
+                    sig.get("topics", []),
+                    sig.get("relevance", 0),
+                    sig.get("timing_score", 0),
+                    json.dumps(sig.get("metadata", {})),
+                ),
+            )
+            stored += 1
+        except Exception as e:
+            print(f"  Warning: failed to store signal: {e}", file=sys.stderr)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return stored
+
+
+def _store_via_psql(signals: list[dict], db_url: str) -> int:
+    """Fallback: store signals via psql subprocess (no psycopg2 needed)."""
+    import subprocess
+    stored = 0
+    for sig in signals:
+        sql = (
+            f"INSERT INTO research_signals "
+            f"(detector, signal_type, title, description, confidence, "
+            f"source_papers, topics, relevance, timing_score, metadata) "
+            f"VALUES ("
+            f"'{sig.get('detector', '')}', "
+            f"'{sig.get('signal_type', '')}', "
+            f"$${sig.get('title', '')}$$, "
+            f"$${sig.get('description', '')}$$, "
+            f"{sig.get('confidence', 0.5)}, "
+            f"ARRAY{sig.get('source_papers', [])}::TEXT[], "
+            f"ARRAY{sig.get('topics', [])}::TEXT[], "
+            f"{sig.get('relevance', 0)}, "
+            f"{sig.get('timing_score', 0)}, "
+            f"'{json.dumps(sig.get('metadata', {}))}'::jsonb"
+            f");"
+        )
+        result = subprocess.run(
+            ["psql", db_url, "-c", sql],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0:
+            stored += 1
+    return stored
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Research Intelligence Engine — run all detectors."
@@ -64,6 +136,14 @@ def main() -> None:
     parser.add_argument(
         "--json", action="store_true", dest="json_output",
         help="Output signals as JSON to stdout",
+    )
+    parser.add_argument(
+        "--store", action="store_true",
+        help="Write signals to the research_signals DB table",
+    )
+    parser.add_argument(
+        "--db-url", metavar="URL",
+        help="PostgreSQL connection URL (default: DATABASE_URL env var)",
     )
     parser.add_argument(
         "--input", metavar="FILE",
@@ -107,6 +187,15 @@ def main() -> None:
     # all_signals.extend(trend_signals)
     # contrarian_signals = detect_contrarian(papers)
     # all_signals.extend(contrarian_signals)
+
+    # Store to DB if requested
+    if args.store and all_signals:
+        db_url = args.db_url or os.environ.get("DATABASE_URL", "")
+        if not db_url:
+            print("Error: --store requires --db-url or DATABASE_URL env var", file=sys.stderr)
+            sys.exit(1)
+        stored = store_signals(all_signals, db_url)
+        print(f"  stored {stored} signals to research_signals table", file=sys.stderr)
 
     result = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

@@ -138,8 +138,9 @@ def _paper_id(paper: dict) -> str:
     return paper.get("id") or paper.get("arxivId") or paper.get("title", "")
 
 
-def _paper_ref(paper: dict) -> dict:
-    return {"id": _paper_id(paper), "title": paper.get("title", "")}
+def _paper_ref(paper: dict) -> str:
+    """Return paper ID string for source_papers arrays."""
+    return _paper_id(paper)
 
 
 def _extract_topics(paper: dict) -> list[str]:

@@ -73,10 +73,10 @@ export function researchIntelRoutes(pool: pg.Pool): Router {
     try {
       const { rows } = await pool.query(`
         SELECT
-          (SELECT COUNT(*) FROM research_signals WHERE batch_date = CURRENT_DATE) AS signals_today,
-          (SELECT COUNT(*) FROM research_opportunities WHERE batch_date = CURRENT_DATE) AS opportunities_today,
-          (SELECT COUNT(DISTINCT batch_date) FROM research_signals) AS total_batches,
-          (SELECT COUNT(*) FROM research_signals) AS total_signals
+          (SELECT COUNT(*)::int FROM research_signals WHERE batch_date = CURRENT_DATE) AS signals_today,
+          (SELECT COUNT(*)::int FROM research_opportunities WHERE batch_date = CURRENT_DATE) AS opportunities_today,
+          (SELECT COUNT(DISTINCT batch_date)::int FROM research_signals) AS total_batches,
+          (SELECT COUNT(*)::int FROM research_signals) AS total_signals
       `);
       res.json(rows[0] || {});
     } catch (err) {
