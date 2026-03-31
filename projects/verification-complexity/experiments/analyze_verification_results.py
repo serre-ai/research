@@ -405,6 +405,15 @@ def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
             for _, g in cell_groups
         )
         ss_interaction = ss_cells - ss_gen - ss_vc
+        if ss_interaction < 0:
+            # Negative SS can occur with unbalanced designs in Type I SS;
+            # clamp to zero — the interaction term is unreliable here.
+            warnings.warn(
+                "Negative interaction SS in manual two-way ANOVA "
+                f"(ss_interaction={ss_interaction:.4f}); clamping to 0. "
+                "Interaction term is unreliable for this unbalanced design."
+            )
+            ss_interaction = 0.0
         df_interaction = df_gen * df_vc
 
         ss_error = ss_total - ss_cells
@@ -422,9 +431,10 @@ def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
         f_interaction = ms_interaction / ms_error if ms_error > 0 else np.nan
 
         # p-values
-        p_gen = float(1 - sp_stats.f.cdf(f_gen, df_gen, df_error)) if not np.isnan(f_gen) else np.nan
-        p_vc = float(1 - sp_stats.f.cdf(f_vc, df_vc, df_error)) if not np.isnan(f_vc) else np.nan
-        p_interaction = float(1 - sp_stats.f.cdf(f_interaction, df_interaction, df_error)) if not np.isnan(f_interaction) else np.nan
+        # Use sf (survival function) instead of 1-cdf for better numerical precision
+        p_gen = float(sp_stats.f.sf(f_gen, df_gen, df_error)) if not np.isnan(f_gen) else np.nan
+        p_vc = float(sp_stats.f.sf(f_vc, df_vc, df_error)) if not np.isnan(f_vc) else np.nan
+        p_interaction = float(sp_stats.f.sf(f_interaction, df_interaction, df_error)) if not np.isnan(f_interaction) else np.nan
 
         results["anova_table"] = {
             "C(gen)": {"sum_sq": float(ss_gen), "df": float(df_gen), "F": float(f_gen), "PR(>F)": p_gen},
@@ -543,7 +553,10 @@ def analyze_between_model_agreement(df: pd.DataFrame) -> dict[str, Any]:
     # Key comparison: B6 vs B7 (non-monotonicity test)
     b6 = agreement_by_task.get("B6", {})
     b7 = agreement_by_task.get("B7", {})
-    if b6.get("agreement_rate") is not None and b7.get("agreement_rate") is not None:
+    b6_ar = b6.get("agreement_rate")
+    b7_ar = b7.get("agreement_rate")
+    if (b6_ar is not None and not np.isnan(b6_ar)
+            and b7_ar is not None and not np.isnan(b7_ar)):
         results["non_monotonicity_test"] = {
             "B6_agreement": b6["agreement_rate"],
             "B7_agreement": b7["agreement_rate"],
@@ -828,6 +841,8 @@ def plot_accuracy_by_task(
     output_dir: Path,
 ) -> None:
     """Figure 1: Verification accuracy by task, colored by VC class."""
+    # NOTE: targeting ICLR 2027, but pub_style has no iclr2027 config yet;
+    # neurips2026 sizing is similar enough for now.
     pub_style.setup(usetex=False, conference="neurips2026")
 
     fig, ax = pub_style.figure(width="full", height=3.0)
@@ -886,6 +901,8 @@ def plot_accuracy_by_task(
 
 def plot_verification_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
     """Figure 2: Verification accuracy heatmap (model pair x task)."""
+    # NOTE: targeting ICLR 2027, but pub_style has no iclr2027 config yet;
+    # neurips2026 sizing is similar enough for now.
     pub_style.setup(usetex=False, conference="neurips2026")
 
     df_copy = df.copy()
@@ -958,6 +975,8 @@ def plot_agreement_vs_rho(
     output_dir: Path,
 ) -> None:
     """Figure 3: Verifier agreement vs known rho (tests non-monotonicity)."""
+    # NOTE: targeting ICLR 2027, but pub_style has no iclr2027 config yet;
+    # neurips2026 sizing is similar enough for now.
     pub_style.setup(usetex=False, conference="neurips2026")
 
     fig, ax = pub_style.figure(width="col", height=3.0)
@@ -1049,7 +1068,9 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
     ]
 
     def cmd(name: str, value: str) -> str:
-        return f"\\newcommand{{\\{name}}}{{{value}}}"
+        # Use \def to silently overwrite if the command already exists
+        # (safe for auto-generated stats files that may be \input'd multiple times)
+        return f"\\def\\{name}{{{value}}}"
 
     # --- Overall ---
     acc_by_class = analyses.get("accuracy_by_vc_class", {}).get("accuracy_by_class", {})
@@ -1058,15 +1079,15 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
             continue
         safe_vc = vc.replace("/", "").replace(" ", "")
         d = acc_by_class[vc]
-        lines.append(cmd(f"vcAcc{safe_vc}", f"{d['mean']:.1%}"))
+        lines.append(cmd(f"vcAcc{safe_vc}", f"{d['mean']*100:.1f}\\%"))
         lines.append(cmd(f"vcAccN{safe_vc}", f"{d['n']}"))
         lines.append(cmd(f"vcAccCI{safe_vc}",
-                         f"[{d['ci_low']:.1%}, {d['ci_high']:.1%}]"))
+                         f"[{d['ci_low']*100:.1f}\\%, {d['ci_high']*100:.1f}\\%]"))
 
     # --- Per-task accuracy ---
     acc_by_task = analyses.get("accuracy_by_vc_class", {}).get("accuracy_by_task", {})
     for task, d in acc_by_task.items():
-        lines.append(cmd(f"taskAcc{task}", f"{d['mean']:.1%}"))
+        lines.append(cmd(f"taskAcc{task}", f"{d['mean']*100:.1f}\\%"))
 
     # --- ANOVA ---
     anova = analyses.get("accuracy_by_vc_class", {}).get("anova", {})
@@ -1108,13 +1129,13 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
     for task, d in agreement.items():
         ar = d.get("agreement_rate", np.nan)
         lines.append(cmd(f"agree{task}",
-                         f"{ar:.1%}" if not np.isnan(ar) else "N/A"))
+                         f"{ar*100:.1f}\\%" if not np.isnan(ar) else "N/A"))
 
     # --- Non-monotonicity ---
     nm = analyses.get("between_model_agreement", {}).get("non_monotonicity_test", {})
     if nm:
-        lines.append(cmd("nonMonBsixAgree", f"{nm['B6_agreement']:.1%}"))
-        lines.append(cmd("nonMonBsevenAgree", f"{nm['B7_agreement']:.1%}"))
+        lines.append(cmd("nonMonBsixAgree", f"{nm['B6_agreement']*100:.1f}\\%"))
+        lines.append(cmd("nonMonBsevenAgree", f"{nm['B7_agreement']*100:.1f}\\%"))
         lines.append(cmd("nonMonResult",
                          "confirmed" if nm.get("B6_gt_B7") else "not confirmed"))
 
@@ -1137,7 +1158,7 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
     # --- B7 errors ---
     b7 = analyses.get("error_types_b7", {})
     if b7 and "accuracy" in b7:
-        lines.append(cmd("bsevenAcc", f"{b7['accuracy']:.1%}"))
+        lines.append(cmd("bsevenAcc", f"{b7['accuracy']*100:.1f}\\%"))
         for etype, count in b7.get("error_counts", {}).items():
             safe = etype.replace(" ", "")
             lines.append(cmd(f"bseven{safe}", str(count)))
