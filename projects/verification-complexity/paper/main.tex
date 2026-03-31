@@ -207,17 +207,19 @@ A $\TC$-bounded transformer cannot verify solutions to problems whose verificati
 
 \begin{definition}[Computational Bottleneck]
 \label{def:bottleneck}
-Let $\calF = (X, Y, V, D)$ be a reasoning task and $\calM$ a model class.
-A \emph{computational bottleneck} for $(\calF, \calM)$ is a function $V_{\mathrm{sub}} : X \times Y \to \{0, 1\}$ satisfying:
+Let $\calF = (X, Y, V, D)$ be a reasoning task, $\calM$ a model class, and $V(x,y) = g(V_1(x,y), \ldots, V_k(x,y))$ a decomposition of the verification function into subtasks for some Boolean combination $g$.
+A subtask $V_j$ is a \emph{computational bottleneck} for $(\calF, \calM)$ if it satisfies:
 \begin{enumerate}[label=(B\arabic*)]
     \item \textbf{Necessity.} There exists $\alpha > 0$ such that
     \[
-    \Pr_{x \sim D}\!\bigl[\,\exists\, y_1, y_2 \in Y :\ V(x,y_1) \neq V(x,y_2)\ \text{but}\ V_{\mathrm{sub}}(x,y_1) = V_{\mathrm{sub}}(x,y_2)\,\bigr] \leq 1 - \alpha.
+    \Pr_{x \sim D}\!\bigl[\,\exists\, y_1, y_2 \in Y :\ V(x,y_1) \neq V(x,y_2)\ \land\ V_i(x,y_1) = V_i(x,y_2)\ \forall\, i \neq j\,\bigr] \geq \alpha.
     \]
-    That is, on at least an $\alpha$-fraction of inputs, $V_{\mathrm{sub}}$ is needed to distinguish some correct answer from some incorrect answer.
-    \item \textbf{Hardness.} $V_{\mathrm{sub}} \notin \mathrm{cap}(\calM)$: the model class $\calM$ cannot compute $V_{\mathrm{sub}}$.
+    That is, on at least an $\alpha$-fraction of inputs, the remaining subtasks $\{V_i\}_{i \neq j}$ do \emph{not} suffice to determine $V(x,\cdot)$: there exist two candidate answers that $V$ distinguishes but every subtask other than $V_j$ fails to distinguish.
+    This means $V_j$ is genuinely \emph{required}, not merely informative.
+    \item \textbf{Hardness.} $V_j \notin \mathrm{cap}(\calM)$: the model class $\calM$ cannot compute $V_j$.
 \end{enumerate}
-A bottleneck $V_{\mathrm{sub}}$ is \emph{shared} if $V_{\mathrm{sub}}$ is required on all inputs where the model errs --- formally, if for every $x$ in the support of $D$ with $V(x, \calM(x)) = 0$, distinguishing $\calM(x)$ from a correct answer requires evaluating $V_{\mathrm{sub}}$.
+We write $V_{\mathrm{sub}} \coloneqq V_j$ for the bottleneck subtask.
+A bottleneck $V_{\mathrm{sub}}$ is \emph{shared} if $V_{\mathrm{sub}}$ is required on all inputs where the model errs --- formally, if for every $x$ in the support of $D$ with $\Pr[V(x, \calM(x)) = 0] > 0$, distinguishing $\calM(x)$ from a correct answer requires evaluating $V_{\mathrm{sub}}$.
 A bottleneck is \emph{stochastic} if the set of inputs requiring $V_{\mathrm{sub}}$ has measure $q \in (0,1)$ under $D$, and whether a particular input $x$ requires $V_{\mathrm{sub}}$ is determined by instance-specific structure (e.g., random combinatorial properties) rather than a limitation common to all inputs.
 \end{definition}
 
@@ -281,13 +283,14 @@ Then majority voting over $N$ samples satisfies:
     \item \textbf{(Independence requirement)} If samples share a systematic bias --- i.e., errors are positively correlated with correlation $\rho > 0$ --- then the effective sample size is $N_{\text{eff}} = N / (1 + (N-1)\rho)$, and convergence slows to $\exp(-\Omega(N_{\text{eff}}))$.
     \item \textbf{(Bottleneck structure)} Let $V_{\mathrm{sub}}$ be a computational bottleneck (\Cref{def:bottleneck}) for $(\calF, \calM)$.
     \begin{enumerate}[label=(\roman*)]
-        \item \textbf{(Shared bottleneck)} If $V_{\mathrm{sub}}$ is shared, occurring with probability $q > 0$ under $D$, and the conditional error probability satisfies $r = \Pr[\calM(x) \text{ incorrect} \mid V_{\mathrm{sub}} \text{ required at } x] > 1/2$, then:
+        \item \textbf{(Shared bottleneck)} If $V_{\mathrm{sub}}$ is shared, occurring with probability $q > 0$ under $D$, and the conditional error probability satisfies $r = \Pr[\calM(x) \text{ incorrect} \mid V_{\mathrm{sub}} \text{ required at } x] > 1/2$, let $p_0 < r$ be the base error rate absent the bottleneck and $p_e = rq + p_0(1-q)$ the marginal error rate.
+        Then:
         \[
-        \rho \;\geq\; q(1-q)(r - p_0)^2 \,/\, [p_e(1-p_e)] \;>\; 0,
+        \rho \;\geq\; q(1-q)(r - p_0)^2 \,/\, [p_e(1-p_e)] \;>\; 0.
         \]
-        where $p_0 < r$ is the base error rate absent the bottleneck and $p_e = rq + p_0(1-q)$ is the marginal error rate.
         Self-consistency provides limited benefit: $N_{\mathrm{eff}} = O(1/\rho)$ regardless of~$N$.
-        \item \textbf{(Stochastic bottleneck)} If $V_{\mathrm{sub}}$ is stochastic --- i.e., whether input $x$ requires $V_{\mathrm{sub}}$ depends on instance-specific combinatorial structure --- then \emph{between-model} errors on different instances are approximately independent ($\rho_{\mathrm{between}} \approx 0$), even when $\VC(\calF)$ is hard.
+        \item \textbf{(Stochastic bottleneck --- qualitative prediction)} If $V_{\mathrm{sub}}$ is stochastic --- i.e., whether input $x$ requires $V_{\mathrm{sub}}$ depends on instance-specific combinatorial structure --- then we conjecture that \emph{between-model} error correlation satisfies $\rho_{\mathrm{between}} = O(q^2)$, where $q$ is the bottleneck probability, since different models with different learned heuristics face different hard instances.
+        This is consistent with the empirical finding of $\rho = 0.06$ for 3-SAT near the phase transition (\Cref{sec:discussion}).
         Self-consistency across diverse models can improve accuracy.
         \item \textbf{(Within-model dominance)} For within-model sampling at fixed temperature from a single model $M$, the shared-bottleneck regime dominates: all $N$ samples use the same weights and share the same computational limitations, so $\rho_{\mathrm{within}} > 0$ and $N_{\mathrm{eff}}$ is bounded independently of $N$.
     \end{enumerate}
@@ -312,10 +315,13 @@ If $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, then by \Cref{lem:vc_to_bottl
 \Cref{lem:verification_correlation} then yields $\rho \geq q(1-q)(r - p_0)^2 / [p_e(1 - p_e)] > 0$.
 Since all $N$ within-model samples share the same weights, they face the same bottleneck on the same inputs, so the shared-bottleneck bound applies: $N_{\mathrm{eff}} = N/(1 + (N-1)\rho) = O(1/\rho)$.
 
-\emph{Part (c.ii): Stochastic bottleneck.}
+\emph{Part (c.ii): Stochastic bottleneck (qualitative argument).}
+Part~(c.ii) is an empirically-supported prediction rather than a formally proved bound.
 When the set of inputs requiring $V_{\mathrm{sub}}$ depends on instance-specific combinatorial structure (e.g., random clause structure in 3-SAT near the phase transition), different models with different learned heuristics succeed or fail on different instances.
 Between-model error indicators $\mathbf{1}[M_a(x) \text{ incorrect}]$ and $\mathbf{1}[M_b(x) \text{ incorrect}]$ are conditionally independent given $x$ (since the models are independent), and the between-instance correlation is low because which instances are hard varies stochastically.
-Hence $\rho_{\mathrm{between}} \approx 0$.
+Heuristically, if the overlap between hard instances for $M_a$ and $M_b$ is $O(q^2)$ (the probability that a random instance is independently hard for both), then $\rho_{\mathrm{between}} = O(q^2)$.
+A formal derivation would require a model of how different architectures and training runs produce different bottleneck instance sets, which we leave to future work.
+The prediction is consistent with the empirical finding of $\rho = 0.06$ for 3-SAT near the phase transition (\Cref{sec:discussion}).
 
 \emph{Part (c.iii): Within-model dominance.}
 For within-model sampling from a single model $M$ at fixed temperature $T > 0$, all $N$ samples share the weights of $M$.
@@ -329,6 +335,15 @@ Hence within-model errors satisfy the shared-bottleneck regime of part~(c.i), an
 Within-model self-consistency yields diminishing returns on tasks where the model faces a shared structural bottleneck (algorithmic gap, depth limitation), regardless of whether $\VC$ is tractable.
 Between-model ensembles are most effective on tasks with stochastic, instance-specific difficulty (e.g., 3-SAT near the phase transition), where different models fail on different instances.
 \end{corollary}
+
+\begin{remark}[Graceful Degradation]
+\label{rem:degradation}
+The correlation bound in \Cref{thm:selfconsistency}(c.i) is $\rho \geq q(1-q)(r - p_0)^2 / [p_e(1-p_e)]$.
+This bound has content only when the bottleneck error rate $r$ is bounded away from the base rate $p_0$; as $r \to p_0^+$, the bound tends to zero and the bottleneck ceases to be a meaningful source of correlation.
+Similarly, the bound is informative only when $q$ is bounded away from $0$ and $1$.
+In practice, this means the theory predicts strong correlation only when the bottleneck is both prevalent ($q$ not too small) and genuinely difficult ($r - p_0$ not too small).
+When these conditions are not met, the theory correctly predicts that self-consistency may still be effective.
+\end{remark}
 
 \begin{remark}[Verification Complexity and Correlation Are Not Monotonically Related]
 \label{rem:nonmonotone}
@@ -622,6 +637,11 @@ L.~Babai.
 \newblock Trading group theory for randomness.
 \newblock In \emph{STOC}, 1985.
 
+\bibitem[Bogdanov \& Trevisan(2006)]{bogdanov2006average}
+A.~Bogdanov and L.~Trevisan.
+\newblock Average-case complexity.
+\newblock \emph{Foundations and Trends in Theoretical Computer Science}, 2(1):1--106, 2006.
+
 \bibitem[Behnke et~al.(2024)]{behnke2024verification}
 G.~Behnke, D.~H{\"o}ller, and S.~Biundo.
 \newblock On the computational complexity of HTN plan verification.
@@ -883,12 +903,15 @@ Let $\calF = (X, Y, V, D)$ be a reasoning task with $\VC(\calF) \not\subseteq \m
 We say $(\calF, \calM)$ satisfies \emph{distributional verification hardness} if there exists a decomposition of the verification function $V$ into subtasks $V_1, \ldots, V_k$ (i.e., $V(x,y) = g(V_1(x,y), \ldots, V_k(x,y))$ for some Boolean combination $g$) such that at least one subtask $V_j$ satisfies:
 \begin{enumerate}[label=(\roman*)]
     \item $V_j \notin \mathrm{cap}(\calM)$, and
-    \item $\Pr_{x \sim D}[V_j \text{ is required to distinguish } V(x,y) \text{ across candidate answers } y] \geq \alpha$ for some $\alpha > 0$.
+    \item $V_j$ is necessary in the sense of condition~(B1) of \Cref{def:bottleneck}: on at least an $\alpha$-fraction of inputs $x \sim D$, the remaining subtasks $\{V_i\}_{i \neq j}$ do not suffice to determine $V(x,\cdot)$.
 \end{enumerate}
 \end{assumption}
 
-This assumption bridges worst-case and average-case: clause~(i) is a worst-case complexity statement (the subtask is outside the model's capability class), while clause~(ii) is a distributional statement (the hard subtask is needed on a non-negligible fraction of inputs).
-The assumption is satisfied for all tasks in our taxonomy where $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$: if verification is hard only on a measure-zero set of inputs, the task is effectively verifiable.
+\Cref{asm:dist_hard} is the key non-trivial modeling assumption underlying all downstream results (\Cref{lem:vc_to_bottleneck,lem:verification_correlation,thm:selfconsistency}(c)).
+It bridges worst-case and average-case: clause~(i) is a worst-case complexity statement (the subtask is outside the model's capability class), while clause~(ii) is a distributional statement (the hard subtask is needed on a non-negligible fraction of inputs).
+We emphasize that worst-case hardness does \emph{not} automatically imply average-case hardness --- this is a well-known gap in complexity theory (e.g., $\NP$-complete problems may admit polynomial-time average-case algorithms under specific distributions~\citep{bogdanov2006average}).
+The assumption is reasonable for all tasks in our taxonomy where $\VC(\calF) \not\subseteq \mathrm{cap}(\calM)$, but it should be verified task-by-task: if verification is hard only on a measure-zero set of inputs under $D$, the task is effectively verifiable and the assumption fails.
+All results in \Cref{thm:selfconsistency}(c) and \Cref{lem:vc_to_bottleneck} are conditional on this assumption.
 
 \begin{lemma}[Verification Hardness Produces Bottleneck]
 \label{lem:vc_to_bottleneck}
@@ -910,8 +933,7 @@ By \Cref{asm:dist_hard}, there exists a subtask $V_j$ of $V$ that is both outsid
 Set $V_{\mathrm{sub}} \coloneqq V_j$.
 
 \paragraph{Step 2: Verifying condition (B1) of \Cref{def:bottleneck} (Necessity).}
-By clause~(ii) of \Cref{asm:dist_hard}, for at least an $\alpha$-fraction of inputs $x \sim D$, there exist candidate answers $y_1, y_2$ such that $V(x,y_1) \neq V(x,y_2)$ and distinguishing them requires evaluating $V_j$.
-Formally, on these inputs, $V_j(x,y_1) \neq V_j(x,y_2)$ while the remaining subtasks $\{V_i\}_{i \neq j}$ do not suffice to determine $V(x,\cdot)$.
+By clause~(ii) of \Cref{asm:dist_hard}, for at least an $\alpha$-fraction of inputs $x \sim D$, the remaining subtasks $\{V_i\}_{i \neq j}$ do not suffice to determine $V(x,\cdot)$: there exist candidate answers $y_1, y_2$ with $V(x,y_1) \neq V(x,y_2)$ and $V_i(x,y_1) = V_i(x,y_2)$ for all $i \neq j$.
 This is precisely condition~(B1) with the same constant $\alpha$.
 
 \paragraph{Step 3: Verifying condition (B2) of \Cref{def:bottleneck} (Hardness).}
@@ -922,17 +944,20 @@ Define the bottleneck event as $B = \{x \in X : V_j \text{ is required at } x\}$
 By clause~(ii) of \Cref{asm:dist_hard}, $q = \Pr_{x \sim D}[B] \geq \alpha > 0$.
 
 \paragraph{Step 5: Establishing $r > 1/2$.}
-This is the key step, and it is where the distributional hardness condition is essential (a worst-case statement alone would not suffice).
+This is the key step, and it is where the necessity condition~(B1) and the distributional hardness assumption are both essential (a worst-case statement alone would not suffice).
 
 Consider the model's behavior on inputs $x \in B$ where $V_j$ is required.
-The model must produce an answer $y = \calM(x)$, but it cannot compute $V_j(x,y)$ to verify whether $y$ is correct.
+By (B1), on these inputs there exist $y_1, y_2$ with $V(x,y_1) \neq V(x,y_2)$ and $V_i(x,y_1) = V_i(x,y_2)$ for all $i \neq j$.
+That is, correctness at $x$ depends on $V_j$: without computing $V_j$, one cannot distinguish the correct answer from the incorrect one.
 We claim the conditional error rate $r = \Pr[\calM(x) \text{ incorrect} \mid x \in B] > 1/2$.
 
 Suppose for contradiction that $r \leq 1/2$.
-Then the model is correct on a majority of bottleneck instances.
-Define the function $h(x,y) = \mathbf{1}[\calM \text{ judges } y \text{ correct}]$, which $\calM$ can compute (it is simply $\calM$'s implicit accept/reject decision).
-If $r \leq 1/2$, then $h$ agrees with $V_j$ on more than half the bottleneck instances, yielding $\Pr[h(x,y) = V_j(x,y) \mid x \in B] > 1/2$.
-But by our assumption in clause~(b), $\calM$ has no such function $h$ achieving better than $1/2 + \negl(|x|)$ agreement with $V_j$ on bottleneck instances.
+Then the model generates a correct answer $y = \calM(x)$ on more than half of the bottleneck instances.
+Define $h(x) \coloneqq V_j(x,\, \calM(x))$.
+Since $V(x, \calM(x)) = 1$ (correctness) and, on bottleneck instances, correctness requires $V_j(x, \calM(x)) = 1$ (by necessity condition~B1: the other subtasks cannot distinguish correct from incorrect, so $V_j$ must evaluate to the ``correct'' value), we have $h(x) = 1$ whenever $\calM(x)$ is correct and $x \in B$.
+Therefore $\Pr_{x \sim D}[h(x) = V_j(x, y^*(x)) \mid x \in B] > 1/2$, where $y^*(x)$ is the correct answer.
+But computing $h$ requires computing $V_j$, which is outside $\mathrm{cap}(\calM)$ by condition~(B2).
+More precisely, by our assumption in clause~(b), $\calM$ has no function achieving better than $1/2 + \negl(|x|)$ agreement with $V_j$ on bottleneck instances.
 This contradicts $r \leq 1/2$, so $r > 1/2$.
 
 \paragraph{Justification of the $r > 1/2$ assumption.}
@@ -957,9 +982,9 @@ In such cases, the bottleneck still exists but produces weaker correlation; our 
 
 Assume $p^* > \max_{y \neq y^*} p_y$, i.e., the correct answer $y^*$ is the unique plurality. Let $\Delta = p^* - \max_{y \neq y^*} p_y > 0$ be the plurality margin.
 
-For majority voting to succeed, we need $y^*$ to appear more frequently than any other answer among the $N$ samples. Let $C_y$ denote the count of answer $y$ among the $N$ samples. By Hoeffding's inequality, for any answer $y \neq y^*$:
+For majority voting to succeed, we need $y^*$ to appear more frequently than any other answer among the $N$ samples. Let $C_y$ denote the count of answer $y$ among the $N$ samples. Define $Z_i = \mathbf{1}[y_i = y] - \mathbf{1}[y_i = y^*]$, so $C_y - C_{y^*} = \sum_{i=1}^N Z_i$ with $\mathbb{E}[Z_i] = p_y - p^* \leq -\Delta$ and $Z_i \in [-1, 1]$. By Hoeffding's inequality applied to the sum of $N$ variables bounded in $[-1,1]$:
 \[
-\Pr[C_y > C_{y^*}] \leq \Pr[C_y - C_{y^*} > 0] \leq \exp\left( -\frac{2N(\Delta/2)^2}{N^2} \cdot N \right) = \exp\left( -\frac{N\Delta^2}{2} \right)
+\Pr[C_y > C_{y^*}] = \Pr\!\left[\sum Z_i > 0\right] \leq \Pr\!\left[\sum Z_i - N\mathbb{E}[Z_i] \geq N\Delta\right] \leq \exp\!\left( -\frac{2(N\Delta)^2}{4N} \right) = \exp\!\left( -\frac{N\Delta^2}{2} \right)
 \]
 
 By the union bound over all $|Y| - 1$ incorrect answers:
@@ -998,7 +1023,8 @@ By \Cref{lem:verification_correlation}:
 Substituting into part~(b), $N_{\mathrm{eff}} = N / (1 + (N-1)\rho)$.
 As $N \to \infty$, $N_{\mathrm{eff}} \to 1/\rho = O(1)$, so additional samples beyond $O(1/\rho)$ provide no further benefit.
 
-\emph{Part (c.ii): Stochastic bottleneck.}
+\emph{Part (c.ii): Stochastic bottleneck (qualitative prediction).}
+This part is an empirically-supported prediction rather than a formally proved result.
 When the bottleneck is stochastic, the set of inputs requiring $V_{\mathrm{sub}}$ has measure $q \in (0,1)$ under $D$, and which inputs are hard depends on instance-specific combinatorial structure.
 For \emph{between-model} ensembles with models $M_a, M_b$ that have different learned heuristics, the bottleneck instances for $M_a$ and $M_b$ may differ.
 Let $q_a$ and $q_b$ be the respective bottleneck probabilities.
@@ -1007,6 +1033,8 @@ The between-model error correlation decomposes as:
 \rho_{\mathrm{between}} &= \frac{\Pr[E_a \cap E_b] - \Pr[E_a]\Pr[E_b]}{\sqrt{\mathrm{Var}(E_a)\,\mathrm{Var}(E_b)}}.
 \end{align*}
 When $M_a$ and $M_b$ fail on largely disjoint subsets of instances (because instance-level hardness is stochastic and models use different heuristics), $\Pr[E_a \cap E_b] \approx \Pr[E_a]\Pr[E_b]$, giving $\rho_{\mathrm{between}} \approx 0$.
+Heuristically, if the bottleneck instance sets for $M_a$ and $M_b$ are drawn independently with probability $q$, then $\Pr[E_a \cap E_b \mid \text{both bottleneck}] = O(q^2)$ and $\rho_{\mathrm{between}} = O(q^2)$.
+A formal bound would require modeling how different architectures and training procedures produce different bottleneck instance sets, which is beyond the scope of this work.
 In this regime, between-model majority voting retains its full power: $N_{\mathrm{eff}} \approx N$.
 
 \emph{Part (c.iii): Within-model dominance.}
