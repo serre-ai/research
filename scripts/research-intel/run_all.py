@@ -22,6 +22,9 @@ try:
     from .gap_detector import detect as detect_gaps
     from .trend_detector import detect as detect_trends
     from .portfolio_optimizer import detect as detect_portfolio
+    from .contrarian_detector import detect as detect_contrarian
+    from .frontier_scanner import detect as detect_frontier
+    from .reviewer_model import detect as detect_reviewer
     from .synthesize import synthesize
 except ImportError:
     # Direct script execution — add package dir to path and import directly
@@ -32,6 +35,9 @@ except ImportError:
     from gap_detector import detect as detect_gaps  # type: ignore
     from trend_detector import detect as detect_trends  # type: ignore
     from portfolio_optimizer import detect as detect_portfolio  # type: ignore
+    from contrarian_detector import detect as detect_contrarian  # type: ignore
+    from frontier_scanner import detect as detect_frontier  # type: ignore
+    from reviewer_model import detect as detect_reviewer  # type: ignore
     from synthesize import synthesize  # type: ignore
 
 
@@ -273,6 +279,18 @@ def main() -> None:
     all_signals.extend(portfolio_signals)
     print(f"  portfolio_optimizer: {len(portfolio_signals)} signals", file=sys.stderr)
 
+    contrarian_signals = detect_contrarian(papers)
+    all_signals.extend(contrarian_signals)
+    print(f"  contrarian_detector: {len(contrarian_signals)} signals", file=sys.stderr)
+
+    frontier_signals = detect_frontier(papers)
+    all_signals.extend(frontier_signals)
+    print(f"  frontier_scanner: {len(frontier_signals)} signals", file=sys.stderr)
+
+    reviewer_signals = detect_reviewer(papers)
+    all_signals.extend(reviewer_signals)
+    print(f"  reviewer_model: {len(reviewer_signals)} signals", file=sys.stderr)
+
     # Synthesize opportunities
     opportunities = synthesize(all_signals)
     print(f"  synthesized: {len(opportunities)} opportunities", file=sys.stderr)
@@ -293,7 +311,7 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "papers_analyzed": len(papers),
         "total_signals": len(all_signals),
-        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer"],
+        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer", "contrarian_detector", "frontier_scanner", "reviewer_model"],
         "signals": all_signals,
         "opportunities": opportunities,
     }
