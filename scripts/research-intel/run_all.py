@@ -20,6 +20,9 @@ from urllib.error import URLError
 # Support both `python3 -m scripts.research-intel.run_all` and direct execution
 try:
     from .gap_detector import detect as detect_gaps
+    from .trend_detector import detect as detect_trends
+    from .portfolio_optimizer import detect as detect_portfolio
+    from .synthesize import synthesize
 except ImportError:
     # Direct script execution — add package dir to path and import directly
     import pathlib
@@ -27,6 +30,9 @@ except ImportError:
     if _pkg_dir not in sys.path:
         sys.path.insert(0, _pkg_dir)
     from gap_detector import detect as detect_gaps  # type: ignore
+    from trend_detector import detect as detect_trends  # type: ignore
+    from portfolio_optimizer import detect as detect_portfolio  # type: ignore
+    from synthesize import synthesize  # type: ignore
 
 
 DEFAULT_API_URL = "http://localhost:3001"
@@ -121,6 +127,84 @@ def _store_via_psql(signals: list[dict], db_url: str) -> int:
     return stored
 
 
+def store_opportunities(opportunities: list[dict], db_url: str) -> int:
+    """Write synthesized opportunities to the research_opportunities PostgreSQL table."""
+    try:
+        import psycopg2  # type: ignore
+    except ImportError:
+        return _store_opportunities_via_psql(opportunities, db_url)
+
+    conn = psycopg2.connect(db_url)
+    cur = conn.cursor()
+    stored = 0
+    for opp in opportunities:
+        try:
+            cur.execute(
+                """INSERT INTO research_opportunities
+                   (title, thesis, composite_score, detectors_hit, topics,
+                    target_venue, portfolio_fit, timing_urgency, venue_receptivity,
+                    rationale, status, metadata)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    opp.get("title", ""),
+                    opp.get("thesis", ""),
+                    opp.get("composite_score", 0),
+                    opp.get("detectors_hit", []),
+                    opp.get("topics", []),
+                    opp.get("target_venue"),
+                    opp.get("portfolio_fit", 0),
+                    opp.get("timing_urgency", 0),
+                    opp.get("venue_receptivity", 0),
+                    opp.get("rationale", ""),
+                    opp.get("status", "new"),
+                    json.dumps({
+                        "signal_ids": opp.get("signal_ids", []),
+                    }),
+                ),
+            )
+            stored += 1
+        except Exception as e:
+            print(f"  Warning: failed to store opportunity: {e}", file=sys.stderr)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return stored
+
+
+def _store_opportunities_via_psql(opportunities: list[dict], db_url: str) -> int:
+    """Fallback: store opportunities via psql subprocess (no psycopg2 needed)."""
+    import subprocess
+    stored = 0
+    for opp in opportunities:
+        sql = (
+            f"INSERT INTO research_opportunities "
+            f"(title, thesis, composite_score, detectors_hit, topics, "
+            f"target_venue, portfolio_fit, timing_urgency, venue_receptivity, "
+            f"rationale, status, metadata) "
+            f"VALUES ("
+            f"$${opp.get('title', '')}$$, "
+            f"$${opp.get('thesis', '')}$$, "
+            f"{opp.get('composite_score', 0)}, "
+            f"ARRAY{opp.get('detectors_hit', [])}::TEXT[], "
+            f"ARRAY{opp.get('topics', [])}::TEXT[], "
+            f"{'NULL' if opp.get('target_venue') is None else repr(opp['target_venue'])}, "
+            f"{opp.get('portfolio_fit', 0)}, "
+            f"{opp.get('timing_urgency', 0)}, "
+            f"{opp.get('venue_receptivity', 0)}, "
+            f"$${opp.get('rationale', '')}$$, "
+            f"'{opp.get('status', 'new')}', "
+            f"'{json.dumps({'signal_ids': opp.get('signal_ids', [])})}'::jsonb"
+            f");"
+        )
+        result = subprocess.run(
+            ["psql", db_url, "-c", sql],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0:
+            stored += 1
+    return stored
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Research Intelligence Engine — run all detectors."
@@ -182,11 +266,17 @@ def main() -> None:
     all_signals.extend(gap_signals)
     print(f"  gap_detector: {len(gap_signals)} signals", file=sys.stderr)
 
-    # Future detectors:
-    # trend_signals = detect_trends(papers)
-    # all_signals.extend(trend_signals)
-    # contrarian_signals = detect_contrarian(papers)
-    # all_signals.extend(contrarian_signals)
+    trend_signals = detect_trends(papers)
+    all_signals.extend(trend_signals)
+    print(f"  trend_detector: {len(trend_signals)} signals", file=sys.stderr)
+
+    portfolio_signals = detect_portfolio(papers)
+    all_signals.extend(portfolio_signals)
+    print(f"  portfolio_optimizer: {len(portfolio_signals)} signals", file=sys.stderr)
+
+    # Synthesize opportunities
+    opportunities = synthesize(all_signals)
+    print(f"  synthesized: {len(opportunities)} opportunities", file=sys.stderr)
 
     # Store to DB if requested
     if args.store and all_signals:
@@ -196,13 +286,17 @@ def main() -> None:
             sys.exit(1)
         stored = store_signals(all_signals, db_url)
         print(f"  stored {stored} signals to research_signals table", file=sys.stderr)
+        if opportunities:
+            opp_stored = store_opportunities(opportunities, db_url)
+            print(f"  stored {opp_stored} opportunities to research_opportunities table", file=sys.stderr)
 
     result = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "papers_analyzed": len(papers),
         "total_signals": len(all_signals),
-        "detectors_run": ["gap_detector"],
+        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer"],
         "signals": all_signals,
+        "opportunities": opportunities,
     }
 
     if args.json_output:
@@ -220,6 +314,15 @@ def main() -> None:
 
         for st, count in sorted(by_type.items()):
             print(f"  {st}: {count}", file=sys.stderr)
+
+        if opportunities:
+            print(f"\nTop opportunities:", file=sys.stderr)
+            for i, opp in enumerate(opportunities[:3], 1):
+                score = opp.get("composite_score", 0)
+                title = opp.get("title", "Untitled")
+                detectors = ", ".join(opp.get("detectors_hit", []))
+                print(f"  {i}. [{score}] {title}", file=sys.stderr)
+                print(f"     Detectors: {detectors}", file=sys.stderr)
 
         print(f"\nUse --json for full output.", file=sys.stderr)
 
