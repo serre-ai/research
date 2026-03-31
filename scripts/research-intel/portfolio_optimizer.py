@@ -440,7 +440,12 @@ def _find_citation_opportunities(
 
 # ── Public API ────────────────────────────────────────────
 
-def detect(papers: list[dict], portfolio_path: str = "projects/") -> list[dict]:
+def _default_portfolio_path() -> str:
+    """Derive projects/ path relative to repo root (2 levels up from this script)."""
+    return str(Path(__file__).resolve().parent.parent.parent / "projects")
+
+
+def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
     """Run portfolio optimization detectors on pre-fetched papers.
 
     Builds a research identity from project files on disk, then scores
@@ -454,6 +459,8 @@ def detect(papers: list[dict], portfolio_path: str = "projects/") -> list[dict]:
     Returns:
         list of signal dicts in the standard ResearchSignal format.
     """
+    if not portfolio_path:
+        portfolio_path = _default_portfolio_path()
     core_identity, project_info = _build_research_identity(portfolio_path)
 
     if not core_identity:

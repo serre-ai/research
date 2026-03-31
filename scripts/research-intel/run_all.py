@@ -141,14 +141,15 @@ def store_opportunities(opportunities: list[dict], db_url: str) -> int:
         try:
             cur.execute(
                 """INSERT INTO research_opportunities
-                   (title, thesis, composite_score, detectors_hit, topics,
+                   (title, thesis, composite_score, signal_ids, detectors_hit, topics,
                     target_venue, portfolio_fit, timing_urgency, venue_receptivity,
-                    rationale, status, metadata)
+                    rationale, status)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (
                     opp.get("title", ""),
                     opp.get("thesis", ""),
                     opp.get("composite_score", 0),
+                    opp.get("signal_ids", []),
                     opp.get("detectors_hit", []),
                     opp.get("topics", []),
                     opp.get("target_venue"),
@@ -157,9 +158,6 @@ def store_opportunities(opportunities: list[dict], db_url: str) -> int:
                     opp.get("venue_receptivity", 0),
                     opp.get("rationale", ""),
                     opp.get("status", "new"),
-                    json.dumps({
-                        "signal_ids": opp.get("signal_ids", []),
-                    }),
                 ),
             )
             stored += 1
@@ -176,15 +174,17 @@ def _store_opportunities_via_psql(opportunities: list[dict], db_url: str) -> int
     import subprocess
     stored = 0
     for opp in opportunities:
+        signal_ids = opp.get('signal_ids', [])
         sql = (
             f"INSERT INTO research_opportunities "
-            f"(title, thesis, composite_score, detectors_hit, topics, "
+            f"(title, thesis, composite_score, signal_ids, detectors_hit, topics, "
             f"target_venue, portfolio_fit, timing_urgency, venue_receptivity, "
-            f"rationale, status, metadata) "
+            f"rationale, status) "
             f"VALUES ("
             f"$${opp.get('title', '')}$$, "
             f"$${opp.get('thesis', '')}$$, "
             f"{opp.get('composite_score', 0)}, "
+            f"ARRAY{signal_ids}::TEXT[], "
             f"ARRAY{opp.get('detectors_hit', [])}::TEXT[], "
             f"ARRAY{opp.get('topics', [])}::TEXT[], "
             f"{'NULL' if opp.get('target_venue') is None else repr(opp['target_venue'])}, "
@@ -192,8 +192,7 @@ def _store_opportunities_via_psql(opportunities: list[dict], db_url: str) -> int
             f"{opp.get('timing_urgency', 0)}, "
             f"{opp.get('venue_receptivity', 0)}, "
             f"$${opp.get('rationale', '')}$$, "
-            f"'{opp.get('status', 'new')}', "
-            f"'{json.dumps({'signal_ids': opp.get('signal_ids', [])})}'::jsonb"
+            f"'{opp.get('status', 'new')}'"
             f");"
         )
         result = subprocess.run(
