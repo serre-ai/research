@@ -10,7 +10,7 @@ User=deepwork
 Group=deepwork
 WorkingDirectory=/opt/deepwork/site-next/.next/standalone/site-next
 ExecStart=/usr/bin/node server.js
-Restart=on-failure
+Restart=always
 RestartSec=10
 TimeoutStopSec=30
 
@@ -28,6 +28,11 @@ ProtectSystem=strict
 ProtectHome=no
 ReadWritePaths=/opt/deepwork /home/deepwork/deepwork
 PrivateTmp=true
+
+# Resource limits
+MemoryMax=512M
+MemoryHigh=384M
+CPUQuota=50%
 
 # Logging
 StandardOutput=journal

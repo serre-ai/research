@@ -33,6 +33,11 @@ ProtectHome=true
 ReadWritePaths=/opt/deepwork
 PrivateTmp=true
 
+# Resource limits
+MemoryMax=3G
+MemoryHigh=2G
+CPUQuota=100%
+
 # Logging
 StandardOutput=journal
 StandardError=journal
