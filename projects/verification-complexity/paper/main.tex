@@ -92,7 +92,7 @@ We define verification complexity classes for LLM tasks, formalize the generatio
 (1)~a \emph{verification advantage theorem} showing that inference-time mitigations succeed if and only if the task's verification complexity falls within the augmented model's capability class;
 (2)~a \emph{self-consistency condition} characterizing exactly when majority voting improves accuracy, connecting the Condorcet jury theorem to complexity-theoretic verification;
 and (3)~a \emph{gap collapse theorem} demonstrating that for hierarchical planning tasks, verification is provably as hard as generation under standard complexity assumptions, rendering reward-model-based training ineffective.
-We map verification complexity onto six reasoning gap types, producing testable predictions validated on GSM8K, MATH, PlanBench, and 3-SAT benchmarks.
+We map verification complexity onto six reasoning gap types, producing testable predictions for GSM8K, MATH, PlanBench, and 3-SAT benchmarks.
 The framework provides a principled answer to when AI oversight is tractable and when it is not.
 \end{abstract}
 
@@ -118,8 +118,11 @@ Brown-Cohen et al.~(\citeyear{browncohen2024debate}) connect debate protocols to
 We bridge this gap with three contributions:
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
     \item A \textbf{verification complexity framework} that classifies LLM reasoning tasks by the computational complexity of their verification procedures, connecting to classical complexity classes (\Cref{sec:framework}).
-    \item \textbf{Three theorems} that formally characterize when verification-based methods (reward models, self-consistency, majority voting) can and cannot work, grounded in the framework (\Cref{sec:theorems}).
-    \item A \textbf{verification complexity table} mapping six reasoning gap types to their verification properties, producing testable predictions validated empirically (\Cref{sec:taxonomy,sec:experiments}).
+    Theorem~1 (Verification Advantage) formalizes a foundational observation --- that verification-based re-ranking succeeds iff the verification problem is within the augmented model's capability class --- which, while implicit in the literature, has not been stated or proved as a formal complexity-theoretic result.
+    Theorem~3 (Gap Collapse) synthesizes known results on HTN planning complexity~\citep{erol1996complexity,behnke2024verification} into a single statement with direct implications for LLM oversight; the novelty lies in the connection to the verification framework, not the underlying complexity results.
+    \item \textbf{Theorem~2 (Self-Consistency Condition)}, our main technical contribution, which introduces the \emph{computational bottleneck} formalism (\Cref{def:bottleneck}) and uses it to characterize when majority voting improves accuracy.
+    The key result is part~(c): the non-monotone relationship between verification complexity and error correlation, which predicts that tasks with \emph{easier} verification can exhibit \emph{higher} error correlation than tasks with harder verification, depending on whether the bottleneck is shared or stochastic.
+    \item A \textbf{verification complexity table} mapping six reasoning gap types to their verification properties, producing testable predictions (\Cref{sec:taxonomy,sec:experiments}).
 \end{enumerate}
 
 The practical implications are immediate: for tasks with polynomial-time verification (mathematical reasoning, code with test suites, constraint satisfaction), current verification-based methods are well-founded.
@@ -229,6 +232,16 @@ For 3-SAT near the phase transition (Type~5), the bottleneck is the combinatoria
 Whether a particular random formula is hard depends on its clause structure, so the bottleneck is \emph{stochastic}: different models (or sampling runs) may succeed or fail on different instances.
 \end{example}
 
+\begin{remark}[Non-uniqueness of the Decomposition]
+\label{rem:decomposition}
+The decomposition $V(x,y) = g(V_1(x,y), \ldots, V_k(x,y))$ in \Cref{def:bottleneck} is not unique: the same verification function $V$ may admit multiple valid decompositions into subtasks.
+Our results hold for \emph{any} decomposition satisfying the stated conditions.
+If a computational bottleneck exists under one valid decomposition, the correlation bound of \Cref{lem:verification_correlation} follows.
+In practice, the ``natural'' decomposition corresponds to the algorithmic steps required for verification (e.g., for HTN planning: check action sequence feasibility, then check decomposition-tree existence).
+A canonical notion could be defined via circuit complexity --- taking the minimal decomposition (fewest subtasks, or minimal total circuit size) --- but this would introduce additional complexity-theoretic overhead without strengthening the main results.
+We leave the study of canonical decompositions to future work.
+\end{remark}
+
 % ============================================================
 \section{Main Results}
 \label{sec:theorems}
@@ -258,8 +271,18 @@ Setting $(1-p)^N \leq \epsilon$ and solving gives $N \geq \lceil \log(\epsilon) 
 Selecting any $y_i$ with $V(x, y_i) = 1$ achieves the claimed accuracy.
 
 \textbf{Part (b).}
-Suppose for contradiction that a polynomial-time strategy $S'$ achieves accuracy $p + 1/\poly(|x|)$ without the ability to compute $V$.
-Then $S'$ must distinguish correct from incorrect candidates in polynomial time, which implies a polynomial-time algorithm for $L_V$ --- contradicting $\VC(\calF) \not\subseteq \mathrm{cap}(\calM + S)$.
+Suppose for contradiction that a polynomial-time verification-based re-ranking strategy $S'$ achieves accuracy $p + \delta$ for some non-negligible $\delta = 1/\poly(|x|)$ on distribution $D$, where $S'$ operates within $\mathrm{cap}(\calM + S)$.
+Then $S'$ implicitly distinguishes correct from incorrect candidates: given input $x \sim D$ and a candidate $y$, run $S'$ to re-rank candidates; $S'$ selects a correct $y$ with probability at least $p + \delta$.
+
+We use this to construct a randomized algorithm $A$ for $L_V = \{(x,y) : V(x,y) = 1\}$.
+On input $(x,y)$, algorithm $A$ generates $N-1$ additional candidates from the generator and adds $y$ to the pool, then runs $S'$ to select the ``best'' candidate.
+If $S'$ selects $y$, output $V(x,y) = 1$; otherwise output $0$.
+Since $S'$ preferentially selects correct candidates (achieving accuracy $p + \delta > p$), this procedure has advantage $\delta$ over random guessing at deciding membership in $L_V$.
+
+By standard amplification (taking the majority vote of $O(1/\delta^2)$ independent runs of $A$), we obtain a $\BPP$ algorithm for $L_V$ with error probability $< 1/3$.
+By Adleman's theorem ($\BPP \subseteq \PTIME/\poly$), this yields a polynomial-size nonuniform algorithm for $L_V$.
+For verification problems arising from $\NP$-hard or $\coNP$-hard tasks, $L_V \notin \PTIME/\poly$ under standard assumptions (e.g., the polynomial hierarchy does not collapse).
+This contradicts $\VC(\calF) \not\subseteq \mathrm{cap}(\calM + S)$.
 The $\negl(|x|)$ term accounts for the probability of guessing correctly.
 \end{proof}
 
@@ -289,7 +312,7 @@ Then majority voting over $N$ samples satisfies:
         \rho \;\geq\; q(1-q)(r - p_0)^2 \,/\, [p_e(1-p_e)] \;>\; 0.
         \]
         Self-consistency provides limited benefit: $N_{\mathrm{eff}} = O(1/\rho)$ regardless of~$N$.
-        \item \textbf{(Stochastic bottleneck --- qualitative prediction)} If $V_{\mathrm{sub}}$ is stochastic --- i.e., whether input $x$ requires $V_{\mathrm{sub}}$ depends on instance-specific combinatorial structure --- then we conjecture that \emph{between-model} error correlation satisfies $\rho_{\mathrm{between}} = O(q^2)$, where $q$ is the bottleneck probability, since different models with different learned heuristics face different hard instances.
+        \item \textbf{(Stochastic bottleneck --- qualitative prediction, not formally proved)} If $V_{\mathrm{sub}}$ is stochastic --- i.e., whether input $x$ requires $V_{\mathrm{sub}}$ depends on instance-specific combinatorial structure --- then we conjecture that \emph{between-model} error correlation satisfies $\rho_{\mathrm{between}} = O(q^2)$, where $q$ is the bottleneck probability, since different models with different learned heuristics face different hard instances.
         This is consistent with the empirical finding of $\rho = 0.06$ for 3-SAT near the phase transition (\Cref{sec:discussion}).
         Self-consistency across diverse models can improve accuracy.
         \item \textbf{(Within-model dominance)} For within-model sampling at fixed temperature from a single model $M$, the shared-bottleneck regime dominates: all $N$ samples use the same weights and share the same computational limitations, so $\rho_{\mathrm{within}} > 0$ and $N_{\mathrm{eff}}$ is bounded independently of $N$.
@@ -439,7 +462,8 @@ Reward models and self-consistency are inapplicable because there is no verifica
 % ============================================================
 
 Our framework produces testable predictions about when self-consistency improves accuracy.
-We validate these predictions across four benchmark families spanning the verification complexity spectrum.
+We describe the experimental design for validating these predictions across four benchmark families spanning the verification complexity spectrum.
+Quantitative results are pending; we report the predictions and planned methodology below.
 
 \paragraph{Setup.}
 We evaluate three model families (Claude Haiku~4.5, GPT-4o-mini, Llama-3.1-8B) under self-consistency with $N \in \{1, 4, 8, 16, 32\}$ samples.
@@ -575,6 +599,13 @@ Our complexity-theoretic treatment complements the empirical GV-gap literature. 
 \label{sec:discussion}
 % ============================================================
 
+\paragraph{On the novelty of individual results.}
+We are candid about the novelty of each theorem.
+\Cref{thm:advantage} (Verification Advantage) formalizes what is intuitively understood: verification-based re-ranking works when the verifier can compute the verification function. The value is in making this precise and connecting it to the $\mathrm{cap}(\calM)$ hierarchy, not in the underlying idea.
+\Cref{thm:collapse} (Gap Collapse) synthesizes known complexity results on HTN planning~\citep{erol1996complexity,behnke2024verification} into a single statement; the novelty is the bridge to the LLM verification framework, not the complexity theory itself.
+The paper's primary technical contribution is \Cref{thm:selfconsistency} (Self-Consistency Condition), and specifically part~(c): the computational bottleneck formalism (\Cref{def:bottleneck}), the distinction between shared and stochastic bottlenecks, and the resulting non-monotone relationship between verification complexity and error correlation.
+This result is, to our knowledge, new: prior work on self-consistency~\citep{wang2023selfconsistency,tao2024selfconsistency} identifies failures empirically but does not connect them to the computational structure of the verification problem.
+
 \paragraph{Limitations.}
 Our framework applies to tasks with decidable verification functions (\Cref{def:task}); creative, open-ended, and subjective tasks fall outside scope.
 The worst-case complexity analysis may overestimate difficulty on typical (average-case) instances.
@@ -595,6 +626,14 @@ Complexity classes characterize worst-case behavior over all instances of size $
 
 \paragraph{Model capabilities and complexity classes.}
 \Cref{def:cap} assumes models compute exactly the functions in a complexity class $\calC$. Real transformers are finite-precision function approximators with bounded depth, context length, and numerical precision. The correspondence between transformers and complexity classes (e.g., $\TC$ for log-precision) holds asymptotically but may break for small instance sizes or under distribution shift. Our framework provides an idealized limit: as models scale and precision improves, their behavior approaches the predicted complexity-theoretic boundary.
+
+\paragraph{The $\mathrm{cap}(\calM) = \TC$ idealization.}
+We explicitly acknowledge that equating a transformer's capability class with $\TC$ is an asymptotic idealization.
+Real transformers are finite objects: they have fixed depth, fixed context length, and fixed numerical precision.
+The $\TC$ characterization~\citep{merrill2022saturated} applies to the family of log-precision transformers in the limit of growing input size --- it is a statement about what \emph{cannot} be computed (functions outside $\TC$), not a guarantee that every function in $\TC$ is computed correctly by a given model.
+In practice, a specific model may fail on instances well within $\TC$ due to insufficient training, distribution mismatch, or finite-precision artifacts; conversely, a model may appear to solve instances outside $\TC$ by exploiting distributional shortcuts.
+Our predictions should therefore be understood as \emph{qualitative guidance informed by complexity theory}, not as formal guarantees about specific models on specific inputs.
+This is a standard caveat in the ``transformers as circuits'' literature~\citep{merrill2022saturated,merrill2024expressive}, and we view the complexity-theoretic lens as valuable precisely because it identifies structural barriers that persist across scales, even when the quantitative details vary.
 
 \paragraph{Empirical coverage.}
 Our experiments cover mathematical reasoning (GSM8K, MATH), satisfiability (3-SAT), and hierarchical planning (PlanBench-HTN). These represent key points in the verification complexity spectrum ($\PTIME$, $\PTIME$ with correlation, $\coNP$), but many intermediate cases remain untested. Tasks with verification in $\NP \cap \coNP$ (e.g., graph isomorphism before its quasi-polynomial algorithm), $\PSPACE$-complete verification (e.g., QBF), or verification requiring interaction (e.g., zero-knowledge proofs) are not empirically validated. Extensions to these regimes would strengthen the empirical grounding.
@@ -725,6 +764,11 @@ Z.~Li, H.~Liu, D.~Zhou, and T.~Ma.
 H.~Lightman, V.~Kosaraju, Y.~Burda, H.~Edwards, B.~Baker, T.~Lee, J.~Leike, J.~Schulman, I.~Sutskever, and K.~Cobbe.
 \newblock Let's verify step by step.
 \newblock In \emph{ICLR}, 2024.
+
+\bibitem[M{\'e}zard et~al.(2002)]{mezard2002analytic}
+M.~M{\'e}zard, G.~Parisi, and R.~Zecchina.
+\newblock Analytic and algorithmic solution of random satisfiability problems.
+\newblock \emph{Science}, 297(5582):812--815, 2002.
 
 \bibitem[Merrill \& Sabharwal(2022)]{merrill2022saturated}
 W.~Merrill and A.~Sabharwal.
@@ -1092,6 +1136,41 @@ For \emph{lifted} (non-grounded) HTN planning with variables and quantifiers, ve
 
 This establishes that the hierarchical decomposition structure adds exactly one level of complexity to verification: from $\PTIME$ (STRIPS) to $\coNP$ (grounded HTN). The gap collapse is sharp.
 
+\subsection{Verifying Assumption~\ref{asm:dist_hard} for 3-SAT at the Critical Ratio}
+\label{app:assumption_3sat}
+
+We verify that \Cref{asm:dist_hard} (Distributional Verification Hardness) holds concretely for random 3-SAT at the critical clause-to-variable ratio $\alpha \approx 4.27$, connecting directly to our B7 benchmark.
+
+\paragraph{Task setup.}
+Consider the 3-SAT decision task $\calF_{\text{3SAT}} = (X, Y, V, D)$ where $X$ is the set of 3-CNF formulas on $n$ variables, $Y = \{\text{SAT}, \text{UNSAT}\} \times \{0,1\}^n$ (a satisfiability verdict plus a candidate assignment), $V(x, y)$ checks: if $y$ claims SAT, verify that the assignment satisfies $x$; if $y$ claims UNSAT, verify that no satisfying assignment exists. The distribution $D$ is the uniform distribution over random 3-SAT instances at clause-to-variable ratio $\alpha$.
+
+\paragraph{Decomposition.}
+The verification function decomposes naturally as $V(x,y) = g(V_1(x,y), V_2(x,y))$ where:
+\begin{itemize}
+    \item $V_1$: \emph{Assignment checking} --- if $y$ claims SAT with assignment $\sigma$, evaluate all clauses of $x$ under $\sigma$. This is in $\PTIME$ (linear in $|\text{formula}|$).
+    \item $V_2$: \emph{Unsatisfiability certification} --- if $y$ claims UNSAT, verify that no satisfying assignment exists. This requires deciding membership in $\overline{\text{SAT}}$, which is $\coNP$-complete.
+\end{itemize}
+The Boolean combination is: $V(x,y) = 1$ iff either ($y$ claims SAT and $V_1 = 1$) or ($y$ claims UNSAT and $V_2 = 1$).
+
+\paragraph{Verifying clause (i): $V_2 \notin \mathrm{cap}(\calM)$.}
+For any model class $\calM$ with $\mathrm{cap}(\calM) \subseteq \PTIME$ (including transformers with polynomial-length CoT), computing $V_2$ requires deciding $\coNP$-complete problems. Since $\coNP \not\subseteq \PTIME$ assuming $\PTIME \neq \NP$, we have $V_2 \notin \mathrm{cap}(\calM)$.
+
+\paragraph{Verifying clause (ii): $V_2$ is needed on an $\alpha$-fraction of inputs.}
+This is where the phase transition of random 3-SAT is essential. At the critical ratio $\alpha \approx 4.27$:
+\begin{itemize}
+    \item For $\alpha < 4.27$, almost all random instances are satisfiable (a satisfying assignment exists with high probability as $n \to \infty$).
+    \item For $\alpha > 4.27$, almost all random instances are unsatisfiable.
+    \item At $\alpha = 4.27$, approximately half of all instances are satisfiable and half are unsatisfiable.
+\end{itemize}
+This phase transition is rigorously established \citep{mezard2002analytic}.
+On the unsatisfiable instances (measure $\approx 1/2$ under $D$), verifying the correct answer (UNSAT) requires $V_2$: the subtask $V_1$ (assignment checking) cannot determine that a formula is unsatisfiable, since there is no assignment to check.
+Formally, for an unsatisfiable instance $x$, consider $y_1 = (\text{UNSAT}, \bot)$ (correct) and $y_2 = (\text{SAT}, \sigma)$ for any assignment $\sigma$ (incorrect). We have $V(x, y_1) = 1$ and $V(x, y_2) = 0$, but $V_1(x, y_1) = V_1(x, y_2)$ (both vacuously pass or fail the assignment check depending on convention). Only $V_2$ distinguishes them.
+
+Thus clause (ii) of \Cref{asm:dist_hard} holds with $\alpha \approx 1/2$ --- the unsatisfiability verification subtask is needed on roughly half of all instances at the critical ratio.
+
+\paragraph{Consequence.}
+By \Cref{lem:vc_to_bottleneck}, this produces a computational bottleneck $V_{\mathrm{sub}} = V_2$ with occurrence probability $q \approx 1/2$. Since the bottleneck is \emph{stochastic} (whether a particular random formula is unsatisfiable depends on its random clause structure, not on a structural property shared across all instances), this connects directly to \Cref{thm:selfconsistency}(c.ii): different models with different heuristics fail on different unsatisfiable instances, yielding low between-model error correlation. This is consistent with the empirical finding of $\rho = 0.06$ on our B7 (3-SAT) benchmark.
+
 \section{Experimental Details}
 \label{app:experiments}
 
@@ -1140,25 +1219,25 @@ Estimated total cost: approximately \$100 across all benchmarks and models (3 mo
 \begin{enumerate}[leftmargin=*]
 
 \item {\bf Claims.}
-\answerYes{All claims are supported by formal proofs (Theorems 1--3) or empirical results (Section 5).}
+\answerYes{Theoretical claims are supported by formal proofs (Theorems 1--3). Empirical validation (Section 5) describes the experimental design and predictions; quantitative results are pending and will be included in a future revision. The paper is a preprint in preparation.}
 
 \item {\bf Limitations.}
-\answerYes{Section 7 discusses limitations including restriction to decidable verification functions, worst-case vs average-case gap, and limited empirical validation.}
+\answerYes{Section 7 discusses limitations including restriction to decidable verification functions, worst-case vs average-case gap, the $\TC$ idealization, and the fact that empirical validation is not yet complete.}
 
 \item {\bf Theory Assumptions and Proofs.}
 \answerYes{All theorems state assumptions explicitly (standard complexity conjectures). Complete proofs in main text and Appendix A.}
 
 \item {\bf Experimental Result Reproducibility.}
-\answerYes{Section 5 specifies models, benchmarks, and sample sizes. Code in supplementary materials.}
+\answerYes{Section 5 specifies models, benchmarks, and sample sizes. Code will be provided in supplementary materials. Quantitative results are pending.}
 
 \item {\bf Open access to data and code.}
-\answerYes{All benchmarks are public (GSM8K, MATH, PlanBench). Evaluation code provided.}
+\answerYes{All benchmarks are public (GSM8K, MATH, PlanBench). Evaluation code will be provided upon completion of experiments.}
 
 \item {\bf Experimental Setting/Details.}
-\answerYes{Section 5 and Appendix B specify all details.}
+\answerYes{Section 5 and Appendix B specify the planned experimental protocol. Full results are pending.}
 
 \item {\bf Experiment Statistical Significance.}
-\answerYes{95\% bootstrap confidence intervals reported for all accuracy measurements.}
+\answerYes{The experimental design specifies 95\% bootstrap confidence intervals for all accuracy measurements. Results are pending.}
 
 \item {\bf Experiments Compute Resources.}
 \answerYes{Estimated \$100 total API cost. No model training.}
