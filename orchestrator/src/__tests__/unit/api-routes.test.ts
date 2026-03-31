@@ -14,7 +14,7 @@ function makePool(): pg.Pool {
   mockQuery = vi.fn().mockResolvedValue({ rows: [] });
 
   return {
-    query: (...args: unknown[]) => mockQuery(...args),
+    query: mockQuery,
     connect: vi.fn().mockResolvedValue({
       query: vi.fn().mockResolvedValue({ rows: [] }),
       on: vi.fn(),
