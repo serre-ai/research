@@ -1258,7 +1258,9 @@ export class Daemon {
       id: randomUUID().slice(0, 8),
       projectName: "_platform",
       agentType: "researcher",
-      objective: "Weekly research synthesis: run gap-detector, analyze recent papers, generate 3-5 scored idea candidates. " +
+      objective: "Weekly research synthesis: Check the research_signals table for today's detector signals " +
+        "(SELECT * FROM research_signals WHERE batch_date = CURRENT_DATE ORDER BY confidence DESC LIMIT 20). " +
+        "Also run gap-detector as fallback. Analyze the top signals and generate 3-5 scored idea candidates. " +
         "Read docs/research-intelligence/grading-rubric.md for scoring criteria. " +
         "Write results to ideas/candidates/ as YAML files following shared/templates/idea-candidate.yaml. " +
         "If the gap-detector finds no gaps, generate ideas directly from the recent papers provided in context.",
@@ -1270,6 +1272,7 @@ export class Daemon {
           "docs/research-intelligence/grading-rubric.md",
           "shared/templates/idea-candidate.yaml",
           "docs/ideas/backlog.yaml",
+          "scripts/research-intel/schema.py",
         ],
         recentDecisions: [],
         supplementary: paperContext || undefined,
