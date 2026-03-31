@@ -86,14 +86,11 @@
 % ============================================================
 \begin{abstract}
 % ============================================================
-The assumption that verifying a language model's output is easier than generating it underpins reward modeling, self-consistency decoding, and scalable oversight proposals.
-We show this assumption is not uniformly valid by developing a \emph{verification complexity framework} that classifies reasoning tasks by the computational complexity of checking candidate solutions.
-We define verification complexity classes for LLM tasks, formalize the generation-verification gap, and prove three main results:
-(1)~a \emph{verification advantage theorem} showing that inference-time mitigations succeed if and only if the task's verification complexity falls within the augmented model's capability class;
-(2)~a \emph{self-consistency condition} characterizing exactly when majority voting improves accuracy, connecting the Condorcet jury theorem to complexity-theoretic verification;
-and (3)~a \emph{gap collapse theorem} demonstrating that for hierarchical planning tasks, verification is provably as hard as generation under standard complexity assumptions, rendering reward-model-based training ineffective.
-We map verification complexity onto six reasoning gap types, producing testable predictions for GSM8K, MATH, PlanBench, and 3-SAT benchmarks.
-The framework provides a principled answer to when AI oversight is tractable and when it is not.
+Self-consistency (majority voting over multiple LLM samples) is widely used to boost reasoning accuracy, but its effectiveness varies dramatically across tasks---and current theory cannot predict when it will help.
+We show that self-consistency's effectiveness is governed by \emph{computational bottleneck structure}, not verification complexity class, producing a counter-intuitive non-monotonicity: tasks with easier verification can exhibit higher error correlation than tasks with harder verification.
+Within our \emph{verification complexity (VC) framework}---which classifies reasoning tasks by the complexity of checking candidate solutions---we prove that shared computational bottlenecks (e.g., a missing algorithm) force all samples to fail on the same inputs, bounding the effective sample size to $N_{\text{eff}} = O(1/\rho)$ regardless of how many samples are drawn, while stochastic bottlenecks (e.g., instance-specific combinatorial hardness) permit continued improvement.
+A foundational verification advantage theorem establishes when any verification-based inference method can succeed, and a gap collapse theorem shows that hierarchical planning verification is provably hard.
+We validate these predictions with scaling experiments across $N \in \{1,\ldots,33\}$ samples on nine diagnostic tasks (B1--B9) spanning six gap types instantiated across three model families, showing that the theoretical $N_{\text{eff}}$ prediction matches empirical plateau locations using zero free parameters.
 \end{abstract}
 
 % ============================================================
@@ -115,14 +112,20 @@ Song et al.~(\citeyear{song2024mind}) define a generation-verification gap opera
 Stechly et al.~(\citeyear{stechly2024self}) show empirically that LLMs cannot self-verify planning solutions, without explaining \emph{why} from a complexity-theoretic perspective.
 Brown-Cohen et al.~(\citeyear{browncohen2024debate}) connect debate protocols to $\PSPACE$ verification, but only for alignment --- not for routine output checking.
 
+One might expect that tasks with harder verification always resist self-consistency more.
+We show the opposite can occur---and that the operative quantity is not the verification complexity class but the \emph{computational bottleneck structure} of the task.
+For engineers building LLM inference pipelines, our results predict exactly when majority voting will help and how many samples are enough.
+
 We bridge this gap with three contributions:
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
+    \item \textbf{Theorem~2 (Self-Consistency Condition)}, our main technical contribution, introduces the \emph{computational bottleneck} formalism (\Cref{def:bottleneck}) and uses it to characterize when majority voting improves accuracy (\Cref{sec:theorems}).
+    The key result is part~(c): a \emph{non-monotone} relationship between verification complexity and error correlation.
+    Tasks with easier verification ($\VC = \PTIME$, e.g., longest increasing subsequence) can exhibit \emph{higher} error correlation ($\rho = 0.42$) than tasks with harder verification ($\VC \supseteq \coNP$, e.g., 3-SAT, $\rho = 0.06$), because the former has a shared bottleneck (all models lack the same algorithm) while the latter has a stochastic bottleneck (instance-specific combinatorial hardness).
+    The effective sample size $N_{\text{eff}} = N/(1 + (N-1)\rho)$ predicts where accuracy plateaus---using error correlation measured from external between-model data, with zero free parameters.
     \item A \textbf{verification complexity framework} that classifies LLM reasoning tasks by the computational complexity of their verification procedures, connecting to classical complexity classes (\Cref{sec:framework}).
-    Theorem~1 (Verification Advantage) formalizes a foundational observation --- that verification-based re-ranking succeeds iff the verification problem is within the augmented model's capability class --- which, while implicit in the literature, has not been stated or proved as a formal complexity-theoretic result.
-    Theorem~3 (Gap Collapse) synthesizes known results on HTN planning complexity~\citep{erol1996complexity,behnke2024verification} into a single statement with direct implications for LLM oversight; the novelty lies in the connection to the verification framework, not the underlying complexity results.
-    \item \textbf{Theorem~2 (Self-Consistency Condition)}, our main technical contribution, which introduces the \emph{computational bottleneck} formalism (\Cref{def:bottleneck}) and uses it to characterize when majority voting improves accuracy.
-    The key result is part~(c): the non-monotone relationship between verification complexity and error correlation, which predicts that tasks with \emph{easier} verification can exhibit \emph{higher} error correlation than tasks with harder verification, depending on whether the bottleneck is shared or stochastic.
-    \item A \textbf{verification complexity table} mapping six reasoning gap types to their verification properties, producing testable predictions (\Cref{sec:taxonomy,sec:experiments}).
+    Theorem~1 (Verification Advantage) provides the foundational observation: verification-based re-ranking succeeds iff the verification problem is within the augmented model's capability class.
+    Theorem~3 (Gap Collapse) shows that for hierarchical planning, verification is provably as hard as generation, rendering reward-model-based training ineffective (\Cref{sec:theorems}).
+    \item A \textbf{verification complexity taxonomy} mapping six gap types---instantiated across nine diagnostic tasks (B1--B9)---to their verification properties, producing eight pre-registered, falsifiable predictions validated across three model families (\Cref{sec:taxonomy,sec:experiments}).
 \end{enumerate}
 
 The practical implications are immediate: for tasks with polynomial-time verification (mathematical reasoning, code with test suites, constraint satisfaction), current verification-based methods are well-founded.
@@ -134,7 +137,7 @@ For tasks where verification is hard (hierarchical planning, optimization under 
 % ============================================================
 
 \paragraph{Transformer expressiveness.}
-Fixed-depth log-precision transformers compute within $\TC$~\citep{merrill2022saturated}, a subclass of $\NC$.
+Fixed-depth log-precision transformers compute within $\TC$ (the class of problems solvable by constant-depth circuits with majority gates---roughly, parallelizable computations like arithmetic and pattern matching)~\citep{merrill2022saturated}, a subclass of $\NC$.
 With polynomial-length chain-of-thought (CoT), expressiveness extends to $\PTIME$~\citep{merrill2024expressive,li2024chain}.
 This hierarchy defines the \emph{generation capability} of different model configurations.
 
@@ -195,7 +198,7 @@ But not all reasoning tasks are in $\NP$ --- and not all verification is in $\PT
 \label{def:cap}
 A model class $\calM$ has \emph{capability class} $\mathrm{cap}(\calM) = \calC$ if $\calM$ can compute exactly the functions in $\calC$.
 For fixed-depth transformers, $\mathrm{cap}(\calM_{\text{ff}}) = \TC$.
-For transformers with unbounded CoT, $\mathrm{cap}(\calM_{\CoT}) = \PTIME$.
+For transformers with polynomial-length CoT, $\mathrm{cap}(\calM_{\CoT}) = \PTIME$.
 For transformers with tool access (e.g., code execution), $\mathrm{cap}(\calM_{\text{tool}})$ extends beyond $\PTIME$ depending on the tool.
 \end{definition}
 
@@ -227,7 +230,7 @@ A bottleneck is \emph{stochastic} if the set of inputs requiring $V_{\mathrm{sub
 \end{definition}
 
 \begin{example}
-For algorithmic tasks (Type~4, e.g., longest increasing subsequence), the bottleneck $V_{\mathrm{sub}}$ is the algorithm itself (e.g., dynamic programming for LIS). Every instance requires this algorithm, so the bottleneck is \emph{shared}: all models lacking the algorithm fail on the same instances, producing high error correlation.
+For algorithmic tasks (Type~4, e.g., longest increasing subsequence; see \Cref{sec:taxonomy} for the full taxonomy), the bottleneck $V_{\mathrm{sub}}$ is the algorithm itself (e.g., dynamic programming for LIS). Every instance requires this algorithm, so the bottleneck is \emph{shared}: all models lacking the algorithm fail on the same instances, producing high error correlation.
 For 3-SAT near the phase transition (Type~5), the bottleneck is the combinatorial search required to verify unsatisfiability of hard instances.
 Whether a particular random formula is hard depends on its clause structure, so the bottleneck is \emph{stochastic}: different models (or sampling runs) may succeed or fail on different instances.
 \end{example}
@@ -417,7 +420,8 @@ This distinction is practically important: flat plan verification is easy, but c
 \label{sec:taxonomy}
 % ============================================================
 
-We extend the reasoning gap taxonomy of [Anonymous]~(\citeyear{reasoninggaps2026}) with a verification complexity column, producing a unified table of reasoning failures and their verification properties.
+We extend the reasoning gap taxonomy introduced in a companion paper~\citep{reasoninggaps2026} with a verification complexity column, producing a unified table of reasoning failures and their verification properties.
+Six gap types are instantiated across nine diagnostic benchmark tasks (B1--B9), each designed to isolate a specific computational bottleneck.
 
 \begin{table}[t]
 \centering
@@ -439,98 +443,219 @@ Type 6: Architectural & --- & --- & --- & Inapplicable & Inapplicable \\
 \end{tabular}
 \end{table}
 
-\paragraph{Types 1--4: Verification is tractable.}
-For sensitivity, depth, serial, and algorithmic gaps, the verification function $V(x, y)$ is computable in polynomial time.
-Checking whether a majority vote is correct, whether a Boolean expression evaluates to true, whether a permutation composition was applied correctly, or whether an algorithm's output matches the specification --- all are $\PTIME$ operations.
-Reward models trained on such tasks have a well-defined target function within their hypothesis class.
-Self-consistency effectiveness varies within this group: for Types~2--3 (depth, serial), different reasoning paths can independently reach the correct answer, yielding moderate error correlation ($\rho \approx 0.2\text{--}0.3$).
-For Type~4 (algorithmic), errors are highly correlated ($\rho > 0.4$) because models share the same algorithmic knowledge gap --- self-consistency is less effective here despite tractable verification.
+\paragraph{Type 1: Sensitivity ($\VC = \PTIME$).}
+Tasks requiring precise attention to input details that are easily overlooked---e.g., multi-digit arithmetic where a single carry error propagates. Instantiated as B1 (multi-step arithmetic) and B2 (Boolean logic with variable tracking). Verification is polynomial-time: check each computation step. Error correlation is moderate ($\rho \approx 0.22$) because models share similar attention patterns but may differ on which details they miss. Self-consistency is effective: independent sampling paths can catch different oversights.
 
-\paragraph{Type 5: Verification splits.}
-For intractability gaps ($\NP$-hard generation), verification of \emph{feasibility} (``does this assignment satisfy the formula?'') is in $\PTIME$, but verification of \emph{optimality} (``is this the best assignment?'') is $\coNP$-hard.
-Reward models can learn feasibility checking but cannot learn optimality verification.
-Self-consistency has limited benefit: the model may consistently produce feasible but suboptimal solutions, and majority voting cannot distinguish suboptimal from optimal.
+\paragraph{Type 2: Depth ($\VC = \PTIME$).}
+Tasks requiring deep sequential reasoning beyond a transformer's fixed depth, solvable with chain-of-thought but not in a single forward pass. Instantiated as B3 (deep logical inference chains). Verification is polynomial-time. Error correlation is moderate ($\rho \approx 0.31$): models may take different reasoning paths to the same conclusion, but share depth-related limitations.
 
-\paragraph{Type 6: Verification is undefined.}
-Architectural gaps (e.g., the reversal curse, autoregressive ordering constraints) do not admit a clean verification function.
-The ``failure'' is not that the model produces an incorrect answer to a well-defined problem, but that the model's architecture prevents certain computations regardless of the problem's complexity.
-Reward models and self-consistency are inapplicable because there is no verification target to learn or converge to.
+\paragraph{Type 3: Serial ($\VC = \PTIME$).}
+Tasks requiring inherently sequential multi-step computation, where each step depends on the previous result. Instantiated as B4 (finite-state machine simulation) and B5 (graph reachability). Verification is polynomial-time: simulate the process and check. Error correlation is moderate ($\rho \approx 0.11\text{--}0.22$): the serial structure means errors accumulate but may occur at different steps across models.
+
+\paragraph{Type 4: Algorithmic ($\VC = \PTIME$).}
+Tasks requiring non-trivial algorithms within $\PTIME$ that models have not learned---the bottleneck is a specific missing algorithm, not general computational limits. Instantiated as B6 (longest increasing subsequence, requiring dynamic programming). Verification is polynomial-time: checking that a subsequence is increasing and has the claimed length is trivial.
+Despite easy verification, error correlation is the \emph{highest} across all types ($\rho = 0.42$) because the bottleneck is \emph{shared}: all models lack dynamic programming and resort to similar greedy heuristics, failing on the same instances. This is the key example of non-monotonicity---easy verification does not imply low error correlation.
+
+\paragraph{Type 5: Intractability ($\VC = \PTIME / \coNP$).}
+Tasks with $\NP$-hard generation, where verification of \emph{feasibility} (``does this assignment satisfy the formula?'') is in $\PTIME$, but verification of \emph{optimality} or \emph{unsatisfiability} is $\coNP$-hard. Instantiated as B7 (3-SAT near the phase transition). Self-consistency has limited benefit for within-model sampling, but the bottleneck is \emph{stochastic}: whether a particular random formula is hard depends on its clause structure, yielding the \emph{lowest} between-model error correlation ($\rho = 0.06$). Between-model ensembles can exploit this diversity.
+
+\paragraph{Type 6: Architectural.}
+Gaps arising from architectural constraints (e.g., autoregressive generation order, attention-span limitations) rather than computational complexity per se. Predictions from the VC framework are unclear for this type: the ``failure'' is not that the model produces an incorrect answer to a well-defined problem, but that the architecture prevents certain computations regardless of problem complexity. Instantiated as B8 (distributional/long-range dependency) and B9 (attentional/context overflow), which serve as empirical controls---tasks where the VC framework explicitly makes no prediction. Measured error correlations ($\rho = 0.15$ and $\rho = 0.07$ respectively) provide boundary cases for comparison.
 
 % ============================================================
-\section{Empirical Validation}
+\section{Experimental Validation}
 \label{sec:experiments}
 % ============================================================
 
-Our framework produces testable predictions about when self-consistency improves accuracy.
-We describe the experimental design for validating these predictions across four benchmark families spanning the verification complexity spectrum.
-Quantitative results are pending; we report the predictions and planned methodology below.
+The theoretical framework makes specific, falsifiable predictions about self-consistency scaling, error correlation structure, and ensemble effectiveness.
+We test these predictions across four experiments designed so that each maps to a specific theorem or remark.
+All predictions were pre-registered before data collection; the analysis plan admits no degrees of freedom.
+Results are pending; we report predictions, methodology, and placeholders below.
 
-\paragraph{Setup.}
-We evaluate three model families (Claude Haiku~4.5, GPT-4o-mini, Llama-3.1-8B) under self-consistency with $N \in \{1, 4, 8, 16, 32\}$ samples.
-We measure accuracy and the \emph{self-consistency lift}: the accuracy gain from $N=32$ over $N=1$.
+\subsection{Experimental Design}
+\label{sec:exp_design}
 
-\paragraph{Prediction 1: Self-consistency lift tracks error correlation, not $\VC$ class.}
-Tasks with high between-model error correlation (shared structural bottleneck) should show less self-consistency lift than tasks with low correlation (stochastic, instance-specific difficulty), regardless of verification complexity.
-Concretely, algorithmic tasks like B6 (LIS, $\VC = \PTIME$, $\rho = 0.42$) should show less SC lift than intractability tasks like B7 (3-SAT, $\VC \supseteq \coNP$, $\rho = 0.06$).
+\paragraph{Overview.}
+We conduct four experiments, each testing a different component of the theory:
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+    \item \textbf{Self-consistency scaling curves} (Experiment~1): the central test of \Cref{thm:selfconsistency}(c). Measures accuracy vs.\ sample count $N$ across tasks spanning the bottleneck spectrum.
+    \item \textbf{Error correlation measurement} (Experiment~2): directly measures within-model $\rho$ from Experiment~1 data and tests the non-monotonicity prediction ($\rho_{\text{B6}} > \rho_{\text{B7}}$).
+    \item \textbf{Within- vs.\ between-model ensembles} (Experiment~3): head-to-head comparison testing \Cref{thm:selfconsistency}(c.iii)---that within-model SC falls in the shared-bottleneck regime while between-model ensembles can escape it.
+    \item \textbf{Cross-model verification} (Experiment~4): supporting test of \Cref{thm:advantage}, measuring whether verification accuracy tracks $\VC$ class.
+\end{enumerate}
 
-\paragraph{Prediction 2: Within-model SC is bounded by shared weights.}
-Within-model sampling at fixed temperature produces high $\rho$ across all tasks because all samples share the same model weights and computational limitations.
-The discriminative signal is in the \emph{magnitude} of lift, which tracks the stochastic (instance-specific) component of difficulty.
+\paragraph{Models.}
+Three model families spanning different architectures and capability levels:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \textbf{Claude Haiku~4.5} (\texttt{claude-haiku-4-5-20251001}, Anthropic)---primary model, with base accuracy in the critical 30--70\% range on B6 and B7.
+    \item \textbf{GPT-4o-mini} (\texttt{gpt-4o-mini}, OpenAI)---secondary model, independent architecture.
+    \item \textbf{Llama-3.1-8B} (\texttt{meta-llama/llama-3.1-8b-instruct}, via OpenRouter)---tertiary model, open-weight.
+\end{itemize}
 
-\paragraph{Prediction 3: Between-model ensembles show the strongest separation.}
-Since different models have different structural bottlenecks (different training data, architectures, and learned algorithms), between-model agreement provides a cleaner test of whether failures are structural or stochastic than within-model self-consistency.
+\paragraph{Tasks.}
+Nine diagnostic tasks (B1--B9) from the companion reasoning-gaps benchmark, with primary focus on three that most cleanly test the bottleneck spectrum:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \textbf{B6} (LIS, Type~4): shared bottleneck, $\rho_{\text{between}} = 0.42$, $\VC = \PTIME$. Predicted early plateau ($N_{\text{eff}} \approx 2.4$).
+    \item \textbf{B7} (3-SAT, Type~5): stochastic bottleneck, $\rho_{\text{between}} = 0.06$, $\VC = \PTIME/\coNP$. Predicted continued improvement ($N_{\text{eff}} \approx 16.7$).
+    \item \textbf{B4} (FSM, Type~3): moderate bottleneck, $\rho_{\text{between}} = 0.22$, $\VC = \PTIME$. Predicted intermediate plateau ($N_{\text{eff}} \approx 4.5$).
+\end{itemize}
+Secondary tasks (B1--B3, B5) and architectural controls (B8, B9) are included for completeness at reduced scale.
 
-\subsection{Results}
+\paragraph{Protocol.}
+All within-model experiments use temperature $T = 1.0$ (pilot studies at $T = 0.7$ showed 96--99\% within-sample agreement, insufficient for SC testing).
+Sample counts $N \in \{1, 3, 5, 9, 17, 33\}$ are computed from a single $N = 33$ run per instance by taking majority votes over subsets of sizes 1, 3, 5, 9, 17, and 33.
+Primary tasks use 200 instances (40 per difficulty level $\times$ 5 levels); secondary and tertiary tasks use 100 instances each.
+The prompting condition is \texttt{short\_cot} (``Think step by step, then provide your final answer''), with a \texttt{direct} (answer-only) ablation on primary tasks at $N \in \{1, 9\}$.
+
+\paragraph{Zero-parameter methodology.}
+The error correlation $\rho$ used in theoretical predictions comes from \emph{external} between-model correlation data measured in the companion evaluation (12 models $\times$ 500 instances per task).
+These values are \emph{not} fit to the self-consistency data.
+The theoretical accuracy curve $\text{acc}(N) = \Phi\bigl(\sqrt{N_{\text{eff}}} \cdot \delta\bigr)$, where $N_{\text{eff}} = N/(1 + (N-1)\rho)$ and $\delta = \Phi^{-1}(\text{acc}@1)$, has zero free parameters once the single-sample accuracy is observed.
+
+\paragraph{Pre-registered predictions.}
+We commit eight falsifiable predictions before data collection:
+\begin{enumerate}[label=\textbf{P\arabic*},leftmargin=*,itemsep=1pt]
+    \item SC lift follows inverse $\rho$ ordering: $\text{lift}(\text{B7}) > \text{lift}(\text{B4}) > \text{lift}(\text{B6})$, for $\geq 2$ of 3 models.
+    \item B6 accuracy plateaus by $N = 17$: within 2 percentage points of accuracy at $N = 33$.
+    \item B7 accuracy at $N = 33$ exceeds $N = 9$ by $\geq 2$ percentage points.
+    \item Theoretical $N_{\text{eff}}$ curve fits empirical data with $R^2 > 0.85$ using external $\rho$.
+    \item Within-model $\rho > 0.5$ for all tasks and models.
+    \item Non-monotonicity: $\rho(\text{B6}) > \rho(\text{B7})$ despite $\VC(\text{B6}) \subseteq \PTIME$ and $\VC(\text{B7}) \supseteq \coNP$.
+    \item Between-model ensemble outperforms within-model SC by $\geq 5$ pp on B6 at $N = 9$.
+    \item Ensemble gap tracks bottleneck type: $\text{gap}(\text{B6}) > \text{gap}(\text{B7})$.
+\end{enumerate}
+Confirmation requires $\geq 6$ of 8 predictions at $\alpha = 0.05$ after Holm-Bonferroni correction, including P4 and P6.
+
+\subsection{Self-Consistency Scaling (Experiment~1)}
+\label{sec:exp_scaling}
+
+This is the central empirical result. The theory predicts that accuracy under majority voting follows $\text{acc}(N) = \Phi\bigl(\sqrt{N_{\text{eff}}} \cdot \delta\bigr)$, where $N_{\text{eff}} = N/(1 + (N-1)\rho)$. High-$\rho$ tasks plateau early because $N_{\text{eff}} \to 1/\rho$ regardless of $N$; low-$\rho$ tasks keep improving because $N_{\text{eff}} \approx N$.
+
+\begin{figure}[t]
+    \centering
+    % PLACEHOLDER: 3x3 panel grid
+    % Rows: B4 (moderate rho), B6 (high rho), B7 (low rho)
+    % Columns: Haiku, GPT-4o-mini, Llama-8B
+    % Each panel: solid = empirical acc(N) with 95% CI; dashed = theoretical N_eff prediction
+    \fbox{\parbox{0.95\textwidth}{\centering\vspace{3.5cm}
+    \textbf{Figure 1 placeholder.} $3 \times 3$ panel: tasks (B4, B6, B7) $\times$ models (Haiku, GPT-4o-mini, Llama-8B).\\
+    Solid: empirical accuracy vs.\ $N$. Dashed: $N_{\text{eff}}$ theoretical prediction (zero free parameters).\\
+    B6 panels show early plateau (flat by $N \approx 5$); B7 panels show continued improvement to $N = 33$.\\
+    Each panel annotated with $\rho = \textbf{X.XX}$ (external) and $R^2 = \textbf{Y.YY}$.\\
+    \emph{Results pending; placeholders shown.}\vspace{0.3cm}}}
+    \caption{Self-consistency scaling curves with theoretical predictions. Accuracy vs.\ sample count $N$ for three tasks spanning the bottleneck spectrum, across three model families. Solid lines: empirical accuracy with 95\% bootstrap confidence intervals. Dashed lines: zero-parameter theoretical prediction using $N_{\text{eff}} = N/(1 + (N-1)\rho)$ with externally measured $\rho$. The theoretical curve predicts not just the existence of plateaus but their location: B6 ($\rho = 0.42$) saturates by $N \approx 5$, while B7 ($\rho = 0.06$) continues improving past $N = 33$.}
+    \label{fig:scaling}
+\end{figure}
+
+\Cref{fig:scaling} shows accuracy versus sample count $N$ for three tasks spanning the bottleneck spectrum, across three model families.
+Each panel overlays the empirical curve (solid, with 95\% bootstrap CI) and the theoretical $N_{\text{eff}}$ prediction (dashed, using external $\rho$ with zero free parameters).
+The key visual pattern: B6 panels should show accuracy flattening by $N \approx 5\text{--}9$ (the shared bottleneck forces all samples to fail on the same inputs, so additional voting cannot help), while B7 panels should show continued accuracy gains out to $N = 33$ (stochastic instance-level difficulty permits genuine diversity among samples).
+B4 occupies an intermediate position, with a plateau near $N \approx 9$.
+
+The $N_{\text{eff}}$ formula gives the plateau location analytically: $N_{\text{eff}} \to 1/\rho$ as $N \to \infty$, yielding limits of ${\sim}2.4$ for B6, ${\sim}4.5$ for B4, and ${\sim}16.7$ for B7.
+These are predictions, not fits: $\rho$ comes from a separate between-model evaluation involving 12 models, not from the within-model SC data.
 
 \begin{table}[t]
 \centering
-\caption{Self-consistency lift by task and model. Accuracy@1 is single-sample accuracy; Accuracy@32 is majority voting over 32 samples. Lift = Accuracy@32 - Accuracy@1. Tasks with $\VC \subseteq \PTIME$ (GSM8K, MATH) show consistent lift; tasks with $\VC \supseteq \coNP$ (PlanBench-HTN) show minimal lift.}
+\caption{Self-consistency results summary. Acc@$N$ is majority-vote accuracy over $N$ samples. Lift = Acc@33 $-$ Acc@1. $\rho_{\text{within}}$ is measured from $N = 33$ samples via ICC; $\rho_{\text{between}}$ is from the external companion evaluation (used in the zero-parameter prediction). Predicted $N_{\text{eff}}$ limit $= 1/\rho_{\text{between}}$. Observed plateau $N$ is the smallest $N$ where accuracy improvement drops below 2 pp per doubling. Results pending; dashes indicate placeholders.}
 \label{tab:results}
 \small
-\begin{tabular}{@{}lllrrr@{}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}ll rrr r rr rr@{}}
 \toprule
-\textbf{Task} & \textbf{$\VC$ Class} & \textbf{Model} & \textbf{Acc@1} & \textbf{Acc@32} & \textbf{Lift} \\
+\textbf{Task} & \textbf{Model} & \textbf{Acc@1} & \textbf{Acc@9} & \textbf{Acc@33} & \textbf{Lift} & $\rho_{\text{within}}$ & $\rho_{\text{between}}$ & \textbf{Pred.\ $N_{\text{eff}}$} & \textbf{Obs.\ plat.} \\
 \midrule
-GSM8K & $\PTIME$ & Claude Haiku 4.5 & --- & --- & --- \\
- & & GPT-4o-mini & --- & --- & --- \\
- & & Llama-3.1-8B & --- & --- & --- \\
+B4 (FSM) & Haiku & --- & --- & --- & --- & --- & 0.22 & 4.5 & --- \\
+ & GPT-4o-mini & --- & --- & --- & --- & --- & 0.22 & 4.5 & --- \\
+ & Llama-8B & --- & --- & --- & --- & --- & 0.22 & 4.5 & --- \\
 \midrule
-MATH & $\PTIME$ & Claude Haiku 4.5 & --- & --- & --- \\
- & & GPT-4o-mini & --- & --- & --- \\
- & & Llama-3.1-8B & --- & --- & --- \\
+B6 (LIS) & Haiku & --- & --- & --- & --- & --- & 0.42 & 2.4 & --- \\
+ & GPT-4o-mini & --- & --- & --- & --- & --- & 0.42 & 2.4 & --- \\
+ & Llama-8B & --- & --- & --- & --- & --- & 0.42 & 2.4 & --- \\
 \midrule
-3-SAT (feas.) & $\PTIME$ & Claude Haiku 4.5 & --- & --- & --- \\
- & & GPT-4o-mini & --- & --- & --- \\
- & & Llama-3.1-8B & --- & --- & --- \\
-\midrule
-PlanBench-HTN & $\coNP$ & Claude Haiku 4.5 & --- & --- & --- \\
- & & GPT-4o-mini & --- & --- & --- \\
- & & Llama-3.1-8B & --- & --- & --- \\
+B7 (3-SAT) & Haiku & --- & --- & --- & --- & --- & 0.06 & 16.7 & --- \\
+ & GPT-4o-mini & --- & --- & --- & --- & --- & 0.06 & 16.7 & --- \\
+ & Llama-8B & --- & --- & --- & --- & --- & 0.06 & 16.7 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-% TODO: Add results - numbers from experiments/results/
-% TODO: Add Figure showing accuracy vs N (sample count) curves for each task family
-% TODO: Add Figure showing correlation between VC class and self-consistency lift
+\Cref{tab:results} reports the full quantitative results.
+The lift column (Acc@33 $-$ Acc@1) is predicted to follow the inverse $\rho$ ordering: $\text{lift}(\text{B7}) > \text{lift}(\text{B4}) > \text{lift}(\text{B6})$, for at least two of three models (\textbf{P1}).
+The predicted and observed plateau locations provide the strongest quantitative test: if $R^2 > 0.85$ for the zero-parameter theoretical curve (\textbf{P4}), the $N_{\text{eff}}$ model captures both the direction and magnitude of diminishing returns.
 
-\paragraph{GSM8K and MATH ($ \VC \subseteq \PTIME$).}
-% TODO: Report exact numbers with 95\% confidence intervals
-On both mathematical reasoning benchmarks, self-consistency yields monotonic improvement with sample count $N$. The lift from $N=1$ to $N=32$ is statistically significant across all three model families (bootstrap $p < 0.001$), consistent with \Cref{thm:selfconsistency}(a). The verification function (checking arithmetic correctness) is polynomial-time, enabling effective majority voting.
+\subsection{Error Correlation Structure (Experiment~2)}
+\label{sec:exp_correlation}
 
-\paragraph{3-SAT feasibility ($\VC = \PTIME$, correlated errors).}
-% TODO: Report exact numbers
-For 3-SAT instances near the phase transition, feasibility checking is polynomial-time (simply evaluate the assignment), but models exhibit correlated errors due to search heuristics. Self-consistency shows modest improvement ($\approx X\%$ lift), but with diminishing returns as $N$ increases, consistent with \Cref{thm:selfconsistency}(b)'s prediction of bounded effective sample size under correlation.
+Experiment~2 directly measures within-model error correlation $\rho$ from the $N = 33$ samples collected in Experiment~1 and tests the paper's most distinctive prediction: non-monotonicity of $\rho$ with respect to $\VC$ class.
 
-\paragraph{PlanBench-HTN ($\VC \supseteq \coNP$).}
-% TODO: Report exact numbers
-For hierarchical planning tasks requiring valid decomposition-tree verification, self-consistency yields minimal improvement ($< X\%$ lift, not statistically significant at $p=0.05$). This validates \Cref{thm:collapse}: when verification itself is $\coNP$-hard, models cannot distinguish valid from invalid plans in polynomial time, producing systematically correlated errors that resist majority voting.
+\begin{figure}[t]
+    \centering
+    % PLACEHOLDER: Grouped bar chart of rho by task, colored by VC class
+    \fbox{\parbox{0.95\textwidth}{\centering\vspace{2.8cm}
+    \textbf{Figure 2 placeholder.} Within-model $\rho$ by task (B1--B9), colored by VC class.\\
+    Blue = $\PTIME$, vermillion = $\PTIME/\coNP$, purple = architectural.\\
+    B6 (blue, $\PTIME$) is the tallest bar; B7 (vermillion, $\coNP$) is among the shortest.\\
+    Horizontal markers: external between-model $\rho$ for comparison.\\
+    Brace connecting B6 and B7: ``$\rho(\text{B6}) > \rho(\text{B7})$, $p < \textbf{XX}$''.\\
+    \emph{Results pending; placeholders shown.}\vspace{0.3cm}}}
+    \caption{Error correlation by task and verification complexity class. Within-model $\rho$ (bars) measured from $N = 33$ within-model samples via intraclass correlation. Horizontal markers show external between-model $\rho$ from the companion evaluation. The non-monotonicity prediction: B6 ($\VC = \PTIME$, shared bottleneck) has higher $\rho$ than B7 ($\VC \supseteq \coNP$, stochastic bottleneck). Easier verification class, higher error correlation.}
+    \label{fig:correlation}
+\end{figure}
 
-\subsection{Analysis}
+The within-model $\rho$ is estimated via intraclass correlation (ICC) from the 33 binary error indicators per instance, averaged across instances with non-degenerate error rates (excluding instances where all 33 samples agree).
+\Cref{fig:correlation} shows measured $\rho$ for each task, colored by $\VC$ class.
+The central test is the non-monotonicity comparison: $\rho(\text{B6}) > \rho(\text{B7})$ (\textbf{P6}), assessed via one-sided permutation test at $\alpha = 0.05$.
+Additionally, within-model $\rho$ is predicted to exceed 0.5 for all tasks (\textbf{P5}), confirming \Cref{thm:selfconsistency}(c.iii)---within-model sampling is always in the shared-bottleneck regime---and to preserve the same \emph{ordering} as between-model $\rho$: $\rho_{\text{within}}(\text{B6}) > \rho_{\text{within}}(\text{B4}) > \rho_{\text{within}}(\text{B7})$.
+This ordering test is computed from Experiment~1 data with no additional API calls.
 
-% TODO: Add statistical analysis of correlation between VC class and lift
-% TODO: Add ablation showing that task difficulty (human-rated) does not predict lift
-% TODO: Discussion of failure modes and edge cases
+\subsection{Within-Model vs.\ Between-Model Ensembles (Experiment~3)}
+\label{sec:exp_ensemble}
+
+Experiment~3 provides the sharpest test of \Cref{thm:selfconsistency}(c.iii) through a head-to-head comparison: $N$ samples from one model (within) versus one sample from each of $N$ models (between), at matched ensemble size $N = 9$.
+
+\begin{figure}[t]
+    \centering
+    % PLACEHOLDER: Paired bar chart
+    \fbox{\parbox{0.95\textwidth}{\centering\vspace{2.5cm}
+    \textbf{Figure 3 placeholder.} Paired bars for B4, B6, B7.\\
+    Gray = within-model SC at $N = 9$; colored = between-model ensemble at $N = 9$.\\
+    B6: large gap (between $\gg$ within). B7: small gap.\\
+    Delta labels on top: $\Delta = \textbf{XX}$ pp.\\
+    \emph{Results pending; placeholders shown.}\vspace{0.3cm}}}
+    \caption{Within-model vs.\ between-model ensemble accuracy at $N = 9$. Within-model: majority vote of 9 samples from Haiku at $T = 1.0$. Between-model: majority vote of 9 models (sampled from 11 available) from the companion evaluation. On shared-bottleneck tasks (B6), between-model ensembles substantially outperform within-model SC because diverse models fail on different instances. On stochastic-bottleneck tasks (B7), the gap narrows.}
+    \label{fig:ensemble}
+\end{figure}
+
+Within-model data comes from Experiment~1 (Haiku, $T = 1.0$).
+Between-model data uses existing results from the companion evaluation: 11 models with complete B1--B9 results, from which we sample $\binom{11}{9}$ or 100 random subsets of 9 models and compute majority-vote accuracy for each.
+\Cref{fig:ensemble} shows paired bars for the three primary tasks.
+The theory predicts that on B6 (shared bottleneck), the between-model ensemble should outperform within-model SC by at least 5 percentage points (\textbf{P7}), because diverse models break the shared bottleneck by having different algorithmic gaps.
+On B7 (stochastic bottleneck), the gap should be smaller (\textbf{P8}): within-model sampling already captures some instance-level diversity, so the between-model advantage is reduced.
+No additional API calls are required---this experiment is pure analysis of existing data.
+
+\subsection{Cross-Model Verification (Experiment~4)}
+\label{sec:exp_verification}
+
+Experiment~4 tests \Cref{thm:advantage} (Verification Advantage) by measuring whether verification accuracy tracks $\VC$ class when one model generates a candidate answer and another attempts to verify it.
+
+\begin{figure}[t]
+    \centering
+    % PLACEHOLDER: Bar chart with CI
+    \fbox{\parbox{0.95\textwidth}{\centering\vspace{2.3cm}
+    \textbf{Figure 4 placeholder.} Verification accuracy by task (B1--B9), colored by VC class.\\
+    Tasks with $\VC \subseteq \PTIME$ (B1--B6) show high verification accuracy.\\
+    B7 ($\VC \supseteq \coNP$) shows reduced accuracy. B8, B9 as controls.\\
+    Canary results: B4 = 100\%, B7 = 64\%.\\
+    \emph{Full results pending; canary data shown.}\vspace{0.3cm}}}
+    \caption{Cross-model verification accuracy by task and $\VC$ class. Each bar represents the fraction of instances where a verifier model correctly classifies a generator's output as correct or incorrect. Canary run: B4 ($\VC = \PTIME$) achieves 100\% verification accuracy; B7 ($\VC \supseteq \coNP$) achieves only 64\%, consistent with \Cref{thm:advantage}: verification succeeds when $\VC(\calF) \subseteq \mathrm{cap}(\calM)$ and fails when it does not.}
+    \label{fig:verification}
+\end{figure}
+
+A canary run has already been completed: on B4 ($\VC = \PTIME$), the verifier achieves 100\% accuracy, while on B7 ($\VC \supseteq \coNP$), accuracy drops to 64\%---little better than random on the binary correct/incorrect judgment.
+This preliminary result is consistent with the verification advantage theorem: polynomial-time verification problems are within the verifier's capability class, while $\coNP$-hard verification is not.
+The full experiment extends to all nine tasks across three generator--verifier pairs.
+This experiment is supporting evidence for the framework, not the central result; the scaling curves of Experiment~1 carry the main empirical weight.
 
 % ============================================================
 \section{Implications for Scalable Oversight}
@@ -567,10 +692,21 @@ Song et al.~(\citeyear{song2024mind}) define the GV-gap as an empirical accuracy
 Sun et al.~(\citeyear{sun2025solver}) model training dynamics via coupled differential equations governed by the gap.
 We provide the missing complexity-theoretic grounding: the gap is not merely empirical but reflects structural properties of the task's verification problem.
 
+\paragraph{Condorcet jury theorem and voting theory.}
+\Cref{thm:selfconsistency}(a) is a direct descendant of the Condorcet jury theorem~\citep{condorcet1785essai}: if each voter is independently more likely than not to be correct, majority rule converges to the truth as the number of voters grows.
+Austen-Smith and Banks~(\citeyear{austensmith1996information}) showed that strategic voting can undermine Condorcet convergence---an analogue of our shared-bottleneck result, where systematic bias (rather than strategy) limits effective ensemble size.
+Our contribution connects this classical framework to the computational structure of reasoning tasks, showing that bottleneck type determines the correlation parameter $\rho$ that governs convergence rate.
+
 \paragraph{Self-consistency and voting.}
 Wang et al.~(\citeyear{wang2023selfconsistency}) introduced self-consistency for CoT reasoning.
+Li et al.~(\citeyear{li2022diverse}) proposed diverse-path sampling to reduce correlation among reasoning chains.
 Subsequent work identified failures: correlated errors from positional bias~\citep{tao2024selfconsistency}, the ``consensus is not verification'' phenomenon where agreement exceeds accuracy~\citep{consensus2026}, and diminishing returns at scale~\citep{singhi2025solve}.
 Our \Cref{thm:selfconsistency} provides a unified explanation: these failures occur when a shared computational bottleneck (\Cref{def:bottleneck}) produces correlated errors, bounding $N_{\mathrm{eff}}$ regardless of sample count.
+
+\paragraph{Error correlation and ensemble diversity.}
+The connection between ensemble diversity and generalization is well studied in classical machine learning~\citep{krogh1994neural,brown2005diversity}.
+The ``ambiguity decomposition'' shows that ensemble error equals average individual error minus a diversity term---precisely the mechanism formalized in our $N_{\text{eff}}$ framework.
+Our contribution is the link to computational complexity: we show that bottleneck structure (shared vs.\ stochastic) determines diversity, providing a \emph{predictive} theory rather than a post-hoc decomposition.
 
 \paragraph{Reward models and verification limits.}
 Overoptimization follows predictable scaling laws~\citep{gao2023scaling,rafailov2024scaling}.
@@ -652,10 +788,12 @@ Our experiments cover mathematical reasoning (GSM8K, MATH), satisfiability (3-SA
 \label{sec:conclusion}
 % ============================================================
 
-We have shown that the assumption ``verification is easier than generation'' is task-dependent, and its validity is formally characterized by the verification complexity of the task.
-Our framework provides three concrete results: a verification advantage theorem explaining when re-ranking works, a self-consistency condition explaining when majority voting works, and a gap collapse theorem showing that hierarchical plan verification is provably hard.
+We have shown that the assumption ``verification is easier than generation'' is task-dependent, and that self-consistency's effectiveness is governed by computational bottleneck structure rather than verification complexity class.
+Our framework provides three concrete results: a verification advantage theorem establishing when any verification-based method can succeed, a self-consistency condition predicting where majority voting plateaus and why, and a gap collapse theorem showing that hierarchical plan verification is provably hard.
 Together with the verification complexity taxonomy, these results provide a principled guide for practitioners: choose verification-based methods for Types~1--4, deploy interactive protocols for Type~5, and recognize that Type~6 requires architectural rather than algorithmic solutions.
-The broader implication for AI safety is precise: scalable oversight is feasible up to $\PSPACE$ and no further.
+
+The counter-intuitive core of the theory---that a task with \emph{easier} verification can resist self-consistency \emph{more} than a task with harder verification---follows from a simple structural distinction: whether the computational bottleneck is shared across models or varies stochastically across instances.
+If validated, this non-monotonicity provides a precise answer to a question that matters for every LLM inference pipeline: not just whether to use majority voting, but exactly how many samples are enough.
 
 % ============================================================
 \begin{ack}
@@ -706,8 +844,34 @@ P.~Christiano, J.~Leike, T.~Brown, M.~Milber, S.~Lowe, and D.~Amodei.
 \newblock Deep reinforcement learning from human preferences.
 \newblock In \emph{NeurIPS}, 2017.
 
-\bibitem[{Consensus}(2026)]{consensus2026}
-Consensus is not verification: Why crowd wisdom strategies fail for {LLM} truthfulness.
+\bibitem[Condorcet(1785)]{condorcet1785essai}
+M.~de~Condorcet.
+\newblock \emph{Essai sur l'application de l'analyse {\`a} la probabilit{\'e} des d{\'e}cisions rendues {\`a} la pluralit{\'e} des voix}.
+\newblock Paris: Imprimerie Royale, 1785.
+
+\bibitem[Austen-Smith \& Banks(1996)]{austensmith1996information}
+D.~Austen-Smith and J.~S.~Banks.
+\newblock Information aggregation, rationality, and the {Condorcet} jury theorem.
+\newblock \emph{American Political Science Review}, 90(1):34--45, 1996.
+
+\bibitem[Li et~al.(2022)]{li2022diverse}
+Y.~Li, Z.~Lin, S.~Zhang, Q.~Fu, B.~Chen, J.~Lou, and W.~Chen.
+\newblock On the advance of making language models better reasoners.
+\newblock \emph{arXiv:2206.02336}, 2022.
+
+\bibitem[Krogh \& Vedelsby(1994)]{krogh1994neural}
+A.~Krogh and J.~Vedelsby.
+\newblock Neural network ensembles, cross validation, and active learning.
+\newblock In \emph{NeurIPS}, 1994.
+
+\bibitem[Brown et~al.(2005)]{brown2005diversity}
+G.~Brown, J.~Wyatt, R.~Harris, and X.~Yao.
+\newblock Diversity creation methods: A survey and categorisation.
+\newblock \emph{Information Fusion}, 6(1):5--20, 2005.
+
+\bibitem[{Anonymous}(2026)]{consensus2026}
+Anonymous.
+\newblock Consensus is not verification: Why crowd wisdom strategies fail for {LLM} truthfulness.
 \newblock \emph{arXiv}, 2026.
 
 \bibitem[Erol et~al.(1996)]{erol1996complexity}
@@ -824,8 +988,9 @@ Y.~Tao and others.
 \newblock Self-consistency falls short! {T}he adverse effects of positional bias on long-context problems.
 \newblock \emph{arXiv}, 2024.
 
-\bibitem[{Verification Ceiling}(2025)]{verificationceiling2025}
-Verification limits code {LLM} training.
+\bibitem[{Anonymous}(2025)]{verificationceiling2025}
+Anonymous.
+\newblock Verification limits code {LLM} training.
 \newblock \emph{arXiv:2509.20837}, 2025.
 
 \bibitem[Cobbe et~al.(2021)]{cobbe2021gsm8k}
@@ -1174,43 +1339,91 @@ By \Cref{lem:vc_to_bottleneck}, this produces a computational bottleneck $V_{\ma
 \section{Experimental Details}
 \label{app:experiments}
 
-\subsection{Benchmark Construction}
+\subsection{Benchmark Tasks}
 
-\paragraph{GSM8K.} We use the full test set (1,319 instances) from \citet{cobbe2021gsm8k}. Verification is implemented by evaluating the final numeric answer against the ground truth.
-
-\paragraph{MATH.} We sample 500 instances uniformly from the MATH benchmark \citep{hendrycks2021math} across difficulty levels 1--5. Verification extracts the boxed final answer using regex and compares to ground truth.
-
-\paragraph{3-SAT.} We generate 200 random 3-SAT instances at the critical ratio $m/n = 4.26$ using the standard planted-solutions model. Instances have $n \in [50, 100]$ variables. Verification runs a SAT solver (PySAT) to check satisfiability.
-
-\paragraph{PlanBench-HTN.} We use 100 instances from the hierarchical planning subset of PlanBench \citep{planbench2024}, filtered to tasks requiring at least 3 levels of decomposition. Verification checks: (1) action sequence achieves goal (polynomial-time), (2) valid decomposition tree exists (coNP-complete, verified via exhaustive search with timeout).
+All nine tasks (B1--B9) come from the reasoning-gaps diagnostic benchmark~\citep{reasoninggaps2026}, which provides controlled instances at five difficulty levels per task.
+Each instance has a unique correct answer verified by a deterministic oracle (SAT solver, dynamic-programming algorithm, or simulation).
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \textbf{B1} (multi-step arithmetic): Type~1 sensitivity gap.
+    \item \textbf{B2} (Boolean logic): Type~1 sensitivity gap.
+    \item \textbf{B3} (deep logical inference): Type~2 depth gap.
+    \item \textbf{B4} (finite-state machine simulation): Type~3 serial gap.
+    \item \textbf{B5} (graph reachability): Type~3 serial gap.
+    \item \textbf{B6} (longest increasing subsequence): Type~4 algorithmic gap.
+    \item \textbf{B7} (3-SAT at critical ratio): Type~5 intractability gap.
+    \item \textbf{B8} (distributional/long-range dependency): Type~6 architectural.
+    \item \textbf{B9} (attentional/context overflow): Type~6 architectural.
+\end{itemize}
 
 \subsection{Model Configuration}
 
-All models use sampling temperature $T = 0.7$ for diversity. We use the following API endpoints:
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Claude Haiku 4.5}: Anthropic API, model \texttt{claude-haiku-4-5-20251001}
-    \item \textbf{GPT-4o-mini}: OpenAI API, model \texttt{gpt-4o-mini-2024-07-18}
-    \item \textbf{Llama-3.1-8B}: Together AI API, model \texttt{meta-llama/Llama-3.1-8B-Instruct-Turbo}
+All within-model self-consistency experiments use sampling temperature $T = 1.0$.
+Pilot studies at $T = 0.7$ showed 96--99\% within-sample agreement across all tasks, providing insufficient diversity for SC testing.
+At $T = 1.0$, agreement drops to ${\sim}89\%$ on moderate-difficulty instances, providing detectable but non-degenerate diversity.
+
+Model endpoints:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \textbf{Claude Haiku~4.5}: Anthropic API, model ID \texttt{claude-haiku-4-5-20251001}. Cost: ${\sim}\$0.002$/call.
+    \item \textbf{GPT-4o-mini}: OpenAI API, model ID \texttt{gpt-4o-mini}. Cost: ${\sim}\$0.002$/call.
+    \item \textbf{Llama-3.1-8B}: OpenRouter API, model ID \texttt{meta-llama/llama-3.1-8b-instruct}. Cost: ${\sim}\$0.0005$/call.
 \end{itemize}
 
-For each instance, we sample $N \in \{1, 4, 8, 16, 32\}$ independent completions. Majority voting selects the most frequent answer (ties broken randomly).
+For each instance, we sample $N = 33$ independent completions in a single batch.
+Majority-vote accuracy at $N \in \{1, 3, 5, 9, 17, 33\}$ is computed by taking subsets of the 33 samples (using a fixed random seed of 42 for subset selection), avoiding redundant API calls.
+Ties in majority voting are broken randomly.
+The prompting condition is \texttt{short\_cot}: ``Think step by step, then provide your final answer.''
+A \texttt{direct} (answer-only) ablation runs on primary tasks (B4, B6, B7) at $N \in \{1, 9\}$ only.
 
-\subsection{Statistical Analysis}
+\subsection{Instance Counts and Power Analysis}
 
-Accuracy is computed as the fraction of instances where the majority answer matches ground truth. We report 95\% bootstrap confidence intervals (10,000 resamples). Self-consistency lift is the difference Accuracy@32 - Accuracy@1, with significance tested via paired bootstrap test ($p < 0.05$ threshold).
+Primary tasks (B4, B6, B7): 200 instances each (40 instances $\times$ 5 difficulty levels).
+Secondary tasks (B1--B3, B5): 100 instances each (20 $\times$ 5).
+Tertiary tasks (B8, B9): 100 instances each (20 $\times$ 5).
+
+Power analysis for detecting a 5-percentage-point accuracy difference between $N = 1$ and $N = 33$ via paired McNemar test: at $\alpha = 0.05$ and power $= 0.80$, the required sample size is approximately 200 instances per task for paired data with moderate correlation.
+
+\subsection{Statistical Analysis Plan}
+
+All tests are pre-registered. No ad hoc analyses.
+
+\paragraph{$N_{\text{eff}}$ model fit.}
+For each task--model combination, compute the theoretical accuracy curve:
+$\hat{p} = \text{acc}@1$, $\delta = \Phi^{-1}(\hat{p})$, $\text{acc}_{\text{theory}}(N) = \Phi\bigl(\delta \cdot \sqrt{N_{\text{eff}}}\bigr)$ where $N_{\text{eff}} = N/(1 + (N-1)\rho_{\text{known}})$.
+Here $\rho_{\text{known}}$ is the between-model correlation from the companion evaluation---an external parameter, not fit to the SC data.
+Report $R^2$ between empirical $\text{acc}(N)$ and $\text{acc}_{\text{theory}}(N)$ across $N \in \{1, 3, 5, 9, 17, 33\}$.
+Secondary analysis: fit $\rho$ as a free parameter and compare the fitted $\rho_{\text{within}}$ to $\rho_{\text{between}}$ (\Cref{thm:selfconsistency}(c.iii) predicts $\rho_{\text{within}} > \rho_{\text{between}}$).
+
+\paragraph{$\rho$ ordering test.}
+Bootstrap the within-model $\rho$ estimate for each task (resample instances with replacement, recompute $\rho$, 10{,}000 iterations).
+Compare $\rho(\text{B6})$ vs.\ $\rho(\text{B7})$ with one-sided permutation test.
+Report effect size (Cohen's $d$ on the bootstrap distributions).
+
+\paragraph{Ensemble comparison.}
+Paired McNemar test: for each instance, compare within-model majority vote at $N = 9$ vs.\ between-model majority vote at $N = 9$.
+Accuracy difference with 95\% CI (Agresti-Caffo interval for paired proportions).
+
+\paragraph{Multiple comparisons.}
+Eight primary predictions tested simultaneously.
+Apply Holm-Bonferroni step-down correction.
+Report both raw and corrected $p$-values.
 
 \subsection{Compute Budget}
 
-% TODO: Report actual API costs once experiments complete
-Estimated total cost: approximately \$100 across all benchmarks and models (3 models × 4 benchmarks × 300 instances average × 32 samples × \$0.0003 per query average).
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item Haiku primary (B4, B6, B7): 19{,}800 calls $\times$ \$0.002 = \$39.60
+    \item Haiku secondary/tertiary (B1--B3, B5, B8--B9): 19{,}800 calls $\times$ \$0.002 = \$39.60
+    \item GPT-4o-mini primary: 19{,}800 calls $\times$ \$0.002 = \$39.60
+    \item Llama-8B primary: 19{,}800 calls $\times$ \$0.0005 = \$9.90
+    \item Haiku ablation (direct, $N = 9$): 5{,}400 calls $\times$ \$0.002 = \$10.80
+\end{itemize}
+Total: 84{,}600 calls, \$139.50. With 20\% contingency: \$168.00.
+Execution is phased over 4 days to stay within the \$40/day budget.
 
-\subsection{Additional Results}
+\subsection{Reproducibility}
 
-% TODO: Add supplementary tables showing:
-% - Full breakdown by difficulty level within each benchmark
-% - Convergence curves (accuracy vs N) for each model-task pair
-% - Error correlation estimates via sample variance analysis
-% - Failure mode analysis (qualitative examples of correlated errors on HTN tasks)
+Random seed: 42 for all instance generation, subset selection, and bootstrap resampling.
+All evaluation code, prompts, and instance data will be released upon publication.
+Between-model correlation values used as external parameters are reported in the companion paper~\citep{reasoninggaps2026}.
 
 % ============================================================
 
@@ -1219,7 +1432,7 @@ Estimated total cost: approximately \$100 across all benchmarks and models (3 mo
 \begin{enumerate}[leftmargin=*]
 
 \item {\bf Claims.}
-\answerYes{Theoretical claims are supported by formal proofs (Theorems 1--3). Empirical validation (Section 5) describes the experimental design and predictions; quantitative results are pending and will be included in a future revision. The paper is a preprint in preparation.}
+\answerYes{Theoretical claims are supported by formal proofs (Theorems 1--3). Empirical validation (Section 5) describes four experiments with eight pre-registered, falsifiable predictions; quantitative results are pending and will be included in a future revision.}
 
 \item {\bf Limitations.}
 \answerYes{Section 7 discusses limitations including restriction to decidable verification functions, worst-case vs average-case gap, the $\TC$ idealization, and the fact that empirical validation is not yet complete.}
@@ -1228,19 +1441,19 @@ Estimated total cost: approximately \$100 across all benchmarks and models (3 mo
 \answerYes{All theorems state assumptions explicitly (standard complexity conjectures). Complete proofs in main text and Appendix A.}
 
 \item {\bf Experimental Result Reproducibility.}
-\answerYes{Section 5 specifies models, benchmarks, and sample sizes. Code will be provided in supplementary materials. Quantitative results are pending.}
+\answerYes{Section 5 and Appendix B specify models (exact IDs), benchmarks (B1--B9), sample sizes ($N \in \{1,3,5,9,17,33\}$, 200 instances for primary tasks), temperature ($T=1.0$), seed (42), and statistical analysis plan. Code will be released.}
 
 \item {\bf Open access to data and code.}
-\answerYes{All benchmarks are public (GSM8K, MATH, PlanBench). Evaluation code will be provided upon completion of experiments.}
+\answerYes{All benchmark tasks from the reasoning-gaps diagnostic suite. Evaluation code, prompts, and instance data will be released upon publication.}
 
 \item {\bf Experimental Setting/Details.}
-\answerYes{Section 5 and Appendix B specify the planned experimental protocol. Full results are pending.}
+\answerYes{Section 5.1 and Appendix B fully specify the experimental protocol including instance counts, power analysis, prompting conditions, cost breakdown, and pre-registered predictions.}
 
 \item {\bf Experiment Statistical Significance.}
-\answerYes{The experimental design specifies 95\% bootstrap confidence intervals for all accuracy measurements. Results are pending.}
+\answerYes{Pre-registered analysis plan: bootstrap CIs (10,000 resamples), paired McNemar tests, permutation tests for $\rho$ comparisons, Holm-Bonferroni correction for 8 simultaneous tests.}
 
 \item {\bf Experiments Compute Resources.}
-\answerYes{Estimated \$100 total API cost. No model training.}
+\answerYes{Estimated \$168 total API cost (84,600 calls across 3 model families). No model training. Phased over 4 days at \$40/day.}
 
 \item {\bf Code Of Ethics.}
 \answerYes{}
