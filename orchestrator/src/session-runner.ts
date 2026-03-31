@@ -14,23 +14,53 @@ export type AgentType =
   | "engineer";
 
 /** Canonical mapping from project phase to default agent type. */
-export const PHASE_TO_AGENT: Record<string, AgentType> = {
+const EXPLICIT_PHASE_TO_AGENT: Record<string, AgentType> = {
   "research": "researcher",
   "literature-review": "researcher",
   "experimental": "experimenter",
   "empirical-evaluation": "experimenter",
+  "experiment-execution": "experimenter",
+  "experiment-execution-and-polish": "experimenter",
+  "experiment-validation": "experimenter",
   "analysis": "experimenter",
   "theory": "theorist",
+  "theory-development": "theorist",
+  "theory-completion": "theorist",
   "theory-completion-parallel-experiment-execution": "theorist",
   "drafting": "writer",
   "writing": "writer",
+  "writing-and-polish": "writer",
   "submission-prep": "writer",
   "revision": "writer",
   "paper-finalization": "writer",
+  "paper-polish": "writer",
   "final": "editor",
   "review": "critic",
   "active": "engineer",
 };
+
+/** Resolve phase to agent type, with defensive pattern matching for unknown phases. */
+export function resolvePhaseAgent(phase: string): AgentType {
+  const explicit = EXPLICIT_PHASE_TO_AGENT[phase];
+  if (explicit) return explicit;
+
+  // Defensive pattern matching for compound/novel phase names
+  const lower = phase.toLowerCase();
+  if (lower.includes("experiment")) return "experimenter";
+  if (lower.includes("theory")) return "theorist";
+  if (lower.includes("writing") || lower.includes("polish") || lower.includes("draft")) return "writer";
+  if (lower.includes("review") || lower.includes("critic")) return "critic";
+  if (lower.includes("literature") || lower.includes("research") || lower.includes("survey")) return "researcher";
+  if (lower.includes("engineer") || lower.includes("active")) return "engineer";
+
+  // True fallback — researcher is the safest generic agent
+  return "researcher";
+}
+
+/** Canonical mapping from project phase to default agent type.
+ *  Prefer resolvePhaseAgent() for lookups — it handles unknown phases defensively.
+ */
+export const PHASE_TO_AGENT: Record<string, AgentType> = EXPLICIT_PHASE_TO_AGENT;
 
 const DEFAULT_MAX_TURNS = 50;
 const DEFAULT_MAX_DURATION_MS = 45 * 60 * 1000;

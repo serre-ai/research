@@ -4,7 +4,7 @@ import type { ProjectManager, ProjectStatus } from "./project-manager.js";
 import type { KnowledgeGraph, ClaimRow, ClaimRelationRow } from "./knowledge-graph.js";
 import type { BudgetTracker } from "./budget-tracker.js";
 import type { BacklogManager } from "./backlog.js";
-import { type AgentType, PHASE_TO_AGENT, type SessionResult } from "./session-runner.js";
+import { type AgentType, PHASE_TO_AGENT, resolvePhaseAgent, type SessionResult } from "./session-runner.js";
 import type { SessionSignals } from "./session-manager.js";
 import { LinearClient } from "./linear.js";
 
@@ -369,6 +369,13 @@ export class ResearchPlanner {
       briefs.push(...this.qualityImprovementBriefs(project, recentEvals, claims, budgetUsd));
     }
 
+    // Strategy 7: immediate_next_steps hints from status.yaml
+    const immediateSteps = (project as ProjectStatus & { immediate_next_steps?: string[] }).immediate_next_steps;
+    if (immediateSteps && immediateSteps.length > 0 && !recentAllLow) {
+      const stepsBriefs = this.immediateStepsBriefs(project, immediateSteps, claims, budgetUsd);
+      briefs.push(...stepsBriefs);
+    }
+
     // Fallback: if KG is empty and no strategies produced briefs, use phase-based
     if (briefs.length === 0 && claims.length < 5) {
       briefs.push(this.phaseBasedFallback(project, budgetUsd));
@@ -384,7 +391,16 @@ export class ResearchPlanner {
       }
     }
 
-    return briefs;
+    // Repetition circuit breaker: escalating penalty for consecutive same-agent sessions
+    const projectEvals5 = this.getProjectEvaluations(project.project, 5);
+    const filteredBriefs = briefs.filter((brief) => {
+      const penalty = this.getRepetitionPenalty(projectEvals5, brief.agentType);
+      if (penalty === null) return false; // blocked entirely (4+ consecutive)
+      brief.priority = Math.max(brief.priority + penalty, 0);
+      return true;
+    });
+
+    return filteredBriefs;
   }
 
   // --------------------------------------------------------
@@ -540,7 +556,7 @@ export class ResearchPlanner {
     const agentType: AgentType =
       project.phase === "drafting" || project.phase === "revision" || project.phase === "submission-prep" ? "writer" :
       project.phase === "paper-finalization" || project.phase === "final" ? "editor" :
-      PHASE_TO_AGENT[project.phase] ?? "researcher";
+      resolvePhaseAgent(project.phase);
 
     const objective = daysUntil <= 7
       ? `URGENT: ${Math.round(daysUntil)} days to deadline. Focus on completing ${project.phase} phase deliverables.`
@@ -638,6 +654,58 @@ export class ResearchPlanner {
       console.error(`Planner: literature strategy failed for ${project.project}:`, err);
       return [];
     }
+  }
+
+  // --------------------------------------------------------
+  // Strategy: Immediate next steps (from status.yaml hints)
+  // --------------------------------------------------------
+
+  private immediateStepsBriefs(
+    project: ProjectStatus,
+    steps: string[],
+    allClaims: ClaimRow[],
+    budgetUsd: number,
+  ): SessionBrief[] {
+    const step = steps[0];
+    const lower = step.toLowerCase();
+
+    // Infer agent type from the step description
+    let agentType: AgentType;
+    if (lower.includes("experiment") || lower.includes("run") || lower.includes("benchmark") || lower.includes("evaluate")) {
+      agentType = "experimenter";
+    } else if (lower.includes("writ") || lower.includes("draft") || lower.includes("polish") || lower.includes("paper")) {
+      agentType = "writer";
+    } else if (lower.includes("theory") || lower.includes("theorem") || lower.includes("proof")) {
+      agentType = "theorist";
+    } else if (lower.includes("review") || lower.includes("critic") || lower.includes("check")) {
+      agentType = "critic";
+    } else if (lower.includes("scan") || lower.includes("literature") || lower.includes("survey")) {
+      agentType = "scout";
+    } else {
+      agentType = resolvePhaseAgent(project.phase);
+    }
+
+    return [{
+      id: randomUUID().slice(0, 8),
+      projectName: project.project,
+      agentType,
+      objective: `Execute immediate next step: ${step}. ${steps.length > 1 ? `Also queued: ${steps.slice(1, 3).join("; ")}` : ""}`,
+      context: {
+        claims: allClaims.slice(0, MAX_CLAIMS_IN_CONTEXT),
+        contradictions: [],
+        files: this.phaseFiles(project),
+        recentDecisions: project.next_steps?.slice(0, 3) ?? [],
+        supplementary: `immediate_next_steps from status.yaml:\n${steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}`,
+      },
+      constraints: this.buildConstraints(agentType, budgetUsd),
+      deliverables: [
+        { description: step, type: "commit", verificationMethod: "commit_count" },
+        { description: "Update status.yaml", type: "status_update", verificationMethod: "status_changed" },
+      ],
+      priority: 55, // higher than generic phase-based (20) but below deadline (70+)
+      reasoning: `Project has explicit immediate_next_steps in status.yaml. Executing: "${step.slice(0, 100)}"`,
+      strategy: "gap_filling",
+    }];
   }
 
   // --------------------------------------------------------
@@ -789,9 +857,23 @@ export class ResearchPlanner {
   ): SessionBrief[] {
     const avgScore = recentEvals.reduce((s, e) => s + e.qualityScore, 0) / recentEvals.length;
     const failedStrategies = [...new Set(recentEvals.map((e) => e.strategy))];
-    const agentType: AgentType = PHASE_TO_AGENT[project.phase] ?? "researcher";
-    if (!PHASE_TO_AGENT[project.phase]) {
-      console.warn(`[Planner] Unknown phase "${project.phase}" for ${project.project} — falling back to researcher. Add this phase to PHASE_TO_AGENT in session-runner.ts.`);
+    // Diversify agent selection: avoid agents used in last 3 sessions
+    const recentAgents = recentEvals.slice(-3).map((e) => e.agentType);
+    const phaseAgent = resolvePhaseAgent(project.phase);
+
+    // Candidate agents ordered by preference for the current phase
+    const candidateAgents: AgentType[] = [phaseAgent, "experimenter", "writer", "theorist", "researcher", "critic"];
+    // Pick first agent NOT used in the last 3 sessions
+    let agentType: AgentType = candidateAgents.find((a) => !recentAgents.includes(a)) ?? phaseAgent;
+
+    // If project has immediate_next_steps, prefer the agent matching those hints
+    const nextSteps = (project as ProjectStatus & { immediate_next_steps?: string[] }).immediate_next_steps;
+    if (nextSteps && nextSteps.length > 0) {
+      const hintLower = nextSteps[0].toLowerCase();
+      if (hintLower.includes("experiment")) agentType = "experimenter";
+      else if (hintLower.includes("writ") || hintLower.includes("draft") || hintLower.includes("polish")) agentType = "writer";
+      else if (hintLower.includes("theory") || hintLower.includes("theorem") || hintLower.includes("proof")) agentType = "theorist";
+      else if (hintLower.includes("review") || hintLower.includes("critic")) agentType = "critic";
     }
 
     return [{
@@ -822,10 +904,7 @@ export class ResearchPlanner {
   // --------------------------------------------------------
 
   private phaseBasedFallback(project: ProjectStatus, budgetUsd: number): SessionBrief {
-    const agentType: AgentType = PHASE_TO_AGENT[project.phase] ?? "researcher";
-    if (!PHASE_TO_AGENT[project.phase]) {
-      console.warn(`[Planner] Unknown phase "${project.phase}" for ${project.project} — falling back to researcher. Add this phase to PHASE_TO_AGENT in session-runner.ts.`);
-    }
+    const agentType: AgentType = resolvePhaseAgent(project.phase);
 
     const PHASE_OBJECTIVES: Record<string, string> = {
       "submission-prep": "Polish paper for submission: integrate pending results, check formatting, verify anonymization, review figures and tables",
@@ -1078,6 +1157,27 @@ export class ResearchPlanner {
       .slice(-limit);
   }
 
+  /**
+   * Repetition circuit breaker: returns a priority penalty (negative number) for
+   * consecutive same-agent sessions, or null to block the agent entirely.
+   */
+  private getRepetitionPenalty(recentEvals: SessionEvaluation[], agentType: string): number | null {
+    // Count consecutive sessions from most recent with this agent type
+    let consecutive = 0;
+    for (let i = recentEvals.length - 1; i >= 0; i--) {
+      if (recentEvals[i].agentType === agentType) consecutive++;
+      else break;
+    }
+
+    if (consecutive >= 4) {
+      console.log(`[Planner] Circuit breaker: blocking ${agentType} (${consecutive} consecutive sessions)`);
+      return null; // block entirely
+    }
+    if (consecutive >= 3) return -50;
+    if (consecutive >= 2) return -20;
+    return 0;
+  }
+
   private selectRelevantClaims(allClaims: ClaimRow[], target: ClaimRow, limit: number): ClaimRow[] {
     // Put the target claim first, then fill with others
     const result = [target];
@@ -1107,6 +1207,10 @@ export class ResearchPlanner {
       case "paper-finalization":
       case "final":
         files.push(`${base}/paper/`);
+        break;
+      default:
+        // Unknown phases get MORE context, not less — include all major directories
+        files.push(`${base}/paper/`, `${base}/experiments/`, `${base}/notes/`);
         break;
     }
     return files;

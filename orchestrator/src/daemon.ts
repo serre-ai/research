@@ -4,7 +4,7 @@ import { randomUUID, createHash } from "node:crypto";
 import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
 import { SessionManager, type Session, type SessionSignals, type SessionOutputCategory } from "./session-manager.js";
-import { type AgentType, type SessionResult, PHASE_TO_AGENT } from "./session-runner.js";
+import { type AgentType, type SessionResult, PHASE_TO_AGENT, resolvePhaseAgent } from "./session-runner.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
@@ -780,6 +780,18 @@ export class Daemon {
           continue;
         }
 
+        // Stuck loop check (was only in legacy path — now also in planner path)
+        if (this.isStuckLoop(brief.projectName, brief.agentType)) {
+          console.log(`Skipping ${brief.projectName} — loop detected: 3+ consecutive low-quality ${brief.agentType} sessions`);
+          await this.logger.log({
+            type: "loop_detected",
+            project: brief.projectName,
+            agent: brief.agentType,
+            data: { reason: "3+ consecutive sessions with quality < 70, same agent type", source: "planner" },
+          });
+          continue;
+        }
+
         console.log("Planner: launching " + brief.agentType + " for " + brief.projectName + " (strategy: " + brief.strategy + ", pri=" + brief.priority + ")");
         console.log("  Objective: " + brief.objective.slice(0, 120));
 
@@ -1500,11 +1512,13 @@ export class Daemon {
       this.recordQuality(brief.projectName, quality);
       await this.checkQualityGate(brief.projectName);
 
-      // Record fingerprint for stuck detection
+      // Record fingerprint for stuck detection (enriched with strategy + output category)
       const fingerprint = this.computeSessionFingerprint(
         brief.projectName,
         brief.agentType,
         session.result?.commitsCreated.length ?? 0,
+        brief.strategy,
+        session.signals?.outputCategory,
       );
       this.recordFingerprint(brief.projectName, fingerprint);
 
@@ -1529,6 +1543,11 @@ export class Daemon {
             commits: session.result.commitsCreated.length,
           },
         });
+      }
+
+      // Budget waste alert: detect consecutive low-quality same-project same-agent sessions
+      if (evaluation) {
+        await this.checkBudgetWaste(brief.projectName, brief.agentType, evaluation.qualityScore);
       }
 
       // Linear issue update (if linear_driven)
@@ -2018,17 +2037,63 @@ export class Daemon {
 
   private isProjectStuck(projectName: string): boolean {
     const prints = this.sessionFingerprints.get(projectName);
-    if (!prints || prints.length < 3) return false;
-    const last3 = prints.slice(-3);
-    // If 2 of last 3 fingerprints are identical, project is stuck
-    return last3[0] === last3[1] || last3[1] === last3[2] || last3[0] === last3[2];
+    if (!prints || prints.length < 5) return false;
+    const last5 = prints.slice(-5);
+    // If 3 of last 5 fingerprints match, project is stuck (was: 2 of 3)
+    const counts = new Map<string, number>();
+    for (const p of last5) {
+      counts.set(p, (counts.get(p) ?? 0) + 1);
+    }
+    for (const count of counts.values()) {
+      if (count >= 3) return true;
+    }
+    return false;
   }
 
-  private computeSessionFingerprint(projectName: string, agentType: string, commitsCreated: number): string {
-    // Coarse fingerprint: project + agent + commit count (cost excluded — too variable)
-    // This catches loops where the same agent type produces the same number of commits
-    const input = `${projectName}:${agentType}:${commitsCreated}`;
+  private computeSessionFingerprint(
+    projectName: string,
+    agentType: string,
+    commitsCreated: number,
+    strategy?: string,
+    outputCategory?: string,
+  ): string {
+    // Richer fingerprint: includes strategy and output category to differentiate
+    // sessions that have different goals but same agent/commit count
+    const input = `${projectName}:${agentType}:${commitsCreated}:${strategy ?? ""}:${outputCategory ?? ""}`;
     return createHash("sha256").update(input).digest("hex").slice(0, 16);
+  }
+
+  /**
+   * Budget waste alert: if 5+ consecutive same-project same-agent sessions scored < 50,
+   * send a critical Slack notification.
+   */
+  private async checkBudgetWaste(projectName: string, agentType: string, latestScore: number): Promise<void> {
+    if (latestScore >= 50) return; // only check if this session was low quality
+
+    const history = this.qualityHistory.get(projectName);
+    if (!history || history.length < 5) return;
+
+    // Count consecutive same-agent low-quality sessions from the end
+    let consecutive = 0;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].agentType === agentType && history[i].score < 50) {
+        consecutive++;
+      } else {
+        break;
+      }
+    }
+
+    if (consecutive >= 5) {
+      const totalWaste = history.slice(-consecutive).reduce((sum, q) => sum + q.costUsd, 0);
+      await this.notifier.notify({
+        event: "Budget Waste Alert",
+        project: projectName,
+        summary: `CRITICAL: ${consecutive} consecutive ${agentType} sessions scored < 50 on ${projectName}. ` +
+          `Estimated waste: $${totalWaste.toFixed(2)}. Manual intervention recommended.`,
+        level: "error",
+      });
+      console.error(`[Budget Waste] ${consecutive} consecutive low-quality ${agentType} sessions on ${projectName} — $${totalWaste.toFixed(2)} wasted`);
+    }
   }
 
   private getRecentQualityAvg(projectName: string, count: number = 3): number | undefined {
@@ -2045,7 +2110,7 @@ export class Daemon {
 
     for (const project of activeProjects) {
       let score = 0;
-      let agentType = PHASE_TO_AGENT[project.phase] ?? "researcher" as AgentType;
+      let agentType = resolvePhaseAgent(project.phase);
 
       // Cache phase for signal processing
       this.lastKnownPhases.set(project.project, project.phase);
