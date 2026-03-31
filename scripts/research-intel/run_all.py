@@ -22,6 +22,7 @@ try:
     from .gap_detector import detect as detect_gaps
     from .trend_detector import detect as detect_trends
     from .portfolio_optimizer import detect as detect_portfolio
+    from .frontier_scanner import detect as detect_frontier
     from .synthesize import synthesize
 except ImportError:
     # Direct script execution — add package dir to path and import directly
@@ -32,6 +33,7 @@ except ImportError:
     from gap_detector import detect as detect_gaps  # type: ignore
     from trend_detector import detect as detect_trends  # type: ignore
     from portfolio_optimizer import detect as detect_portfolio  # type: ignore
+    from frontier_scanner import detect as detect_frontier  # type: ignore
     from synthesize import synthesize  # type: ignore
 
 
@@ -273,6 +275,10 @@ def main() -> None:
     all_signals.extend(portfolio_signals)
     print(f"  portfolio_optimizer: {len(portfolio_signals)} signals", file=sys.stderr)
 
+    frontier_signals = detect_frontier(papers)
+    all_signals.extend(frontier_signals)
+    print(f"  frontier_scanner: {len(frontier_signals)} signals", file=sys.stderr)
+
     # Synthesize opportunities
     opportunities = synthesize(all_signals)
     print(f"  synthesized: {len(opportunities)} opportunities", file=sys.stderr)
@@ -293,7 +299,7 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "papers_analyzed": len(papers),
         "total_signals": len(all_signals),
-        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer"],
+        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer", "frontier_scanner"],
         "signals": all_signals,
         "opportunities": opportunities,
     }
