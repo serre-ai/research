@@ -21,6 +21,7 @@ import { verificationRoutes } from "./routes/verification.js";
 import { ClaimVerifier } from "./verification.js";
 import { paperRoutes } from "./routes/paper.js";
 import { literatureRoutes } from "./routes/literature.js";
+import { researchIntelRoutes } from "./routes/research-intel.js";
 import { LinearClient } from "./linear.js";
 
 const { Pool } = pg;
@@ -1537,6 +1538,9 @@ export function createApi(
 
   // Literature intelligence
   app.use("/api/literature", literatureRoutes(() => daemon?.getLiteratureMonitor() ?? null));
+
+  // Research Intelligence Engine
+  app.use("/api/research-intel", researchIntelRoutes(pool));
 
   // Sprint 3C: New endpoints
   app.use("/api/sessions", sessionDetailRoutes(rootDir));
