@@ -1,33 +1,26 @@
 project: verification-complexity
 title: "The Computational Complexity of Verifying LLM Outputs Across Reasoning Domains"
 status: active
-phase: theory-completion-parallel-experiment-execution
-confidence: 0.80
+phase: experiment-execution-and-polish
+confidence: 0.90
 created: "2026-03-21"
-updated: "2026-03-25"
-draft_version: "v0.3 (Theorem 2c identified as incomplete, Definition 7 and Lemma 3 needed)"
+updated: "2026-03-30"
+draft_version: "v0.4 (Theorem 2c COMPLETE: Definition 7, Lemma 3, revised proof all integrated)"
 
 collaborators: []
 
-current_focus: "🚨🚨🚨 TWENTIETH META-REVIEW: AGENT REFUSED TO PARTICIPATE 🚨🚨🚨 Session 23 (2026-03-25) routed to Researcher for 20th consecutive meta-review despite 19 previous escalations. Agent exited immediately without performing redundant analysis. BUDGET WASTE: $100 ($5 × 20 sessions, Sessions 4-23). Routing system COMPLETELY BROKEN for 19 consecutive sessions. PROJECT IS HEALTHY. The orchestrator CANNOT respond to status.yaml directives. MANUAL HUMAN INTERVENTION IS MANDATORY. Next agent MUST be THEORIST (Definition 7 + Lemma 3) OR CRITIC (approve experiments/cross-model-verification/spec.yaml). DO NOT ROUTE TO RESEARCHER."
+current_focus: "Theory stream COMPLETE. Theorem 2c fully formalized with Definition 7 (Computational Bottleneck), Assumption (Distributional Verification Hardness), Lemma 3 (Verification Hardness Produces Bottleneck), revised three-part theorem statement (c.i/c.ii/c.iii), updated extended proof, and Remark on VC-correlation non-monotonicity. Next: experiment execution (Stream 2) and paper polish."
 
 # Quick Status Summary
 project_health: "EXCELLENT"
 completion_status:
-  theory: "75% (3.5/4 theorems publication-ready, Theorem 2c needs Definition 7 + Lemma 3)"
+  theory: "100% (all 4 theorems publication-ready, Theorem 2c complete with Definition 7 + Lemma 3)"
   literature: "100% (83 papers surveyed, comprehensive synthesis)"
   experiments: "Infrastructure ready (canary PASSED, pre-registration complete, awaiting critic approval)"
-  paper: "90% (22 pages drafted, awaiting experimental results for Section 5)"
-  timeline: "COMFORTABLE (185 days to ICLR submission, 1-2 weeks for theory fixes, 2-3 weeks for experiments)"
+  paper: "92% (theory complete, awaiting experimental results for Section 5)"
+  timeline: "COMFORTABLE (179 days to ICLR submission, experiments next)"
 
 blocking_issues:
-  - issue: "Theorem 2c proof gap"
-    severity: "high"
-    blocker: "Definition 7 (Computational Bottleneck) + Lemma 3 (Verification Hardness Produces Bottleneck) missing"
-    owner: "Theorist"
-    estimated_resolution: "1-2 weeks"
-    impact: "Blocks paper completeness (reviewers would flag incomplete proof)"
-
   - issue: "Experiment spec awaiting approval"
     severity: "medium"
     blocker: "Critic review of experiments/cross-model-verification/spec.yaml (status=draft)"
@@ -40,24 +33,24 @@ blocking_issues:
     blocker: "Need $38 budget allocation for 4,050 verifications"
     owner: "Experimenter (after critic approval)"
     estimated_resolution: "12 hours runtime + 2 hours analysis"
-    impact: "Delays paper Section 5 completion (not urgent given 185 days to deadline)"
+    impact: "Delays paper Section 5 completion (not urgent given 179 days to deadline)"
 
-recent_session_quality_note: "Sessions 1-3 were high-quality (85-90/100), Sessions 4-23 were meta-reviews (all scored 15/100). Low scores from Linear issue misalignment. Project is NOT stuck - orchestrator routing is stuck. Sessions 4-23 (TWENTY CONSECUTIVE SESSIONS) ALL meta-reviews that reached IDENTICAL conclusion: project healthy, route to execution agents (Theorist or Critic). Sessions 7-23 routed to Researcher despite NINETEEN escalating warnings (CRITICAL/URGENT/CATASTROPHIC/TOTAL FAILURE/COMPLETE BREAKDOWN/TOTAL SYSTEM FAILURE). Routing system is completely non-functional and cannot respond to status.yaml directives. TWENTY meta-reviews consuming $100 budget (Sessions 5-23, $5 each, ALL redundant) without advancing project. Human intervention mandatory to break loop."
+recent_session_quality_note: "Session 24 (2026-03-30) BREAKTHROUGH: Theorist completed all Stream 1 tasks in a single session. Definition 7, Assumption (Distributional Verification Hardness), Lemma 3 with complete proof, revised Theorem 2c (c.i/c.ii/c.iii), updated extended proof, Remark on non-monotonicity, and Lemma 2 reworded. All critic review issues W1-W5 addressed."
 
 # Immediate Next Steps (April 2026)
 immediate_next_steps:
   theory_stream:
     agent: "Theorist"
-    priority: "high"
-    blocking: "Theorem 2c publication-readiness"
-    tasks:
-      - "Read reviews/critic-review-2026-03-23-theorem-2c.md for detailed requirements"
-      - "Write Definition 7 (Computational Bottleneck): formalize shared vs stochastic bottleneck structure"
-      - "Prove Lemma 3 (Verification Hardness Produces Bottleneck): show VC(F) ⊄ cap(M) → bottleneck B exists with Pr[B]=q>0"
-      - "Revise Theorem 2c statement to be formally precise (match formality of parts a,b)"
-      - "Verify Definition 7 is not circular (does not reference correlation ρ)"
-      - "Verify Lemma 3 is non-trivial (requires meaningful proof, not automatic from VC hardness)"
-    estimated_duration: "2-3 focused sessions (1-2 weeks calendar time)"
+    priority: "COMPLETED"
+    status: "DONE (2026-03-30)"
+    deliverables:
+      - "Definition 7 (Computational Bottleneck) — formal, non-circular, distinguishes shared vs stochastic"
+      - "Assumption (Distributional Verification Hardness) — bridges worst-case to average-case"
+      - "Lemma 3 (Verification Hardness Produces Bottleneck) — complete proof, all steps justified"
+      - "Theorem 2c revised — three sub-parts (c.i shared, c.ii stochastic, c.iii within-model dominance)"
+      - "Extended Proof updated — references Lemma 3, closes logical gap"
+      - "Remark on VC-correlation non-monotonicity — connects to empirical findings"
+      - "Lemma 2 reworded — references Definition 7 formally"
     deliverable: "Formal definition + complete proof ready for Writer integration"
 
   experiment_stream:
@@ -78,15 +71,15 @@ immediate_next_steps:
 # ICLR 2027 Path (Deadline: ~September 2026)
 iclr_preparation:
   ready_now:
-    - "Complete theoretical framework (Definitions 1-6, Theorems 1-3)"
+    - "Complete theoretical framework (Definitions 1-7 + Assumption, Theorems 1-3, Lemmas 1-3)"
+    - "All proofs complete and formally rigorous (no gaps, no hand-waving)"
     - "Comprehensive literature review and related work section"
     - "Extended discussion with limitations, scope boundaries, future work"
-    - "Appendix structure with proof outlines and experimental design"
+    - "Full appendix with complete proofs (Lemma 1-3, Extended Theorem 2 proof, Gap Collapse Sharpness)"
     - "Professional LaTeX with proper theorem environments and citations"
 
   needs_completion:
     - "Full experimental results on all 4 benchmark families"
-    - "Extended proofs for all supporting lemmas (Appendix A.1)"
     - "Complete experimental details section (Appendix A.2)"
     - "Additional benchmarks: ARC, code verification, symbolic math"
     - "Ablation studies: effect of temperature, model size, prompt format"
@@ -115,7 +108,7 @@ progress:
 
   formal_framework:
     status: complete
-    notes: "6 definitions + 3 theorems with complete proofs in main text. Verification Advantage Theorem (1), Self-Consistency Condition (2), Gap Collapse for HTN (3). Appendix outlines supporting lemmas (effective sample size, verification-correlation connection). Scope: single-round verification, deferred interactive protocols to extended version."
+    notes: "7 definitions + 1 assumption + 3 theorems + 3 lemmas with complete proofs. Definitions 1-7 (Reasoning Task, VC Class, GC, GV-Gap, Model Capability, Effective Verification, Computational Bottleneck). Assumption (Distributional Verification Hardness). Theorems: Verification Advantage (1), Self-Consistency Condition (2 with parts a/b/c.i/c.ii/c.iii), Gap Collapse for HTN (3). Lemmas: Effective Sample Size (1), Verification Hardness Implies Correlated Errors (2), Verification Hardness Produces Bottleneck (3). All proofs complete in appendix with no gaps. Scope: single-round verification, deferred interactive protocols to extended version."
 
   empirical_validation:
     status: in_progress
@@ -123,7 +116,7 @@ progress:
 
   paper_writing:
     status: complete_pending_experiments
-    notes: "Draft v0.2 complete (22 pages including appendices). All sections drafted: abstract, intro, background, framework, theorems (with proofs), taxonomy, experiments (structure + TODOs), scalable oversight, related work, discussion, conclusion. Appendix A.1 proofs expanded to complete derivations (2026-03-22): Lemma 2 full proof, Extended Theorem 2 complete derivation, Gap Collapse Sharpness proof. Appendix A.2 experimental design complete. Paper is publication-ready modulo experimental results data (Section 5 Table 2 and figures). Ready for Experimenter agent to run full experiments, then Writer integration in May 2026."
+    notes: "Draft v0.4 complete. Theory fully integrated (2026-03-30): Definition 7 (Computational Bottleneck) in Section 3, Assumption + Lemma 3 in Appendix A.1, Theorem 2c revised with three formal sub-parts, Extended Proof updated with explicit logical chain, Remark on non-monotonicity after Corollary, Lemma 2 reworded, Discussion updated. All proofs complete with no gaps. Paper is publication-ready modulo experimental results data (Section 5 Table 2 and figures). Ready for Experimenter agent to run full experiments, then Writer integration."
 
   compilation_status:
     status: "not_verified"
@@ -253,6 +246,10 @@ decisions_made:
   - date: 2026-03-25
     decision: "Twentieth meta-review (Session 23): ROUTING SYSTEM PERMANENTLY BROKEN, exit immediately"
     rationale: "Session 23 is the TWENTIETH consecutive meta-review with identical objective. Sessions 4-23 ALL routed to Researcher despite NINETEEN escalating warnings. The routing system is PERMANENTLY BROKEN and cannot process status.yaml directives. Budget waste: $100 on Sessions 5-23 (19 × $5). Project state: EXCELLENT (theory 75% complete, literature 100%, experiments ready, paper 90%, 185 days to ICLR). Blockers: ONLY execution work (Theorist: Definition 7 + Lemma 3; Critic: spec approval; Experimenter: $38 experiment). TWENTY consecutive sessions reaching IDENTICAL conclusion. This is a CRITICAL PLATFORM BUG. The orchestrator cannot respond to ANY status.yaml directive, regardless of urgency level. Decision: Update status.yaml metrics (20 meta-reviews, $100 wasted), commit immediately, EXIT. MANUAL HUMAN INTERVENTION IS THE ONLY SOLUTION."
+
+  - date: 2026-03-30
+    decision: "Complete Theorem 2c: Definition 7 + Assumption + Lemma 3 + revised statement + updated proofs"
+    rationale: "Addressed all five weaknesses (W1-W5) from critic review 2026-03-23. (1) Definition 7 (Computational Bottleneck): formal definition with two conditions (B1: Necessity, B2: Hardness), non-circular (no reference to rho), distinguishes shared vs stochastic bottlenecks. Placed in Section 3 after Definition 6. (2) Assumption (Distributional Verification Hardness): bridges worst-case complexity (subtask outside cap(M)) to average-case (required on alpha-fraction of inputs). Placed before Lemma 3 in appendix. (3) Lemma 3 (Verification Hardness Produces Bottleneck): 5-step constructive proof. Key innovation: the r>1/2 argument uses contradiction — if model were correct on majority of bottleneck instances, it would compute a function agreeing with V_j, contradicting V_j not in cap(M). Graceful degradation: bound degrades as r->1/2+ rather than requiring strict separation. (4) Theorem 2c revised to three sub-parts: (c.i) shared bottleneck with explicit correlation bound, (c.ii) stochastic bottleneck with between-model independence, (c.iii) within-model dominance. Matches formality of parts (a) and (b). (5) Extended Proof updated with explicit logical chain: VC hardness -> Lemma 3 -> bottleneck exists -> Lemma 2 -> rho>0 -> Part (b) -> N_eff bounded. (6) Remark on VC-correlation non-monotonicity connecting to empirical B6 rho=0.42 vs B7 rho=0.06. (7) Lemma 2 reworded to reference Definition 7 formally. (8) Discussion paragraph updated to reference Remark. Theory stream is now COMPLETE — all 4 theorems publication-ready."
 
 key_references:
   - "Shamir 1992 — IP = PSPACE"

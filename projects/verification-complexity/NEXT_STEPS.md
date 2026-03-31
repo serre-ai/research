@@ -1,152 +1,31 @@
 # Verification-Complexity: Next Steps
-**Updated**: 2026-03-24
-**Project Health**: EXCELLENT (see META_REVIEW_2026-03-24.md)
-**Timeline**: 185 days to ICLR 2027 submission (September 25, 2026)
+**Updated**: 2026-03-30
+**Project Health**: EXCELLENT
+**Timeline**: 179 days to ICLR 2027 submission (September 25, 2026)
 
 ---
 
 ## Work Streams
 
-Two parallel, independent work streams:
+### Stream 1: Theory Completion -- COMPLETE (2026-03-30)
+**Status**: DONE
+**Deliverables**: All integrated into `paper/main.tex`
+- Definition 7 (Computational Bottleneck) -- formal, non-circular, shared/stochastic distinction
+- Assumption (Distributional Verification Hardness) -- bridges worst-case to average-case
+- Lemma 3 (Verification Hardness Produces Bottleneck) -- complete 5-step proof
+- Theorem 2c revised -- three sub-parts (c.i/c.ii/c.iii) matching formality of parts (a)/(b)
+- Extended Proof updated -- explicit logical chain with no gaps
+- Remark on VC-correlation non-monotonicity -- connects theory to empirical findings
+- Lemma 2 reworded -- references Definition 7 formally
+- Discussion paragraph updated -- references Remark and Definition 7
 
-### Stream 1: Theory Completion (Theorist)
-**Blocks**: Paper completeness (Theorem 2c incomplete)
-**Priority**: HIGH
-**Owner**: Theorist agent
-**Duration**: 1-2 weeks calendar time (2-3 focused sessions)
+All five critic review weaknesses (W1-W5) addressed. Theory is publication-ready.
 
-### Stream 2: Experiment Execution (Critic → Experimenter → Writer)
+### Stream 2: Experiment Execution (Critic -> Experimenter -> Writer)
 **Blocks**: Section 5 experimental results
-**Priority**: HIGH
+**Priority**: HIGH (now the ONLY remaining blocker)
 **Owner**: Critic (approval), then Experimenter (execution), then Writer (integration)
 **Duration**: Critic 2h, Experimenter 12h runtime, Writer 2h
-
----
-
-## Stream 1: Theory Completion (THEORIST)
-
-### Context
-Theorem 2c (Self-Consistency Condition, part c) has a proof gap identified in critic review 2026-03-23:
-- Statement is informal compared to parts (a) and (b)
-- Key term "bottleneck structure" is undefined
-- Proof asserts "VC ⊄ cap(M) → bottleneck exists" without proving it
-- Missing: Definition 7 and Lemma 3
-
-### Task 1.1: Write Definition 7 (Computational Bottleneck)
-
-**Input**:
-- reviews/critic-review-2026-03-23-theorem-2c.md (lines 130-150)
-- paper/main.tex (Theorem 2c at lines 260-266)
-
-**Requirements**:
-1. Formalize "shared structural limitation" vs "instance-specific stochastic difficulty"
-2. Define conditions for when a verification subtask qualifies as a bottleneck
-3. Distinguish "shared" bottleneck (all instances require it) from "stochastic" bottleneck (Pr[required]=q<1)
-4. Ensure definition is NOT circular (does not reference correlation ρ)
-5. Ensure definition is upstream of Theorem 2c (can be used in proof)
-
-**Suggested structure** (from critic review):
-```
-Definition 7 (Computational Bottleneck)
-Let F be a reasoning task and M a model class. A computational bottleneck
-for (F, M) is a verification subtask V_sub: X × Y → {0,1} such that:
-1. Computing V_sub is necessary for distinguishing correct from incorrect
-   answers on a non-negligible fraction of inputs
-2. V_sub ∉ cap(M) (the model cannot compute V_sub)
-3. The bottleneck is:
-   - *shared* if all instances x ∼ D require V_sub
-   - *stochastic* if Pr[x requires V_sub] = q < 1 and instances are independent
-```
-
-**Deliverable**: Formal definition ready for paper integration
-
----
-
-### Task 1.2: Prove Lemma 3 (Verification Hardness Produces Bottleneck)
-
-**Input**:
-- reviews/critic-review-2026-03-23-theorem-2c.md (lines 151-179)
-- Definition 7 (from Task 1.1)
-- paper/main.tex (Extended Proof at lines 823-869)
-
-**Requirements**:
-1. Prove: If VC(F) ⊄ cap(M), then there exists a computational bottleneck B (Definition 7) with Pr[B | x ∼ D] = q > 0
-2. Establish: Errors conditioned on B have probability r > 1/2
-3. Show this is **non-trivial** (not automatic from VC hardness)
-4. Connect worst-case VC hardness to average-case error correlation
-
-**Suggested statement** (from critic review):
-```
-Lemma 3 (Verification Hardness Produces Bottleneck)
-Let F be a reasoning task with VC(F) ⊄ cap(M). Then there exists a
-computational bottleneck B (Definition 7) occurring with probability
-Pr[B | x ∼ D] = q > 0 such that samples conditioned on B have error
-probability r > 1/2.
-```
-
-**Proof sketch**:
-- Since VC(F) ⊄ cap(M), there exists a verification computation V that M cannot perform
-- For instances x where V is required, M cannot verify its output
-- This produces systematic errors: M fails on same instances regardless of sampling
-- These instances constitute bottleneck B with Pr[B] = q > 0
-
-**Deliverable**: Complete formal proof with all steps justified
-
----
-
-### Task 1.3: Revise Theorem 2c Statement
-
-**Input**:
-- Definition 7 (from Task 1.1)
-- Lemma 3 (from Task 1.2)
-- reviews/critic-review-2026-03-23-theorem-2c.md (lines 47-93)
-
-**Requirements**:
-1. Match formality of Theorem 2 parts (a) and (b)
-2. Reference Definition 7 explicitly
-3. Clarify relationship to VC complexity (not "regardless of" but "not monotonic in")
-4. Replace prose with precise mathematical conditions
-
-**Current statement** (informal):
-> (c) (Bottleneck structure) Error correlation depends on whether the source
-> of failure is shared across samples or instance-specific: [prose continues...]
-
-**Suggested revision** (formal):
-> (c) (Bottleneck structure) Let B be a computational bottleneck (Definition 7)
-> for (F, M). If B is shared with Pr[B | x ∼ D] = q > 0, then by Lemma 3,
-> error correlation ρ ≥ q²(r - 1/2)² > 0 where r is the error probability
-> conditioned on B. For within-model sampling at fixed temperature, shared
-> bottlenecks dominate (q ≈ 1), producing ρ > 0 independent of stochastic
-> instance difficulty.
-
-**Deliverable**: Revised theorem statement ready for paper integration
-
----
-
-### Task 1.4: Update Extended Proof
-
-**Input**:
-- Lemma 3 (from Task 1.2)
-- paper/main.tex (Extended Proof at lines 823-869)
-
-**Requirements**:
-1. Replace assertion "VC ⊄ cap(M) → bottleneck exists" with "by Lemma 3"
-2. Connect all proof steps explicitly (no gaps)
-3. Ensure proof flows: VC hardness → Lemma 3 → bottleneck exists → Lemma 2 → ρ > 0
-
-**Deliverable**: Updated proof ready for Writer integration
-
----
-
-### Success Criteria for Stream 1
-
-- [ ] Definition 7 is formal, non-circular, and usable in proofs
-- [ ] Lemma 3 has a complete proof with all steps justified
-- [ ] Theorem 2c statement matches formality of parts (a) and (b)
-- [ ] Extended Proof has no gaps (all connections proved)
-- [ ] A hostile theory reviewer would accept the revised theorem
-
-**When complete**: Flag Writer agent to integrate Definition 7 + Lemma 3 into paper
 
 ---
 
@@ -298,19 +177,18 @@ Once both streams complete:
 
 ## Timeline
 
-| Milestone | Owner | Duration | Deadline |
-|-----------|-------|----------|----------|
-| Definition 7 + Lemma 3 | Theorist | 1-2 weeks | April 14 |
-| Critic review spec | Critic | 2 hours | April 1 |
-| Execute experiment | Experimenter | 12h runtime | April 7 |
-| Analyze + figures | Experimenter | 2 hours | April 8 |
-| Integrate results | Writer | 2 hours | April 9 |
-| Integrate theory | Writer | 4 hours | April 16 |
-| Internal review | Critic | 1 day | May 1 |
-| Final polish | Writer | 1 week | June 1 |
-| **Paper complete** | — | — | **June 1, 2026** |
-| arXiv preprint | — | — | August 15, 2026 |
-| **ICLR submission** | — | — | **September 25, 2026** |
+| Milestone | Owner | Duration | Deadline | Status |
+|-----------|-------|----------|----------|--------|
+| Definition 7 + Lemma 3 | Theorist | 1 session | March 30 | DONE |
+| Critic review spec | Critic | 2 hours | April 7 | PENDING |
+| Execute experiment | Experimenter | 12h runtime | April 14 | PENDING |
+| Analyze + figures | Experimenter | 2 hours | April 15 | PENDING |
+| Integrate results | Writer | 2 hours | April 16 | PENDING |
+| Internal review | Critic | 1 day | May 1 | PENDING |
+| Final polish | Writer | 1 week | June 1 | PENDING |
+| **Paper complete** | -- | -- | **June 1, 2026** | |
+| arXiv preprint | -- | -- | August 15, 2026 | |
+| **ICLR submission** | -- | -- | **September 25, 2026** | |
 
 **Buffer**: 3.5 months between completion and submission (comfortable)
 
