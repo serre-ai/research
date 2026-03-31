@@ -33,7 +33,15 @@ Everything runs on a single Hetzner VPS at `forge.serre.ai` (89.167.5.50). Nginx
 | Service | Unit | Port | What |
 |---------|------|------|------|
 | Dashboard | `forge-site.service` | 3000 | Next.js production server |
-| API | `forge-daemon.service` | 3001 | Express + WebSocket + daemon |
+| API + Daemon | `forge-daemon.service` | 3001 | Express + WebSocket + daemon |
+
+**Daemon status (as of 2026-03-31):** Stopped and disabled. The daemon loop and API run in the same process — stopping the service kills both. Re-enable with:
+```bash
+ssh deepwork-vps-root "systemctl enable --now forge-daemon.service"
+```
+
+### serre.ai (Vercel)
+Institutional site at `site/`. Deployed automatically by Vercel on push to `main`. Builds are skipped when the commit doesn't touch `site/` (configured via ignored build step).
 
 ### Deploy workflow
 ```bash
