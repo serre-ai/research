@@ -282,3 +282,89 @@ ideas:
       conditions. Connects safety and capability evaluation in a novel way.
     status: idea
     # composite: 3*0.30 + 4*0.25 + 4*0.25 + 4*0.20 = 0.90 + 1.00 + 1.00 + 0.80 = 3.70
+
+  - name: recursive-self-improvement-collapse
+    title: "Fundamental Limits of Recursive Self-Improvement Without Collapse"
+    area: ML Theory
+    type: theory
+    venue_targets:
+      - NeurIPS 2026
+      - ICLR 2027
+    estimated_months: 2
+    brief_description: |
+      Recursive self-improvement in language models is fundamentally bounded by a collapse
+      horizon—a predictable point at which self-generated training data causes irreversible
+      distributional narrowing—and this horizon can be formally characterized using
+      information-theoretic drift measures. Recent empirical work (CoVerRL, "Can LRMs Self-Train?")
+      demonstrates consensus traps and reward hacking, but no formal theory characterizes the
+      fundamental limits. This project provides that theory.
+    key_hypotheses:
+      - "The collapse horizon N* (number of recursive generations before irreversible collapse) is bounded by O(H_0 / D_KL) where H_0 is initial entropy and D_KL is per-generation divergence"
+      - "For power-law diversity decay D_n = D_0 * n^(-α), collapse is inevitable when α ≥ 1, avoidable when α < 1 only with external verification"
+      - "Self-consistency maximization accelerates collapse: diversity decreases superlinearly (α > 1) under gradient ascent on agreement probability"
+    novelty_score: 5
+    feasibility_score: 4
+    impact_score: 5
+    portfolio_fit: |
+      Direct extension of self-improvement-limits backlog idea. Complements verification-complexity
+      by characterizing what can't be learned without verification. Forms theoretical trilogy with
+      reasoning-gaps (what LLMs can't do) and verification-complexity (what can't be verified).
+      Score: 84/100 from synthesis rubric.
+    status: idea
+    # composite: 5*0.30 + 4*0.25 + 5*0.25 + 5*0.20 = 1.50 + 1.00 + 1.25 + 1.00 = 4.75
+
+  - name: consensus-diversity-tradeoff
+    title: "The Consensus-Diversity Tradeoff in Self-Consistent Reasoning"
+    area: ML Theory
+    type: both
+    venue_targets:
+      - ICLR 2026
+      - NeurIPS 2026
+    estimated_months: 1.5
+    brief_description: |
+      Self-consistency methods face a fundamental tradeoff between answer confidence (consensus)
+      and reasoning diversity, and this tradeoff can be optimized through diversity-preserving
+      aggregation that outperforms majority voting without ground-truth supervision. Formalizes
+      the consensus trap identified empirically in 6+ recent papers (CoVerRL, Slim-SC, Ranked
+      Voting, Confidence Weighting, etc.).
+    key_hypotheses:
+      - "Majority voting is optimal under i.i.d. errors but fails catastrophically under correlated errors (consensus trap); optimality boundary is characterized by error correlation coefficient ρ > 0.3"
+      - "Diversity-preserving aggregation (weighted by reasoning path novelty) maintains O(√n) error reduction vs. majority voting's O(1) under correlated errors"
+      - "The consensus-diversity tradeoff follows a Pareto frontier: for target confidence level p, minimum achievable entropy H*(p) decreases logarithmically, with majority voting strictly suboptimal"
+    novelty_score: 4
+    feasibility_score: 5
+    impact_score: 4
+    portfolio_fit: |
+      Complements verification-complexity (shows where verification is needed) and reasoning-gaps
+      (provides better evaluation method). More of a methods contribution than fundamental limits,
+      but valuable for diversifying portfolio with theory + empirical work. Score: 81/100.
+    status: idea
+    # composite: 4*0.30 + 5*0.25 + 4*0.25 + 4*0.20 = 1.20 + 1.25 + 1.00 + 0.80 = 4.25
+
+  - name: monitorability-complexity-class
+    title: "Monitorability as a Complexity Class: When Can We Detect Misaligned Reasoning?"
+    area: AI Safety + Theory
+    type: theory
+    venue_targets:
+      - NeurIPS 2026
+      - FAccT 2027
+    estimated_months: 2.5
+    brief_description: |
+      Chain-of-thought monitorability can be formalized as a computational complexity problem,
+      with verifiable reasoning tasks forming a complexity class analogous to NP—and this
+      characterization reveals fundamental limits on what types of reasoning can be monitored
+      for safety. OpenAI's MonitorBench (2026) provides empirical evidence that monitoring works
+      but is "fragile." This project explains why formally.
+    key_hypotheses:
+      - "Monitorability forms a complexity class MONITOR ⊆ NP: a reasoning task is monitorable iff there exists a polynomial-time verifier for reasoning traces"
+      - "Mathematical reasoning is in MONITOR (proofs are poly-time checkable), but open-ended planning is MONITOR-hard (plan quality verification is as hard as planning itself)"
+      - "The generation-verification gap predicts monitorability: tasks where verification is much easier than generation (gap > 2 complexity classes) remain monitorable even under optimization pressure"
+    novelty_score: 5
+    feasibility_score: 3
+    impact_score: 5
+    portfolio_fit: |
+      Direct extension of verification-complexity backlog idea. Forms theoretical trilogy with
+      self-improvement-limits and reasoning-gaps. Addresses core platform concern: can we verify
+      autonomous research? Critical for AI safety arguments. Score: 88/100 (highest this synthesis).
+    status: idea
+    # composite: 5*0.30 + 3*0.25 + 5*0.25 + 5*0.20 = 1.50 + 0.75 + 1.25 + 1.00 = 4.50
