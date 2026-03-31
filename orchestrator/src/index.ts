@@ -48,9 +48,9 @@ async function main() {
   switch (command) {
     case "run": {
       // Parse flags
-      let interval = Number(process.env.POLL_INTERVAL_MINUTES) || 30;
-      let maxSessions = Number(process.env.MAX_CONCURRENT_SESSIONS) || 2;
-      let budget = Number(process.env.DAILY_BUDGET_USD) || 40;
+      let interval = process.env.POLL_INTERVAL_MINUTES ? Number(process.env.POLL_INTERVAL_MINUTES) : undefined;
+      let maxSessions = process.env.MAX_CONCURRENT_SESSIONS ? Number(process.env.MAX_CONCURRENT_SESSIONS) : undefined;
+      let budget = process.env.DAILY_BUDGET_USD ? Number(process.env.DAILY_BUDGET_USD) : undefined;
 
       const rootDir = baseRootDir;
 
@@ -61,19 +61,17 @@ async function main() {
       }
 
       // Validate parsed values
-      if (interval < 1) { console.error("--interval must be >= 1 (minutes)"); process.exit(1); }
-      if (maxSessions < 1) { console.error("--max-sessions must be >= 1"); process.exit(1); }
-      if (budget < 1) { console.error("--budget must be >= 1 (USD)"); process.exit(1); }
+      if (interval !== undefined && interval < 1) { console.error("--interval must be >= 1 (minutes)"); process.exit(1); }
+      if (maxSessions !== undefined && maxSessions < 1) { console.error("--max-sessions must be >= 1"); process.exit(1); }
+      if (budget !== undefined && budget < 1) { console.error("--budget must be >= 1 (USD)"); process.exit(1); }
       if (!existsSync(rootDir)) { console.error("--root-dir does not exist:", rootDir); process.exit(1); }
 
-      const config: DaemonConfig = {
-        pollIntervalMs: interval * 60 * 1000,
-        maxConcurrentSessions: maxSessions,
-        dailyBudgetUsd: budget,
-        rootDir,
-      };
+      const config: Partial<DaemonConfig> = { rootDir };
+      if (interval !== undefined) config.pollIntervalMs = interval * 60 * 1000;
+      if (maxSessions !== undefined) config.maxConcurrentSessions = maxSessions;
+      if (budget !== undefined) config.dailyBudgetUsd = budget;
 
-      console.log(`Starting daemon: interval=${interval}m, sessions=${maxSessions}, budget=$${budget}/day`);
+      console.log(`Starting daemon: interval=${interval ?? "default"}m, sessions=${maxSessions ?? "default"}, budget=$${budget ?? "default"}/day`);
       if (rootDir !== process.cwd()) {
         console.log(`  Root directory: ${rootDir}`);
       }
