@@ -4,7 +4,7 @@ status: active
 phase: experiment-execution-and-polish
 confidence: 0.90
 created: "2026-03-21"
-updated: "2026-03-30"
+updated: "2026-03-31"
 draft_version: "v0.4 (Theorem 2c COMPLETE: Definition 7, Lemma 3, revised proof all integrated)"
 
 collaborators: []
@@ -16,26 +16,20 @@ project_health: "EXCELLENT"
 completion_status:
   theory: "100% (all 4 theorems publication-ready, Theorem 2c complete with Definition 7 + Lemma 3)"
   literature: "100% (83 papers surveyed, comprehensive synthesis)"
-  experiments: "Infrastructure ready (canary PASSED, pre-registration complete, awaiting critic approval)"
+  experiments: "Infrastructure ready (canary PASSED, pre-registration APPROVED 2026-03-30, ready for execution)"
   paper: "92% (theory complete, awaiting experimental results for Section 5)"
   timeline: "COMFORTABLE (179 days to ICLR submission, experiments next)"
 
 blocking_issues:
-  - issue: "Experiment spec awaiting approval"
+  - issue: "Experiment execution ready"
     severity: "medium"
-    blocker: "Critic review of experiments/cross-model-verification/spec.yaml (status=draft)"
-    owner: "Critic (automated trigger needed)"
-    estimated_resolution: "2 hours"
-    impact: "Blocks $38 experiment execution, delays Section 5 results"
-
-  - issue: "Experiment execution budget"
-    severity: "low"
-    blocker: "Need $38 budget allocation for 4,050 verifications"
-    owner: "Experimenter (after critic approval)"
+    blocker: "Need $21 budget allocation for 4,050 verifications (spec APPROVED 2026-03-30)"
+    owner: "Experimenter (needs session with $25 budget)"
     estimated_resolution: "12 hours runtime + 2 hours analysis"
     impact: "Delays paper Section 5 completion (not urgent given 179 days to deadline)"
+    note: "Spec approved, all analysis functions implemented, ready to execute"
 
-recent_session_quality_note: "Session 24 (2026-03-30) BREAKTHROUGH: Theorist completed all Stream 1 tasks in a single session. Definition 7, Assumption (Distributional Verification Hardness), Lemma 3 with complete proof, revised Theorem 2c (c.i/c.ii/c.iii), updated extended proof, Remark on non-monotonicity, and Lemma 2 reworded. All critic review issues W1-W5 addressed."
+recent_session_quality_note: "Session 25 (2026-03-31) STATUS UPDATE: Verified experiment spec.yaml was already approved 2026-03-30 with all analysis functions and figures implemented. Updated status.yaml to reflect approval and readiness for execution. Corrected budget estimate from $38 to $21 based on spec breakdown. Next: execute experiment with $25 budget session."
 
 # Immediate Next Steps (April 2026)
 immediate_next_steps:
@@ -54,19 +48,19 @@ immediate_next_steps:
     deliverable: "Formal definition + complete proof ready for Writer integration"
 
   experiment_stream:
-    agent: "Critic → Experimenter → Writer"
+    agent: "Experimenter → Writer"
     priority: "high"
     blocking: "Section 5 experimental results"
     tasks:
-      - "Critic: Review experiments/cross-model-verification/spec.yaml (status=draft)"
-      - "Critic: Approve or request revisions, update spec.yaml with review.status"
-      - "Experimenter: Execute full experiment if approved (3 gen × 3 ver × 9 tasks × 50 inst = 4,050 verifications)"
+      - "✅ Critic: Review experiments/cross-model-verification/spec.yaml (APPROVED 2026-03-30)"
+      - "Experimenter: Execute full experiment (3 gen × 3 ver × 9 tasks × 50 inst = 4,050 verifications)"
       - "Experimenter: Run analyze_verification_results.py to generate statistical analysis"
-      - "Experimenter: Generate Figures 1-2 using pub_style templates"
-      - "Writer: Integrate results into Section 5 (Table 2, Figures 1-2)"
-    estimated_duration: "Critic 2h, Experimenter 12h runtime + 2h analysis, Writer 2h"
-    budget: "$38 for experiment execution"
+      - "Experimenter: Generate Figures 1-3 using pub_style templates"
+      - "Writer: Integrate results into Section 5 (Table 2, Figures 1-3)"
+    estimated_duration: "Experimenter 12h runtime + 2h analysis, Writer 2h"
+    budget: "$21 for experiment execution (corrected from $38)"
     deliverable: "Complete experimental results in paper Section 5"
+    status: "Ready to execute (spec approved, analysis functions complete, figures implemented)"
 
 # ICLR 2027 Path (Deadline: ~September 2026)
 iclr_preparation:
@@ -111,8 +105,8 @@ progress:
     notes: "7 definitions + 1 assumption + 3 theorems + 3 lemmas with complete proofs. Definitions 1-7 (Reasoning Task, VC Class, GC, GV-Gap, Model Capability, Effective Verification, Computational Bottleneck). Assumption (Distributional Verification Hardness). Theorems: Verification Advantage (1), Self-Consistency Condition (2 with parts a/b/c.i/c.ii/c.iii), Gap Collapse for HTN (3). Lemmas: Effective Sample Size (1), Verification Hardness Implies Correlated Errors (2), Verification Hardness Produces Bottleneck (3). All proofs complete in appendix with no gaps. Scope: single-round verification, deferred interactive protocols to extended version."
 
   empirical_validation:
-    status: in_progress
-    notes: "Cross-model verification: (1) Canary complete (DW-143, 2026-03-23): B4=100%, B7=64%, 36pp gap, ANOVA F=13.5 p<0.001, 8/9 B7 errors are false positives on UNSAT verification (coNP-complete bottleneck). (2) Pre-registration spec created (DW-144, 2026-03-24): spec.yaml with full experimental design (4,050 verifications, ~$38), pre-registered analyses (ANOVA, ICC, error types, difficulty scaling), theoretical grounding to Theorem 1. Status: draft, awaiting critic review. (3) Analysis infrastructure ready: analyze_verification_results.py implements all pre-registered analyses, tested on canary data, bootstrap CIs, effect sizes, publication-ready output. Next: critic approval → full experiment execution → figure generation. SC experiments abandoned (DW-121): insufficient diversity at T=0.7."
+    status: ready_for_execution
+    notes: "Cross-model verification: (1) Canary complete (DW-143, 2026-03-23): B4=100%, B7=64%, 36pp gap, ANOVA F=13.5 p<0.001, 8/9 B7 errors are false positives on UNSAT verification (coNP-complete bottleneck). (2) Pre-registration spec APPROVED (2026-03-30): spec.yaml with full experimental design (4,050 verifications, $21), pre-registered analyses (8 analyses: ANOVA, ICC, two-way ANOVA, between-model agreement, phi coefficients, difficulty scaling, B7 error types, latency), theoretical grounding to Theorems 1 and 2c. All review criteria passed. (3) Analysis infrastructure complete: analyze_verification_results.py implements all 8 pre-registered analyses + 3 publication-ready figures (accuracy by task, verification heatmap, agreement vs rho scatter). Tested on canary data with bootstrap CIs, effect sizes, LaTeX output. Next: execute full experiment ($21 budget) → generate figures → Writer integration to Section 5. SC experiments abandoned (DW-121): insufficient diversity at T=0.7."
 
   paper_writing:
     status: complete_pending_experiments
@@ -250,6 +244,10 @@ decisions_made:
   - date: 2026-03-30
     decision: "Complete Theorem 2c: Definition 7 + Assumption + Lemma 3 + revised statement + updated proofs"
     rationale: "Addressed all five weaknesses (W1-W5) from critic review 2026-03-23. (1) Definition 7 (Computational Bottleneck): formal definition with two conditions (B1: Necessity, B2: Hardness), non-circular (no reference to rho), distinguishes shared vs stochastic bottlenecks. Placed in Section 3 after Definition 6. (2) Assumption (Distributional Verification Hardness): bridges worst-case complexity (subtask outside cap(M)) to average-case (required on alpha-fraction of inputs). Placed before Lemma 3 in appendix. (3) Lemma 3 (Verification Hardness Produces Bottleneck): 5-step constructive proof. Key innovation: the r>1/2 argument uses contradiction — if model were correct on majority of bottleneck instances, it would compute a function agreeing with V_j, contradicting V_j not in cap(M). Graceful degradation: bound degrades as r->1/2+ rather than requiring strict separation. (4) Theorem 2c revised to three sub-parts: (c.i) shared bottleneck with explicit correlation bound, (c.ii) stochastic bottleneck with between-model independence, (c.iii) within-model dominance. Matches formality of parts (a) and (b). (5) Extended Proof updated with explicit logical chain: VC hardness -> Lemma 3 -> bottleneck exists -> Lemma 2 -> rho>0 -> Part (b) -> N_eff bounded. (6) Remark on VC-correlation non-monotonicity connecting to empirical B6 rho=0.42 vs B7 rho=0.06. (7) Lemma 2 reworded to reference Definition 7 formally. (8) Discussion paragraph updated to reference Remark. Theory stream is now COMPLETE — all 4 theorems publication-ready."
+
+  - date: 2026-03-31
+    decision: "Verify experiment spec approval status and update status.yaml"
+    rationale: "Session objective requested critic review of spec.yaml, but investigation revealed spec was already approved 2026-03-30 with status: approved and complete inline review. All missing_before_execution items (two-way ANOVA, between-model error agreement, phi coefficients, Figure 3) were already implemented in analyze_verification_results.py. Status.yaml was stale, still showing 'awaiting critic approval' and listing spec as blocking issue. Updated status.yaml to reflect: (1) spec APPROVED 2026-03-30, (2) all analysis functions implemented, (3) ready for execution, (4) corrected budget from $38 to $21 per spec breakdown. Next step: execute experiment with $25 budget session (12h runtime + 2h analysis)."
 
 key_references:
   - "Shamir 1992 — IP = PSPACE"
