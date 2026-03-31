@@ -1253,7 +1253,8 @@ def print_summary(analyses: dict[str, Any]) -> None:
             print(f"   {vc:8s}: {d['mean']:.3f} (95% CI: [{d['ci_low']:.3f}, {d['ci_high']:.3f}]), n={d['n']}")
         if acc_class.get("anova"):
             a = acc_class["anova"]
-            print(f"   ANOVA: F={a['f_statistic']:.2f}, p={'<0.001' if a['p_value']<0.001 else f'{a[\"p_value\"]:.4f}'}, eta^2={a['eta_squared']:.3f}")
+            p_str = "<0.001" if a['p_value'] < 0.001 else f"{a['p_value']:.4f}"
+            print(f"   ANOVA: F={a['f_statistic']:.2f}, p={p_str}, eta^2={a['eta_squared']:.3f}")
         for pair in acc_class.get("pairwise_comparisons", []):
             sig = "***" if pair["significant_bonferroni"] else "n.s."
             print(f"   {pair['pair']:20s}: d={pair['cohens_d']:.2f}, p={pair['p_value']:.4f} {sig}")
