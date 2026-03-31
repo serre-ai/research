@@ -41,8 +41,8 @@ export interface DaemonConfig {
 }
 
 const DEFAULT_CONFIG: DaemonConfig = {
-  pollIntervalMs: 60 * 60 * 1000,  // 60 min default (was 30)
-  maxConcurrentSessions: 1,          // 1 session at a time (was 2)
+  pollIntervalMs: 30 * 60 * 1000,  // 30 min default
+  maxConcurrentSessions: 2,          // 2 concurrent sessions
   dailyBudgetUsd: 40,
   rootDir: process.cwd(),
 };
