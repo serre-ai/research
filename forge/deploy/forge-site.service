@@ -30,8 +30,8 @@ ReadWritePaths=/opt/deepwork /home/deepwork/deepwork
 PrivateTmp=true
 
 # Resource limits
-MemoryMax=512M
-MemoryHigh=384M
+MemoryMax=768M
+MemoryHigh=512M
 CPUQuota=50%
 
 # Logging
