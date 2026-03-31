@@ -26,6 +26,12 @@ ProtectHome=no
 ReadWritePaths=/opt/deepwork /opt/deepwork-agent /home/deepwork/deepwork /home/deepwork/deepwork-agent
 PrivateTmp=true
 
+# Resource limits
+MemoryMax=2G
+MemoryHigh=1536M
+CPUQuota=150%
+IOWeight=50
+
 # Logging
 StandardOutput=journal
 StandardError=journal
