@@ -4,7 +4,7 @@ import { randomUUID, createHash } from "node:crypto";
 import pg from "pg";
 import { ProjectManager, ProjectStatus } from "./project-manager.js";
 import { SessionManager, type Session, type SessionSignals, type SessionOutputCategory } from "./session-manager.js";
-import { type AgentType, type SessionResult, PHASE_TO_AGENT, resolvePhaseAgent } from "./session-runner.js";
+import { type AgentType, type SessionResult, resolvePhaseAgent } from "./session-runner.js";
 import { GitEngine } from "./git-engine.js";
 import { BudgetTracker } from "./budget-tracker.js";
 import { ActivityLogger } from "./logger.js";
@@ -120,6 +120,7 @@ export class Daemon {
   private qualityHistory = new Map<string, SessionQuality[]>();
   private sessionFingerprints = new Map<string, string[]>(); // last N output fingerprints per project
   private lastStuckNotifyAt = new Map<string, number>();
+  private lastBudgetWasteNotifyAt = new Map<string, number>();
   private lastKnownPhases = new Map<string, string>();
   private cycleCount = 0;
   private startedAt = 0;
@@ -2084,6 +2085,10 @@ export class Daemon {
     }
 
     if (consecutive >= 5) {
+      const lastNotify = this.lastBudgetWasteNotifyAt.get(projectName) ?? 0;
+      if (Date.now() - lastNotify < 24 * 60 * 60 * 1000) return; // throttle: 1 alert per project per 24h
+      this.lastBudgetWasteNotifyAt.set(projectName, Date.now());
+
       const totalWaste = history.slice(-consecutive).reduce((sum, q) => sum + q.costUsd, 0);
       await this.notifier.notify({
         event: "Budget Waste Alert",

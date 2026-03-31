@@ -16,7 +16,13 @@ export interface ProjectStatus {
   venue?: string;
   key_terms?: string[];
   next_steps: string[];
-  immediate_next_steps?: string[];
+  immediate_next_steps?: Record<string, {
+    agent?: string;
+    priority?: string;
+    blocking?: string;
+    tasks?: string[];
+    status?: string;
+  }>;
   decisions_pending: Decision[];
   git?: {
     branch: string;

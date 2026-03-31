@@ -4,7 +4,7 @@ import type { ProjectManager, ProjectStatus } from "./project-manager.js";
 import type { KnowledgeGraph, ClaimRow, ClaimRelationRow } from "./knowledge-graph.js";
 import type { BudgetTracker } from "./budget-tracker.js";
 import type { BacklogManager } from "./backlog.js";
-import { type AgentType, PHASE_TO_AGENT, resolvePhaseAgent, type SessionResult } from "./session-runner.js";
+import { type AgentType, resolvePhaseAgent, type SessionResult } from "./session-runner.js";
 import type { SessionSignals } from "./session-manager.js";
 import { LinearClient } from "./linear.js";
 
@@ -301,7 +301,7 @@ export class ResearchPlanner {
     const briefs: SessionBrief[] = [];
 
     // Engineer agents with empty backlog: skip entirely
-    const agentForPhase = PHASE_TO_AGENT[project.phase];
+    const agentForPhase = resolvePhaseAgent(project.phase);
     if (agentForPhase === "engineer" && this.backlogManager) {
       try {
         const openTickets = await this.backlogManager.list({ status: "open" });
@@ -370,8 +370,8 @@ export class ResearchPlanner {
     }
 
     // Strategy 7: immediate_next_steps hints from status.yaml
-    const immediateSteps = (project as ProjectStatus & { immediate_next_steps?: string[] }).immediate_next_steps;
-    if (immediateSteps && immediateSteps.length > 0 && !recentAllLow) {
+    const immediateSteps = project.immediate_next_steps;
+    if (immediateSteps && Object.keys(immediateSteps).length > 0 && !recentAllLow) {
       const stepsBriefs = this.immediateStepsBriefs(project, immediateSteps, claims, budgetUsd);
       briefs.push(...stepsBriefs);
     }
@@ -399,6 +399,10 @@ export class ResearchPlanner {
       brief.priority = Math.max(brief.priority + penalty, 0);
       return true;
     });
+
+    if (filteredBriefs.length === 0 && briefs.length > 0) {
+      console.log(`[Planner] Circuit breaker blocked all ${briefs.length} briefs for ${project.project} — cooling down for this cycle`);
+    }
 
     return filteredBriefs;
   }
@@ -662,50 +666,74 @@ export class ResearchPlanner {
 
   private immediateStepsBriefs(
     project: ProjectStatus,
-    steps: string[],
+    steps: Record<string, { agent?: string; priority?: string; blocking?: string; tasks?: string[]; status?: string }>,
     allClaims: ClaimRow[],
     budgetUsd: number,
   ): SessionBrief[] {
-    const step = steps[0];
-    const lower = step.toLowerCase();
+    const briefs: SessionBrief[] = [];
 
-    // Infer agent type from the step description
-    let agentType: AgentType;
-    if (lower.includes("experiment") || lower.includes("run") || lower.includes("benchmark") || lower.includes("evaluate")) {
-      agentType = "experimenter";
-    } else if (lower.includes("writ") || lower.includes("draft") || lower.includes("polish") || lower.includes("paper")) {
-      agentType = "writer";
-    } else if (lower.includes("theory") || lower.includes("theorem") || lower.includes("proof")) {
-      agentType = "theorist";
-    } else if (lower.includes("review") || lower.includes("critic") || lower.includes("check")) {
-      agentType = "critic";
-    } else if (lower.includes("scan") || lower.includes("literature") || lower.includes("survey")) {
-      agentType = "scout";
-    } else {
-      agentType = resolvePhaseAgent(project.phase);
+    for (const [streamName, stream] of Object.entries(steps)) {
+      // Skip completed streams
+      if (stream.status?.toLowerCase().includes("done") || stream.priority?.toLowerCase() === "completed") continue;
+
+      const tasks = stream.tasks ?? [];
+      if (tasks.length === 0) continue;
+
+      const firstTask = tasks[0];
+
+      // Determine agent type: prefer the explicit agent field, fall back to keyword inference
+      let agentType: AgentType;
+      if (stream.agent) {
+        const agentLower = stream.agent.toLowerCase();
+        if (agentLower.includes("experiment")) agentType = "experimenter";
+        else if (agentLower.includes("writ") || agentLower.includes("editor")) agentType = "writer";
+        else if (agentLower.includes("theori")) agentType = "theorist";
+        else if (agentLower.includes("critic") || agentLower.includes("review")) agentType = "critic";
+        else if (agentLower.includes("scout") || agentLower.includes("scan")) agentType = "scout";
+        else agentType = resolvePhaseAgent(project.phase);
+      } else {
+        const lower = firstTask.toLowerCase();
+        if (lower.includes("experiment") || lower.includes("run") || lower.includes("benchmark") || lower.includes("evaluate")) {
+          agentType = "experimenter";
+        } else if (lower.includes("writ") || lower.includes("draft") || lower.includes("polish") || lower.includes("paper")) {
+          agentType = "writer";
+        } else if (lower.includes("theory") || lower.includes("theorem") || lower.includes("proof")) {
+          agentType = "theorist";
+        } else if (lower.includes("review") || lower.includes("critic") || lower.includes("check")) {
+          agentType = "critic";
+        } else if (lower.includes("scan") || lower.includes("literature") || lower.includes("survey")) {
+          agentType = "scout";
+        } else {
+          agentType = resolvePhaseAgent(project.phase);
+        }
+      }
+
+      const tasksSummary = tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+
+      briefs.push({
+        id: randomUUID().slice(0, 8),
+        projectName: project.project,
+        agentType,
+        objective: `Execute immediate next step (${streamName}): ${firstTask}. ${tasks.length > 1 ? `Also queued: ${tasks.slice(1, 3).join("; ")}` : ""}`,
+        context: {
+          claims: allClaims.slice(0, MAX_CLAIMS_IN_CONTEXT),
+          contradictions: [],
+          files: this.phaseFiles(project),
+          recentDecisions: project.next_steps?.slice(0, 3) ?? [],
+          supplementary: `immediate_next_steps.${streamName} from status.yaml:\n${tasksSummary}`,
+        },
+        constraints: this.buildConstraints(agentType, budgetUsd),
+        deliverables: [
+          { description: firstTask, type: "commit", verificationMethod: "commit_count" },
+          { description: "Update status.yaml", type: "status_update", verificationMethod: "status_changed" },
+        ],
+        priority: 55, // higher than generic phase-based (20) but below deadline (70+)
+        reasoning: `Project has explicit immediate_next_steps.${streamName} in status.yaml (agent: ${stream.agent ?? "inferred"}, priority: ${stream.priority ?? "unset"}). Executing: "${firstTask.slice(0, 100)}"`,
+        strategy: "gap_filling",
+      });
     }
 
-    return [{
-      id: randomUUID().slice(0, 8),
-      projectName: project.project,
-      agentType,
-      objective: `Execute immediate next step: ${step}. ${steps.length > 1 ? `Also queued: ${steps.slice(1, 3).join("; ")}` : ""}`,
-      context: {
-        claims: allClaims.slice(0, MAX_CLAIMS_IN_CONTEXT),
-        contradictions: [],
-        files: this.phaseFiles(project),
-        recentDecisions: project.next_steps?.slice(0, 3) ?? [],
-        supplementary: `immediate_next_steps from status.yaml:\n${steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}`,
-      },
-      constraints: this.buildConstraints(agentType, budgetUsd),
-      deliverables: [
-        { description: step, type: "commit", verificationMethod: "commit_count" },
-        { description: "Update status.yaml", type: "status_update", verificationMethod: "status_changed" },
-      ],
-      priority: 55, // higher than generic phase-based (20) but below deadline (70+)
-      reasoning: `Project has explicit immediate_next_steps in status.yaml. Executing: "${step.slice(0, 100)}"`,
-      strategy: "gap_filling",
-    }];
+    return briefs;
   }
 
   // --------------------------------------------------------
@@ -867,13 +895,19 @@ export class ResearchPlanner {
     let agentType: AgentType = candidateAgents.find((a) => !recentAgents.includes(a)) ?? phaseAgent;
 
     // If project has immediate_next_steps, prefer the agent matching those hints
-    const nextSteps = (project as ProjectStatus & { immediate_next_steps?: string[] }).immediate_next_steps;
-    if (nextSteps && nextSteps.length > 0) {
-      const hintLower = nextSteps[0].toLowerCase();
-      if (hintLower.includes("experiment")) agentType = "experimenter";
-      else if (hintLower.includes("writ") || hintLower.includes("draft") || hintLower.includes("polish")) agentType = "writer";
-      else if (hintLower.includes("theory") || hintLower.includes("theorem") || hintLower.includes("proof")) agentType = "theorist";
-      else if (hintLower.includes("review") || hintLower.includes("critic")) agentType = "critic";
+    const nextSteps = project.immediate_next_steps;
+    if (nextSteps && Object.keys(nextSteps).length > 0) {
+      // Find the first non-completed stream and use its agent hint
+      const activeStream = Object.values(nextSteps).find(
+        (s) => !s.status?.toLowerCase().includes("done") && s.priority?.toLowerCase() !== "completed"
+      );
+      if (activeStream?.agent) {
+        const hintLower = activeStream.agent.toLowerCase();
+        if (hintLower.includes("experiment")) agentType = "experimenter";
+        else if (hintLower.includes("writ") || hintLower.includes("draft") || hintLower.includes("polish") || hintLower.includes("editor")) agentType = "writer";
+        else if (hintLower.includes("theori") || hintLower.includes("theorem") || hintLower.includes("proof")) agentType = "theorist";
+        else if (hintLower.includes("review") || hintLower.includes("critic")) agentType = "critic";
+      }
     }
 
     return [{
