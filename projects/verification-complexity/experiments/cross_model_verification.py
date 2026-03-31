@@ -216,14 +216,25 @@ def load_generator_results(
 
     for task_key in tasks:
         task_full = TASK_FILES[task_key]
+        # Sanitize model name: replace '/' with '_' to match result file naming
+        # (e.g. "meta-llama/llama-3.1-70b-instruct" -> "meta-llama_llama-3.1-70b-instruct")
+        safe_model = generator_model.replace("/", "_")
         # Find the result file for this generator + task + condition
-        pattern = f"*{generator_model}*{task_full}*{condition}*"
+        pattern = f"*{safe_model}*{task_full}*{condition}*"
         matches = list(RESULTS_DIR.glob(pattern + ".json"))
 
         if not matches:
             # Try without full task name
-            pattern2 = f"*{generator_model}*{task_key}*{condition}*"
+            pattern2 = f"*{safe_model}*{task_key}*{condition}*"
             matches = list(RESULTS_DIR.glob(pattern2 + ".json"))
+
+        # Filter out substring collisions: e.g. "gpt-4o" glob matches "gpt-4o-mini"
+        # Keep only files where the model name segment matches exactly
+        if len(matches) > 1:
+            matches = [
+                m for m in matches
+                if f"_{safe_model}_" in m.name or m.name.startswith(f"{safe_model}_")
+            ]
 
         if not matches:
             logger.warning(f"  No results found for {generator_model} / {task_key} / {condition}")
@@ -383,12 +394,13 @@ def main():
                                 response=model_response,
                             )
 
-                        # Query verifier
+                        # Query verifier (temperature=0.0 for reproducibility)
                         start = time.perf_counter()
                         response, latency = client.query(
                             prompt,
                             system_prompt="You are a careful reasoning evaluator.",
                             max_tokens=2048,
+                            temperature=0.0,
                         )
                         actual_latency = (time.perf_counter() - start) * 1000
 
