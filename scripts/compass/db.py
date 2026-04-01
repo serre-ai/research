@@ -130,6 +130,11 @@ def fetch_claims(project: str = None) -> list[dict]:
         return []
 
 
+def fetch_field_claims(limit: int = 500) -> list[dict]:
+    """Fetch claims from the _field project."""
+    return fetch_claims(project="_field")
+
+
 def store_signals_to_db(signals: list[dict]) -> int:
     """Write signals directly to research_signals table."""
     if not signals:
