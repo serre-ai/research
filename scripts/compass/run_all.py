@@ -26,6 +26,7 @@ try:
     from .frontier_scanner import detect as detect_frontier
     from .reviewer_model import detect as detect_reviewer
     from .synthesize import synthesize
+    from .db import fetch_papers_with_embeddings
 except ImportError:
     # Direct script execution — add package dir to path and import directly
     import pathlib
@@ -39,6 +40,7 @@ except ImportError:
     from frontier_scanner import detect as detect_frontier  # type: ignore
     from reviewer_model import detect as detect_reviewer  # type: ignore
     from synthesize import synthesize  # type: ignore
+    from db import fetch_papers_with_embeddings  # type: ignore
 
 
 DEFAULT_API_URL = "http://localhost:3001"
@@ -238,6 +240,10 @@ def main() -> None:
         "--input", metavar="FILE",
         help="Read papers from a local JSON file instead of the API",
     )
+    parser.add_argument(
+        "--embeddings", action="store_true",
+        help="Use pgvector embeddings for similarity (requires DATABASE_URL)",
+    )
 
     args = parser.parse_args()
 
@@ -255,6 +261,8 @@ def main() -> None:
         except (json.JSONDecodeError, FileNotFoundError) as e:
             print(f"Error loading {args.input}: {e}", file=sys.stderr)
             sys.exit(1)
+    elif args.embeddings:
+        papers = fetch_papers_with_embeddings(limit=args.limit)
     else:
         papers = fetch_papers(args.api, args.limit)
 
