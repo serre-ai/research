@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Research Intelligence Engine — run all detectors.
+"""Compass — run all detectors.
 
 Usage:
-    python3 -m scripts.research-intel.run_all --help
-    python3 -m scripts.research-intel.run_all --api http://localhost:3001 --limit 50 --json
-    python3 scripts/research-intel/run_all.py --api http://localhost:3001 --limit 50 --json
+    python3 -m scripts.compass.run_all --help
+    python3 -m scripts.compass.run_all --api http://localhost:3001 --limit 50 --json
+    python3 scripts/compass/run_all.py --api http://localhost:3001 --limit 50 --json
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-# Support both `python3 -m scripts.research-intel.run_all` and direct execution
+# Support both `python3 -m scripts.compass.run_all` and direct execution
 try:
     from .gap_detector import detect as detect_gaps
     from .trend_detector import detect as detect_trends
@@ -212,7 +212,7 @@ def _store_opportunities_via_psql(opportunities: list[dict], db_url: str) -> int
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Research Intelligence Engine — run all detectors."
+        description="Compass — run all detectors."
     )
     parser.add_argument(
         "--api", default=DEFAULT_API_URL,
@@ -262,7 +262,7 @@ def main() -> None:
         print("No papers found.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Running research-intel detectors on {len(papers)} papers...", file=sys.stderr)
+    print(f"Running compass detectors on {len(papers)} papers...", file=sys.stderr)
 
     # Run all detectors
     all_signals: list[dict] = []
@@ -321,7 +321,7 @@ def main() -> None:
     else:
         # Human-readable summary
         print(f"\n{'='*60}", file=sys.stderr)
-        print(f"Research Intelligence: {len(all_signals)} signals from {len(papers)} papers", file=sys.stderr)
+        print(f"Compass: {len(all_signals)} signals from {len(papers)} papers", file=sys.stderr)
         print(f"{'='*60}\n", file=sys.stderr)
 
         by_type: dict[str, int] = {}

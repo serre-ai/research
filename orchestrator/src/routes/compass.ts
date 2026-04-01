@@ -7,10 +7,10 @@
 import { Router, type Request, type Response } from "express";
 import type pg from "pg";
 
-export function researchIntelRoutes(pool: pg.Pool): Router {
+export function compassRoutes(pool: pg.Pool): Router {
   const r = Router();
 
-  // GET /api/research-intel/signals — list signals
+  // GET /api/compass/signals — list signals
   // Query params: batch_date (YYYY-MM-DD), detector (gap|trend|...), limit (default 50)
   r.get("/signals", async (req: Request, res: Response) => {
     try {
@@ -34,12 +34,12 @@ export function researchIntelRoutes(pool: pg.Pool): Router {
       );
       res.json(rows);
     } catch (err) {
-      console.error("GET /api/research-intel/signals error:", err);
+      console.error("GET /api/compass/signals error:", err);
       res.status(500).json({ error: "Failed to fetch signals" });
     }
   });
 
-  // GET /api/research-intel/opportunities — list opportunities
+  // GET /api/compass/opportunities — list opportunities
   // Query params: batch_date, status, limit
   r.get("/opportunities", async (req: Request, res: Response) => {
     try {
@@ -63,12 +63,12 @@ export function researchIntelRoutes(pool: pg.Pool): Router {
       );
       res.json(rows);
     } catch (err) {
-      console.error("GET /api/research-intel/opportunities error:", err);
+      console.error("GET /api/compass/opportunities error:", err);
       res.status(500).json({ error: "Failed to fetch opportunities" });
     }
   });
 
-  // GET /api/research-intel/stats — summary stats
+  // GET /api/compass/stats — summary stats
   r.get("/stats", async (_req: Request, res: Response) => {
     try {
       const { rows } = await pool.query(`
@@ -80,7 +80,7 @@ export function researchIntelRoutes(pool: pg.Pool): Router {
       `);
       res.json(rows[0] || {});
     } catch (err) {
-      console.error("GET /api/research-intel/stats error:", err);
+      console.error("GET /api/compass/stats error:", err);
       res.status(500).json({ error: "Failed to fetch stats" });
     }
   });

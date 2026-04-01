@@ -1,0 +1,1105 @@
+# =============================================================================
+# COMPREHENSIVE EXPERIMENT SPECIFICATION
+# The Computational Complexity of Verifying LLM Outputs
+# =============================================================================
+#
+# This document specifies the complete experiment suite for an ICLR 2027
+# submission. Each experiment maps directly to a theorem or prediction in the
+# paper. The suite is designed so that the full collection of results constitutes
+# an airtight empirical case: if the predictions hold, the paper is compelling;
+# if they fail in specific ways, we know exactly what went wrong and can revise
+# the theory.
+#
+# Design philosophy:
+#   1. Every experiment tests a SPECIFIC, FALSIFIABLE prediction from the paper.
+#   2. Predictions are committed BEFORE seeing results (pre-registration).
+#   3. The analysis plan is fully specified — no degrees of freedom.
+#   4. Budget-aware: fits within $40/day, ~$200 total.
+#   5. The "money figure" is the SC scaling curve (Experiment 1), not
+#      cross-model verification (Experiment 4).
+#
+# Author: Oddur Sigurdsson + Claude
+# Date: 2026-03-31
+# Status: draft (awaiting review)
+# =============================================================================
+
+meta:
+  paper_title: "On the Verification Complexity of LLM Outputs: When Checking is as Hard as Generating"
+  target_venue: "ICLR 2027"
+  target_deadline: "~2026-09-25"
+  total_budget_usd: 200
+  daily_budget_usd: 40
+  pre_registration_date: "2026-03-31"
+  version: "1.0"
+
+
+# =============================================================================
+# EXPERIMENT 1: Self-Consistency Scaling Curves
+# =============================================================================
+# THE MONEY EXPERIMENT. Tests Theorem 2c directly.
+#
+# The paper's central empirical prediction: accuracy under majority voting
+# follows acc(N) = f(N_eff), where N_eff = N / (1 + (N-1)*rho). High-rho
+# tasks plateau early. Low-rho tasks keep improving.
+#
+# This is the figure that will be cited for years: accuracy vs N, with the
+# theoretical N_eff prediction overlaid, showing that the theory predicts
+# the plateau location.
+# =============================================================================
+
+experiment_1:
+  name: "Self-Consistency Scaling Curves"
+  short_name: "sc_scaling"
+  theorems_tested:
+    - "Theorem 2c (Self-Consistency Condition)"
+    - "Theorem 2c.i (Shared bottleneck → bounded N_eff)"
+    - "Theorem 2c.iii (Within-model dominance)"
+    - "Remark 1 (Non-monotonicity)"
+  status: "planned"
+
+  # ---------------------------------------------------------------------------
+  # Rationale
+  # ---------------------------------------------------------------------------
+  rationale: >
+    The paper's main technical contribution is the bottleneck-dependent error
+    correlation model. The most direct test is: does accuracy under majority
+    voting saturate at the N_eff predicted by measured rho? If we observe that
+    B6 (rho=0.42) plateaus at N_eff ~ 2.4 while B7 (rho=0.06) keeps improving
+    well past N=16, the theory is vindicated. The key insight is that the
+    PLATEAU LOCATION, not just its existence, is predicted by the theory.
+
+  # ---------------------------------------------------------------------------
+  # Critical lesson from pilot data
+  # ---------------------------------------------------------------------------
+  pilot_findings: >
+    CRITICAL: Pilot SC data at T=0.7 showed 96-99% within-sample agreement
+    across all tasks (B2, B4, B7, B9 at N=9). At T=1.0, B4 at difficulty=4
+    showed ~89% agreement — still high but with detectable diversity. This means
+    within-model SC at moderate temperatures is NEARLY DETERMINISTIC for Haiku.
+
+    This is actually CONSISTENT with Theorem 2c.iii: within-model sampling
+    always falls in the shared-bottleneck regime. The pilot data CONFIRMS the
+    prediction rather than undermining it. But it means we need:
+    (a) Temperature = 1.0 (maximum non-degenerate diversity)
+    (b) Focus on tasks where base accuracy is 30-70% (not >90% where there's
+        nothing to correct)
+    (c) Multiple models, not just Haiku, to show the pattern is universal
+    (d) Enough N values to see the early-plateau clearly
+
+    The STORY is: "within-model SC doesn't help much because rho_within is
+    always high, but the DEGREE of futility varies by bottleneck type, and
+    that variation matches the theory."
+
+  # ---------------------------------------------------------------------------
+  # Design
+  # ---------------------------------------------------------------------------
+  design:
+    # --- Models ---
+    # Three models spanning capability levels. Each model does within-model SC.
+    # We need models where base accuracy is in the 30-70% range on the hard
+    # tasks — too high and there's no room for SC to help; too low and majority
+    # voting can't overcome the base rate.
+    #
+    # Based on existing data:
+    #   B6 (LIS): Haiku 50%, GPT-4o-mini 31%, Llama-8B 19%
+    #   B7 (3SAT): Haiku 70%, GPT-4o-mini 60%, Llama-8B 26%
+    #   B4 (FSM):  Haiku 89%, GPT-4o-mini 64%, Llama-8B 61%
+    #
+    # Haiku is best: it has accuracy in the critical range for B6 and B7.
+    # GPT-4o-mini gives a second model with accuracy in range for B4, B6, B7.
+    # Llama-8B is too weak on B6 (19%) — majority voting from a near-random
+    # base is theoretically interesting but not the primary test.
+    models:
+      primary:
+        - key: "haiku"
+          model_id: "claude-haiku-4-5-20251001"
+          provider: "anthropic"
+          cost_per_call_usd: 0.002
+          rationale: "Best accuracy profile across tasks. 50% on B6 is ideal for SC testing."
+      secondary:
+        - key: "gpt4o-mini"
+          model_id: "gpt-4o-mini"
+          provider: "openai"
+          cost_per_call_usd: 0.002
+          rationale: "Independent architecture, accuracy in range for B4/B6/B7."
+      tertiary:
+        - key: "llama-8b"
+          model_id: "meta-llama/llama-3.1-8b-instruct"
+          provider: "openrouter"
+          cost_per_call_usd: 0.0005
+          rationale: "Third architecture family. Low B6 accuracy is a boundary case."
+
+    # --- Sample counts (N values) ---
+    # Need enough points to see the curve shape clearly. The theoretical
+    # prediction is exponential convergence at rate exp(-Omega(N_eff)), so:
+    # - For high-rho (rho=0.42): N_eff maxes out at ~2.4 regardless of N.
+    #   Plateau should be visible by N=5-9.
+    # - For low-rho (rho=0.06): N_eff ~ N/1.05, so improvement continues.
+    #   Need N up to 32+ to see continued improvement.
+    #
+    # We use N = {1, 3, 5, 9, 17, 33} — geometric-ish progression that
+    # gives 6 points on the curve. N=1 is the baseline (no voting).
+    # N=33 (odd) ensures a clean majority with no ties.
+    #
+    # IMPORTANT: We don't need to re-run N=1 separately — it's the first
+    # sample from each N>1 run. But for clean methodology we compute N=1
+    # accuracy from the dedicated single-sample evaluation (existing data).
+    sample_counts: [1, 3, 5, 9, 17, 33]
+
+    # --- Temperature ---
+    # T=1.0: maximum diversity without degeneration. Pilot showed T=0.7 gives
+    # 96-99% agreement (useless). T=1.0 gives ~89% agreement on easy tasks
+    # and more diversity on hard tasks. Higher T risks degenerate outputs.
+    # We use T=1.0 for all within-model SC experiments.
+    temperature: 1.0
+
+    # --- Tasks ---
+    # Focus on the THREE tasks that most cleanly test the theory:
+    #   B6 (LIS): shared bottleneck, rho=0.42, VC=P. HIGHEST predicted rho.
+    #             SC should show EARLY plateau.
+    #   B7 (3SAT): stochastic bottleneck, rho=0.06, VC=P/coNP. LOWEST rho.
+    #              SC should show CONTINUED improvement (if base acc allows).
+    #   B4 (FSM): moderate bottleneck, rho=0.22, VC=P. MIDDLE rho.
+    #             SC should show intermediate plateau.
+    #
+    # We also run B1, B2, B3, B5 for completeness (smaller scale) and B8, B9
+    # for the architectural bottleneck baseline.
+    tasks:
+      primary:
+        - task: "B6"
+          label: "LIS (algorithmic, shared bottleneck)"
+          known_rho: 0.42
+          predicted_neff_limit: 2.4  # 1 / rho
+          predicted_plateau_n: 5     # N where acc improvement < 1%
+          rationale: "Shared bottleneck exemplar. All models lack DP for LIS."
+          accuracy_note: >
+            CRITICAL EDGE CASE: Haiku has 50% aggregate accuracy on B6, but
+            this is bimodal: 97% at d=1, 95% at d=2, 52% at d=3, 6% at d=4,
+            0% at d=5. The SC scaling test is only meaningful where accuracy
+            is in the 25-75% range (d=2-3 for Haiku).
+
+            ANALYSIS STRATEGY: Stratify by difficulty. Use d=1-3 (where Haiku
+            has 52-97% accuracy) as the primary analysis. At d=3 (52%), the
+            shared-bottleneck prediction is that ALL 33 samples will agree on
+            the SAME wrong answer — SC cannot help. This is actually the most
+            dramatic demonstration of the shared bottleneck: near-coin-flip
+            accuracy with near-perfect agreement.
+
+            For the scaling curve in Figure 1, use difficulty-stratified panels
+            or report aggregate accuracy weighted to the 25-75% accuracy band.
+
+        - task: "B7"
+          label: "3-SAT (intractability, stochastic bottleneck)"
+          known_rho: 0.06
+          predicted_neff_limit: 16.7  # 1 / rho
+          predicted_plateau_n: 33     # Continues improving at N=33
+          rationale: "Stochastic bottleneck exemplar. Instance-specific hardness."
+
+        - task: "B4"
+          label: "FSM (serial, moderate bottleneck)"
+          known_rho: 0.22
+          predicted_neff_limit: 4.5
+          predicted_plateau_n: 9
+          rationale: "Intermediate case. Tests the rho-plateau relationship."
+
+      secondary:
+        - task: "B1"
+          known_rho: 0.22
+        - task: "B2"
+          known_rho: 0.22
+        - task: "B3"
+          known_rho: 0.31
+        - task: "B5"
+          known_rho: 0.11
+
+      tertiary:
+        - task: "B8"
+          known_rho: 0.15
+          rationale: "Architectural bottleneck. Prediction unclear."
+        - task: "B9"
+          known_rho: 0.07
+          rationale: "Architectural bottleneck. Prediction unclear."
+
+    # --- Instances ---
+    # Power analysis for detecting a 5-percentage-point accuracy difference
+    # between N=1 and N=33:
+    #   alpha = 0.05, power = 0.80, effect = 0.05 on proportion test
+    #   Required n ~ 750 per condition (McNemar's test on paired data)
+    #
+    # But we're doing paired comparisons (same instances at different N),
+    # which dramatically reduces the required n. For paired data with
+    # moderate correlation:
+    #   Required n ~ 200 per condition for paired McNemar
+    #
+    # We use 40 instances per difficulty x 5 difficulties = 200 per task.
+    # For primary tasks (B4, B6, B7): 200 instances each.
+    # For secondary tasks (B1-B3, B5): 100 instances each (20/difficulty).
+    # For tertiary tasks (B8, B9): 100 instances each.
+    instances:
+      primary_tasks:
+        instances_per_difficulty: 40
+        difficulties: [1, 2, 3, 4, 5]
+        total_per_task: 200
+      secondary_tasks:
+        instances_per_difficulty: 20
+        difficulties: [1, 2, 3, 4, 5]
+        total_per_task: 100
+      tertiary_tasks:
+        instances_per_difficulty: 20
+        difficulties: [1, 2, 3, 4, 5]
+        total_per_task: 100
+
+    # --- Condition ---
+    # short_cot: "Think step by step, then provide your final answer."
+    # This is the standard SC condition — it's what Wang et al. (2023) used.
+    # We also run a small comparison with "direct" (answer-only) on primary
+    # tasks to verify that CoT is necessary for the SC effect.
+    condition: "short_cot"
+    condition_ablation: "direct"  # Primary tasks only, N={1,9} only
+
+    # --- Reproducibility ---
+    seed: 42
+
+  # ---------------------------------------------------------------------------
+  # Predictions (pre-registered, falsifiable)
+  # ---------------------------------------------------------------------------
+  predictions:
+    # P1: The ordering of plateau rates matches the ordering of rho
+    - id: "SC-P1"
+      statement: >
+        The self-consistency lift (accuracy_N33 - accuracy_N1) follows the
+        inverse rho ordering: lift(B7) > lift(B4) > lift(B6), for at least
+        2 of 3 models tested.
+      falsification: >
+        If lift(B6) > lift(B7) for 2+ models, the rho-ordering prediction fails.
+      statistical_test: >
+        Paired McNemar test on accuracy at N=1 vs N=33 for each task/model.
+        Compare lift magnitudes. One-sided test: lift(B7) > lift(B6).
+
+    # P2: B6 accuracy plateaus early
+    - id: "SC-P2"
+      statement: >
+        For B6 (LIS), accuracy at N=17 is within 2 percentage points of
+        accuracy at N=33, for the primary model (Haiku). The curve flattens
+        by N~5-9.
+      falsification: >
+        If accuracy at N=33 exceeds accuracy at N=17 by >2pp, the plateau
+        prediction fails.
+
+    # P3: B7 accuracy keeps improving
+    - id: "SC-P3"
+      statement: >
+        For B7 (3-SAT), accuracy at N=33 exceeds accuracy at N=9 by at
+        least 2 percentage points, for the primary model (Haiku).
+      falsification: >
+        If accuracy plateaus by N=9, the stochastic-bottleneck prediction fails.
+      note: >
+        This prediction is conditional on Haiku's base accuracy being
+        in the 50-75% range. If base accuracy is >85% or <25%, the test
+        is underpowered.
+
+    # P4: Theoretical N_eff curve fits empirical data
+    - id: "SC-P4"
+      statement: >
+        The theoretical model acc(N) = Phi(sqrt(N_eff) * (2*p-1) / (2*sqrt(p*(1-p))))
+        where N_eff = N/(1+(N-1)*rho) and p is the single-sample accuracy,
+        fits the empirical scaling curve with R^2 > 0.85 when rho is set
+        to the known between-model value.
+      falsification: >
+        R^2 < 0.50 for 2+ tasks indicates the N_eff model is inadequate.
+      note: >
+        This is the strongest test. The known rho values (from reasoning-gaps
+        between-model correlation) are used WITHOUT fitting — they are EXTERNAL
+        parameters plugged into the theoretical curve.
+
+    # P5: Within-model rho is uniformly high
+    - id: "SC-P5"
+      statement: >
+        Within-model error correlation (estimated from pairwise agreement of
+        N=33 samples on the same instance) exceeds 0.5 for all tasks and all
+        models.
+      falsification: >
+        If any task shows within-model rho < 0.3, the within-model dominance
+        prediction (Theorem 2c.iii) is violated.
+
+  # ---------------------------------------------------------------------------
+  # Cost estimate
+  # ---------------------------------------------------------------------------
+  cost:
+    # Primary model (Haiku): 3 primary tasks x 200 inst x 33 samples = 19,800 calls
+    # + 4 secondary tasks x 100 inst x 33 = 13,200
+    # + 2 tertiary tasks x 100 inst x 33 = 6,600
+    # + condition ablation: 3 tasks x 200 inst x 9 = 5,400
+    # Total Haiku: 45,000 calls x $0.002 = $90
+    #
+    # Secondary model (GPT-4o-mini): 3 primary tasks x 200 inst x 33 = 19,800
+    # Total GPT-4o-mini: 19,800 calls x $0.002 = $39.60
+    #
+    # Tertiary model (Llama-8B): 3 primary tasks x 200 inst x 33 = 19,800
+    # Total Llama-8B: 19,800 calls x $0.0005 = $9.90
+    #
+    # Grand total: ~$140
+    # WITH CONTINGENCY (20%): ~$168
+    #
+    # PHASED EXECUTION (to manage daily budget):
+    #   Day 1: Haiku primary tasks (19,800 calls, ~$40)
+    #   Day 2: Haiku secondary+tertiary (19,800 calls, ~$40)
+    #   Day 3: GPT-4o-mini primary (19,800 calls, ~$40)
+    #   Day 4: Llama-8B primary + Haiku ablation (25,200 calls, ~$15)
+    #
+    breakdown:
+      haiku_primary:
+        calls: 19800
+        cost_usd: 39.60
+        runtime_hours: 6
+      haiku_secondary_tertiary:
+        calls: 19800
+        cost_usd: 39.60
+        runtime_hours: 6
+      gpt4o_mini_primary:
+        calls: 19800
+        cost_usd: 39.60
+        runtime_hours: 6
+      llama_8b_primary:
+        calls: 19800
+        cost_usd: 9.90
+        runtime_hours: 4
+      haiku_ablation:
+        calls: 5400
+        cost_usd: 10.80
+        runtime_hours: 2
+    total_calls: 84600
+    total_cost_usd: 139.50
+    contingency_usd: 28.00
+    max_budget_usd: 168.00
+    estimated_runtime_days: 4
+
+
+# =============================================================================
+# EXPERIMENT 2: Direct Error Correlation Measurement
+# =============================================================================
+# This experiment directly measures rho (error correlation) from the SC data
+# collected in Experiment 1. It is NOT a separate data-collection experiment
+# but an analysis of Experiment 1 data. We specify it separately because it
+# tests different predictions and requires specific statistical methods.
+# =============================================================================
+
+experiment_2:
+  name: "Direct Error Correlation Measurement"
+  short_name: "error_correlation"
+  theorems_tested:
+    - "Theorem 2c.i (Shared bottleneck → high rho)"
+    - "Theorem 2c.ii (Stochastic bottleneck → low between-model rho)"
+    - "Remark 1 (Non-monotonicity: rho not monotone in VC class)"
+  status: "planned"
+  data_source: "Reuses Experiment 1 data — no additional API calls"
+
+  rationale: >
+    The paper claims rho varies by bottleneck type, not VC class. The most
+    direct test is to MEASURE rho from the N=33 samples per instance and
+    compare across tasks. The non-monotonicity prediction (B6 rho > B7 rho)
+    is the central falsifiable claim.
+
+  # ---------------------------------------------------------------------------
+  # Method: How to compute rho from N samples per instance
+  # ---------------------------------------------------------------------------
+  method:
+    within_model_rho:
+      description: >
+        For each instance i, we have N=33 binary samples (correct/incorrect).
+        The within-model pairwise error correlation is:
+          rho_within = Corr(1[y_j incorrect], 1[y_k incorrect])
+        averaged over all j!=k pairs within the same instance, then averaged
+        across instances.
+
+        Formally: for instance i with N samples, compute
+          p_i = fraction of samples correct
+          Then rho_i = (p_i(1-p_i) - sigma_i^2) / (p_i(1-p_i))
+        where sigma_i^2 is the Bernoulli variance N*p_i*(1-p_i)/N.
+
+        But this is ill-conditioned for p_i near 0 or 1. Better approach:
+        compute the intraclass correlation (ICC) across instances.
+
+      practical_computation: >
+        1. For each instance, compute the error indicator vector e_i = (e_i1, ..., e_iN)
+           where e_ij = 1 if sample j is incorrect.
+        2. Compute p_hat_i = mean(e_i) for each instance.
+        3. Exclude instances where p_hat_i = 0 or p_hat_i = 1 (all correct or
+           all incorrect — these are uninformative for correlation).
+        4. Among remaining instances, compute the average pairwise phi coefficient
+           between samples within each instance, then average across instances.
+        5. The population-level rho is estimated via ICC(2,1) treating samples as
+           "raters" and instances as "subjects".
+
+      samples_needed: >
+        With N=33 samples per instance and 200 instances, we have ~200 instances
+        contributing to the correlation estimate. For detecting rho=0.1 vs rho=0.4
+        with alpha=0.05 and power=0.80, we need ~40 instances (Shrout & Fleiss, 1979).
+        200 instances gives comfortable power even for the smallest predicted rho.
+
+    between_model_rho:
+      description: >
+        Use the EXISTING between-model rho values from the reasoning-gaps
+        evaluation (Table in paper). These were measured from 12 models x 500
+        instances per task and are our ground truth. We do NOT re-measure
+        between-model rho here — we use it as an EXTERNAL parameter to test
+        whether it predicts within-model SC behavior.
+
+  # ---------------------------------------------------------------------------
+  # Predictions
+  # ---------------------------------------------------------------------------
+  predictions:
+    - id: "CORR-P1"
+      statement: >
+        Within-model rho_within is > 0.50 for ALL tasks and models.
+        This confirms Theorem 2c.iii (within-model dominance).
+      falsification: >
+        Any task with rho_within < 0.30 disconfirms Theorem 2c.iii.
+
+    - id: "CORR-P2"
+      statement: >
+        Within-model rho_within varies by task in the same ORDERING as
+        between-model rho_between: rho_within(B6) > rho_within(B4) > rho_within(B7).
+        The shared-bottleneck structure is so strong that it dominates even
+        within-model sampling diversity.
+      falsification: >
+        If ordering is random (no correlation between rho_within and rho_between
+        across tasks), the bottleneck structure theory adds nothing.
+
+    - id: "CORR-P3"
+      statement: >
+        Non-monotonicity: rho(B6) > rho(B7) despite VC(B6) = P (easier) and
+        VC(B7) ⊇ coNP (harder). This is the paper's most distinctive prediction.
+      statistical_test: >
+        Permutation test on rho(B6) vs rho(B7). Compute rho for each task,
+        then test H0: rho(B6) <= rho(B7) vs H1: rho(B6) > rho(B7).
+        One-sided alpha = 0.05.
+      falsification: >
+        If rho(B7) >= rho(B6), the non-monotonicity prediction fails.
+
+  cost:
+    additional_api_calls: 0
+    note: "Pure analysis of Experiment 1 data"
+
+
+# =============================================================================
+# EXPERIMENT 3: Within-Model vs Between-Model Ensembles
+# =============================================================================
+# Tests Theorem 2c.iii: within-model SC falls in the shared-bottleneck regime
+# (same weights → same errors). Between-model ensembles should dominate for
+# shared-bottleneck tasks.
+# =============================================================================
+
+experiment_3:
+  name: "Within-Model vs Between-Model Ensemble Comparison"
+  short_name: "ensemble_comparison"
+  theorems_tested:
+    - "Theorem 2c.iii (Within-model dominance of shared bottleneck)"
+    - "Corollary (Between-model ensembles better for shared bottleneck tasks)"
+  status: "planned"
+
+  rationale: >
+    The sharpest test of Theorem 2c.iii is a HEAD-TO-HEAD comparison: N samples
+    from one model (within) vs 1 sample from each of N models (between). The
+    theory predicts between-model should dominate on shared-bottleneck tasks
+    (B6) and the gap should be smaller on stochastic-bottleneck tasks (B7).
+
+    This requires generation from multiple models on the SAME instances, which
+    we already have from the reasoning-gaps evaluation (12 models x 500 instances).
+
+  design:
+    # --- Within-model ensemble ---
+    # From Experiment 1: N samples from Haiku at T=1.0
+    within_model:
+      source: "Experiment 1 (Haiku, T=1.0)"
+      ensemble_sizes: [3, 5, 9]
+
+    # --- Between-model ensemble ---
+    # From reasoning-gaps evaluation: 1 sample per model from short_cot condition.
+    # Available models with complete B1-B9 results:
+    #   1. claude-haiku-4-5-20251001 (Anthropic)
+    #   2. claude-sonnet-4-20250514 (Anthropic)
+    #   3. claude-opus-4-6 (Anthropic)
+    #   4. gpt-4o-mini (OpenAI)
+    #   5. gpt-4o (OpenAI)
+    #   6. o3 (OpenAI)
+    #   7. llama-3.1-8b-instruct (Meta)
+    #   8. mistral-small-24b (Mistral)
+    #   9. ministral-8b (Mistral)
+    #   10. qwen-2.5-7b (Qwen)
+    #   11. qwen-2.5-72b (Qwen)
+    #
+    # For between-model ensemble of size N, we sample N models and take majority
+    # vote of their single-sample answers on each instance.
+    between_model:
+      source: "reasoning-gaps evaluation (short_cot, existing data)"
+      available_models: 11  # All models with complete B1-B9 results
+      ensemble_sizes: [3, 5, 9]
+      sampling_method: >
+        For each ensemble size N, enumerate all (11 choose N) subsets of models
+        (if small enough) or sample 100 random subsets. For each subset, compute
+        majority vote accuracy on all shared instances. Report mean accuracy
+        across subsets.
+      note: "No additional API calls needed — uses existing evaluation data."
+
+    tasks:
+      - task: "B6"
+        rationale: "Shared bottleneck. Between-model should dominate."
+      - task: "B7"
+        rationale: "Stochastic bottleneck. Gap should be smaller."
+      - task: "B4"
+        rationale: "Moderate bottleneck. Intermediate prediction."
+      - task: "B1"
+        rationale: "Working memory bottleneck. Control task."
+
+    instances:
+      # Use all 500 instances per task from reasoning-gaps evaluation.
+      # Between-model data exists for all 500; within-model (Exp 1) has 200.
+      # Comparison uses the 200-instance overlap.
+      shared_instances: 200
+      between_model_full: 500
+
+  predictions:
+    - id: "ENS-P1"
+      statement: >
+        On B6 (shared bottleneck): between-model ensemble at N=9 outperforms
+        within-model SC at N=9 by at least 5 percentage points.
+      falsification: >
+        If within-model matches or exceeds between-model on B6, the
+        shared-bottleneck theory for within-model is wrong.
+
+    - id: "ENS-P2"
+      statement: >
+        On B7 (stochastic bottleneck): the gap between between-model and
+        within-model ensembles at N=9 is smaller than on B6. Specifically,
+        gap(B6) > gap(B7).
+      falsification: >
+        If gap(B7) >= gap(B6), the bottleneck-type distinction fails.
+
+    - id: "ENS-P3"
+      statement: >
+        The between-model accuracy advantage tracks the known rho values:
+        tasks with higher rho (more shared bottleneck) show larger
+        between-model advantage.
+      statistical_test: >
+        Spearman correlation between known rho and (between_acc - within_acc).
+        Expected: positive and significant (r_s > 0.5, p < 0.05).
+
+  cost:
+    additional_api_calls: 0
+    note: >
+      Between-model data is entirely from existing reasoning-gaps evaluation.
+      Within-model data is from Experiment 1. This experiment is pure analysis.
+
+
+# =============================================================================
+# EXPERIMENT 4: Cross-Model Verification (Existing, Refined)
+# =============================================================================
+# Tests Theorem 1 (Verification Advantage). Reframed as supporting evidence.
+# Already has a canary run (B4=100%, B7=64%). Full execution pending.
+# =============================================================================
+
+experiment_4:
+  name: "Cross-Model Verification"
+  short_name: "cross_verification"
+  theorems_tested:
+    - "Theorem 1 (Verification Advantage)"
+  status: "canary_complete"
+  spec_file: "cross-model-verification/spec.yaml"
+
+  rationale: >
+    This is the SIMPLEST experiment — does verification accuracy track VC class?
+    The canary (B4=100%, B7=64%) already shows the signal. The full run adds
+    all 9 tasks and 3 generator x 3 verifier pairs. It is supporting evidence
+    for Theorem 1, not the main event.
+
+  # Design is fully specified in spec.yaml. Key parameters:
+  design_summary:
+    generators: ["haiku", "gpt4o", "llama70b"]
+    verifiers: ["haiku", "sonnet", "gpt4o-mini"]
+    tasks: ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
+    instances_per_difficulty: 10
+    difficulties: [1, 2, 3, 4, 5]
+    condition: "answer_only"
+    total_instances: 4050
+
+  cost:
+    total_usd: 20.90
+    note: "Already estimated in spec.yaml. Cheap relative to Experiment 1."
+
+
+# =============================================================================
+# ANALYSIS PLAN: The 5 Key Figures
+# =============================================================================
+# These figures tell the paper's empirical story. They should be interpretable
+# without reading the text.
+# =============================================================================
+
+figures:
+  - id: "fig1"
+    title: "Self-Consistency Scaling Curves with Theoretical Predictions"
+    location: "Section 5, Main Results"
+    type: "line_plot_with_theory_overlay"
+    description: >
+      THE MONEY FIGURE. 3x3 panel grid.
+
+      Rows: B4 (moderate rho), B6 (high rho), B7 (low rho).
+      Columns: Haiku, GPT-4o-mini, Llama-8B.
+
+      Each panel: X-axis = N (sample count), Y-axis = accuracy (0-1).
+
+      Two curves per panel:
+        1. SOLID LINE: Empirical accuracy at N = {1, 3, 5, 9, 17, 33}
+           with 95% CI error bars (bootstrap, n=1000).
+        2. DASHED LINE: Theoretical prediction from N_eff model:
+           acc_theory(N) = Phi(sqrt(N_eff) * z_1)
+           where N_eff = N / (1 + (N-1)*rho), rho is the KNOWN between-model
+           value (not fit to this data), and z_1 = Phi^{-1}(acc_N1) is set
+           from the observed N=1 accuracy. Phi is the normal CDF.
+
+      KEY VISUAL: B6 panels show early plateau (solid and dashed align, both
+      flat by N~5). B7 panels show continued improvement (solid and dashed
+      both keep rising). B4 is intermediate.
+
+      ANNOTATION: In each panel, print "rho = X.XX (external)" and
+      "R^2 = Y.YY" showing the fit quality.
+
+    mockup_details: >
+      Size: Full width (textwidth), ~5.5 inches wide x 5 inches tall.
+      3 rows x 3 columns of subplots sharing Y-axis scale.
+      Color: solid line in model-specific color (blue/orange/green),
+      dashed line in gray.
+      Shading: light gray band for 95% CI around empirical curve.
+      Bottom row (B7) should visually show an upward trend at N=33;
+      middle row (B6) should be visually flat.
+
+  - id: "fig2"
+    title: "Error Correlation by Task: Non-Monotonicity of rho vs VC Class"
+    location: "Section 5, Error Correlation Results"
+    type: "grouped_bar_with_annotations"
+    description: >
+      Bar chart showing measured within-model rho for each task (B1-B9),
+      grouped/colored by VC class (P=blue, P/coNP=vermillion, Arch=purple).
+
+      OVERLAY: horizontal markers showing the KNOWN between-model rho values
+      (from reasoning-gaps) for comparison.
+
+      KEY VISUAL: B6 (P-class, blue bar) is the TALLEST bar. B7 (P/coNP,
+      vermillion bar) is one of the SHORTEST. This visually demonstrates
+      non-monotonicity: easier verification class has HIGHER error correlation.
+
+      ANNOTATION: Brace/arrow connecting B6 and B7 with label
+      "rho(B6) > rho(B7), p < 0.05" (if confirmed).
+
+  - id: "fig3"
+    title: "Within-Model vs Between-Model Ensemble Accuracy"
+    location: "Section 5, Ensemble Comparison"
+    type: "paired_bar_chart"
+    description: >
+      For each primary task (B4, B6, B7), show two bars side by side:
+        - Within-model SC accuracy at N=9 (from Experiment 1)
+        - Between-model ensemble accuracy at N=9 (from Experiment 3)
+
+      KEY VISUAL: On B6, the between-model bar is substantially taller.
+      On B7, the two bars are similar. The GAP between bars varies by
+      task in a way that matches the bottleneck type prediction.
+
+      ANNOTATION: Delta labels on top showing the accuracy difference.
+
+  - id: "fig4"
+    title: "Verification Accuracy by Task and VC Class"
+    location: "Section 5, Verification Advantage"
+    type: "bar_chart_with_ci"
+    description: >
+      Existing Figure 1 from the analysis script. Verification accuracy for
+      each task (B1-B9), colored by VC class. Tests Theorem 1.
+      This is supporting evidence, not the central figure.
+
+  - id: "fig5"
+    title: "Theoretical N_eff Prediction vs Empirical Plateau Location"
+    location: "Section 5, Quantitative Fit"
+    type: "scatter_plot"
+    description: >
+      X-axis: predicted N_eff limit (= 1/rho, from known rho values).
+      Y-axis: empirical plateau location (N at which accuracy improvement
+      drops below 1% per doubling of N, estimated from Experiment 1).
+
+      One point per task. If the theory is correct, points should fall
+      near the identity line (y = x), possibly with a scaling factor.
+
+      ANNOTATION: R^2 and regression line. Labels for each task.
+
+      This is the QUANTITATIVE test: does the theory predict not just
+      the ordering of plateaus, but their actual location?
+
+
+# =============================================================================
+# TABLES
+# =============================================================================
+
+tables:
+  - id: "tab_results"
+    title: "Self-Consistency Results Summary"
+    location: "Section 5"
+    description: >
+      Rows: Tasks (B1-B9).
+      Columns: Model | Acc@1 | Acc@9 | Acc@33 | Lift(33-1) | rho_within | rho_between (known) | Predicted N_eff limit | Observed plateau N.
+
+      Grouped by VC class with horizontal rules.
+
+  - id: "tab_verification"
+    title: "Cross-Model Verification Accuracy"
+    location: "Section 5 or Appendix"
+    description: >
+      Rows: Tasks (B1-B9).
+      Columns: VC class | Haiku→Haiku | Haiku→Sonnet | GPT4o→Haiku | ... | Mean | 95% CI.
+
+      This is the existing Table 2 from the analysis script.
+
+  - id: "tab_ensemble"
+    title: "Within vs Between Ensemble Comparison"
+    location: "Section 5"
+    description: >
+      Rows: Tasks (B4, B6, B7).
+      Columns: N | Within-model acc | Between-model acc | Delta | p-value.
+
+
+# =============================================================================
+# STATISTICAL ANALYSIS PLAN
+# =============================================================================
+
+statistical_analysis:
+  # All tests pre-registered. No ad hoc analyses.
+  primary_analyses:
+    - name: "SC plateau detection"
+      method: >
+        For each task/model combination, fit a piecewise linear model:
+        acc(N) = a + b*N for N <= N_break, acc(N) = c for N > N_break.
+        Estimate N_break via AIC/BIC comparison across candidate breakpoints.
+        The plateau is at N = N_break.
+      alternative: >
+        If piecewise linear is too noisy, use the simpler criterion:
+        plateau_N = smallest N such that acc(2N) - acc(N) < 0.02.
+
+    - name: "N_eff model fit"
+      method: >
+        For each task/model, compute theoretical accuracy curve using:
+          p_hat = observed acc@1 (from N=1 data)
+          delta = (2*p_hat - 1) / (2 * sqrt(p_hat * (1 - p_hat)))
+          acc_theory(N) = Phi(delta * sqrt(N_eff))
+          where N_eff = N / (1 + (N-1) * rho_known)
+
+        Compute R^2 between empirical acc(N) and acc_theory(N) across
+        N = {1, 3, 5, 9, 17, 33}.
+
+        EDGE CASE: When p_hat ≈ 0.50, delta ≈ 0 and the theory predicts
+        acc(N) ≈ 0.50 regardless of N. This is mathematically correct
+        (majority vote can't help when the base rate is coin-flip) but
+        makes the R^2 metric degenerate. For tasks where p_hat is in
+        [0.45, 0.55], use difficulty-stratified analysis with p_hat
+        measured per difficulty band.
+
+        CRUCIAL: rho_known is the BETWEEN-MODEL rho from reasoning-gaps.
+        It is NOT fit to this data. This is a zero-parameter prediction
+        (given the measured p_hat at N=1).
+      note: >
+        Using between-model rho as a proxy for within-model rho is an
+        approximation. If within-model rho systematically exceeds between-model
+        rho (likely, per Theorem 2c.iii), the empirical curve will saturate
+        FASTER than the theoretical prediction. We handle this by:
+        (1) Reporting R^2 with the between-model rho (primary, zero-parameter).
+        (2) Fitting rho as a free parameter (secondary, one-parameter) and
+            comparing the fitted rho_within to the known rho_between. Theorem
+            2c.iii predicts fitted_rho_within > rho_between.
+
+    - name: "rho ordering test"
+      method: >
+        Bootstrap the within-model rho estimate for each task (resample
+        instances with replacement, recompute rho, 10000 bootstrap iterations).
+        Compare rho(B6) vs rho(B7) with one-sided permutation test.
+        Report effect size (Cohen's d on the bootstrap distributions).
+
+    - name: "Ensemble comparison"
+      method: >
+        Paired McNemar test: for each instance, compare within-model majority
+        vote at N=9 vs between-model majority vote at N=9. Compute accuracy
+        difference with 95% CI (Agresti-Caffo interval for paired proportions).
+        Test H0: within = between vs H1: between > within, one-sided.
+
+  secondary_analyses:
+    - name: "Temperature effect on rho"
+      method: >
+        If the condition ablation (direct vs short_cot) is run, compare
+        within-model rho under both conditions. Theory predicts rho is
+        similar because the bottleneck is computational, not prompt-dependent.
+
+    - name: "Difficulty effect on SC lift"
+      method: >
+        Stratify by difficulty (1-5). Does SC lift increase with difficulty?
+        Theory predicts SC lift is bounded by N_eff regardless of difficulty,
+        but the base accuracy p changes, so the absolute lift may vary.
+        Interaction test: lift ~ difficulty * task, two-way ANOVA.
+
+    - name: "Error type decomposition"
+      method: >
+        For B7 (3-SAT), decompose errors into:
+          - SAT instances misclassified as UNSAT (false negative on satisfiability)
+          - UNSAT instances misclassified as SAT (false positive on satisfiability)
+        Theory predicts UNSAT verification is the bottleneck (coNP), so false
+        positives on UNSAT instances should dominate.
+
+  correction_for_multiple_comparisons: >
+    5 primary predictions tested simultaneously. Apply Holm-Bonferroni
+    correction (step-down Bonferroni) to the p-values from the 5 primary
+    tests. Report both raw and corrected p-values.
+
+
+# =============================================================================
+# SUCCESS CRITERIA
+# =============================================================================
+
+success_criteria:
+  strong_confirmation: >
+    All 5 primary predictions (SC-P1 through SC-P5) confirmed at alpha=0.05
+    after Holm-Bonferroni correction. R^2 > 0.85 for N_eff model fit on
+    2+ primary tasks. This is an ICLR 7-8 paper.
+
+  moderate_confirmation: >
+    4 of 5 predictions confirmed. R^2 > 0.70 for N_eff model fit.
+    Non-monotonicity (B6 rho > B7 rho) confirmed. This is an ICLR 6-7 paper
+    with clear positive results and one nuance to discuss.
+
+  weak_confirmation: >
+    3 of 5 predictions confirmed. Non-monotonicity confirmed but R^2 < 0.70.
+    The theory captures the direction but not the magnitude. Needs discussion
+    of gap between theory and data. Borderline ICLR with strong theory.
+
+  disconfirmation: >
+    Non-monotonicity fails (rho(B7) >= rho(B6)) OR R^2 < 0.50 for the
+    N_eff model on all tasks. The theory makes wrong predictions.
+    Paper must pivot to: "here is what we predicted, here is what happened,
+    here is the revised theory."
+
+
+# =============================================================================
+# FAILURE ANALYSIS PLAN
+# =============================================================================
+# What to do if predictions fail.
+# =============================================================================
+
+failure_analysis:
+  # Each prediction has a specific failure mode and recovery plan.
+
+  if_sc_p1_fails:
+    symptom: "SC lift ordering doesn't match rho ordering"
+    diagnosis: >
+      1. Check whether base accuracy (acc@1) confounds the comparison.
+         High base accuracy → less room for improvement regardless of rho.
+      2. Check whether the tasks tested have sufficient error rate (>10% at N=1).
+      3. Check whether within-model rho deviates substantially from between-model rho.
+    recovery: >
+      Normalize lift by the maximum theoretical lift (1 - acc@1). If normalized
+      lift follows the rho ordering, the prediction holds after controlling for
+      ceiling effects. Report both raw and normalized lift.
+
+  if_sc_p2_fails:
+    symptom: "B6 accuracy keeps improving past N=17"
+    diagnosis: >
+      1. Measure within-model rho directly. If rho_within < rho_between for B6,
+         the shared-bottleneck prediction for within-model SC is too strong.
+      2. Check whether T=1.0 introduces enough diversity to partially circumvent
+         the shared bottleneck (temperature-induced stochasticity).
+    recovery: >
+      Report the measured rho_within and compare to rho_between. If rho_within
+      is lower but still tracks the ordering, the qualitative prediction holds
+      with a quantitative correction.
+
+  if_sc_p4_fails:
+    symptom: "N_eff model has R^2 < 0.50"
+    diagnosis: >
+      1. The Gaussian approximation (Phi function) may be poor for small N.
+      2. The equicorrelated model (constant rho across all pairs) may be
+         too simplistic — rho may vary across instances.
+      3. The between-model rho may be a poor proxy for within-model rho.
+    recovery: >
+      Fit a two-parameter model: rho and p as free parameters. If R^2 improves
+      dramatically, report the fitted rho and compare to between-model rho.
+      This weakens the prediction from "zero-parameter" to "one-parameter" but
+      may still be informative.
+
+  if_nonmonotonicity_fails:
+    symptom: "rho(B7) >= rho(B6)"
+    diagnosis: >
+      This is the most damaging failure. It means the bottleneck-type
+      distinction (shared vs stochastic) does not predict error correlation.
+      Check:
+      1. Is B6 accuracy so low (~20%) that errors are near-random? Near-random
+         errors have rho → 0 regardless of bottleneck type.
+      2. Does B7 show unexpectedly high within-model correlation due to
+         consistent heuristic failures (not stochastic)?
+    recovery: >
+      If B6 accuracy is very low for some models, restrict the comparison to
+      models where both B6 and B7 accuracy is in the 30-70% range. If the
+      non-monotonicity holds conditionally, report it as such. If it fails
+      completely, weaken the claim to: "bottleneck type influences error
+      correlation, but within-model effects dominate the between-model signal."
+
+  if_ensemble_gap_fails:
+    symptom: "Between-model doesn't outperform within-model on shared tasks"
+    diagnosis: >
+      1. The between-model ensemble uses models of varying quality. If the
+         weakest model is much worse, its votes hurt the ensemble.
+      2. The matching isn't perfectly fair: within uses 9 samples from the
+         same model; between uses 9 different models with different baselines.
+    recovery: >
+      Normalize by matching base accuracy: only include models whose individual
+      accuracy is within 10pp of the within-model's accuracy. This controls
+      for quality while preserving diversity.
+
+
+# =============================================================================
+# PRE-REGISTRATION SUMMARY
+# =============================================================================
+# These predictions are committed BEFORE seeing results.
+# =============================================================================
+
+pre_registration:
+  date: "2026-03-31"
+  committed_predictions:
+    - "SC-P1: SC lift follows inverse rho ordering (B7 > B4 > B6)"
+    - "SC-P2: B6 accuracy plateaus by N=17 (within 2pp of N=33)"
+    - "SC-P3: B7 accuracy at N=33 exceeds N=9 by ≥2pp"
+    - "SC-P4: N_eff theoretical curve fits empirical data with R^2 > 0.85"
+    - "SC-P5: Within-model rho > 0.5 for all tasks"
+    - "CORR-P3: rho(B6) > rho(B7) (non-monotonicity)"
+    - "ENS-P1: Between-model > within-model by ≥5pp on B6 at N=9"
+    - "ENS-P2: gap(B6) > gap(B7) for ensemble comparison"
+
+  constitutes_confirmation: >
+    6 of 8 predictions confirmed at alpha=0.05 after Holm-Bonferroni correction,
+    including at least CORR-P3 (non-monotonicity) and SC-P4 (N_eff fit).
+
+  constitutes_disconfirmation: >
+    Both CORR-P3 and SC-P4 fail. The theory makes wrong predictions about
+    both the ordering of error correlations and the shape of scaling curves.
+
+  what_if_disconfirmed: >
+    1. Report all results honestly, including failures.
+    2. Analyze WHY the predictions failed — the failure mode is informative.
+    3. If the ordering is wrong but the magnitude is right, or vice versa,
+       report the partial success.
+    4. If everything fails, pivot the paper to: "the bottleneck framework
+       identifies the right QUALITATIVE distinction (shared vs stochastic)
+       but the QUANTITATIVE predictions require a more refined model."
+    5. In the worst case, the paper's theoretical contributions (Theorems 1-3)
+       stand on their own — the empirical section becomes "preliminary
+       evidence with important caveats."
+
+
+# =============================================================================
+# EXECUTION SCHEDULE
+# =============================================================================
+
+execution_schedule:
+  # Phase 1: Haiku primary tasks (Day 1)
+  phase_1:
+    day: 1
+    tasks:
+      - "Run Experiment 1 for Haiku on B4, B6, B7 at N=33"
+      - "200 instances per task x 33 samples = 19,800 calls"
+    budget: "$39.60"
+    runtime: "~6 hours"
+    priority: "CRITICAL — produces the money data"
+
+  # Phase 2: Haiku secondary/tertiary + analysis (Day 2)
+  phase_2:
+    day: 2
+    tasks:
+      - "Run Experiment 1 for Haiku on B1-B3, B5, B8-B9 at N=33"
+      - "100 instances x 6 tasks x 33 samples = 19,800 calls"
+      - "Begin Experiment 2 analysis (within-model rho from Phase 1 data)"
+    budget: "$39.60"
+    runtime: "~6 hours for API calls + 1 hour analysis"
+
+  # Phase 3: GPT-4o-mini primary + Experiment 3 analysis (Day 3)
+  phase_3:
+    day: 3
+    tasks:
+      - "Run Experiment 1 for GPT-4o-mini on B4, B6, B7 at N=33"
+      - "200 instances per task x 33 samples = 19,800 calls"
+      - "Run Experiment 3 analysis (between-model ensembles from existing data)"
+      - "Begin generating figures (Fig 1, Fig 2) from Phase 1+2 data"
+    budget: "$39.60"
+    runtime: "~6 hours for API + 2 hours analysis"
+
+  # Phase 4: Llama-8B + Experiment 4 + ablation (Day 4)
+  phase_4:
+    day: 4
+    tasks:
+      - "Run Experiment 1 for Llama-8B on B4, B6, B7 at N=33"
+      - "Run Experiment 4 (cross-model verification, full run)"
+      - "Run condition ablation (direct, Haiku, N=9, primary tasks only)"
+      - "Total: ~45,000 calls"
+    budget: "$31.70"
+    runtime: "~8 hours"
+
+  # Phase 5: Final analysis + figures (Day 5)
+  phase_5:
+    day: 5
+    tasks:
+      - "Complete all analyses"
+      - "Generate all 5 figures + 3 tables"
+      - "Write LaTeX stats.tex for inline paper references"
+      - "Generate Appendix material (full result tables, per-difficulty breakdown)"
+    budget: "$0 (analysis only)"
+    runtime: "3-4 hours"
+
+  total_days: 5
+  total_budget: "$150.50"
+  buffer: "$49.50 remaining under $200 total budget"
+
+
+# =============================================================================
+# IMPLEMENTATION NOTES
+# =============================================================================
+
+implementation:
+  # The existing self_consistency.py script handles most of Experiment 1.
+  # Key modifications needed:
+  modifications_to_self_consistency_py:
+    - "Add N=33 support (currently tested up to N=9)"
+    - "Add per-instance output of all 33 raw answers (for rho computation)"
+    - "Add N_eff curve computation in the analysis (new function)"
+    - "Add piecewise linear plateau detection"
+    - "Support incremental N: run N=33 once, compute acc@1/3/5/9/17/33 from subsets"
+      # KEY OPTIMIZATION: Don't run separate experiments for each N.
+      # Run N=33 once, then compute majority vote for subsets of size 1,3,5,9,17,33.
+      # This saves 5x on API calls compared to running each N separately.
+
+  modifications_to_analyze_script:
+    - "Add SC scaling curve analysis functions"
+    - "Add within-model rho computation (ICC from N=33 samples)"
+    - "Add N_eff theoretical prediction overlay"
+    - "Add ensemble comparison analysis (within vs between)"
+    - "Add piecewise linear plateau detection"
+    - "Add Figure 1 (3x3 panel) generation"
+    - "Add Figure 5 (scatter: predicted vs observed plateau) generation"
+
+  new_scripts_needed:
+    - name: "analyze_sc_scaling.py"
+      purpose: "Analysis for Experiments 1-3 (SC scaling, correlation, ensembles)"
+    - name: "compute_between_model_ensembles.py"
+      purpose: "Experiment 3: compute ensemble accuracy from existing multi-model data"
+
+  # CRITICAL OPTIMIZATION:
+  # Run N=33 once per instance. Then for analysis, take subsets:
+  #   acc@1 = accuracy of first sample
+  #   acc@3 = majority vote of samples 1-3
+  #   acc@5 = majority vote of samples 1-5
+  #   acc@9 = majority vote of samples 1-9
+  #   acc@17 = majority vote of samples 1-17
+  #   acc@33 = majority vote of all 33 samples
+  #
+  # This makes the cost of Experiment 1 = cost of running N=33 once.
+  # No separate runs for N=1, N=3, etc.
+  subset_majority_vote: true

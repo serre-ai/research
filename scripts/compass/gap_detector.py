@@ -1,4 +1,4 @@
-"""Gap detector — research-intel module version.
+"""Gap detector — compass module version.
 
 Reuses the core detection logic from scripts/gap-detector.py but exposes a
 `detect(papers)` function that returns standardized ResearchSignal dicts.

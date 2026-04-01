@@ -1272,7 +1272,7 @@ export class Daemon {
           "docs/research-intelligence/grading-rubric.md",
           "shared/templates/idea-candidate.yaml",
           "docs/ideas/backlog.yaml",
-          "scripts/research-intel/schema.py",
+          "scripts/compass/schema.py",
         ],
         recentDecisions: [],
         supplementary: paperContext || undefined,
