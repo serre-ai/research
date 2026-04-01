@@ -12,8 +12,10 @@ from typing import Any
 
 try:
     from .schema import ResearchSignal
+    from .db import batch_cosine_similarity
 except ImportError:
     from schema import ResearchSignal  # type: ignore
+    from db import batch_cosine_similarity  # type: ignore
 
 # ── Constants (mirrored from scripts/gap-detector.py) ─────
 
@@ -152,6 +154,66 @@ def _extract_topics(paper: dict) -> list[str]:
 # ── Individual gap detectors ─────────────────────────────
 
 def _find_uncovered_connections(papers: list[dict]) -> list[ResearchSignal]:
+    has_embeddings = any(p.get("embedding_str") for p in papers)
+
+    if has_embeddings:
+        return _find_uncovered_connections_embedding(papers)
+    else:
+        return _find_uncovered_connections_keyword(papers)
+
+
+def _find_uncovered_connections_embedding(papers: list[dict]) -> list[ResearchSignal]:
+    """Use pgvector cosine similarity for cross-pollination detection."""
+    paper_ids = [_paper_id(p) for p in papers if p.get("embedding_str")]
+    if len(paper_ids) < 2:
+        return _find_uncovered_connections_keyword(papers)
+
+    similarities = batch_cosine_similarity(paper_ids)
+
+    # Build a lookup by paper ID for fast access
+    paper_by_id: dict[str, dict] = {}
+    for p in papers:
+        pid = _paper_id(p)
+        paper_by_id[pid] = p
+
+    signals: list[ResearchSignal] = []
+    for (id_a, id_b), similarity in similarities.items():
+        if similarity < 0.7:
+            continue
+
+        paper_a = paper_by_id.get(id_a)
+        paper_b = paper_by_id.get(id_b)
+        if not paper_a or not paper_b:
+            continue
+
+        authors_a = set(str(x) for x in (paper_a.get("authors") or []))
+        authors_b = set(str(x) for x in (paper_b.get("authors") or []))
+        if authors_a & authors_b:
+            continue
+
+        title_a = paper_a.get("title", "")[:60]
+        title_b = paper_b.get("title", "")[:60]
+        topics = list(set(_extract_topics(paper_a) + _extract_topics(paper_b)))
+        signals.append(ResearchSignal(
+            detector=DETECTOR_NAME,
+            signal_type="uncovered_connection",
+            title=f"Cross-pollination: {title_a} + {title_b}",
+            description=(
+                f"High embedding similarity ({similarity:.0%}) between papers by different "
+                f"groups — potential cross-pollination opportunity."
+            ),
+            confidence=min(similarity, 1.0),
+            source_papers=[_paper_ref(paper_a), _paper_ref(paper_b)],
+            topics=topics[:5],
+            metadata={"overlap_score": round(similarity, 3), "method": "embedding"},
+        ))
+
+    signals.sort(key=lambda s: s.metadata.get("overlap_score", 0), reverse=True)
+    return signals[:20]
+
+
+def _find_uncovered_connections_keyword(papers: list[dict]) -> list[ResearchSignal]:
+    """Fall back to Jaccard keyword overlap for cross-pollination detection."""
     tokens = [_tokenize(p.get("abstract") or "") for p in papers]
     signals: list[ResearchSignal] = []
 
@@ -181,7 +243,7 @@ def _find_uncovered_connections(papers: list[dict]) -> list[ResearchSignal]:
                     confidence=min(overlap * 2, 1.0),
                     source_papers=[_paper_ref(papers[i]), _paper_ref(papers[j])],
                     topics=topics[:5],
-                    metadata={"overlap_score": round(overlap, 3)},
+                    metadata={"overlap_score": round(overlap, 3), "method": "keyword"},
                 ))
 
     signals.sort(key=lambda s: s.metadata.get("overlap_score", 0), reverse=True)
