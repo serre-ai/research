@@ -27,6 +27,7 @@ try:
     from .reviewer_model import detect as detect_reviewer
     from .synthesize import synthesize
     from .db import fetch_papers_with_embeddings
+    from .report import generate_report
 except ImportError:
     # Direct script execution — add package dir to path and import directly
     import pathlib
@@ -41,6 +42,7 @@ except ImportError:
     from reviewer_model import detect as detect_reviewer  # type: ignore
     from synthesize import synthesize  # type: ignore
     from db import fetch_papers_with_embeddings  # type: ignore
+    from report import generate_report  # type: ignore
 
 
 DEFAULT_API_URL = "http://localhost:3001"
@@ -244,6 +246,10 @@ def main() -> None:
         "--embeddings", action="store_true",
         help="Use pgvector embeddings for similarity (requires DATABASE_URL)",
     )
+    parser.add_argument(
+        "--report", action="store_true",
+        help="Generate a Markdown narrative report (to stdout and docs/compass/reports/)",
+    )
 
     args = parser.parse_args()
 
@@ -324,7 +330,21 @@ def main() -> None:
         "opportunities": opportunities,
     }
 
-    if args.json_output:
+    if args.report:
+        report_md = generate_report(result)
+        # Save to docs/compass/reports/YYYY-MM-DD.md
+        report_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        report_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "docs", "compass", "reports",
+        )
+        os.makedirs(report_dir, exist_ok=True)
+        report_path = os.path.join(report_dir, f"{report_date}.md")
+        with open(report_path, "w") as f:
+            f.write(report_md)
+        print(report_md, end="")
+        print(f"\nReport saved to {report_path}", file=sys.stderr)
+    elif args.json_output:
         print(json.dumps(result, indent=2))
     else:
         # Human-readable summary
