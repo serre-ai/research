@@ -15,8 +15,13 @@ from typing import Any
 
 try:
     from .schema import ResearchSignal
+    from .db import get_connection
 except ImportError:
     from schema import ResearchSignal  # type: ignore
+    try:
+        from db import get_connection  # type: ignore
+    except ImportError:
+        get_connection = None  # type: ignore
 
 # ── Constants ─────────────────────────────────────────────
 
@@ -69,47 +74,68 @@ def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
     return len(intersection) / len(union) if union else 0.0
 
 
-def _compute_coherence(
+def _compute_coherence_keyword(
     paper_topics: frozenset[str],
     core_identity: frozenset[str],
-    paper: dict | None = None,
-    identity_embedding: str | None = None,
 ) -> float:
-    """Compute coherence score. Uses embedding if available, keyword overlap otherwise.
-
-    When both the paper and identity have embeddings, this will use cosine
-    similarity (once the DB layer is connected via DW-395).  Until then,
-    falls back to Jaccard keyword overlap.
-    """
-    if paper and identity_embedding and paper.get("embedding_str"):
-        # Phase 2 (DW-395): cosine similarity via DB query:
-        #   SELECT 1 - (embedding <=> $1::vector) FROM ...
-        # For now, fall through to keyword approach.
-        pass
-    # Keyword fallback
+    """Compute coherence via Jaccard keyword overlap."""
     if not paper_topics or not core_identity:
         return 0.0
     return len(paper_topics & core_identity) / len(paper_topics | core_identity)
 
 
-def _compute_embedding_coherence(paper: dict, project_papers: list[dict]) -> float:
-    """Compute how similar a paper's embedding is to a project's paper cluster.
+def _compute_coherence(
+    paper_topics: frozenset[str],
+    core_identity: frozenset[str],
+    paper: dict | None = None,
+    identity_embedding: str | None = None,
+    project_names: list[str] | None = None,
+) -> float:
+    """Compute coherence score. Uses embedding if available, keyword overlap otherwise.
 
-    Uses the average embedding similarity between the candidate paper
-    and papers that were matched to the project (via lit_alerts).
-    Falls back to 0.0 if embeddings unavailable.
+    When embeddings are available, queries the DB for average similarity between
+    the paper and papers previously alerted for our projects. Falls back to
+    Jaccard keyword overlap when embeddings or DB are unavailable.
+    """
+    if paper and paper.get("embedding_str") and project_names and get_connection is not None:
+        try:
+            emb_coherence = _compute_embedding_coherence(paper, project_names)
+            if emb_coherence > 0.0:
+                return emb_coherence
+        except Exception:
+            pass
+    # Keyword fallback
+    return _compute_coherence_keyword(paper_topics, core_identity)
 
-    When the DB layer is connected (DW-395), this will query:
-        SELECT AVG(1 - (embedding <=> $1::vector))
-        FROM lit_papers p JOIN lit_alerts a ON a.paper_id = p.id
-        WHERE a.project = $2
+
+def _compute_embedding_coherence(paper: dict, project_names: list[str]) -> float:
+    """Compute how similar a paper's embedding is to papers matched to our projects.
+
+    Queries the DB for the average cosine similarity between this paper's
+    embedding and embeddings of papers that were alerted for our projects
+    (via lit_alerts table). Falls back to 0.0 if unavailable.
     """
     paper_emb = paper.get("embedding_str")
-    if not paper_emb:
+    if not paper_emb or get_connection is None:
         return 0.0
 
-    # Placeholder — requires DB layer (DW-395) to compute actual cosine similarity.
-    # Until then, callers should fall back to keyword coherence.
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT AVG(1 - (p.embedding <=> %s::vector)) as avg_sim
+            FROM lit_papers p
+            JOIN lit_alerts a ON a.paper_id = p.id
+            WHERE a.project IN (SELECT unnest(%s::text[]))
+              AND p.embedding IS NOT NULL
+        """, (paper_emb, list(project_names)))
+        row = cur.fetchone()
+        cur.close()
+        if row and row[0] is not None:
+            return float(row[0])
+    except Exception:
+        pass
+
     return 0.0
 
 
@@ -367,7 +393,10 @@ def _find_portfolio_deepening(
         elif phase in ("research", "literature-review"):
             leverage = 0.3
 
-        coherence = _compute_coherence(paper_topics, core_identity, paper=paper)
+        coherence = _compute_coherence(
+            paper_topics, core_identity, paper=paper,
+            project_names=[best_project] if best_project else None,
+        )
         combined_score = (best_overlap * 0.6) + (coherence * 0.2) + (leverage * 0.2)
 
         title = paper.get("title", "")[:80]
@@ -447,7 +476,10 @@ def _find_citation_opportunities(
             if len(title_overlap) < 2:
                 continue
 
-            coherence = _compute_coherence(paper_topics, core_identity, paper=paper)
+            coherence = _compute_coherence(
+                paper_topics, core_identity, paper=paper,
+                project_names=[proj_name],
+            )
             confidence = min((overlap * 0.5) + (len(title_overlap) * 0.1) + (coherence * 0.2), 1.0)
 
             paper_title = paper.get("title", "")[:80]

@@ -14,8 +14,13 @@ from typing import Any
 
 try:
     from .schema import ResearchSignal
+    from .db import batch_cosine_similarity
 except ImportError:
     from schema import ResearchSignal  # type: ignore
+    try:
+        from db import batch_cosine_similarity  # type: ignore
+    except ImportError:
+        batch_cosine_similarity = None  # type: ignore
 
 # Reuse theory signals from gap_detector (same list, kept in sync)
 THEORY_SIGNALS = [
@@ -101,10 +106,98 @@ def _extract_bigram_phrases(papers: list[dict], top_n: int = 5) -> list[str]:
     return [bg for bg, _ in filtered[:top_n]]
 
 
-def _group_papers_by_topic(
+def _cluster_by_embedding(
+    papers_with_dates: list[tuple[dict, datetime]],
+    similarity_threshold: float = 0.7,
+) -> dict[str, list[tuple[dict, datetime]]]:
+    """Group papers into topic clusters using embedding cosine similarity.
+
+    Papers with similarity > threshold are placed in the same cluster.
+    Uses union-find to build transitive clusters, then labels each cluster
+    with representative bigram phrases from its papers.
+
+    Falls back to category-based grouping on failure.
+    """
+    if batch_cosine_similarity is None:
+        return _group_papers_by_topic_keyword(papers_with_dates)
+
+    # Collect paper IDs that have embeddings
+    id_to_idx: dict[str, int] = {}
+    paper_ids: list[str] = []
+    for i, (paper, _dt) in enumerate(papers_with_dates):
+        if paper.get("embedding_str"):
+            pid = _paper_id(paper)
+            if pid and pid not in id_to_idx:
+                id_to_idx[pid] = i
+                paper_ids.append(pid)
+
+    if len(paper_ids) < 2:
+        return _group_papers_by_topic_keyword(papers_with_dates)
+
+    try:
+        similarities = batch_cosine_similarity(paper_ids)
+    except Exception:
+        return _group_papers_by_topic_keyword(papers_with_dates)
+
+    if not similarities:
+        return _group_papers_by_topic_keyword(papers_with_dates)
+
+    # Union-find for transitive clustering
+    parent: dict[str, str] = {pid: pid for pid in paper_ids}
+
+    def find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    for (id_a, id_b), sim in similarities.items():
+        if sim >= similarity_threshold:
+            union(id_a, id_b)
+
+    # Build clusters
+    clusters: dict[str, list[int]] = defaultdict(list)
+    for pid in paper_ids:
+        root = find(pid)
+        clusters[root].append(id_to_idx[pid])
+
+    # Also include non-embedding papers via category fallback
+    topic_groups: dict[str, list[tuple[dict, datetime]]] = defaultdict(list)
+
+    for cluster_root, indices in clusters.items():
+        # Build a label from the top bigrams of cluster papers
+        cluster_papers = [papers_with_dates[i][0] for i in indices]
+        bigrams = _extract_bigram_phrases(cluster_papers, top_n=2)
+        label = "emb:" + (", ".join(bigrams) if bigrams else cluster_root[:20])
+        for i in indices:
+            topic_groups[label].append(papers_with_dates[i])
+
+    # For papers without embeddings, fall back to category grouping
+    embedded_indices = set()
+    for indices in clusters.values():
+        embedded_indices.update(indices)
+
+    non_embedded = [
+        (paper, dt) for i, (paper, dt) in enumerate(papers_with_dates)
+        if i not in embedded_indices
+    ]
+    if non_embedded:
+        keyword_groups = _group_papers_by_topic_keyword(non_embedded)
+        for key, group in keyword_groups.items():
+            topic_groups[key].extend(group)
+
+    return topic_groups
+
+
+def _group_papers_by_topic_keyword(
     papers_with_dates: list[tuple[dict, datetime]],
 ) -> dict[str, list[tuple[dict, datetime]]]:
-    """Group papers by topic. Topics come from categories and key bigrams."""
+    """Group papers by topic using categories and bigrams (keyword mode)."""
     topic_groups: dict[str, list[tuple[dict, datetime]]] = defaultdict(list)
 
     # Group by arXiv category
@@ -129,6 +222,21 @@ def _group_papers_by_topic(
                         topic_groups[topic_key].append((paper, dt))
 
     return topic_groups
+
+
+def _group_papers_by_topic(
+    papers_with_dates: list[tuple[dict, datetime]],
+) -> dict[str, list[tuple[dict, datetime]]]:
+    """Group papers by topic. Uses embedding clustering when available,
+    falls back to category+bigram grouping otherwise."""
+    has_embeddings = any(p.get("embedding_str") for p, _dt in papers_with_dates)
+    if has_embeddings:
+        try:
+            return _cluster_by_embedding(papers_with_dates)
+        except Exception:
+            return _group_papers_by_topic_keyword(papers_with_dates)
+    else:
+        return _group_papers_by_topic_keyword(papers_with_dates)
 
 
 # -- Core detection --------------------------------------------------------

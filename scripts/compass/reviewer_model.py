@@ -467,4 +467,12 @@ def detect(papers: list[dict], venues_path: str = "") -> list[dict]:
         -s.confidence,
     ))
 
-    return [s.to_dict() for s in all_signals]
+    # Annotate signals with embedding availability for downstream consumers
+    has_embeddings = any(p.get("embedding_str") for p in papers)
+    results = []
+    for s in all_signals:
+        d = s.to_dict()
+        d["metadata"]["embeddings_available"] = has_embeddings
+        results.append(d)
+
+    return results

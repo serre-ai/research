@@ -12,8 +12,13 @@ from typing import Any
 
 try:
     from .schema import ResearchSignal
+    from .db import batch_cosine_similarity
 except ImportError:
     from schema import ResearchSignal  # type: ignore
+    try:
+        from db import batch_cosine_similarity  # type: ignore
+    except ImportError:
+        batch_cosine_similarity = None  # type: ignore
 
 # ── Constants ─────────────────────────────────────────────
 
@@ -422,26 +427,10 @@ _NEGATIVE_CLAIMS = frozenset([
 ])
 
 
-def _find_semantic_opposition(papers: list[dict]) -> list[ResearchSignal]:
-    """Find papers that are semantically similar but make opposing claims.
-
-    Looks for paper pairs where:
-    1. High topic overlap — they address the same research area
-    2. One uses positive claim language, the other uses negative/contradicting language
-
-    When embeddings are available (paper.embedding_str), this will use cosine
-    similarity > 0.8 to detect same-topic pairs (DW-395).  Until then, uses
-    keyword overlap as a proxy.
-    """
+def _find_semantic_opposition_keyword(papers: list[dict]) -> list[ResearchSignal]:
+    """Find opposing papers using keyword overlap as a topic-similarity proxy."""
     signals: list[ResearchSignal] = []
 
-    # Only run if embeddings are available (signals embedding-ready path)
-    has_embeddings = any(p.get("embedding_str") for p in papers)
-    if not has_embeddings:
-        return signals
-
-    # Pre-filter: only consider papers that have claim language (positive or negative)
-    # This avoids O(n^2) over all papers — only papers with claims are compared
     claim_papers: list[tuple[int, dict, str, bool, bool]] = []
     for i, p in enumerate(papers):
         abs_text = (p.get("abstract") or "").lower()
@@ -457,17 +446,14 @@ def _find_semantic_opposition(papers: list[dict]) -> list[ResearchSignal]:
             if idx_a >= idx_b:
                 continue
 
-            # One positive, other negative = opposition
             if not ((a_positive and b_negative) or (a_negative and b_positive)):
                 continue
 
-            # Check topic overlap (high overlap + opposition = contrarian signal)
-            # Phase 2 (DW-395): replace with embedding cosine similarity > 0.8
             topics_a = set(re.findall(r'[a-z]{4,}', abs_a)) - STOP_WORDS
             topics_b = set(re.findall(r'[a-z]{4,}', abs_b)) - STOP_WORDS
             overlap = len(topics_a & topics_b) / max(len(topics_a | topics_b), 1)
 
-            if overlap > 0.15:  # modest overlap + opposition
+            if overlap > 0.15:
                 signals.append(ResearchSignal(
                     detector=DETECTOR_NAME,
                     signal_type="semantic_opposition",
@@ -487,6 +473,102 @@ def _find_semantic_opposition(papers: list[dict]) -> list[ResearchSignal]:
                 ))
 
     return signals[:10]
+
+
+def _find_semantic_opposition_embedding(papers: list[dict]) -> list[ResearchSignal]:
+    """Find opposing papers using embedding cosine similarity > 0.8.
+
+    Uses batch_cosine_similarity() from db.py to find high-similarity pairs,
+    then checks for opposing claim language to identify contrarian signals.
+    """
+    signals: list[ResearchSignal] = []
+
+    if batch_cosine_similarity is None:
+        return _find_semantic_opposition_keyword(papers)
+
+    # Pre-filter: only consider papers with claim language AND embeddings
+    claim_papers: list[tuple[dict, str, bool, bool]] = []
+    paper_ids: list[str] = []
+    id_to_paper: dict[str, tuple[dict, str, bool, bool]] = {}
+
+    for p in papers:
+        if not p.get("embedding_str"):
+            continue
+        abs_text = (p.get("abstract") or "").lower()
+        if not abs_text:
+            continue
+        pos = any(w in abs_text for w in _POSITIVE_CLAIMS)
+        neg = any(w in abs_text for w in _NEGATIVE_CLAIMS)
+        if pos or neg:
+            pid = _paper_id(p)
+            claim_papers.append((p, abs_text, pos, neg))
+            paper_ids.append(pid)
+            id_to_paper[pid] = (p, abs_text, pos, neg)
+
+    if len(paper_ids) < 2:
+        return signals
+
+    # Get pairwise similarities — batch_cosine_similarity only returns > 0.5
+    similarities = batch_cosine_similarity(paper_ids)
+
+    for (id_a, id_b), sim in similarities.items():
+        if sim < 0.8:
+            continue
+
+        if id_a not in id_to_paper or id_b not in id_to_paper:
+            continue
+
+        a, abs_a, a_pos, a_neg = id_to_paper[id_a]
+        b, abs_b, b_pos, b_neg = id_to_paper[id_b]
+
+        # One positive, other negative = opposition
+        if not ((a_pos and b_neg) or (a_neg and b_pos)):
+            continue
+
+        signals.append(ResearchSignal(
+            detector=DETECTOR_NAME,
+            signal_type="semantic_opposition",
+            title=(
+                f"Opposing views: {a.get('title', '')[:50]} "
+                f"vs {b.get('title', '')[:50]}"
+            ),
+            description=(
+                f"These papers are semantically similar (cosine {sim:.0%}) "
+                f"but reach opposing conclusions."
+            ),
+            confidence=min(sim, 0.9),
+            source_papers=[_paper_id(a), _paper_id(b)],
+            topics=list(
+                (set(re.findall(r'[a-z]{4,}', abs_a)) - STOP_WORDS)
+                & (set(re.findall(r'[a-z]{4,}', abs_b)) - STOP_WORDS)
+            )[:5],
+            timing_score=0.4,
+            metadata={"embedding_similarity": round(sim, 3)},
+        ))
+
+    return signals[:10]
+
+
+def _find_semantic_opposition(papers: list[dict]) -> list[ResearchSignal]:
+    """Find papers that are semantically similar but make opposing claims.
+
+    Looks for paper pairs where:
+    1. High topic overlap — they address the same research area
+    2. One uses positive claim language, the other uses negative/contradicting language
+
+    When embeddings are available (paper.embedding_str), uses cosine similarity
+    > 0.8 via batch_cosine_similarity() for accurate same-topic detection.
+    Falls back to keyword overlap otherwise.
+    """
+    # Only run if embeddings are available
+    has_embeddings = any(p.get("embedding_str") for p in papers)
+    if not has_embeddings:
+        return []
+
+    try:
+        return _find_semantic_opposition_embedding(papers)
+    except Exception:
+        return _find_semantic_opposition_keyword(papers)
 
 
 # ── Public API ────────────────────────────────────────────
