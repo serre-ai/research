@@ -409,6 +409,85 @@ def _find_contrarian_opportunities(
     return signals[:15]
 
 
+# ── Embedding-based opposition detection ─────────────────
+
+# Claim-direction keywords for semantic opposition heuristic
+_POSITIVE_CLAIMS = frozenset([
+    "improves", "achieves", "outperforms", "demonstrates",
+    "confirms", "validates", "advances", "enables",
+])
+_NEGATIVE_CLAIMS = frozenset([
+    "fails", "does not", "contrary to", "challenges",
+    "refutes", "contradicts", "unreliable", "degrades",
+])
+
+
+def _find_semantic_opposition(papers: list[dict]) -> list[ResearchSignal]:
+    """Find papers that are semantically similar but make opposing claims.
+
+    Looks for paper pairs where:
+    1. High topic overlap — they address the same research area
+    2. One uses positive claim language, the other uses negative/contradicting language
+
+    When embeddings are available (paper.embedding_str), this will use cosine
+    similarity > 0.8 to detect same-topic pairs (DW-395).  Until then, uses
+    keyword overlap as a proxy.
+    """
+    signals: list[ResearchSignal] = []
+
+    # Only run if embeddings are available (signals embedding-ready path)
+    has_embeddings = any(p.get("embedding_str") for p in papers)
+    if not has_embeddings:
+        return signals
+
+    for i, a in enumerate(papers):
+        abs_a = (a.get("abstract") or "").lower()
+        if not abs_a:
+            continue
+        a_positive = any(w in abs_a for w in _POSITIVE_CLAIMS)
+        a_negative = any(w in abs_a for w in _NEGATIVE_CLAIMS)
+
+        for j, b in enumerate(papers):
+            if i >= j:
+                continue
+            abs_b = (b.get("abstract") or "").lower()
+            if not abs_b:
+                continue
+            b_positive = any(w in abs_b for w in _POSITIVE_CLAIMS)
+            b_negative = any(w in abs_b for w in _NEGATIVE_CLAIMS)
+
+            # One positive, other negative = opposition
+            if not ((a_positive and b_negative) or (a_negative and b_positive)):
+                continue
+
+            # Check topic overlap (high overlap + opposition = contrarian signal)
+            # Phase 2 (DW-395): replace with embedding cosine similarity > 0.8
+            topics_a = set(re.findall(r'[a-z]{4,}', abs_a)) - STOP_WORDS
+            topics_b = set(re.findall(r'[a-z]{4,}', abs_b)) - STOP_WORDS
+            overlap = len(topics_a & topics_b) / max(len(topics_a | topics_b), 1)
+
+            if overlap > 0.15:  # modest overlap + opposition
+                signals.append(ResearchSignal(
+                    detector=DETECTOR_NAME,
+                    signal_type="semantic_opposition",
+                    title=(
+                        f"Opposing views: {a.get('title', '')[:50]} "
+                        f"vs {b.get('title', '')[:50]}"
+                    ),
+                    description=(
+                        f"These papers address similar topics (overlap {overlap:.0%}) "
+                        f"but reach opposing conclusions."
+                    ),
+                    confidence=min(overlap * 2, 0.9),
+                    source_papers=[_paper_id(a), _paper_id(b)],
+                    topics=list(topics_a & topics_b)[:5],
+                    timing_score=0.4,
+                    metadata={"overlap": round(overlap, 3)},
+                ))
+
+    return signals[:10]
+
+
 # ── Public API ────────────────────────────────────────────
 
 def detect(papers: list[dict]) -> list[dict]:
@@ -426,12 +505,14 @@ def detect(papers: list[dict]) -> list[dict]:
     all_signals.extend(_find_thin_consensus(clusters))
     all_signals.extend(_find_fragile_consensus(clusters))
     all_signals.extend(_find_contrarian_opportunities(papers, clusters))
+    all_signals.extend(_find_semantic_opposition(papers))
 
     # Sort by signal_type priority, then confidence descending
     type_priority = {
         "contrarian_opportunity": 0,
-        "consensus_thin_evidence": 1,
-        "consensus_fragile": 2,
+        "semantic_opposition": 1,
+        "consensus_thin_evidence": 2,
+        "consensus_fragile": 3,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),

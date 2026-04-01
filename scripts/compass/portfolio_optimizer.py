@@ -69,6 +69,50 @@ def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
     return len(intersection) / len(union) if union else 0.0
 
 
+def _compute_coherence(
+    paper_topics: frozenset[str],
+    core_identity: frozenset[str],
+    paper: dict | None = None,
+    identity_embedding: str | None = None,
+) -> float:
+    """Compute coherence score. Uses embedding if available, keyword overlap otherwise.
+
+    When both the paper and identity have embeddings, this will use cosine
+    similarity (once the DB layer is connected via DW-395).  Until then,
+    falls back to Jaccard keyword overlap.
+    """
+    if paper and identity_embedding and paper.get("embedding_str"):
+        # Phase 2 (DW-395): cosine similarity via DB query:
+        #   SELECT 1 - (embedding <=> $1::vector) FROM ...
+        # For now, fall through to keyword approach.
+        pass
+    # Keyword fallback
+    if not paper_topics or not core_identity:
+        return 0.0
+    return len(paper_topics & core_identity) / len(paper_topics | core_identity)
+
+
+def _compute_embedding_coherence(paper: dict, project_papers: list[dict]) -> float:
+    """Compute how similar a paper's embedding is to a project's paper cluster.
+
+    Uses the average embedding similarity between the candidate paper
+    and papers that were matched to the project (via lit_alerts).
+    Falls back to 0.0 if embeddings unavailable.
+
+    When the DB layer is connected (DW-395), this will query:
+        SELECT AVG(1 - (embedding <=> $1::vector))
+        FROM lit_papers p JOIN lit_alerts a ON a.paper_id = p.id
+        WHERE a.project = $2
+    """
+    paper_emb = paper.get("embedding_str")
+    if not paper_emb:
+        return 0.0
+
+    # Placeholder — requires DB layer (DW-395) to compute actual cosine similarity.
+    # Until then, callers should fall back to keyword coherence.
+    return 0.0
+
+
 def _extract_first_paragraph(text: str) -> str:
     """Extract the first non-heading paragraph from Markdown text."""
     lines = text.strip().split("\n")
@@ -247,7 +291,7 @@ def _find_portfolio_gaps(
     for cluster, matching_papers in topic_paper_map.items():
         # Compute coherence as overlap between cluster topics and identity
         cluster_topics = frozenset(cluster.split(", "))
-        coherence = _jaccard(cluster_topics, core_identity)
+        coherence = _compute_coherence(cluster_topics, core_identity)
 
         # Boost coherence by paper count (more papers = more important gap)
         paper_boost = min(len(matching_papers) / 10, 0.3)
@@ -323,7 +367,7 @@ def _find_portfolio_deepening(
         elif phase in ("research", "literature-review"):
             leverage = 0.3
 
-        coherence = _jaccard(paper_topics, core_identity)
+        coherence = _compute_coherence(paper_topics, core_identity, paper=paper)
         combined_score = (best_overlap * 0.6) + (coherence * 0.2) + (leverage * 0.2)
 
         title = paper.get("title", "")[:80]
@@ -403,7 +447,7 @@ def _find_citation_opportunities(
             if len(title_overlap) < 2:
                 continue
 
-            coherence = _jaccard(paper_topics, core_identity)
+            coherence = _compute_coherence(paper_topics, core_identity, paper=paper)
             confidence = min((overlap * 0.5) + (len(title_overlap) * 0.1) + (coherence * 0.2), 1.0)
 
             paper_title = paper.get("title", "")[:80]
@@ -466,6 +510,9 @@ def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
     if not core_identity:
         return []
 
+    # Check if embeddings are available in any papers
+    has_embeddings = any(p.get("embedding_str") for p in papers)
+
     all_signals: list[ResearchSignal] = []
 
     all_signals.extend(_find_portfolio_gaps(papers, core_identity, project_info))
@@ -483,4 +530,11 @@ def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
         -s.confidence,
     ))
 
-    return [s.to_dict() for s in all_signals]
+    # Annotate signals with embedding availability for downstream consumers
+    results = []
+    for s in all_signals:
+        d = s.to_dict()
+        d["metadata"]["embeddings_available"] = has_embeddings
+        results.append(d)
+
+    return results
