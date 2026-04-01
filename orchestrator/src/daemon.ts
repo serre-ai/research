@@ -727,22 +727,33 @@ export class Daemon {
 
     if (availableSlots <= 0) return;
 
-    // Weekly research synthesis session
+    // Compass: trigger-based research intelligence
+    // Run detectors (cheap Python, ~30s) when 25+ new papers since last run.
+    // Only queue LLM synthesis when high-value signals are found.
     try {
-      const lastSynthesis = await this.getLastSynthesisRun();
-      const daysSinceSynthesis = (Date.now() - lastSynthesis) / (1000 * 60 * 60 * 24);
-      if (daysSinceSynthesis > 7 && availableSlots > 0) {
-        // Check we have enough new papers to warrant synthesis
-        const newPaperCount = await this.getNewPaperCount(lastSynthesis);
-        if (newPaperCount >= 10 || daysSinceSynthesis > 14) {
-          console.log("[Daemon] Scheduling weekly synthesis session (" + Math.round(daysSinceSynthesis) + "d since last, " + newPaperCount + " new papers)");
+      const lastCompass = await this.getLastSynthesisRun();
+      const newPaperCount = await this.getNewPaperCount(lastCompass);
+      const hoursSinceCompass = (Date.now() - lastCompass) / (1000 * 60 * 60);
+
+      if (newPaperCount >= 25 || hoursSinceCompass > 168) { // 25 papers or 7 days max
+        console.log("[Compass] Running detectors (" + newPaperCount + " new papers, " + Math.round(hoursSinceCompass) + "h since last)");
+
+        // Stage 1: Run Python detectors (fast, no LLM)
+        const compassResult = await this.runCompassDetectors();
+
+        if (compassResult.highValueSignals > 0 && availableSlots > 0) {
+          // Stage 2: Only run LLM synthesis when detectors found something worth developing
+          console.log("[Compass] " + compassResult.highValueSignals + " high-value signals — scheduling synthesis");
           await this.runSynthesisSession();
-          await this.setLastSynthesisRun();
           availableSlots--;
+        } else {
+          console.log("[Compass] " + compassResult.totalSignals + " signals, " + compassResult.highValueSignals + " high-value — skipping synthesis");
         }
+
+        await this.setLastSynthesisRun();
       }
     } catch (err) {
-      console.error("[Daemon] Synthesis scheduling error:", err);
+      console.error("[Compass] Scheduling error:", err);
     }
 
     if (availableSlots <= 0) return;
@@ -1219,6 +1230,68 @@ export class Daemon {
        ON CONFLICT (project, key) DO UPDATE SET value = $1, updated_at = NOW()`,
       [JSON.stringify({ timestamp: Date.now() })]
     ).catch(() => {});
+  }
+
+  private async runCompassDetectors(): Promise<{ totalSignals: number; highValueSignals: number; opportunities: number }> {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const exec = promisify(execFile);
+
+    try {
+      const scriptPath = join(this.config.rootDir, "scripts", "compass", "run_all.py");
+      const args = ["--api", "http://localhost:3001", "--limit", "300", "--json"];
+
+      // Pass API key and DB URL to the subprocess
+      const env = {
+        ...process.env,
+        DEEPWORK_API_KEY: process.env.DEEPWORK_API_KEY || "",
+        DATABASE_URL: process.env.DATABASE_URL || "",
+      };
+
+      const { stdout, stderr } = await exec("python3", [scriptPath, ...args], {
+        env,
+        timeout: 120_000, // 2 min max
+        maxBuffer: 10 * 1024 * 1024, // 10MB
+      });
+
+      if (stderr) {
+        // Compass prints progress to stderr
+        for (const line of stderr.split("\n").filter(Boolean)) {
+          console.log("  [Compass] " + line.trim());
+        }
+      }
+
+      if (!stdout.trim()) {
+        return { totalSignals: 0, highValueSignals: 0, opportunities: 0 };
+      }
+
+      const result = JSON.parse(stdout);
+      const signals: Array<{ confidence: number; detector: string }> = result.signals || [];
+      const opportunities: Array<{ composite_score: number; title?: string }> = result.opportunities || [];
+
+      // High-value = confidence > 0.7 OR cross-detector reinforcement (opportunity score > 40)
+      const highValueSignals = signals.filter((s) => s.confidence > 0.7).length;
+      const highValueOpps = opportunities.filter((o) => o.composite_score > 40).length;
+
+      // Notify on high-value finds
+      if (highValueSignals > 0 || highValueOpps > 0) {
+        const topOpp = opportunities[0];
+        await this.notifier.notify({
+          event: "Compass: Research Opportunity",
+          summary: `${signals.length} signals, ${opportunities.length} opportunities. Top: ${topOpp?.title?.slice(0, 80) || "none"} (score: ${topOpp?.composite_score || 0})`,
+          level: highValueOpps > 0 ? "info" : "warning",
+        });
+      }
+
+      return {
+        totalSignals: signals.length,
+        highValueSignals: highValueSignals + highValueOpps,
+        opportunities: opportunities.length,
+      };
+    } catch (err) {
+      console.error("[Compass] Detector subprocess failed:", err);
+      return { totalSignals: 0, highValueSignals: 0, opportunities: 0 };
+    }
   }
 
   private async getNewPaperCount(since: number): Promise<number> {
