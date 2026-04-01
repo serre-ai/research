@@ -145,7 +145,7 @@ def synthesize(signals: list[dict]) -> list[dict]:
     # Number of distinct detector types (for cross-detector scoring)
     total_detector_types = len(set(sig.get("detector", "") for sig in signals))
     # Use at least 3 as the denominator (current expected detectors)
-    detector_denominator = max(total_detector_types, 3)
+    detector_denominator = max(total_detector_types, 1)
 
     opportunities: list[dict] = []
 

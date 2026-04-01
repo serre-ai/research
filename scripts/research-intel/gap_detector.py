@@ -75,7 +75,7 @@ STOP_WORDS = frozenset({
     "they", "their", "them", "which", "what", "who", "whom",
 })
 
-DETECTOR_NAME = "gap_detector"
+DETECTOR_NAME = "gap"
 
 
 # ── Helpers ───────────────────────────────────────────────
