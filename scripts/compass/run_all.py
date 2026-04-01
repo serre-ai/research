@@ -5,6 +5,17 @@ Usage:
     python3 -m scripts.compass.run_all --help
     python3 -m scripts.compass.run_all --api http://localhost:3001 --limit 50 --json
     python3 scripts/compass/run_all.py --api http://localhost:3001 --limit 50 --json
+
+Note: For empirical venue topic scores (replacing static YAML ratings), run
+the OpenReview scraper first to populate shared/config/venues/data/:
+
+    python3 scripts/openreview-scraper.py --venue neurips --year 2025
+    python3 scripts/openreview-scraper.py --venue neurips --year 2024  # for shift detection
+    python3 scripts/openreview-scraper.py --all  # fetch all configured venues
+
+The reviewer_model detector will automatically use empirical acceptance
+data when the JSON files exist. Without them, it falls back to static
+YAML topic_fit scores.
 """
 
 from __future__ import annotations

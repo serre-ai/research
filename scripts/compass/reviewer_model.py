@@ -3,6 +3,10 @@
 Analyzes which topics venues are receptive to and identifies gaps in venue
 coverage across the research portfolio. Reads venue configs from
 shared/config/venues/*.yaml on disk.
+
+When empirical acceptance data exists (from openreview-scraper.py), static
+YAML topic_fit scores are supplemented with normalized keyword frequencies
+from actual accepted papers. Year-over-year topic shifts are also detected.
 """
 
 from __future__ import annotations
@@ -16,6 +20,14 @@ try:
     from .schema import ResearchSignal
 except ImportError:
     from schema import ResearchSignal  # type: ignore
+
+try:
+    from .venue_enricher import enrich_venues
+except ImportError:
+    try:
+        from venue_enricher import enrich_venues  # type: ignore
+    except ImportError:
+        enrich_venues = None  # type: ignore
 
 # ── Constants ─────────────────────────────────────────────
 
@@ -427,12 +439,94 @@ def _detect_venue_cooling(
     return signals
 
 
+def _detect_topic_shifts(
+    venues: list[dict[str, Any]],
+) -> list[ResearchSignal]:
+    """Emit signals for venues with detected year-over-year topic shifts.
+
+    Only fires when venue_enricher has populated 'topic_shifts' on a venue
+    profile (requires acceptance data for two consecutive years).
+    """
+    signals: list[ResearchSignal] = []
+
+    for venue in venues:
+        venue_name = venue.get("name", "unknown")
+        full_name = venue.get("full_name", venue_name)
+        deadline_str = venue.get("next_deadline")
+        topic_shifts = venue.get("topic_shifts")
+
+        if not topic_shifts:
+            continue
+
+        gaining = [s for s in topic_shifts if s["direction"] == "gaining"]
+        cooling = [s for s in topic_shifts if s["direction"] == "cooling"]
+
+        if gaining:
+            top_gaining = gaining[:5]
+            topic_names = [s["topic"] for s in top_gaining]
+            avg_delta = sum(s["delta"] for s in top_gaining) / len(top_gaining)
+
+            signals.append(ResearchSignal(
+                detector=DETECTOR_NAME,
+                signal_type="venue_topic_shift",
+                title=f"{full_name} gaining interest in: {', '.join(topic_names[:3])}",
+                description=(
+                    f"{len(gaining)} topics are gaining traction at {full_name} "
+                    f"based on year-over-year accepted paper keyword analysis. "
+                    f"Top gaining: {', '.join(topic_names)}."
+                ),
+                confidence=min(avg_delta * 2, 1.0),
+                source_papers=[],
+                topics=topic_names,
+                relevance=0.6,
+                timing_score=_compute_timing_score(deadline_str),
+                metadata={
+                    "venue": venue_name,
+                    "deadline": deadline_str or "",
+                    "shift_direction": "gaining",
+                    "shifts": top_gaining,
+                },
+            ))
+
+        if cooling:
+            top_cooling = cooling[:5]
+            topic_names = [s["topic"] for s in top_cooling]
+            avg_delta = sum(abs(s["delta"]) for s in top_cooling) / len(top_cooling)
+
+            signals.append(ResearchSignal(
+                detector=DETECTOR_NAME,
+                signal_type="venue_topic_shift",
+                title=f"{full_name} cooling on: {', '.join(topic_names[:3])}",
+                description=(
+                    f"{len(cooling)} topics are losing traction at {full_name} "
+                    f"based on year-over-year accepted paper keyword analysis. "
+                    f"Top cooling: {', '.join(topic_names)}."
+                ),
+                confidence=min(avg_delta * 2, 1.0),
+                source_papers=[],
+                topics=topic_names,
+                relevance=0.5,
+                timing_score=_compute_timing_score(deadline_str),
+                metadata={
+                    "venue": venue_name,
+                    "deadline": deadline_str or "",
+                    "shift_direction": "cooling",
+                    "shifts": top_cooling,
+                },
+            ))
+
+    return signals
+
+
 # ── Public API ────────────────────────────────────────────
 
 def detect(papers: list[dict], venues_path: str = "") -> list[dict]:
     """Run reviewer model on pre-fetched papers.
 
     Analyzes venue receptivity and identifies gaps in venue coverage.
+    When empirical acceptance data exists (from openreview-scraper.py),
+    static YAML topic scores are enriched with normalized keyword
+    frequencies from actual accepted papers.
 
     Args:
         papers: list of paper dicts (must have at least 'title' and 'abstract').
@@ -448,6 +542,11 @@ def detect(papers: list[dict], venues_path: str = "") -> list[dict]:
     if not venues:
         return []
 
+    # Enrich venue profiles with empirical data from OpenReview if available
+    if enrich_venues is not None:
+        venues_data_path = str(Path(venues_path) / "data")
+        venues = enrich_venues(venues, venues_data_path=venues_data_path)
+
     portfolio_path = _default_portfolio_path()
     targeted_venues = _load_portfolio_venues(portfolio_path)
 
@@ -455,12 +554,14 @@ def detect(papers: list[dict], venues_path: str = "") -> list[dict]:
 
     all_signals.extend(_analyze_venue_receptivity(papers, venues, targeted_venues))
     all_signals.extend(_detect_venue_cooling(papers, venues, targeted_venues))
+    all_signals.extend(_detect_topic_shifts(venues))
 
     # Sort by signal type priority, then confidence descending
     type_priority = {
         "venue_gap": 0,
         "venue_opportunity": 1,
         "venue_cooling": 2,
+        "venue_topic_shift": 3,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),
