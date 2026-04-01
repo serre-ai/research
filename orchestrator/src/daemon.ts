@@ -461,11 +461,7 @@ export class Daemon {
       await this.eventBus.stop();
     }
 
-    // Close database pool
-    if (this.dbPool) {
-      console.log("Closing database pool...");
-      await this.dbPool.end();
-    }
+    // DB pool is closed by index.ts (the owner) after start() returns
 
     await this.logger.log({ type: "daemon_stop", data: { cyclesCompleted: this.cycleCount } });
     console.log("Forge daemon stopped cleanly");
