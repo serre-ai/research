@@ -128,3 +128,10 @@ metrics:
   experiments_run: 0
 
 notes: "🚨 ROUTING LOGIC DEFINITIVELY BROKEN (2026-03-25): 7 CONSECUTIVE Researcher sessions despite research 100% COMPLETE. Avg score 13/100 (sessions -6 to 0). Score-based feedback loop CONFIRMED: wrong agent → low score → system assigns Researcher to 'diagnose' → wrong agent again → infinite loop. RESEARCH COMPLETE: (1) 30+ papers surveyed, (2) 50 instances collected & coded, (3) 9-category taxonomy with C1-C8 mapping, (4) Shah et al. competitor analyzed (novelty secure). PROJECT HEALTH: EXCELLENT (90/100). ROUTING LOGIC HEALTH: CRITICAL FAILURE (0/100 - 7/7 wrong assignments). 12 guidance documents created, ALL IGNORED. Explicit flags ignored 7x: 'phase: experimental', 'researcher_work_status: COMPLETE', 'DO NOT ASSIGN RESEARCHER' warnings, 'failed_researcher_sessions' counter. PROVEN: Routing logic does NOT check status.yaml flags, does NOT read guidance documents, HAS score-based feedback loop bug. COST: $14-35, 14 hours, 0 progress. SOLUTION: Manual override + code-level debugging. Session 8 = FINAL TEST: Experimenter/Writer = fixed, Researcher = platform bug requires developer fix. See META-REVIEW-7-SEVENTH-RESEARCHER-SESSION.md."
+
+key_terms:
+  - "LLM agent failure"
+  - "autonomous agent evaluation"
+  - "tool use failure LLM"
+  - "agent reliability benchmark"
+  - "LLM agent taxonomy"

@@ -64,3 +64,10 @@ metrics:
   experiments_run: 0
 
 notes: "Project initialized. Complements reasoning-gaps by providing impossibility results for self-improvement rather than just characterizing reasoning limitations. Together they form a theoretical program: what can't LLMs do, and what can't they learn to do on their own."
+
+key_terms:
+  - "self-improvement language model"
+  - "self-training LLM"
+  - "self-refinement convergence"
+  - "model collapse self-training"
+  - "recursive self-improvement"

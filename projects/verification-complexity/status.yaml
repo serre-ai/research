@@ -330,3 +330,10 @@ paper_status:
     - "Average-Case Analysis - new subsection in framework"
 
 notes: "Draft v0.3 with identified proof gap in Theorem 2c. Critic review (DW-142, 2026-03-23) finds: Theorems 1 and 3 are publication-ready, Theorem 2 parts (a) and (b) are excellent, but Theorem 2 part (c) has proof gap requiring Definition 7 (Computational Bottleneck) and Lemma 3 (Verification Hardness Produces Bottleneck). Current proof asserts 'VC ⊄ cap(M) → bottleneck exists' without proving this connection. Statement is informal compared to other theorem parts. Needs Theorist to formalize bottleneck structure and prove the missing lemma. Without these fixes, Theorem 2c is vulnerable to hostile review. Timeline: complete Definition 7 + Lemma 3 by June 2026, integrate experimental results by July 2026, submit ICLR September 2026. Confidence: 0.70 for ICLR acceptance (strong theory overall, one theorem needs revision, experiments pending)."
+
+key_terms:
+  - "verification complexity LLM"
+  - "scalable oversight"
+  - "cross-model verification"
+  - "output verification AI"
+  - "reward model verification"
