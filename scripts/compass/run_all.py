@@ -42,6 +42,16 @@ except ImportError:
     from synthesize import synthesize  # type: ignore
     from db import fetch_papers_with_embeddings  # type: ignore
 
+# Citation analyzer — optional, requires S2 API access
+_detect_citation = None
+try:
+    try:
+        from .citation_analyzer import detect as _detect_citation
+    except ImportError:
+        from citation_analyzer import detect as _detect_citation  # type: ignore
+except Exception:
+    pass
+
 
 DEFAULT_API_URL = "http://localhost:3001"
 
@@ -299,6 +309,17 @@ def main() -> None:
     all_signals.extend(reviewer_signals)
     print(f"  reviewer_model: {len(reviewer_signals)} signals", file=sys.stderr)
 
+    # Citation graph analysis (optional — needs S2 API)
+    if _detect_citation is not None:
+        try:
+            citation_signals = _detect_citation(papers)
+            all_signals.extend(citation_signals)
+            print(f"  citation_analyzer: {len(citation_signals)} signals", file=sys.stderr)
+        except Exception as e:
+            print(f"  citation_analyzer: skipped ({e})", file=sys.stderr)
+    else:
+        print("  citation_analyzer: not available (import failed)", file=sys.stderr)
+
     # Synthesize opportunities
     opportunities = synthesize(all_signals)
     print(f"  synthesized: {len(opportunities)} opportunities", file=sys.stderr)
@@ -319,7 +340,7 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "papers_analyzed": len(papers),
         "total_signals": len(all_signals),
-        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer", "contrarian_detector", "frontier_scanner", "reviewer_model"],
+        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer", "contrarian_detector", "frontier_scanner", "reviewer_model", "citation_analyzer"],
         "signals": all_signals,
         "opportunities": opportunities,
     }
