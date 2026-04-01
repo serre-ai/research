@@ -110,8 +110,11 @@ def _section_emerging_capabilities(signals: list[dict]) -> str:
         return "No new frontier capabilities detected.\n"
 
     lines: list[str] = []
-    for sig in sorted(frontier, key=lambda s: s.get("confidence", 0), reverse=True):
+    sorted_frontier = sorted(frontier, key=lambda s: s.get("confidence", 0), reverse=True)
+    for sig in sorted_frontier[:5]:
         lines.append(_signal_bullet(sig))
+    if len(sorted_frontier) > 5:
+        lines.append(f"*... and {len(sorted_frontier) - 5} more*\n")
     return "\n".join(lines) + "\n"
 
 
@@ -122,8 +125,11 @@ def _section_consensus_watch(signals: list[dict]) -> str:
         return "No consensus fragility detected.\n"
 
     lines: list[str] = []
-    for sig in sorted(contrarian, key=lambda s: s.get("confidence", 0), reverse=True):
+    sorted_contrarian = sorted(contrarian, key=lambda s: s.get("confidence", 0), reverse=True)
+    for sig in sorted_contrarian[:5]:
         lines.append(_signal_bullet(sig))
+    if len(sorted_contrarian) > 5:
+        lines.append(f"*... and {len(sorted_contrarian) - 5} more*\n")
     return "\n".join(lines) + "\n"
 
 
@@ -157,7 +163,8 @@ def _section_venue_landscape(signals: list[dict]) -> str:
         return "No venue signals detected (reviewer model data accumulating).\n"
 
     lines: list[str] = []
-    for sig in sorted(venue_signals, key=lambda s: s.get("confidence", 0), reverse=True):
+    sorted_venue = sorted(venue_signals, key=lambda s: s.get("confidence", 0), reverse=True)
+    for sig in sorted_venue[:5]:
         stype = sig.get("signal_type", "unknown")
         title = sig.get("title", "Untitled")
         conf = _fmt_confidence(sig.get("confidence", 0))
@@ -169,6 +176,8 @@ def _section_venue_landscape(signals: list[dict]) -> str:
         if desc:
             line += f" -- {desc}"
         lines.append(line)
+    if len(sorted_venue) > 5:
+        lines.append(f"*... and {len(sorted_venue) - 5} more*\n")
     return "\n".join(lines) + "\n"
 
 
@@ -179,7 +188,8 @@ def _section_portfolio_alignment(signals: list[dict]) -> str:
         return "No portfolio alignment signals detected.\n"
 
     lines: list[str] = []
-    for sig in sorted(portfolio, key=lambda s: s.get("confidence", 0), reverse=True):
+    sorted_portfolio = sorted(portfolio, key=lambda s: s.get("confidence", 0), reverse=True)
+    for sig in sorted_portfolio[:5]:
         lines.append(_signal_bullet(sig))
     return "\n".join(lines) + "\n"
 

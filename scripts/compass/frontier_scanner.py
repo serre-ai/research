@@ -57,8 +57,9 @@ NEW_CAPABILITY_SIGNALS = [
     "previously impossible",
     "not been achieved",
     "new capability",
-    "emergent",
-    "zero-shot",
+    "emergent capability",
+    "emergent ability",
+    "zero-shot without any training",
 ]
 
 # Words that should not appear in benchmark names — used to trim noisy captures.

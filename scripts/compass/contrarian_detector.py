@@ -510,12 +510,20 @@ def _find_semantic_opposition_keyword(papers: list[dict]) -> list[ResearchSignal
             if idx_a >= idx_b:
                 continue
 
+            # Skip same paper or near-duplicates
+            if _paper_id(a) == _paper_id(b):
+                continue
+
             if not ((a_positive and b_negative) or (a_negative and b_positive)):
                 continue
 
             topics_a = set(re.findall(r'[a-z]{4,}', abs_a)) - STOP_WORDS
             topics_b = set(re.findall(r'[a-z]{4,}', abs_b)) - STOP_WORDS
             overlap = len(topics_a & topics_b) / max(len(topics_a | topics_b), 1)
+
+            # Skip near-duplicates (>0.95 overlap = same paper variant)
+            if overlap > 0.95:
+                continue
 
             if overlap > 0.15:
                 signals.append(ResearchSignal(
@@ -576,7 +584,7 @@ def _find_semantic_opposition_embedding(papers: list[dict]) -> list[ResearchSign
     similarities = batch_cosine_similarity(paper_ids)
 
     for (id_a, id_b), sim in similarities.items():
-        if sim < 0.8:
+        if sim < 0.8 or sim > 0.95:  # Skip below threshold AND near-duplicates
             continue
 
         if id_a not in id_to_paper or id_b not in id_to_paper:
