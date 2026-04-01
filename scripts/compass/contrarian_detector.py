@@ -440,21 +440,22 @@ def _find_semantic_opposition(papers: list[dict]) -> list[ResearchSignal]:
     if not has_embeddings:
         return signals
 
-    for i, a in enumerate(papers):
-        abs_a = (a.get("abstract") or "").lower()
-        if not abs_a:
+    # Pre-filter: only consider papers that have claim language (positive or negative)
+    # This avoids O(n^2) over all papers — only papers with claims are compared
+    claim_papers: list[tuple[int, dict, str, bool, bool]] = []
+    for i, p in enumerate(papers):
+        abs_text = (p.get("abstract") or "").lower()
+        if not abs_text:
             continue
-        a_positive = any(w in abs_a for w in _POSITIVE_CLAIMS)
-        a_negative = any(w in abs_a for w in _NEGATIVE_CLAIMS)
+        pos = any(w in abs_text for w in _POSITIVE_CLAIMS)
+        neg = any(w in abs_text for w in _NEGATIVE_CLAIMS)
+        if pos or neg:
+            claim_papers.append((i, p, abs_text, pos, neg))
 
-        for j, b in enumerate(papers):
-            if i >= j:
+    for idx_a, (i, a, abs_a, a_positive, a_negative) in enumerate(claim_papers):
+        for idx_b, (j, b, abs_b, b_positive, b_negative) in enumerate(claim_papers):
+            if idx_a >= idx_b:
                 continue
-            abs_b = (b.get("abstract") or "").lower()
-            if not abs_b:
-                continue
-            b_positive = any(w in abs_b for w in _POSITIVE_CLAIMS)
-            b_negative = any(w in abs_b for w in _NEGATIVE_CLAIMS)
 
             # One positive, other negative = opposition
             if not ((a_positive and b_negative) or (a_negative and b_positive)):

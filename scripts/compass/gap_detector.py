@@ -157,7 +157,11 @@ def _find_uncovered_connections(papers: list[dict]) -> list[ResearchSignal]:
     has_embeddings = any(p.get("embedding_str") for p in papers)
 
     if has_embeddings:
-        return _find_uncovered_connections_embedding(papers)
+        try:
+            return _find_uncovered_connections_embedding(papers)
+        except Exception:
+            # DB failure — fall back to keyword mode
+            return _find_uncovered_connections_keyword(papers)
     else:
         return _find_uncovered_connections_keyword(papers)
 
