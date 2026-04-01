@@ -66,7 +66,7 @@ def fetch_unprocessed_claims(limit: int) -> list[dict]:
     import psycopg2.extras
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("""
-        SELECT c.id::text, c.statement, c.claim_type, c.source, c.source_type
+        SELECT c.id::text, c.statement, c.claim_type, c.source, c.source_type, c.paper_id
         FROM claims c
         WHERE c.project = '_field'
           AND NOT EXISTS (SELECT 1 FROM claim_relations r WHERE r.source_id = c.id)
@@ -119,7 +119,7 @@ def find_similar_by_paper_embedding(
         FROM lit_papers p1
         JOIN claims c2 ON c2.id != %s::uuid
                        AND c2.source_type = 'paper'
-        JOIN lit_papers p2 ON p2.id = c2.source
+        JOIN lit_papers p2 ON p2.id = c2.paper_id
         WHERE p1.id = %s
           AND p1.embedding IS NOT NULL
           AND p2.embedding IS NOT NULL
@@ -204,9 +204,9 @@ def process_claims(
 
         if has_own_embedding:
             similar = find_similar_by_claim_embedding(claim_id, min_similarity)
-        elif claim.get("source_type") == "paper" and claim.get("source"):
+        elif claim.get("source_type") == "paper" and claim.get("paper_id"):
             similar = find_similar_by_paper_embedding(
-                claim_id, claim["source"], min_similarity
+                claim_id, claim["paper_id"], min_similarity
             )
         else:
             # No embedding available at all — skip
