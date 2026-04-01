@@ -38,7 +38,7 @@ class TestSignalSchema:
             )
 
     def test_valid_signal_types(self, synthetic_papers):
-        valid_types = {"consensus_thin_evidence", "consensus_fragile", "contrarian_opportunity"}
+        valid_types = {"consensus_thin_evidence", "consensus_fragile", "contrarian_opportunity", "semantic_opposition", "kg_contradiction_relevant"}
         signals = detect(synthetic_papers)
         for sig in signals:
             assert sig["signal_type"] in valid_types, (

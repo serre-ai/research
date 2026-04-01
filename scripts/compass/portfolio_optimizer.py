@@ -482,6 +482,51 @@ def _find_citation_opportunities(
     return signals[:15]
 
 
+# ── Knowledge graph claim gap detection ───────────────────
+
+def _find_claim_gaps(papers: list[dict], project_info: dict[str, dict[str, Any]]) -> list[ResearchSignal]:
+    """Find papers that could provide evidence for low-confidence claims."""
+    try:
+        from .db import fetch_claims
+    except ImportError:
+        from db import fetch_claims
+
+    try:
+        signals = []
+        for project_name, info in project_info.items():
+            claims = fetch_claims(project_name)
+            # Find claims with low confidence (< 0.7) that could use more evidence
+            weak_claims = [c for c in claims if c.get('confidence', 1.0) < 0.7]
+
+            for claim in weak_claims[:5]:  # Top 5 weakest
+                claim_words = set(re.findall(r'[a-z]{4,}', claim['statement'].lower()))
+
+                for paper in papers:
+                    abstract = (paper.get('abstract') or '').lower()
+                    paper_words = set(re.findall(r'[a-z]{4,}', abstract))
+                    overlap = len(claim_words & paper_words) / max(len(claim_words), 1)
+
+                    if overlap > 0.25:
+                        signals.append(ResearchSignal(
+                            detector=DETECTOR_NAME,
+                            signal_type="claim_strengthening",
+                            title=f"Paper could strengthen: '{claim['statement'][:50]}' ({project_name})",
+                            description=f"Claim confidence {claim.get('confidence', 0):.0%}. Paper '{paper.get('title', '')[:50]}' has {overlap:.0%} topic overlap.",
+                            confidence=overlap,
+                            source_papers=[_paper_id(paper)],
+                            source_claims=[claim['id']],
+                            topics=list(claim_words & paper_words)[:5],
+                            relevance=overlap,
+                            timing_score=0.3,
+                            metadata={"project": project_name, "claim_confidence": claim.get('confidence', 0)},
+                        ))
+
+        signals.sort(key=lambda s: s.confidence, reverse=True)
+        return signals[:10]
+    except Exception:
+        return []
+
+
 # ── Public API ────────────────────────────────────────────
 
 def _default_portfolio_path() -> str:
@@ -518,12 +563,14 @@ def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
     all_signals.extend(_find_portfolio_gaps(papers, core_identity, project_info))
     all_signals.extend(_find_portfolio_deepening(papers, core_identity, project_info))
     all_signals.extend(_find_citation_opportunities(papers, core_identity, project_info))
+    all_signals.extend(_find_claim_gaps(papers, project_info))
 
     # Sort by signal type priority, then confidence descending
     type_priority = {
         "portfolio_gap": 0,
         "portfolio_deepening": 1,
         "citation_opportunity": 2,
+        "claim_strengthening": 3,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),

@@ -86,7 +86,7 @@ class TestSignalSchema:
             )
 
     def test_valid_signal_types(self, synthetic_papers, tmp_path):
-        valid_types = {"portfolio_gap", "portfolio_deepening", "citation_opportunity"}
+        valid_types = {"portfolio_gap", "portfolio_deepening", "citation_opportunity", "claim_strengthening"}
         portfolio = _create_mock_portfolio(tmp_path)
         signals = detect(synthetic_papers, portfolio_path=portfolio)
         for sig in signals:

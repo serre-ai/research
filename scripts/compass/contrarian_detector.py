@@ -409,6 +409,70 @@ def _find_contrarian_opportunities(
     return signals[:15]
 
 
+# ── Knowledge graph contradiction detection ───────────────
+
+def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
+    """Find papers that relate to contradicting claims in the knowledge graph."""
+    try:
+        from .db import get_connection
+    except ImportError:
+        from db import get_connection
+
+    try:
+        conn = get_connection()
+        import psycopg2.extras
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Get contradiction pairs from KG
+        cur.execute("""
+            SELECT c1.statement as claim_a, c1.project as project_a, c1.confidence as conf_a,
+                   c2.statement as claim_b, c2.project as project_b, c2.confidence as conf_b
+            FROM claim_relations r
+            JOIN claims c1 ON c1.id = r.source_id
+            JOIN claims c2 ON c2.id = r.target_id
+            WHERE r.relation = 'contradicts'
+            ORDER BY r.created_at DESC
+            LIMIT 20
+        """)
+        contradictions = cur.fetchall()
+        cur.close()
+
+        # For each contradiction, check if recent papers relate to either side
+        signals = []
+        for contra in contradictions:
+            # Find papers whose abstracts mention keywords from either claim
+            claim_a_words = set(re.findall(r'[a-z]{4,}', contra['claim_a'].lower()))
+            claim_b_words = set(re.findall(r'[a-z]{4,}', contra['claim_b'].lower()))
+
+            for paper in papers:
+                abstract = (paper.get('abstract') or '').lower()
+                if not abstract:
+                    continue
+                paper_words = set(re.findall(r'[a-z]{4,}', abstract))
+
+                overlap_a = len(claim_a_words & paper_words) / max(len(claim_a_words), 1)
+                overlap_b = len(claim_b_words & paper_words) / max(len(claim_b_words), 1)
+
+                if overlap_a > 0.3 or overlap_b > 0.3:
+                    signals.append(ResearchSignal(
+                        detector=DETECTOR_NAME,
+                        signal_type="kg_contradiction_relevant",
+                        title=f"Paper relates to KG contradiction: {contra['claim_a'][:50]} vs {contra['claim_b'][:50]}",
+                        description=f"Recent paper '{paper.get('title', '')[:60]}' overlaps with a known contradiction in the knowledge graph.",
+                        confidence=max(overlap_a, overlap_b),
+                        source_papers=[_paper_id(paper)],
+                        source_claims=[],
+                        topics=list(claim_a_words & claim_b_words & paper_words)[:5],
+                        timing_score=0.5,
+                        metadata={"claim_a": contra['claim_a'][:100], "claim_b": contra['claim_b'][:100]},
+                    ))
+
+        return signals[:10]
+    except Exception:
+        # DB not available — skip KG integration silently
+        return []
+
+
 # ── Embedding-based opposition detection ─────────────────
 
 # Claim-direction keywords for semantic opposition heuristic
@@ -507,13 +571,15 @@ def detect(papers: list[dict]) -> list[dict]:
     all_signals.extend(_find_fragile_consensus(clusters))
     all_signals.extend(_find_contrarian_opportunities(papers, clusters))
     all_signals.extend(_find_semantic_opposition(papers))
+    all_signals.extend(_find_kg_contradictions(papers))
 
     # Sort by signal_type priority, then confidence descending
     type_priority = {
         "contrarian_opportunity": 0,
-        "semantic_opposition": 1,
-        "consensus_thin_evidence": 2,
-        "consensus_fragile": 3,
+        "kg_contradiction_relevant": 1,
+        "semantic_opposition": 2,
+        "consensus_thin_evidence": 3,
+        "consensus_fragile": 4,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),
