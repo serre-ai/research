@@ -5,6 +5,8 @@ then scores incoming papers against it to surface:
   - portfolio_gap: topics matching identity but with no active project
   - portfolio_deepening: papers that directly extend an existing project
   - citation_opportunity: papers likely to cite our work
+  - topic_coverage_gap: accelerating topics in the topic graph we don't cover
+  - topic_momentum: accelerating topics that align with our portfolio
 """
 
 from __future__ import annotations
@@ -559,6 +561,84 @@ def _find_claim_gaps(papers: list[dict], project_info: dict[str, dict[str, Any]]
         return []
 
 
+# ── Topic graph coverage analysis ─────────────────────────
+
+def _find_topic_coverage_gaps(papers: list[dict], project_info: dict[str, dict[str, Any]]) -> list[ResearchSignal]:
+    """Find accelerating topics where we have no project coverage."""
+    if get_connection is None:
+        return []
+
+    try:
+        conn = get_connection()
+        import psycopg2.extras
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Get all topics with their velocity
+        cur.execute("""
+            SELECT id, label, paper_count, velocity, claim_count
+            FROM research_topics
+            ORDER BY velocity DESC
+        """)
+        topics = cur.fetchall()
+        cur.close()
+    except Exception:
+        return []
+
+    # Get our project topics (from project_info keyword matching against topic labels)
+    our_topic_keywords: set[str] = set()
+    for proj_name, info in project_info.items():
+        our_topic_keywords.update(info.get("topics", set()))
+
+    signals: list[ResearchSignal] = []
+    for topic in topics:
+        label_words = set(topic["label"].lower().split())
+
+        # Check if this topic overlaps with our projects
+        overlap = len(our_topic_keywords & label_words) / max(len(label_words), 1)
+
+        if overlap < 0.1 and topic["velocity"] > 1.5 and topic["paper_count"] >= 5:
+            # Accelerating topic we don't cover
+            signals.append(ResearchSignal(
+                detector=DETECTOR_NAME,
+                signal_type="topic_coverage_gap",
+                title=f"Coverage gap: '{topic['label']}' ({topic['velocity']:.1f}x velocity, {topic['paper_count']} papers)",
+                description=f"Accelerating topic with {topic['paper_count']} papers and {topic['velocity']:.1f}x velocity. No current project covers this area.",
+                confidence=min(topic["velocity"] / 5.0, 0.9),
+                source_papers=[],
+                topics=[topic["label"]],
+                relevance=0.0,  # explicitly NOT in our portfolio
+                timing_score=min(topic["velocity"] / 4.0, 1.0),
+                metadata={
+                    "topic_id": topic["id"],
+                    "velocity": topic["velocity"],
+                    "paper_count": topic["paper_count"],
+                    "our_overlap": round(overlap, 3),
+                },
+            ))
+        elif overlap > 0.3 and topic["velocity"] > 2.0:
+            # Accelerating topic we DO cover — deepening opportunity
+            matching_projects = [p for p, info in project_info.items()
+                               if len(set(info.get("topics", set())) & label_words) > 0]
+            signals.append(ResearchSignal(
+                detector=DETECTOR_NAME,
+                signal_type="topic_momentum",
+                title=f"Momentum: '{topic['label']}' aligns with {', '.join(matching_projects[:2])} ({topic['velocity']:.1f}x)",
+                description=f"Topic accelerating at {topic['velocity']:.1f}x and matches our portfolio. Good time to publish.",
+                confidence=min(overlap * topic["velocity"] / 5.0, 0.9),
+                source_papers=[],
+                topics=[topic["label"]],
+                relevance=overlap,
+                timing_score=0.8,
+                metadata={
+                    "topic_id": topic["id"],
+                    "velocity": topic["velocity"],
+                    "matching_projects": matching_projects,
+                },
+            ))
+
+    return signals[:10]
+
+
 # ── Public API ────────────────────────────────────────────
 
 def _default_portfolio_path() -> str:
@@ -596,13 +676,16 @@ def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
     all_signals.extend(_find_portfolio_deepening(papers, core_identity, project_info))
     all_signals.extend(_find_citation_opportunities(papers, core_identity, project_info))
     all_signals.extend(_find_claim_gaps(papers, project_info))
+    all_signals.extend(_find_topic_coverage_gaps(papers, project_info))
 
     # Sort by signal type priority, then confidence descending
     type_priority = {
-        "portfolio_gap": 0,
-        "portfolio_deepening": 1,
-        "citation_opportunity": 2,
-        "claim_strengthening": 3,
+        "topic_coverage_gap": 0,
+        "topic_momentum": 1,
+        "portfolio_gap": 2,
+        "portfolio_deepening": 3,
+        "citation_opportunity": 4,
+        "claim_strengthening": 5,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),
