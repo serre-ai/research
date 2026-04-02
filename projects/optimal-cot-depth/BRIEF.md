@@ -16,7 +16,7 @@ Recent work on Chain-of-Thought (CoT) reasoning in LLMs has produced contradicto
 
 ### Primary
 1. **Formalize optimal CoT depth** as a function of task complexity class and input size. Define what "optimal" means: the number of reasoning steps that maximizes correctness while minimizing hallucination cascades.
-2. **Prove complexity-conditioned bounds** on useful CoT depth. Show that for tasks in P, optimal depth is O(1); for NP tasks, depth scales polynomially with input; beyond the complexity boundary, additional steps degrade performance.
+2. **Prove complexity-conditioned bounds** on useful CoT depth. Show that for tasks in TC^0, optimal depth is O(1); for tasks requiring super-constant circuit depth (NP-complete under standard assumptions), optimal depth scales polynomially; beyond the complexity boundary, additional steps degrade performance.
 3. **Resolve the CoT length contradiction** by showing that each existing paper's findings are predicted by the framework when accounting for the complexity distribution of their evaluation tasks.
 
 ### Secondary
@@ -24,8 +24,8 @@ Recent work on Chain-of-Thought (CoT) reasoning in LLMs has produced contradicto
 5. Connect to the **reasoning gap framework** from our prior work, extending it from the capability dimension (which problems can LLMs solve?) to the depth dimension (how much reasoning is optimal?).
 
 ## Hypotheses
-- **H1**: For tasks with polynomial-time verification (P), optimal CoT depth is O(1) — a constant number of reasoning steps suffices regardless of input size, and additional steps introduce noise without benefit.
-- **H2**: For tasks requiring nondeterministic polynomial verification (NP), optimal CoT depth scales with input size — more complex instances genuinely benefit from longer reasoning chains.
+- **H1**: For tasks solvable within the transformer's native complexity class (TC^0), optimal CoT depth is O(1) — a constant number of reasoning steps suffices, and additional steps introduce noise without benefit. Note: this is a strict subset of P; many P tasks (e.g., long addition) require CoT precisely because they exceed TC^0.
+- **H2**: For tasks whose verification is in P but whose generation requires super-constant depth (NP-complete problems under standard assumptions), optimal CoT depth scales with input size — more complex instances genuinely benefit from longer reasoning chains.
 - **H3**: Beyond a complexity-determined threshold, additional CoT steps degrade performance. The degradation follows a predictable curve governed by per-step error accumulation rate and task difficulty.
 - **H4**: The contradiction between existing CoT length papers dissolves when controlling for the computational complexity class of their evaluation tasks. Each paper's findings are consistent with the unified framework.
 
@@ -62,5 +62,6 @@ Recent work on Chain-of-Thought (CoT) reasoning in LLMs has produced contradicto
 ## Risk Factors
 - **Bounds too loose**: Complexity-theoretic bounds may be too loose to be empirically predictive. Mitigate by proving tight bounds for specific complexity classes and validating empirically.
 - **CoT depth not cleanly controllable**: Models may not respect depth instructions. Mitigate by using structured prompting (numbered steps) and filtering for actual step count.
-- **Noise model too simplistic**: Real CoT errors may not follow independent per-step accumulation. Mitigate by empirically validating the noise model and considering correlated error extensions.
+- **Noise model too simplistic**: Real CoT errors may not follow independent per-step accumulation. If independent, the result (exponential decay) is trivially provable and may be too obvious. If correlated (more realistic), clean bounds become much harder. Mitigate by proving results under both assumptions and characterizing the gap.
+- **Depth vs. length gap**: The dispute papers likely measure CoT *length* (tokens), not *depth* (logical steps). The framework needs a formal bridge between the two. Mitigate by defining a length-to-depth mapping and analyzing when length is a good proxy for depth.
 - **Prior work overlap**: CoT scaling is a hot topic. Mitigate by focusing on the complexity-theoretic angle — no existing work takes this formal approach. Our contribution is the theoretical framework, not the empirical observation.

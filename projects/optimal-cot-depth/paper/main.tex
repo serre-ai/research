@@ -26,13 +26,13 @@
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
 
-% Complexity notation
-\newcommand{\TC}{\mathrm{TC}^0}
-\newcommand{\NC}{\mathrm{NC}^1}
-\newcommand{\NP}{\mathrm{NP}}
-\newcommand{\coNP}{\mathrm{coNP}}
-\newcommand{\PSPACE}{\mathrm{PSPACE}}
-\newcommand{\poly}{\mathrm{poly}}
+% Complexity notation (use \providecommand to avoid collisions)
+\providecommand{\TC}{\mathrm{TC}^0}
+\providecommand{\NC}{\mathrm{NC}^1}
+\providecommand{\NP}{\mathrm{NP}}
+\providecommand{\coNP}{\mathrm{coNP}}
+\providecommand{\PSPACE}{\mathrm{PSPACE}}
+\providecommand{\poly}{\mathrm{poly}}
 
 % CoT-specific notation
 \newcommand{\CoT}{\mathrm{CoT}}
@@ -57,7 +57,7 @@
 \maketitle
 
 \begin{abstract}
-Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation. We resolve this contradiction through computational complexity theory. We prove that the optimal number of reasoning steps $\depth(\mathcal{C}, n)$ is determined by the complexity class $\mathcal{C}$ of the underlying task and the input size $n$. For tasks in P, optimal depth is $\bigO(1)$---additional steps introduce noise without benefit. For NP tasks, depth scales polynomially with input size. Beyond a complexity-determined threshold, additional steps degrade performance via hallucination cascades at a rate governed by the per-step error probability $\noise$. We formalize this as a noise accumulation model and prove tight bounds for standard complexity classes. Empirical validation across tasks of known complexity confirms our predictions: the observed optimal depth matches the theoretical curve within [TBD]\% across [TBD] models. Our framework explains why each contradictory finding in the literature is correct---for the specific complexity profile of its evaluation tasks.
+Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation. We resolve this contradiction through computational complexity theory. We prove that the optimal number of reasoning steps $\depth(\mathcal{C}, n)$ is determined by the complexity class $\mathcal{C}$ of the underlying task and the input size $n$. For tasks within the transformer's native complexity class ($\TC$), optimal depth is $\bigO(1)$---additional steps introduce noise without benefit. For tasks requiring super-constant circuit depth, such as $\NP$-complete problems, depth scales polynomially with input size. Beyond a complexity-determined threshold, additional steps degrade performance via hallucination cascades at a rate governed by the per-step error probability $\noise$. We formalize this as a noise accumulation model and prove tight bounds for standard complexity classes. Empirical validation across tasks of known complexity confirms our predictions: the observed optimal depth matches the theoretical curve within [TBD]\% across [TBD] models. Our framework explains why each contradictory finding in the literature is correct---for the specific complexity profile of its evaluation tasks.
 \end{abstract}
 
 \section{Introduction}
