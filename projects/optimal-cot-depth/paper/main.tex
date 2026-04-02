@@ -65,7 +65,7 @@
 \begin{abstract}
 Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation.
 We resolve this contradiction through computational complexity theory by proving that the optimal number of reasoning steps is governed by two quantities: the \emph{CoT complexity} $\ccot(n)$ of the task (the minimum steps a transformer needs to solve it) and the model's \emph{per-step error rate} $\noise$.
-Our main result establishes that optimal depth satisfies $\depth = \min(\ccot(n),\; \Theta(1/\noise))$, revealing two regimes: an \emph{easy-task regime} where the model can fully solve the problem and optimal depth equals CoT complexity, and a \emph{hard-task regime} where noise accumulation caps useful depth at $1/\noise$ regardless of task complexity.
+Our main result establishes that optimal depth satisfies $\depth = \min(\ccot(n),\; \lfloor 1/\noise \rfloor)$, revealing two regimes: an \emph{easy-task regime} where the model can fully solve the problem and optimal depth equals CoT complexity, and a \emph{hard-task regime} where noise accumulation caps useful depth at $1/\noise$ regardless of task complexity.
 This \emph{capability ceiling}---the maximum useful reasoning depth is bounded by $1/\noise$, independent of the task---is a genuinely new prediction.
 We prove a noise ceiling theorem showing exponential accuracy decay beyond optimal depth, and extend the model to self-correcting reasoners.
 Our framework explains why each contradictory finding in the literature is correct for the specific complexity profile of its evaluation tasks.
@@ -177,12 +177,20 @@ We prove our main results under \cref{asm:independent} and extend to self-correc
 \label{asm:linear}
 The computational sufficiency function increases linearly up to the CoT complexity threshold:
 \[
-\suf(k, c) = \Smax \cdot \min\!\left(\frac{k}{c},\; 1\right)
+\suf(k, c) = \begin{cases}
+\Smax & \text{if } c = 0 \text{ (task in $\TC$)} \\
+\Smax \cdot \min\!\left(\dfrac{k}{c},\; 1\right) & \text{if } c \geq 1
+\end{cases}
 \]
 where $\Smax \in (0, 1]$ is the maximum achievable sufficiency and $c = \ccot_f(n)$.
 \end{assumption}
 
-This gives the accuracy function:
+\begin{remark}[Baseline accuracy]
+\label{rem:baseline}
+For tasks with $c \geq 1$, the assumption gives $\suf(0, c) = 0$: the model achieves zero accuracy without CoT. This is an idealization---real models achieve nonzero baseline accuracy via memorization and heuristics. We adopt it because $\Smax$ cancels from the optimal depth: $\depth = \arg\max_k \acc(k) = \arg\max_k [\min(k/c, 1) \cdot (1-\noise)^k]$, which is independent of $\Smax$. Adding a baseline term $\beta_0 > 0$ shifts $\depth$ downward slightly (the model needs fewer CoT steps because it starts with partial accuracy) but preserves the capability ceiling at $1/\noise$. We treat $\beta_0 = 0$ for analytical clarity; see \cref{app:proofs} for the general case.
+\end{remark}
+
+For tasks with $c \geq 1$, this gives the accuracy function:
 \begin{equation}
 \label{eq:accuracy}
 \acc(k) = \Smax \cdot \min\!\left(\frac{k}{c},\; 1\right) \cdot (1 - \noise)^k
@@ -272,12 +280,16 @@ Taking logarithms with $x = c/k^* > 1$:
 &= -\ln x + (x - 1) \cdot k^* \cdot \bigl(-\ln(1-\noise)\bigr) \\
 &= -\ln x + (x - 1) \tag{since $k^* = -1/\ln(1-\noise)$}
 \end{align*}
-For $x > 1$: $x - 1 > \ln x$ (strict convexity of $e^t$), so $\ln(\acc(k^*)/\acc(c)) > 0$. Therefore $\acc(k^*) > \acc(c)$ whenever $c > k^*$, and $\depth = \lfloor k^* \rfloor$.
+For $x > 1$: $x - 1 > \ln x$ (strict convexity of $e^t$), so $\ln(\acc(k^*)/\acc(c)) > 0$. Therefore $\acc(k^*) > \acc(c)$ whenever $c > k^*$, and the continuous optimum is at $k^*$.
+
+\emph{Discretization:} Since $k$ must be a non-negative integer, $\depth \in \{\lfloor k^* \rfloor, \lceil k^* \rceil\}$. For small $\noise$, $k^* \approx 1/\noise - 1/2$, and $h(\lfloor k^* \rfloor) = h(\lceil k^* \rceil)$ to leading order (the ratio is $1 - \noise^2 + O(\noise^3) \approx 1$). We write $\depth = \lfloor k^* \rfloor$; either choice changes optimal depth by at most 1.
 \end{proof}
 
 \begin{remark}[The capability ceiling]
 \label{rem:ceiling}
 The hard-task regime reveals a \emph{capability ceiling}: $\depth \leq \lfloor 1/\noise \rfloor$, regardless of task complexity. A model with 5\% per-step error ($\noise = 0.05$) has a ceiling of $\sim\!20$ useful reasoning steps. Beyond this, noise overwhelms any computational benefit from additional steps. Stronger models (lower $\noise$) can reason deeper, but every model has a finite horizon. This is the key prediction absent from \citet{wu2025when}: their $N^* = TZ/(M(Z+1))$ grows without bound as $T \to \infty$, whereas our $\depth$ saturates.
+
+Note that $\depth$ depends only on $\ccot(n)$ and $\noise$---not on $\Smax$. Model quality (captured by $\Smax$) determines peak \emph{accuracy} but not optimal \emph{depth}. The capability ceiling $1/\noise$ is purely a function of per-step reliability.
 \end{remark}
 
 \begin{corollary}[Scaling laws for specific problems]
@@ -291,7 +303,7 @@ For specific problem families with known CoT complexity:
 Majority, comparison & $0$ & \cite{merrill2022saturated} & $0$ \\
 $l$-fold composition & $l$ & \cite{barcelo2025ehrenfeucht} & $\min(l, \lfloor 1/\noise \rfloor)$ \\
 Parity & $\Theta(n)$ & \cite{amiri2025lower} & $\min(n, \lfloor 1/\noise \rfloor)$ \\
-Multiplication & $\Omega(n)$ & \cite{amiri2025lower} & $\min(\Omega(n), \lfloor 1/\noise \rfloor)$ \\
+Multiplication & $\geq \alpha n$ & \cite{amiri2025lower} & $\geq \min(\alpha n, \lfloor 1/\noise \rfloor)$ \\
 Any $f \in \SIZE(s)$ & $\leq s$ & \cite{li2024chain} & $\min(s, \lfloor 1/\noise \rfloor)$ \\
 \bottomrule
 \end{tabular}
@@ -304,22 +316,19 @@ For any problem with CoT complexity growing faster than $1/\noise$, optimal dept
 
 \begin{theorem}[Noise ceiling]
 \label{thm:noise-ceiling}
-For any task $f$ with CoT complexity $c$ and any CoT depth $k \geq c$, the accuracy satisfies:
+For any task $f$ with CoT complexity $c \geq 1$ and any CoT depth $k \geq c$:
 \[
-\acc(k) = \Smax \cdot (1-\noise)^k = \acc(c) \cdot (1-\noise)^{k - c}
+\acc(k) = \acc(c) \cdot (1-\noise)^{k - c}
 \]
-In particular, for any $k > \depth$:
-\[
-\acc(k) \leq \acc(\depth) \cdot (1-\noise)^{k - \depth}
-\]
+That is, once computational sufficiency is reached, each additional step reduces accuracy by exactly $(1 - \noise)$.
 \end{theorem}
 
 \begin{proof}
-For $k \geq c$, sufficiency is saturated: $\suf(k, c) = \Smax$. Thus $\acc(k) = \Smax \cdot (1-\noise)^k$. Dividing by $\acc(c) = \Smax \cdot (1-\noise)^c$ gives the first equality. The inequality follows because $\acc(\depth) \geq \acc(c)$ by optimality of $\depth$.
+For $k \geq c$, sufficiency is saturated: $\suf(k, c) = \Smax$. Thus $\acc(k) = \Smax \cdot (1-\noise)^k$. Since $\acc(c) = \Smax \cdot (1-\noise)^c$, dividing gives $\acc(k)/\acc(c) = (1-\noise)^{k-c}$.
 \end{proof}
 
 \begin{remark}
-The noise ceiling is universal: once the model has enough steps to solve the task, each additional step reduces accuracy by a constant factor $(1-\noise)$, independent of the task. For $\noise = 0.05$, accuracy halves every $\lceil\ln 2 / \noise\rceil = 14$ excess steps. This provides the formal mechanism behind the ``overthinking'' phenomenon~\cite{hassid2025overthink}.
+The noise ceiling has two consequences. First, it is \emph{universal}: once sufficient steps are taken, the decay rate $(1-\noise)$ per step depends only on the model's per-step reliability, not on the task. For $\noise = 0.05$, accuracy halves every $\lceil\ln 2 / \noise\rceil = 14$ excess steps. This provides the formal mechanism behind the ``overthinking'' phenomenon~\cite{hassid2025overthink}. Second, combined with \cref{thm:scaling}, the noise ceiling implies that $\acc$ is unimodal: it increases toward $\depth$ (rising sufficiency) and decreases beyond $c$ (exponential noise decay). In the hard-task regime where $\depth < c$, accuracy peaks at $\depth$ and then \emph{continues to rise} in the interval $(\depth, c)$ (sufficiency still growing) before the exponential decay sets in at $k \geq c$---but this secondary rise never exceeds $\acc(\depth)$, as shown in the proof of \cref{thm:scaling}.
 \end{remark}
 
 \subsection{Self-Correcting Reasoners}
@@ -341,7 +350,9 @@ Under this model, each step produces a fatal error that persists with probabilit
 \end{proof}
 
 \begin{remark}
-For a model with $\noise = 0.10$ and $\gamma = 0.5$ (corrects half its errors): $\neff = 0.05$, ceiling $= 20$ steps. Without self-correction: ceiling $= 10$ steps. Self-correction doubles useful depth but does not make it unbounded. The $\gamma \to 1$ limit (perfect correction) is unreachable in practice: correcting an error requires recognizing it, which itself may fail.
+For a model with $\noise = 0.10$ and $\gamma = 0.5$ (corrects half its errors): $\neff = 0.05$, ceiling $= 20$ steps. Without self-correction: ceiling $= 10$ steps. Self-correction doubles useful depth but does not make it unbounded. The $\gamma \to 1$ limit (perfect correction) is unreachable: correcting an error requires recognizing it, which itself may fail.
+
+\cref{prop:self-correction} models \emph{local} error suppression---careful reasoning that avoids mistakes within a single step. Modern reasoning models (o1, DeepSeek-R1) also exhibit \emph{multi-step backtracking}: generating a wrong sub-answer, recognizing the error several steps later, and revising. This global correction process is not captured by per-step $\gamma$, as it introduces non-monotone reliability (R may dip and recover). Modeling backtracking formally requires a richer framework, such as a random walk on error states with position-dependent correction rates, and is an important direction for future work.
 \end{remark}
 
 \subsection{Resolving the CoT Length Dispute}
@@ -426,12 +437,27 @@ This explains the dispute: \citet{yeo2025demystifying} evaluate on MATH, AIME, a
 
 \appendix
 
-\section{Full Proofs}
+\section{Full Proofs and Extensions}
 \label{app:proofs}
 
-% TODO: Full proofs of all theorems (main text proofs are already complete;
-% this appendix will contain extensions to smooth sufficiency functions
-% and correlated error models).
+\subsection{Generalization to Nonzero Baseline ($\beta_0 > 0$)}
+\label{app:baseline}
+
+When the model achieves baseline accuracy $\beta_0 > 0$ without CoT (via memorization or heuristics), the sufficiency function becomes:
+\[
+\suf(k, c) = \Smax \cdot \bigl[\beta_0 + (1 - \beta_0)\min(k/c, 1)\bigr]
+\]
+The accuracy in Regime 1 ($k < c$) is:
+\[
+\acc(k) = \Smax \cdot \bigl[\beta_0 + (1-\beta_0)k/c\bigr] \cdot (1-\noise)^k
+\]
+Setting the derivative to zero:
+\[
+\frac{(1-\beta_0)/c}{\beta_0 + (1-\beta_0)k/c} = -\ln(1-\noise) \approx \noise
+\]
+Solving: $k^*_{\beta} = 1/\noise - c\beta_0/(1-\beta_0)$. The capability ceiling shifts from $1/\noise$ to $1/\noise - c\beta_0/(1-\beta_0)$, which is \emph{lower}: a model with strong baseline needs fewer CoT steps. The two-regime structure and the existence of the ceiling are preserved.
+
+% TODO: remaining extensions (smooth sufficiency functions, correlated error models)
 
 \section{Experimental Details}
 \label{app:experiments}
