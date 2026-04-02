@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import sys
 from collections import defaultdict
@@ -54,7 +55,12 @@ def _tokenize(text: str) -> list[str]:
 
 
 def _extract_bigram_phrases(papers: list[dict], top_n: int = 3) -> list[str]:
-    """Extract the most frequent non-stopword bigrams from paper abstracts."""
+    """Extract the most frequent non-stopword bigrams from paper abstracts.
+
+    Returns deduplicated bigrams: if two bigrams share a word, only the
+    higher-frequency one contributes that word. The result is a list of
+    unique phrases with no repeated words across entries.
+    """
     bigram_counts: dict[str, int] = defaultdict(int)
     for paper in papers:
         abstract = paper.get("abstract") or ""
@@ -65,7 +71,23 @@ def _extract_bigram_phrases(papers: list[dict], top_n: int = 3) -> list[str]:
 
     filtered = [(bg, count) for bg, count in bigram_counts.items() if count >= 2]
     filtered.sort(key=lambda x: x[1], reverse=True)
-    return [bg for bg, _ in filtered[:top_n]]
+
+    # Deduplicate: track used words, skip bigrams whose words are all seen
+    used_words: set[str] = set()
+    result: list[str] = []
+    for bg, _ in filtered:
+        words = bg.split()
+        new_words = [w for w in words if w not in used_words]
+        if not new_words:
+            continue  # All words already used by higher-ranked bigrams
+        # Build phrase from unique words only
+        phrase = " ".join(new_words)
+        result.append(phrase)
+        used_words.update(words)
+        if len(result) >= top_n:
+            break
+
+    return result
 
 
 def _parse_embedding(embedding_str: str) -> list[float] | None:
@@ -86,10 +108,24 @@ def _average_embeddings(embeddings: list[list[float]]) -> list[float]:
     dim = len(embeddings[0])
     avg = [0.0] * dim
     for emb in embeddings:
+        if len(emb) != dim:
+            continue  # Skip mismatched dimensions
         for i in range(dim):
             avg[i] += emb[i]
     n = len(embeddings)
     return [v / n for v in avg]
+
+
+def _cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Compute cosine similarity between two vectors in pure Python."""
+    if len(a) != len(b) or not a:
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a < 1e-12 or norm_b < 1e-12:
+        return 0.0
+    return dot / (norm_a * norm_b)
 
 
 def _parse_date(date_str: str) -> datetime | None:
@@ -129,7 +165,7 @@ def fetch_papers() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Step 2: Group by category, sub-cluster with embeddings (union-find)
+# Step 2: Cluster papers globally by embedding similarity
 # ---------------------------------------------------------------------------
 
 def _group_by_primary_category(papers: list[dict]) -> dict[str, list[dict]]:
@@ -147,18 +183,27 @@ def _group_by_primary_category(papers: list[dict]) -> dict[str, list[dict]]:
 
 def _subcluster_by_embedding(
     papers: list[dict],
-    similarity_threshold: float = 0.6,
+    similarity_threshold: float = 0.35,
 ) -> list[list[dict]]:
     """Sub-cluster papers within a category using embedding similarity.
 
-    Uses union-find (same pattern as trend_detector._cluster_by_embedding).
-    Processes paper IDs in batches of 100 for the pairwise similarity query.
+    Uses union-find with a lower threshold (0.35) to produce finer-grained
+    sub-topics. Computes pairwise similarity via the database in batches,
+    then fills in cross-batch comparisons using Python-local cosine
+    similarity on parsed embeddings (avoiding the DB's >0.5 floor).
     """
     paper_ids = [p["id"] for p in papers if p.get("id")]
     id_to_paper = {p["id"]: p for p in papers if p.get("id")}
 
     if len(paper_ids) < 2:
         return [papers]
+
+    # Pre-parse embeddings for Python-local similarity
+    id_to_emb: dict[str, list[float]] = {}
+    for pid in paper_ids:
+        emb = _parse_embedding(id_to_paper[pid].get("embedding_str") or "")
+        if emb:
+            id_to_emb[pid] = emb
 
     # Build union-find
     parent: dict[str, str] = {pid: pid for pid in paper_ids}
@@ -174,34 +219,49 @@ def _subcluster_by_embedding(
         if ra != rb:
             parent[ra] = rb
 
-    # Process in batches of 100 to avoid huge cross-join queries
-    batch_size = 100
-    for i in range(0, len(paper_ids), batch_size):
-        batch = paper_ids[i : i + batch_size]
-        if len(batch) < 2:
-            continue
-        try:
-            similarities = batch_cosine_similarity(batch)
-            for (id_a, id_b), sim in similarities.items():
+    # For small groups, use Python-local similarity (avoids DB >0.5 floor)
+    if len(paper_ids) <= 200:
+        ids_with_emb = [pid for pid in paper_ids if pid in id_to_emb]
+        for i in range(len(ids_with_emb)):
+            for j in range(i + 1, len(ids_with_emb)):
+                sim = _cosine_similarity(
+                    id_to_emb[ids_with_emb[i]],
+                    id_to_emb[ids_with_emb[j]],
+                )
                 if sim >= similarity_threshold:
-                    union(id_a, id_b)
-        except Exception as e:
-            print(f"Warning: batch similarity failed: {e}", file=sys.stderr)
+                    union(ids_with_emb[i], ids_with_emb[j])
+    else:
+        # For larger groups, use DB batches then fill cross-batch gaps locally
+        batch_size = 100
+        for i in range(0, len(paper_ids), batch_size):
+            batch = paper_ids[i : i + batch_size]
+            if len(batch) < 2:
+                continue
+            try:
+                similarities = batch_cosine_similarity(batch)
+                for (id_a, id_b), sim in similarities.items():
+                    if sim >= similarity_threshold:
+                        union(id_a, id_b)
+            except Exception as e:
+                print(f"Warning: batch similarity failed: {e}", file=sys.stderr)
 
-    # Also compute cross-batch similarities for adjacent batches
-    for i in range(0, len(paper_ids) - batch_size, batch_size):
-        batch_a = paper_ids[i : i + batch_size]
-        batch_b = paper_ids[i + batch_size : i + 2 * batch_size]
-        combined = batch_a + batch_b
-        if len(combined) < 2:
-            continue
-        try:
-            similarities = batch_cosine_similarity(combined)
-            for (id_a, id_b), sim in similarities.items():
-                if sim >= similarity_threshold:
-                    union(id_a, id_b)
-        except Exception as e:
-            print(f"Warning: cross-batch similarity failed: {e}", file=sys.stderr)
+        # Cross-batch: sample centroids from each batch's clusters and compare
+        # to link clusters across batches (handles non-adjacent batches too)
+        batch_ranges = list(range(0, len(paper_ids), batch_size))
+        # Pick up to 10 representatives per batch for cross-batch comparison
+        batch_reps: list[list[str]] = []
+        for start in batch_ranges:
+            batch = paper_ids[start : start + batch_size]
+            reps = [pid for pid in batch if pid in id_to_emb][:10]
+            batch_reps.append(reps)
+
+        for bi in range(len(batch_reps)):
+            for bj in range(bi + 1, len(batch_reps)):
+                for pid_a in batch_reps[bi]:
+                    for pid_b in batch_reps[bj]:
+                        sim = _cosine_similarity(id_to_emb[pid_a], id_to_emb[pid_b])
+                        if sim >= similarity_threshold:
+                            union(pid_a, pid_b)
 
     # Collect clusters
     clusters: dict[str, list[dict]] = defaultdict(list)
@@ -217,7 +277,11 @@ def _subcluster_by_embedding(
 # ---------------------------------------------------------------------------
 
 def _compute_velocity(papers: list[dict]) -> float:
-    """Compute velocity: papers in last 7 days / (papers in last 30 days / 4)."""
+    """Compute velocity: papers in last 7 days / (papers in last 30 days / 4).
+
+    If no papers are from the last 30 days (e.g., all from the same old week),
+    uses a floor baseline of 0.5 to avoid division by zero.
+    """
     now = datetime.now(timezone.utc)
     cutoff_7d = now - timedelta(days=7)
     cutoff_30d = now - timedelta(days=30)
@@ -275,11 +339,13 @@ def _count_claims_for_papers(paper_ids: list[str]) -> int:
 def build_topics(
     papers: list[dict],
     min_cluster_size: int = 2,
+    similarity_threshold: float = 0.35,
 ) -> list[dict]:
     """Build topic clusters from papers.
 
-    Groups by primary arXiv category, sub-clusters by embedding similarity,
-    then labels each cluster with "{category}: {top bigrams}".
+    Groups by primary arXiv category, sub-clusters by embedding similarity
+    (threshold default 0.35 for finer granularity), then labels each cluster
+    with "{category}: {top bigrams}" using deduplicated words.
 
     Returns list of topic dicts ready for DB insertion.
     """
@@ -288,15 +354,17 @@ def build_topics(
 
     for category, cat_papers in category_groups.items():
         # Sub-cluster within the category
-        subclusters = _subcluster_by_embedding(cat_papers, similarity_threshold=0.6)
+        subclusters = _subcluster_by_embedding(
+            cat_papers, similarity_threshold=similarity_threshold,
+        )
 
         for cluster_papers in subclusters:
             if len(cluster_papers) < min_cluster_size:
                 continue
 
-            # Label: "{category}: {most frequent bigrams}"
+            # Label: "{category}: {deduplicated bigram phrases}"
             bigrams = _extract_bigram_phrases(cluster_papers, top_n=3)
-            bigram_str = " ".join(bigrams) if bigrams else "general"
+            bigram_str = " | ".join(bigrams) if bigrams else "general"
             label = f"{category}: {bigram_str}"
 
             # Centroid embedding
@@ -324,22 +392,46 @@ def build_topics(
 
 
 # ---------------------------------------------------------------------------
-# Step 4: Build topic edges (shared papers across categories)
+# Step 4: Build topic edges (centroid similarity + shared papers)
 # ---------------------------------------------------------------------------
 
-def build_edges(topics: list[dict]) -> list[dict]:
-    """Build edges between topics based on shared papers.
+def build_edges(
+    topics: list[dict],
+    similarity_threshold: float = 0.3,
+) -> list[dict]:
+    """Build edges between topics using centroid embedding similarity.
 
-    Papers with multiple categories can appear in multiple topics.
-    Edge strength = shared papers / min(topic_a_papers, topic_b_papers).
+    Two strategies:
+    1. Centroid similarity: connect topics whose centroid embeddings are
+       above the similarity threshold (default 0.3). Works even when papers
+       only have a single category.
+    2. Shared papers: if a paper appears in multiple topics (multi-category
+       papers), that also creates an edge.
+
+    Edge strength = max(centroid_similarity, shared_paper_ratio).
     """
-    # Map paper_id -> list of topic indices
+    edges: list[dict] = []
+
+    # Strategy 1: Centroid embedding similarity
+    centroid_edges: dict[tuple[int, int], float] = {}
+    for i in range(len(topics)):
+        emb_i = topics[i].get("embedding")
+        if not emb_i:
+            continue
+        for j in range(i + 1, len(topics)):
+            emb_j = topics[j].get("embedding")
+            if not emb_j:
+                continue
+            sim = _cosine_similarity(emb_i, emb_j)
+            if sim >= similarity_threshold:
+                centroid_edges[(i, j)] = round(sim, 3)
+
+    # Strategy 2: Shared papers (for multi-category papers)
     paper_to_topics: dict[str, list[int]] = defaultdict(list)
     for i, topic in enumerate(topics):
         for pid in topic.get("paper_ids", []):
             paper_to_topics[pid].append(i)
 
-    # Count shared papers between topic pairs
     shared_counts: dict[tuple[int, int], int] = defaultdict(int)
     for pid, topic_indices in paper_to_topics.items():
         for a_idx in range(len(topic_indices)):
@@ -348,17 +440,24 @@ def build_edges(topics: list[dict]) -> list[dict]:
                 key = (min(i, j), max(i, j))
                 shared_counts[key] += 1
 
-    edges: list[dict] = []
+    shared_ratios: dict[tuple[int, int], float] = {}
     for (i, j), shared in shared_counts.items():
         min_size = min(topics[i]["paper_count"], topics[j]["paper_count"])
-        if min_size == 0:
-            continue
-        strength = round(shared / min_size, 3)
+        if min_size > 0:
+            shared_ratios[(i, j)] = round(shared / min_size, 3)
+
+    # Merge: take max strength from either strategy
+    all_pairs = set(centroid_edges.keys()) | set(shared_ratios.keys())
+    for pair in all_pairs:
+        centroid_str = centroid_edges.get(pair, 0.0)
+        shared_str = shared_ratios.get(pair, 0.0)
+        strength = max(centroid_str, shared_str)
+        edge_type = "co_occurrence" if shared_str >= centroid_str else "embedding_similarity"
         edges.append({
-            "source_idx": i,
-            "target_idx": j,
+            "source_idx": pair[0],
+            "target_idx": pair[1],
             "strength": strength,
-            "edge_type": "co_occurrence",
+            "edge_type": edge_type,
         })
 
     return edges
@@ -368,7 +467,7 @@ def build_edges(topics: list[dict]) -> list[dict]:
 # Step 5: Store to database
 # ---------------------------------------------------------------------------
 
-def store_topics(topics: list[dict], edges: list[dict], clear: bool = False) -> None:
+def store_topics(topics: list[dict], edges: list[dict], clear: bool = False) -> list[str]:
     """Write topics and edges to research_topics + topic_edges tables."""
     conn = get_connection()
     cur = conn.cursor()
@@ -433,6 +532,18 @@ def main() -> None:
         help="Minimum papers to form a topic (default: 2)",
     )
     parser.add_argument(
+        "--similarity-threshold",
+        type=float,
+        default=0.35,
+        help="Cosine similarity threshold for sub-clustering (default: 0.35)",
+    )
+    parser.add_argument(
+        "--edge-threshold",
+        type=float,
+        default=0.3,
+        help="Cosine similarity threshold for topic edges (default: 0.3)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Preview topics without writing to DB",
@@ -455,13 +566,17 @@ def main() -> None:
 
     # Build topics
     print("Clustering papers into topics...")
-    topics = build_topics(papers, min_cluster_size=args.min_cluster_size)
+    topics = build_topics(
+        papers,
+        min_cluster_size=args.min_cluster_size,
+        similarity_threshold=args.similarity_threshold,
+    )
     if not topics:
         print("No topics formed (try lowering --min-cluster-size).")
         return
 
     # Build edges
-    edges = build_edges(topics)
+    edges = build_edges(topics, similarity_threshold=args.edge_threshold)
 
     # Find largest and fastest
     largest = max(topics, key=lambda t: t["paper_count"])
