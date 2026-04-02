@@ -1,0 +1,86 @@
+# Experiment Specification: CoT Depth Validation
+# Project: optimal-cot-depth
+# Issue: DW-430
+
+purpose: >
+  Validate the depth-complexity scaling theorem:
+  d* = min(c(n), floor(1/eta))
+
+predictions:
+  - id: P1
+    claim: "Inverted-U shape of accuracy vs. depth for non-TC^0 tasks"
+    tasks: [parity, composition, arithmetic]
+
+  - id: P2
+    claim: "Peak at d* = min(c(n), 1/eta)"
+    tasks: [composition (exact c=l), parity (c=Theta(n))]
+
+  - id: P3
+    claim: "Exponential decay (1-eta)^k past peak"
+    metric: "Log-linear fit in decay region gives consistent eta per model"
+
+  - id: P4
+    claim: "Capability ceiling independent of task complexity"
+    metric: "Empirical d* saturates at 1/eta across tasks for same model"
+
+  - id: P5
+    claim: "CoT hurts on TC^0 tasks (Theorem 1)"
+    tasks: [majority]
+    metric: "Accuracy monotonically decreases with depth"
+
+tasks:
+  majority:
+    cot_complexity: 0
+    difficulties: [1, 2, 3]       # n = 10, 50, 200
+    depths: [0, 1, 2, 4, 8, 16]
+    instances_per: 30
+
+  composition:
+    cot_complexity: "l (exact)"
+    difficulties: [1, 2, 3, 4, 5, 6, 7, 8]  # l = 2,4,6,8,10,15,20,25
+    depths: [0, 1, 2, 4, 6, 8, 12, 16, 20, 25, 30]
+    instances_per: 30
+
+  parity:
+    cot_complexity: "Theta(n)"
+    difficulties: [1, 2, 3, 4, 5, 6, 7]  # n = 5,10,15,20,30,40,50
+    depths: [0, 1, 2, 4, 6, 8, 12, 16, 20, 25, 30]
+    instances_per: 30
+
+  arithmetic:
+    cot_complexity: "n-1"
+    difficulties: [1, 2, 3, 4, 5, 6, 7]  # n = 5,10,15,20,30,40,50
+    depths: [0, 1, 2, 4, 6, 8, 12, 16, 20, 25, 30]
+    instances_per: 30
+
+models:
+  - key: haiku
+    id: claude-3-5-haiku-20241022
+    role: "cheap baseline"
+  - key: gpt4omini
+    id: gpt-4o-mini
+    role: "cheap, different architecture"
+  - key: sonnet
+    id: claude-sonnet-4-20250514
+    role: "capable, ceiling estimation"
+
+depth_control:
+  method: "structured step prompting"
+  k0_prompt: "Answer immediately with no explanation."
+  k_prompt: "Solve this in exactly {k} numbered steps."
+  validation: "Count 'Step N:' markers; discard if |actual - requested| > 1"
+
+budget:
+  limit: "$300"
+  estimated: "$50-80"
+  breakdown:
+    gpt4omini: "$2 (cheapest)"
+    haiku: "$10"
+    sonnet: "$40"
+
+analysis:
+  - "Accuracy vs. depth curves (per task × difficulty × model)"
+  - "Empirical d* location vs. predicted min(c(n), 1/eta)"
+  - "Per-model eta estimation from decay region"
+  - "Capability ceiling plot: d* vs c(n), colored by model"
+  - "Bootstrap 95% CIs on d* and eta"
