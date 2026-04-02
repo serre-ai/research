@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS topic_edges (
 
 CREATE INDEX IF NOT EXISTS idx_topics_velocity ON research_topics (velocity DESC);
 CREATE INDEX IF NOT EXISTS idx_topics_batch ON research_topics (batch_date DESC);
+CREATE INDEX IF NOT EXISTS idx_topics_label ON research_topics (label);
+CREATE INDEX IF NOT EXISTS idx_edges_type ON topic_edges (edge_type);
 
 -- Author/research group tables
 CREATE TABLE IF NOT EXISTS research_groups (
