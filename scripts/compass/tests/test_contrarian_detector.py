@@ -300,6 +300,124 @@ class TestActiveDispute:
             assert disputes[0].metadata["paper_side"] in ("A", "B")
 
 
+class TestActiveDisputeCap:
+    """Active disputes must be capped per-contradiction and globally."""
+
+    def _make_contradictions(self, n=3):
+        return [
+            {
+                "claim_a": f"Method {i} improves accuracy significantly",
+                "claim_b": f"Method {i} does not improve accuracy reliably",
+                "paper_a_id": f"contra_a_{i}",
+                "paper_b_id": f"contra_b_{i}",
+                "strength": 0.8,
+                "paper_a_title": f"Method {i} Works",
+                "paper_b_title": f"Method {i} Fails",
+            }
+            for i in range(n)
+        ]
+
+    @patch("scripts.compass.db.get_connection")
+    def test_active_disputes_capped_per_contradiction(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._make_contradictions(1))
+
+        # 20 papers all overlapping with the same contradiction
+        papers = [
+            {
+                "id": f"overlap_{i}",
+                "title": f"Study on method accuracy {i}",
+                "abstract": (
+                    f"Method 0 improves accuracy significantly on standard "
+                    f"benchmarks. We evaluate performance gains carefully."
+                ),
+            }
+            for i in range(20)
+        ]
+        signals = _find_kg_contradictions(papers)
+        disputes = [s for s in signals if s.signal_type == "active_dispute"]
+        # Per-contradiction cap is 3
+        assert len(disputes) <= 3, f"Expected <= 3 disputes, got {len(disputes)}"
+
+    @patch("scripts.compass.db.get_connection")
+    def test_active_disputes_capped_globally(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._make_contradictions(10))
+
+        papers = [
+            {
+                "id": f"overlap_{i}",
+                "title": f"Study on method accuracy {i}",
+                "abstract": (
+                    f"Method {i % 10} improves accuracy significantly on standard "
+                    f"benchmarks. We evaluate performance and reliability."
+                ),
+            }
+            for i in range(50)
+        ]
+        signals = _find_kg_contradictions(papers)
+        disputes = [s for s in signals if s.signal_type == "active_dispute"]
+        # Global cap is 10
+        assert len(disputes) <= 10, f"Expected <= 10 disputes, got {len(disputes)}"
+
+
+class TestNearIdenticalDedup:
+    """Near-identical paper pairs should be filtered out of KG contradictions."""
+
+    @patch("scripts.compass.db.get_connection")
+    def test_same_title_different_case_filtered(self, mock_get_conn):
+        contradictions = [
+            {
+                "claim_a": "Confirmation bias affects oversight scalability",
+                "claim_b": "Confirmation bias does not affect oversight",
+                "paper_a_id": "dup_a",
+                "paper_b_id": "dup_b",
+                "strength": 0.75,
+                "paper_a_title": "Confirmation bias: A challenge for scalable oversi",
+                "paper_b_title": "Confirmation Bias: A Challenge for Scalable Oversi",
+            },
+        ]
+        mock_get_conn.return_value = _make_mock_connection(contradictions)
+        signals = _find_kg_contradictions([])
+        verified = [s for s in signals if s.signal_type == "verified_contradiction"]
+        assert len(verified) == 0, (
+            "Near-identical paper titles should be filtered out"
+        )
+
+    @patch("scripts.compass.db.get_connection")
+    def test_same_paper_id_filtered(self, mock_get_conn):
+        contradictions = [
+            {
+                "claim_a": "Claim from paper X",
+                "claim_b": "Another claim from same paper X",
+                "paper_a_id": "same_paper",
+                "paper_b_id": "same_paper",
+                "strength": 0.6,
+                "paper_a_title": "Paper X Title",
+                "paper_b_title": "Paper X Title",
+            },
+        ]
+        mock_get_conn.return_value = _make_mock_connection(contradictions)
+        signals = _find_kg_contradictions([])
+        assert len(signals) == 0, "Same paper_id contradiction should be filtered"
+
+    @patch("scripts.compass.db.get_connection")
+    def test_genuine_contradiction_not_filtered(self, mock_get_conn):
+        contradictions = [
+            {
+                "claim_a": "Method A works well",
+                "claim_b": "Method A does not work",
+                "paper_a_id": "paper_genuine_a",
+                "paper_b_id": "paper_genuine_b",
+                "strength": 0.85,
+                "paper_a_title": "Scaling Laws for Language Models",
+                "paper_b_title": "Diminishing Returns in Model Scaling",
+            },
+        ]
+        mock_get_conn.return_value = _make_mock_connection(contradictions)
+        signals = _find_kg_contradictions([])
+        verified = [s for s in signals if s.signal_type == "verified_contradiction"]
+        assert len(verified) == 1, "Genuine contradictions should not be filtered"
+
+
 class TestPrioritySorting:
     """verified_contradiction should sort before all other signal types."""
 

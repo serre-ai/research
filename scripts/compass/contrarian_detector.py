@@ -64,6 +64,11 @@ CONTRADICTION_PATTERNS = [
 
 COMPILED_CONTRADICTION_PATTERNS = [re.compile(p, re.IGNORECASE) for p in CONTRADICTION_PATTERNS]
 
+# Active-dispute caps — prevent combinatorial explosion when many papers
+# overlap with many contradictions (e.g. 300 papers x 13 contradictions).
+MAX_ACTIVE_DISPUTES_PER_CONTRADICTION = 3
+MAX_ACTIVE_DISPUTES_TOTAL = 10
+
 # Hedging language that weakens a consensus
 HEDGING_WORDS = [
     "may", "might", "suggests", "preliminary", "initial",
@@ -152,6 +157,31 @@ def _author_group_key(paper: dict) -> frozenset[str]:
     """Return a frozenset of author names for grouping."""
     authors = paper.get("authors") or []
     return frozenset(str(a) for a in authors)
+
+
+def _titles_near_identical(title_a: str, title_b: str) -> bool:
+    """Return True if two titles are the same paper (case / truncation variant)."""
+    if not title_a or not title_b:
+        return False
+    norm_a = re.sub(r'[^a-z0-9]', '', title_a.lower())
+    norm_b = re.sub(r'[^a-z0-9]', '', title_b.lower())
+    if not norm_a or not norm_b:
+        return False
+    # Exact match after normalisation
+    if norm_a == norm_b:
+        return True
+    # One is a prefix of the other (truncated title)
+    shorter, longer = sorted([norm_a, norm_b], key=len)
+    if len(shorter) >= 20 and longer.startswith(shorter):
+        return True
+    # Very high token overlap (>0.95 Jaccard)
+    tokens_a = _tokenize(title_a)
+    tokens_b = _tokenize(title_b)
+    if tokens_a and tokens_b:
+        jaccard = len(tokens_a & tokens_b) / len(tokens_a | tokens_b)
+        if jaccard > 0.95:
+            return True
+    return False
 
 
 def _summarize_claim(claim: str, max_len: int = 80) -> str:
@@ -422,10 +452,13 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
     Produces two signal types:
     - ``verified_contradiction`` (priority 0): every contradiction pair in
       claim_relations is surfaced directly as a high-value signal, regardless
-      of whether recent papers mention it.
+      of whether recent papers mention it.  Near-identical paper pairs (same
+      paper with variant casing/truncation) are filtered out.
     - ``active_dispute`` (priority 1): when a recent paper (from *papers* input)
       has keyword overlap with either side of a contradiction, it signals that
-      new evidence is entering an existing dispute.
+      new evidence is entering an existing dispute.  Capped at
+      ``MAX_ACTIVE_DISPUTES_PER_CONTRADICTION`` per contradiction and
+      ``MAX_ACTIVE_DISPUTES_TOTAL`` overall to avoid flooding.
     """
     try:
         from .db import get_connection
@@ -455,6 +488,7 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
         cur.close()
 
         signals: list[ResearchSignal] = []
+        total_disputes = 0
 
         for contra in contradictions:
             claim_a = contra["claim_a"]
@@ -464,6 +498,12 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
             paper_b_id = contra.get("paper_b_id")
             paper_a_title = contra.get("paper_a_title") or ""
             paper_b_title = contra.get("paper_b_title") or ""
+
+            # ── Skip near-identical paper pairs (same paper, variant casing) ──
+            if paper_a_id and paper_b_id and paper_a_id == paper_b_id:
+                continue
+            if _titles_near_identical(paper_a_title, paper_b_title):
+                continue
 
             # Collect source paper IDs (may be None if claims aren't paper-linked)
             source_paper_ids = [
@@ -504,10 +544,34 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
             ))
 
             # ── 2. Active dispute: recent papers taking sides ────────
+            if total_disputes >= MAX_ACTIVE_DISPUTES_TOTAL:
+                continue
+
             claim_a_tokens = _tokenize(claim_a)
             claim_b_tokens = _tokenize(claim_b)
+            disputes_this_contradiction = 0
+
+            # Build a set of paper IDs already in the contradiction to skip
+            contradiction_paper_ids = set(source_paper_ids)
 
             for paper in papers:
+                if disputes_this_contradiction >= MAX_ACTIVE_DISPUTES_PER_CONTRADICTION:
+                    break
+                if total_disputes >= MAX_ACTIVE_DISPUTES_TOTAL:
+                    break
+
+                pid = _paper_id(paper)
+
+                # Skip papers that are already part of this contradiction
+                if pid in contradiction_paper_ids:
+                    continue
+                # Skip near-identical titles to either contradiction paper
+                paper_title = paper.get("title") or ""
+                if _titles_near_identical(paper_title, paper_a_title):
+                    continue
+                if _titles_near_identical(paper_title, paper_b_title):
+                    continue
+
                 abstract = (paper.get("abstract") or "").lower()
                 if not abstract:
                     continue
@@ -539,7 +603,7 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
                         ),
                         confidence=max(overlap_a, overlap_b),
                         source_papers=(
-                            [_paper_id(paper)] + source_paper_ids
+                            [pid] + source_paper_ids
                         ),
                         source_claims=[],
                         topics=list(
@@ -555,8 +619,10 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
                             "overlap_b": round(overlap_b, 3),
                         },
                     ))
+                    disputes_this_contradiction += 1
+                    total_disputes += 1
 
-        return signals[:20]
+        return signals
     except Exception:
         # DB not available — skip KG integration silently
         return []

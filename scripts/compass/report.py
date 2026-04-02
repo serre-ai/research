@@ -35,7 +35,8 @@ _CONTRARIAN_SIGNAL_TYPES = {
     "consensus_thin_evidence",
     "consensus_fragile",
     "contrarian_opportunity",
-    "kg_contradiction_relevant",
+    "verified_contradiction",
+    "active_dispute",
     "semantic_opposition",
 }
 
