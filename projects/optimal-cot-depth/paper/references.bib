@@ -1,30 +1,185 @@
-% Core dispute papers — the three contradictory findings on CoT length
+% ============================================================
+% Core dispute papers
+% ============================================================
 
-@article{demystifying2025,
+@article{yeo2025demystifying,
   title={Demystifying Long Chain-of-Thought Reasoning in {LLMs}},
-  author={TBD},
-  journal={arXiv preprint},
-  year={2025},
-  note={Argues longer CoT improves reasoning quality}
+  author={Yeo, Edward and Tong, Yuxuan and Niu, Morry and Neubig, Graham and Yue, Xiang},
+  journal={arXiv preprint arXiv:2502.03373},
+  year={2025}
 }
 
-@article{whenmore2025,
-  title={When More is Less: Understanding Chain-of-Thought Length and Performance},
-  author={TBD},
-  journal={arXiv preprint},
-  year={2025},
-  note={Shows longer CoT can degrade performance}
+@article{wu2025when,
+  title={When More is Less: Understanding Chain-of-Thought Length in {LLMs}},
+  author={Wu, Yuyang and Wang, Yifei and Ye, Ziyu and Du, Tianqi and Jegelka, Stefanie and Wang, Yisen},
+  journal={arXiv preprint arXiv:2502.07266},
+  year={2025}
 }
 
-@article{safechain2025,
-  title={SafeChain: Safety-Aware Chain-of-Thought Reasoning},
-  author={TBD},
-  journal={arXiv preprint},
+@article{jiang2025safechain,
+  title={SafeChain: Safety of Language Models with Long Chain-of-Thought Reasoning Capabilities},
+  author={Jiang, Fengqing and Xu, Zhangchen and Li, Yuetai and Niu, Luyao and Xiang, Zhen and Li, Bo and Lin, Bill Yuchen and Poovendran, Radha},
+  journal={arXiv preprint arXiv:2502.12025},
   year={2025},
-  note={Demonstrates safety-performance tradeoffs in CoT length}
+  note={ACL 2025 Findings}
 }
 
-% Foundational CoT references
+% ============================================================
+% Complexity-theoretic foundations
+% ============================================================
+
+@inproceedings{li2024chain,
+  title={Chain of Thought Empowers Transformers to Solve Inherently Serial Problems},
+  author={Li, Zhiyuan and Liu, Hong and Zhou, Denny and Ma, Tengyu},
+  booktitle={ICLR},
+  year={2024},
+  note={arXiv:2402.12875}
+}
+
+@inproceedings{merrill2024expressive,
+  title={The Expressive Power of Transformers with Chain of Thought},
+  author={Merrill, William and Sabharwal, Ashish},
+  booktitle={ICLR},
+  year={2024},
+  note={arXiv:2310.07923}
+}
+
+@inproceedings{feng2023towards,
+  title={Towards Revealing the Mystery behind Chain of Thought: A Theoretical Perspective},
+  author={Feng, Guhao and Zhang, Bohang and Gu, Yuntian and Ye, Haotian and He, Di and Wang, Liwei},
+  booktitle={NeurIPS},
+  year={2023},
+  note={Oral. arXiv:2305.15408}
+}
+
+@inproceedings{amiri2025lower,
+  title={Lower Bounds for Chain-of-Thought Reasoning in Hard-Attention Transformers},
+  author={Amiri, Alireza and Huang, Xinting and Rofin, Mark and Hahn, Michael},
+  booktitle={ICML},
+  year={2025},
+  note={arXiv:2502.02393}
+}
+
+@inproceedings{barcelo2025ehrenfeucht,
+  title={Ehrenfeucht-Haussler Rank and Chain of Thought},
+  author={Barcelo, Pablo and Kozachinskiy, Alexander and Steifer, Tomasz},
+  booktitle={ICML},
+  year={2025},
+  note={arXiv:2501.12997}
+}
+
+@inproceedings{kim2025parity,
+  title={Transformers Provably Solve Parity Efficiently with Chain of Thought},
+  author={Kim, Juno and Suzuki, Taiji},
+  booktitle={ICLR},
+  year={2025},
+  note={Oral. arXiv:2410.08633}
+}
+
+@inproceedings{huang2025length,
+  title={Transformers Provably Learn Chain-of-Thought Reasoning with Length Generalization},
+  author={Huang, Yu and Wen, Zixin and Singh, Aarti and Chi, Yuejie and Chen, Yuxin},
+  booktitle={NeurIPS},
+  year={2025},
+  note={arXiv:2511.07378}
+}
+
+@article{merrill2022saturated,
+  title={Saturated Transformers are Constant-Depth Threshold Circuits},
+  author={Merrill, William and Sabharwal, Ashish},
+  journal={TACL},
+  year={2022},
+  note={arXiv:2106.16213}
+}
+
+@inproceedings{merrill2025padding,
+  title={Exact Expressive Power of Transformers with Padding},
+  author={Merrill, William and Sabharwal, Ashish},
+  booktitle={NeurIPS},
+  year={2025},
+  note={arXiv:2505.18948}
+}
+
+@inproceedings{sanford2024parallel,
+  title={Transformers, Parallel Computation, and Logarithmic Depth},
+  author={Sanford, Clayton and Hsu, Daniel and Telgarsky, Matus},
+  booktitle={ICML},
+  year={2024},
+  note={arXiv:2402.09268}
+}
+
+% ============================================================
+% Anti-length / noise evidence
+% ============================================================
+
+@article{hassid2025overthink,
+  title={Don't Overthink it. Preferring Shorter Thinking Chains for Improved {LLM} Reasoning},
+  author={Hassid, Michael and Synnaeve, Gabriel and Adi, Yossi and Schwartz, Roy},
+  journal={arXiv preprint arXiv:2505.17813},
+  year={2025}
+}
+
+@article{zheng2025curse,
+  title={The Curse of {CoT}: On the Limitations of Chain-of-Thought in In-Context Learning},
+  author={Zheng, Tianshi and others},
+  journal={TMLR},
+  year={2025},
+  note={arXiv:2504.05081}
+}
+
+@inproceedings{liu2025mind,
+  title={Mind Your Step (by Step): Chain-of-Thought can Reduce Performance on Tasks where Thinking Makes Humans Worse},
+  author={Liu, Ryan and Geng, Jiayi and Wu, Addison J. and Sucholutsky, Ilia and Lombrozo, Tania and Griffiths, Thomas L.},
+  booktitle={ICML},
+  year={2025},
+  note={arXiv:2410.21333}
+}
+
+@inproceedings{zhou2024noisy,
+  title={Can Language Models Perform Robust Reasoning in Chain-of-thought Prompting with Noisy Rationales?},
+  author={Zhou, Zhanke and Tao, Rong and Zhu, Jianing and Luo, Yiwen and Wang, Zengmao and Han, Bo},
+  booktitle={NeurIPS},
+  year={2024},
+  note={arXiv:2410.23856}
+}
+
+% ============================================================
+% Optimal length / efficiency
+% ============================================================
+
+@inproceedings{yang2025thinking,
+  title={Towards Thinking-Optimal Scaling of Test-Time Compute for {LLM} Reasoning},
+  author={Yang, Wenkai and Ma, Shuming and Lin, Yankai and Wei, Furu},
+  booktitle={NeurIPS},
+  year={2025},
+  note={arXiv:2502.18080}
+}
+
+@article{chen2026deep,
+  title={Think Deep, Not Just Long: Measuring {LLM} Reasoning Effort via Deep-Thinking Tokens},
+  author={Chen, Wei-Lin and others},
+  journal={arXiv preprint arXiv:2602.13517},
+  year={2026}
+}
+
+@inproceedings{lee2025token,
+  title={How Well do {LLMs} Compress Their Own Chain-of-Thought? A Token Complexity Approach},
+  author={Lee, Ayeong and Che, Ethan and Peng, Tianyi},
+  booktitle={ICML},
+  year={2025},
+  note={arXiv:2503.01141}
+}
+
+@article{li2026compression,
+  title={Chain Of Thought Compression: A Theoretical Analysis},
+  author={Li, Juncai and Li, Ru and Zhou, Yuxiang and Ma, Boxiang and Pan, Jeff Z.},
+  journal={arXiv preprint arXiv:2601.21576},
+  year={2026}
+}
+
+% ============================================================
+% Foundational CoT
+% ============================================================
 
 @inproceedings{wei2022chain,
   title={Chain-of-Thought Prompting Elicits Reasoning in Large Language Models},
@@ -40,36 +195,20 @@
   year={2022}
 }
 
-% Complexity-theoretic foundations
-
-@article{merrill2023expressive,
-  title={The Expressive Power of Transformers with Chain of Thought},
-  author={Merrill, William and Sabharwal, Ashish},
-  journal={arXiv preprint arXiv:2310.07923},
-  year={2023}
-}
-
-@article{feng2023towards,
-  title={Towards Revealing the Mystery behind Chain of Thought: A Theoretical Perspective},
-  author={Feng, Guhao and Zhang, Bohang and Gu, Yuntian and Ye, Haotian and He, Di and Wang, Liwei},
-  journal={NeurIPS},
-  year={2023}
-}
-
+% ============================================================
 % Our prior work
+% ============================================================
 
 @article{sigurdsson2026reasoning,
   title={On the Reasoning Gaps of Large Language Models},
   author={Sigurdsson, Oddur},
   journal={NeurIPS},
-  year={2026},
-  note={Companion paper: formal characterization of reasoning limitations by complexity class}
+  year={2026}
 }
 
-@article{sigurdsson2026verification,
+@article{sigurdsson2027verification,
   title={The Computational Complexity of Verifying {LLM} Outputs},
   author={Sigurdsson, Oddur},
   journal={ICLR},
-  year={2027},
-  note={Companion paper: verification cost as a function of output complexity}
+  year={2027}
 }

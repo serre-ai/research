@@ -4,24 +4,24 @@ status: active
 phase: research
 confidence: 0.4
 created: "2026-04-01"
-updated: "2026-04-01"
+updated: "2026-04-01T18:00:00Z"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Literature survey — collect CoT length/depth studies, identify the three core dispute papers, and survey complexity-theoretic foundations for reasoning depth bounds"
+current_focus: "Literature survey complete. Next: formalize d*(C, n) framework, differentiating from Wu et al. Theorem 4.2"
 
 next_steps:
-  - "Survey CoT length studies: Demystifying Long CoT, When More is Less, SafeChain — extract evaluation task distributions and complexity profiles"
-  - "Survey complexity foundations: circuit depth bounds on transformers (TC^0, NC^1), proof complexity depth measures"
-  - "Survey noise/error accumulation models relevant to sequential reasoning"
-  - "Formalize optimal depth d*(C, n) as a function of complexity class and input size"
-  - "Identify key proof strategies for complexity-conditioned depth bounds"
+  - "Formalize d*(C, n) grounded in circuit complexity classes, not abstract difficulty parameters"
+  - "Map Wu et al.'s abstract T (task difficulty) to circuit complexity class and prove equivalence/refinement"
+  - "Prove TC^0 bound: d*(TC^0, n) = O(1) using Li et al. + Merrill & Sabharwal"
+  - "Prove noise ceiling theorem: accuracy degrades as (1-eta)^(d - d*) beyond optimal depth"
+  - "Design complexity-controlled benchmark: tasks with known circuit complexity for empirical validation"
 
 progress:
   literature_review:
-    status: not_started
-    notes: "Target: comprehensive survey of CoT length studies (both pro and anti), complexity-theoretic foundations for reasoning depth, noise accumulation models"
+    status: complete
+    notes: "30+ papers surveyed. See literature/01-survey-cot-depth.md. Key finding: Wu et al. (arXiv:2502.07266) already proves inverted-U with Theorem 4.2 using abstract parameters — our contribution is grounding this in complexity classes. Li et al. (ICLR 2024) give T steps = circuits of size T. Amiri et al. (ICML 2025) give lower bounds. Barcelo et al. (ICML 2025) give exact characterization via EH rank."
   formal_framework:
     status: not_started
     notes: "Define d*(C, n) mapping, noise accumulation model, 'useful reasoning step' formalism"
@@ -50,8 +50,21 @@ decisions_made:
   - date: 2026-04-01
     decision: "Focus on depth (logical steps) not length (tokens)"
     rationale: "Token count conflates reasoning depth with verbosity. Formal results about optimal depth are more precise and theoretically grounded than results about optimal length."
+  - date: 2026-04-01
+    decision: "Position explicitly as a complexity-theoretic grounding of Wu et al.'s Theorem 4.2"
+    rationale: "Literature survey revealed Wu et al. (arXiv:2502.07266) already proves inverted-U optimal length via abstract parameters T (difficulty) and M (capability). Our contribution must be clearly differentiated: we replace T with circuit complexity class (using Li et al.'s T-steps = circuits-of-size-T result) and M with TC^0 bounds. This is a refinement, not a contradiction — Wu et al. show the phenomenon exists, we explain WHY via complexity theory."
+  - date: 2026-04-01
+    decision: "SafeChain is secondary, not a core dispute paper for our framework"
+    rationale: "SafeChain's safety-length tradeoff is orthogonal to complexity-theoretic depth bounds. The core dispute is between Yeo et al. (pro-length on hard tasks) and Wu et al. (inverted-U). SafeChain provides supporting evidence but the mechanism is different (safety misalignment vs. noise accumulation). Downgrade from 'three dispute papers' framing to 'two conflicting findings + safety dimension'."
 
-key_references: []
+key_references:
+  - "Wu et al. 2025 (arXiv:2502.07266) — CLOSEST PRIOR WORK. Theorem 4.2 gives optimal CoT length via abstract parameters. We must differentiate."
+  - "Li et al. 2024 (arXiv:2402.12875) — T CoT steps = boolean circuits of size T. Foundation for our complexity grounding."
+  - "Merrill & Sabharwal 2024 (arXiv:2310.07923) — poly(n) CoT = P. Three CoT regimes (log, linear, poly)."
+  - "Amiri et al. 2025 (arXiv:2502.02393) — Lower bounds: parity needs linear CoT. First systematic lower bounds."
+  - "Barcelo et al. 2025 (arXiv:2501.12997) — EH rank = exact minimum CoT steps. l-fold composition needs exactly l steps."
+  - "Yeo et al. 2025 (arXiv:2502.03373) — Pro-length dispute paper. Tasks: MATH, AIME (high complexity)."
+  - "Jiang et al. 2025 (arXiv:2502.12025) — SafeChain. Safety-length tradeoff. ACL 2025 Findings."
 
 git:
   branch: "research/optimal-cot-depth"
@@ -60,7 +73,7 @@ git:
 
 metrics:
   theorems_proved: 0
-  papers_reviewed: 0
+  papers_reviewed: 30
   experiments_run: 0
 
 notes: "Project originated from Compass contrarian detector finding verified contradictions between CoT length papers. Extends the reasoning-gaps framework to the depth dimension — not just what LLMs can reason about, but how much reasoning is optimal per complexity class."
