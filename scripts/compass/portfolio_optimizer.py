@@ -563,8 +563,31 @@ def _find_claim_gaps(papers: list[dict], project_info: dict[str, dict[str, Any]]
 
 # ── Topic graph coverage analysis ─────────────────────────
 
-def _find_topic_coverage_gaps(papers: list[dict], project_info: dict[str, dict[str, Any]]) -> list[ResearchSignal]:
-    """Find accelerating topics where we have no project coverage."""
+def _clean_topic_label(label: str) -> frozenset[str]:
+    """Clean a topic label into a set of meaningful keywords.
+
+    Topic labels look like "cs.CL: large language | llms | chain thought".
+    This strips category prefixes (e.g. "cs.CL:"), pipe separators, and
+    applies the standard _tokenize filter (stopwords, min length 3).
+    """
+    # Remove category prefixes like "cs.CL:" or "stat.ML:"
+    cleaned = re.sub(r'\b[a-z]+\.[A-Z]{2,}:?\s*', '', label)
+    # Remove pipe separators
+    cleaned = cleaned.replace('|', ' ')
+    return _tokenize(cleaned)
+
+
+def _find_topic_coverage_gaps(
+    project_info: dict[str, dict[str, Any]],
+    existing_gap_topics: frozenset[str] | None = None,
+) -> list[ResearchSignal]:
+    """Find accelerating topics where we have no project coverage.
+
+    Args:
+        project_info: per-project metadata from _build_research_identity.
+        existing_gap_topics: topic keywords already flagged by _find_portfolio_gaps,
+            used to deduplicate signals.
+    """
     if get_connection is None:
         return []
 
@@ -584,21 +607,32 @@ def _find_topic_coverage_gaps(papers: list[dict], project_info: dict[str, dict[s
     except Exception:
         return []
 
+    if existing_gap_topics is None:
+        existing_gap_topics = frozenset()
+
     # Get our project topics (from project_info keyword matching against topic labels)
     our_topic_keywords: set[str] = set()
     for proj_name, info in project_info.items():
         our_topic_keywords.update(info.get("topics", set()))
 
-    signals: list[ResearchSignal] = []
+    coverage_gaps: list[ResearchSignal] = []
+    momentum_signals: list[ResearchSignal] = []
+
     for topic in topics:
-        label_words = set(topic["label"].lower().split())
+        label_keywords = _clean_topic_label(topic["label"])
+        if not label_keywords:
+            continue
 
         # Check if this topic overlaps with our projects
-        overlap = len(our_topic_keywords & label_words) / max(len(label_words), 1)
+        overlap = len(our_topic_keywords & label_keywords) / len(label_keywords)
 
         if overlap < 0.1 and topic["velocity"] > 1.5 and topic["paper_count"] >= 5:
+            # Skip if _find_portfolio_gaps already flagged these keywords
+            if label_keywords & existing_gap_topics:
+                continue
+
             # Accelerating topic we don't cover
-            signals.append(ResearchSignal(
+            coverage_gaps.append(ResearchSignal(
                 detector=DETECTOR_NAME,
                 signal_type="topic_coverage_gap",
                 title=f"Coverage gap: '{topic['label']}' ({topic['velocity']:.1f}x velocity, {topic['paper_count']} papers)",
@@ -617,9 +651,9 @@ def _find_topic_coverage_gaps(papers: list[dict], project_info: dict[str, dict[s
             ))
         elif overlap > 0.3 and topic["velocity"] > 2.0:
             # Accelerating topic we DO cover — deepening opportunity
-            matching_projects = [p for p, info in project_info.items()
-                               if len(set(info.get("topics", set())) & label_words) > 0]
-            signals.append(ResearchSignal(
+            matching_projects = [p for p, pinfo in project_info.items()
+                               if len(set(pinfo.get("topics", set())) & label_keywords) > 0]
+            momentum_signals.append(ResearchSignal(
                 detector=DETECTOR_NAME,
                 signal_type="topic_momentum",
                 title=f"Momentum: '{topic['label']}' aligns with {', '.join(matching_projects[:2])} ({topic['velocity']:.1f}x)",
@@ -636,7 +670,8 @@ def _find_topic_coverage_gaps(papers: list[dict], project_info: dict[str, dict[s
                 },
             ))
 
-    return signals[:10]
+    # Cap each signal type independently
+    return coverage_gaps[:5] + momentum_signals[:5]
 
 
 # ── Public API ────────────────────────────────────────────
@@ -672,11 +707,20 @@ def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
 
     all_signals: list[ResearchSignal] = []
 
-    all_signals.extend(_find_portfolio_gaps(papers, core_identity, project_info))
+    portfolio_gap_signals = _find_portfolio_gaps(papers, core_identity, project_info)
+    all_signals.extend(portfolio_gap_signals)
     all_signals.extend(_find_portfolio_deepening(papers, core_identity, project_info))
     all_signals.extend(_find_citation_opportunities(papers, core_identity, project_info))
     all_signals.extend(_find_claim_gaps(papers, project_info))
-    all_signals.extend(_find_topic_coverage_gaps(papers, project_info))
+
+    # Collect topic keywords already flagged by _find_portfolio_gaps for dedup
+    existing_gap_topics: set[str] = set()
+    for sig in portfolio_gap_signals:
+        existing_gap_topics.update(sig.topics)
+    all_signals.extend(_find_topic_coverage_gaps(
+        project_info,
+        existing_gap_topics=frozenset(existing_gap_topics),
+    ))
 
     # Sort by signal type priority, then confidence descending
     type_priority = {
