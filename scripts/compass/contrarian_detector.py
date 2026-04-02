@@ -417,7 +417,16 @@ def _find_contrarian_opportunities(
 # ── Knowledge graph contradiction detection ───────────────
 
 def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
-    """Find papers that relate to contradicting claims in the knowledge graph."""
+    """Surface verified contradictions from the knowledge graph.
+
+    Produces two signal types:
+    - ``verified_contradiction`` (priority 0): every contradiction pair in
+      claim_relations is surfaced directly as a high-value signal, regardless
+      of whether recent papers mention it.
+    - ``active_dispute`` (priority 1): when a recent paper (from *papers* input)
+      has keyword overlap with either side of a contradiction, it signals that
+      new evidence is entering an existing dispute.
+    """
     try:
         from .db import get_connection
     except ImportError:
@@ -428,51 +437,126 @@ def _find_kg_contradictions(papers: list[dict]) -> list[ResearchSignal]:
         import psycopg2.extras
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        # Get contradiction pairs from KG
+        # Get contradiction pairs with source papers from KG
         cur.execute("""
-            SELECT c1.statement as claim_a, c1.project as project_a, c1.confidence as conf_a,
-                   c2.statement as claim_b, c2.project as project_b, c2.confidence as conf_b
+            SELECT c1.statement as claim_a, c1.paper_id as paper_a_id,
+                   c2.statement as claim_b, c2.paper_id as paper_b_id,
+                   r.strength, p1.title as paper_a_title, p2.title as paper_b_title
             FROM claim_relations r
             JOIN claims c1 ON c1.id = r.source_id
             JOIN claims c2 ON c2.id = r.target_id
+            LEFT JOIN lit_papers p1 ON p1.id = c1.paper_id
+            LEFT JOIN lit_papers p2 ON p2.id = c2.paper_id
             WHERE r.relation = 'contradicts'
-            ORDER BY r.created_at DESC
+            ORDER BY r.strength DESC
             LIMIT 20
         """)
         contradictions = cur.fetchall()
         cur.close()
 
-        # For each contradiction, check if recent papers relate to either side
-        signals = []
+        signals: list[ResearchSignal] = []
+
         for contra in contradictions:
-            # Find papers whose abstracts mention keywords from either claim
-            claim_a_words = set(re.findall(r'[a-z]{4,}', contra['claim_a'].lower()))
-            claim_b_words = set(re.findall(r'[a-z]{4,}', contra['claim_b'].lower()))
+            claim_a = contra["claim_a"]
+            claim_b = contra["claim_b"]
+            strength = float(contra.get("strength") or 0.5)
+            paper_a_id = contra.get("paper_a_id")
+            paper_b_id = contra.get("paper_b_id")
+            paper_a_title = contra.get("paper_a_title") or ""
+            paper_b_title = contra.get("paper_b_title") or ""
+
+            # Collect source paper IDs (may be None if claims aren't paper-linked)
+            source_paper_ids = [
+                pid for pid in [paper_a_id, paper_b_id] if pid
+            ]
+
+            # ── 1. Verified contradiction signal (always emitted) ────
+            signals.append(ResearchSignal(
+                detector=DETECTOR_NAME,
+                signal_type="verified_contradiction",
+                title=(
+                    f"Verified contradiction: "
+                    f"'{claim_a[:50]}' vs '{claim_b[:50]}'"
+                ),
+                description=(
+                    f"The knowledge graph contains a verified contradiction "
+                    f"(strength {strength:.2f}) between claims from the literature. "
+                    f"Claim A: \"{claim_a}\". "
+                    f"Claim B: \"{claim_b}\". "
+                    + (f"Papers: '{paper_a_title[:60]}' vs '{paper_b_title[:60]}'."
+                       if paper_a_title or paper_b_title else "")
+                ),
+                confidence=strength,
+                source_papers=source_paper_ids,
+                source_claims=[],
+                topics=list(
+                    _tokenize(claim_a) & _tokenize(claim_b)
+                )[:5],
+                relevance=0.0,
+                timing_score=0.6,
+                metadata={
+                    "claim_a": claim_a[:200],
+                    "claim_b": claim_b[:200],
+                    "paper_a_title": paper_a_title[:100],
+                    "paper_b_title": paper_b_title[:100],
+                    "strength": round(strength, 3),
+                },
+            ))
+
+            # ── 2. Active dispute: recent papers taking sides ────────
+            claim_a_tokens = _tokenize(claim_a)
+            claim_b_tokens = _tokenize(claim_b)
 
             for paper in papers:
-                abstract = (paper.get('abstract') or '').lower()
+                abstract = (paper.get("abstract") or "").lower()
                 if not abstract:
                     continue
-                paper_words = set(re.findall(r'[a-z]{4,}', abstract))
+                paper_tokens = _tokenize(abstract)
 
-                overlap_a = len(claim_a_words & paper_words) / max(len(claim_a_words), 1)
-                overlap_b = len(claim_b_words & paper_words) / max(len(claim_b_words), 1)
+                overlap_a = (
+                    len(claim_a_tokens & paper_tokens) / max(len(claim_a_tokens), 1)
+                )
+                overlap_b = (
+                    len(claim_b_tokens & paper_tokens) / max(len(claim_b_tokens), 1)
+                )
 
                 if overlap_a > 0.3 or overlap_b > 0.3:
+                    side = "A" if overlap_a > overlap_b else "B"
+                    sided_claim = claim_a if side == "A" else claim_b
+
                     signals.append(ResearchSignal(
                         detector=DETECTOR_NAME,
-                        signal_type="kg_contradiction_relevant",
-                        title=f"Paper relates to KG contradiction: {contra['claim_a'][:50]} vs {contra['claim_b'][:50]}",
-                        description=f"Recent paper '{paper.get('title', '')[:60]}' overlaps with a known contradiction in the knowledge graph.",
+                        signal_type="active_dispute",
+                        title=(
+                            f"Active dispute: '{paper.get('title', '')[:50]}' "
+                            f"adds evidence to contradiction"
+                        ),
+                        description=(
+                            f"Recent paper '{paper.get('title', '')[:60]}' overlaps "
+                            f"with side {side} of a known contradiction "
+                            f"('{sided_claim[:60]}'). This suggests an active, "
+                            f"evolving dispute in the literature."
+                        ),
                         confidence=max(overlap_a, overlap_b),
-                        source_papers=[_paper_id(paper)],
+                        source_papers=(
+                            [_paper_id(paper)] + source_paper_ids
+                        ),
                         source_claims=[],
-                        topics=list(claim_a_words & claim_b_words & paper_words)[:5],
-                        timing_score=0.5,
-                        metadata={"claim_a": contra['claim_a'][:100], "claim_b": contra['claim_b'][:100]},
+                        topics=list(
+                            claim_a_tokens & claim_b_tokens & paper_tokens
+                        )[:5],
+                        relevance=0.0,
+                        timing_score=0.7,
+                        metadata={
+                            "claim_a": claim_a[:200],
+                            "claim_b": claim_b[:200],
+                            "paper_side": side,
+                            "overlap_a": round(overlap_a, 3),
+                            "overlap_b": round(overlap_b, 3),
+                        },
                     ))
 
-        return signals[:10]
+        return signals[:20]
     except Exception:
         # DB not available — skip KG integration silently
         return []
@@ -665,11 +749,12 @@ def detect(papers: list[dict]) -> list[dict]:
 
     # Sort by signal_type priority, then confidence descending
     type_priority = {
-        "contrarian_opportunity": 0,
-        "kg_contradiction_relevant": 1,
-        "semantic_opposition": 2,
-        "consensus_thin_evidence": 3,
-        "consensus_fragile": 4,
+        "verified_contradiction": 0,
+        "active_dispute": 1,
+        "contrarian_opportunity": 2,
+        "semantic_opposition": 3,
+        "consensus_thin_evidence": 4,
+        "consensus_fragile": 5,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),
