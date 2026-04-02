@@ -338,6 +338,57 @@ def run_analysis(results_dir: Path):
               f"[{lo:>4},{hi:>4}] "
               f"{pred:>8} {'✓' if match else '✗':>6}")
 
+    # Step 4: THE DISTINGUISHING PREDICTION — cross-task ceiling constancy
+    # For each model, plot d* vs c(n). Should plateau at 1/η.
+    print("\n" + "=" * 70)
+    print("CROSS-TASK CEILING CONSTANCY (Figure 1 — the distinguishing test)")
+    print("=" * 70)
+    print("If our theory is correct, d* should plateau at 1/η for each model,")
+    print("independent of task complexity c(n).\n")
+
+    for model in models_found:
+        eta = model_etas.get(model)
+        ceiling = int(1 / eta) if eta else "?"
+        print(f"  Model: {model} | η̂ = {eta:.4f} | predicted ceiling = {ceiling}" if eta
+              else f"  Model: {model} | η̂ = ? | predicted ceiling = ?")
+
+        # Collect (c(n), d*) pairs for this model, sorted by c(n)
+        points = []
+        for comp in dstar_comparisons:
+            if comp["model"] == model and comp["c_n"] > 0:
+                points.append((comp["c_n"], comp["empirical_dstar"],
+                               comp["dstar_ci"], comp["task"]))
+        points.sort()
+
+        if not points:
+            print("    No data\n")
+            continue
+
+        # Print the ceiling plot as ASCII
+        max_cn = max(cn for cn, _, _, _ in points)
+        max_ds = max(ds for _, ds, _, _ in points)
+        scale = max(max_cn, max_ds, ceiling if isinstance(ceiling, int) else 30)
+
+        print(f"    {'c(n)':>6} {'d*':>6}  {'':40}")
+        for cn, ds, (lo, hi), task in points:
+            bar_ds = "█" * int(ds / scale * 35) if scale > 0 else ""
+            ceiling_marker = ""
+            if isinstance(ceiling, int) and abs(ds - ceiling) <= 2:
+                ceiling_marker = " ← at ceiling"
+            print(f"    {cn:>6} {ds:>6}  {bar_ds}{ceiling_marker}  ({task})")
+
+        # Check plateau: do d* values stabilize for c(n) > ceiling?
+        if isinstance(ceiling, int):
+            hard_points = [ds for cn, ds, _, _ in points if cn > ceiling]
+            if hard_points:
+                spread = max(hard_points) - min(hard_points)
+                mean_hard = sum(hard_points) / len(hard_points)
+                print(f"    Hard-task d* (c>{ceiling}): mean={mean_hard:.1f}, "
+                      f"spread={spread}, plateau={'YES' if spread <= 4 else 'NO'}")
+            else:
+                print(f"    No tasks with c(n) > ceiling={ceiling}")
+        print()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze CoT depth experiment results.")

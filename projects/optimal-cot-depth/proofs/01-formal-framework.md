@@ -153,14 +153,18 @@ For easy tasks (c(n) < 1/η), both frameworks predict d* ∝ c(n). The disagreem
 
 ## 6. Remaining Open Questions
 
-### 6.1 Smooth Sufficiency Functions
+### 6.1 Smooth Sufficiency Functions — RESOLVED
 
-Assumption 2 (linear S) is a simplification. The true S might be:
-- Sigmoidal (sharp phase transition at k ≈ c)
-- Concave (diminishing marginal returns per step)
-- Step function (nothing until k = c, then full capability)
+**General Capability Ceiling Theorem** (proved, see paper Appendix A.1.2):
 
-The qualitative result (inverted U, two regimes) holds for ALL monotone increasing S combined with monotone decreasing R. The exact expression for d* changes but the capability ceiling at 1/η persists.
+For ANY concave non-decreasing S with S(0)=0, S(k)=S_max for k≥c, and ANY R with k·R(k) → 0 as k → ∞:
+- d* ≤ c (saturation ceiling — always)
+- d* ≤ K_R for c > K_R (noise ceiling — K_R = argmax k·R(k), model-intrinsic)
+- K_R is independent of task complexity c
+
+This is the structural result that makes the paper robust. The linear S + exponential R case (main text) is one instance. Gaussian, polynomial (β>1), and correlated-error models all yield finite ceilings.
+
+Key insight: the concavity of S gives S(k) ≤ (S_max/c)·k, which bounds acc(k) ≤ (S_max/c)·k·R(k). The maximizer of k·R(k) is K_R, independent of c.
 
 ### 6.2 Correlated Errors
 

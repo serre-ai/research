@@ -2,21 +2,21 @@ project: optimal-cot-depth
 title: "On the Optimal Depth of Chain-of-Thought: A Complexity-Theoretic Analysis"
 status: active
 phase: research
-confidence: 0.6
+confidence: 0.7
 created: "2026-04-01"
 updated: "2026-04-01T18:00:00Z"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Core theory complete after major review. Main result corrected to d* = min(c(n), 1/η) with capability ceiling. Next: empirical validation."
+current_focus: "Theory strengthened with general ceiling theorem. Experiments redesigned around cross-task ceiling constancy as distinguishing prediction. Contributions reframed. Ready for API implementation and experiment execution."
 
 next_steps:
-  - "Design experiments (DW-430): benchmark with tasks of known c(n) — parity, l-fold composition, majority"
-  - "Estimate η per model empirically: fit exponential decay rate past the accuracy peak"
-  - "Validate capability ceiling: show d* saturates at 1/η across task families"
-  - "Write Discussion section: multiplicative decomposition justification, correlated errors, depth-vs-length bridge"
-  - "Appendix: prove qualitative robustness under smooth/sigmoidal sufficiency functions"
+  - "DW-431: Implement model API client (Anthropic + OpenAI SDKs) in evaluate.py"
+  - "DW-431: Run full experiment sweep, produce Figure 1 (d* vs c(n) ceiling plot)"
+  - "Write Sections 4-5 of paper around experiment results"
+  - "Write Discussion: practical implications (estimate η on calibration task, then allocate depth as min(c(n), 1/η))"
+  - "Polish and submit to ICLR 2027"
 
 progress:
   literature_review:
@@ -26,8 +26,8 @@ progress:
     status: substantially_complete
     notes: "Major revision after self-review. Introduced CoT complexity c(n) replacing circuit size as primary parameter. S_max ≤ 1 (expressivity ≠ capability). Accuracy decomposition acknowledged as modeling assumption. See paper/main.tex Section 3."
   complexity_bounds:
-    status: substantially_complete
-    notes: "CORRECTED main result: d* = min(c(n), ⌊1/η⌋), NOT d* = Θ(s(n)). Proof is tight (uses x-1 > ln(x) for x > 1). Reveals capability ceiling at 1/η — new prediction absent from Wu et al. TC^0 bound, noise ceiling, self-correction extension (η_eff = η(1-γ)), dispute resolution corollary all proved. Corollary table uses known c(n) bounds from Amiri/Barcelo/Li."
+    status: complete
+    notes: "5 theorems + 1 general theorem. Main result: d* = min(c(n), ⌊1/η⌋). GENERAL CAPABILITY CEILING THEOREM proved in appendix: for ANY concave S and ANY R with k·R(k)→0, ceiling K_R exists and is model-intrinsic, independent of task. Corollary covers exponential, Gaussian, polynomial noise. Correlated errors analysis shows independent model is best-case for reasoner. This transforms the paper from 'a specific model' to 'a structural result about computation-noise tradeoffs.'"
   empirical_validation:
     status: not_started
     notes: "Benchmark suite with tasks of known complexity class, varying CoT depth (1-32 steps). ~$300 budget"
@@ -74,6 +74,15 @@ decisions_made:
   - date: 2026-04-01
     decision: "Add S_max ≤ 1 and acknowledge decomposition as modeling assumption"
     rationale: "Expressivity ≠ capability (Kim & Suzuki ICLR 2025). Never assume perfect accuracy even for TC^0 tasks. The multiplicative accuracy decomposition is a modeling choice — acknowledging it preempts the reviewer objection and is more intellectually honest."
+  - date: 2026-04-02
+    decision: "Prove general capability ceiling theorem for appendix"
+    rationale: "Full audit identified that main-text theorems are elementary calculus on specific functional forms. A reviewer could dismiss it as 'max of x·e^{-ax} is at x=1/a.' The general theorem — holding for ANY concave S and ANY R with k·R(k)→0 — transforms the paper from 'a model' to 'a structural result.' The key insight: concavity of S gives S(k) ≤ (S_max/c)·k, so acc ≤ (S_max/c)·k·R(k), and argmax k·R(k) is model-intrinsic."
+  - date: 2026-04-02
+    decision: "Lead with cross-task ceiling constancy as the distinguishing empirical prediction"
+    rationale: "The audit identified thin novelty vs Wu et al. The killer experiment is: plot d* vs c(n) for a fixed model — it should plateau. Wu et al.'s formula gives task-dependent d* even for hard tasks. This is the one prediction that clearly separates the frameworks. Restructured contributions list to lead with this."
+  - date: 2026-04-02
+    decision: "Reframe contribution as framework + predictions + validation, not proof difficulty"
+    rationale: "Honest scoping preempts the 'your theorems are trivial' reviewer attack. The value is in connecting expressivity results (Li et al.) to overthinking phenomena (Hassid et al.) via a principled framework, deriving new predictions, and validating them. Not in the mathematical depth of the proofs."
 
 key_references:
   - "Wu et al. 2025 (arXiv:2502.07266) — CLOSEST PRIOR WORK. Theorem 4.2 gives optimal CoT length via abstract parameters. We must differentiate."

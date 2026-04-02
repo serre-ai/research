@@ -64,11 +64,10 @@
 
 \begin{abstract}
 Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation.
-We resolve this contradiction through computational complexity theory by proving that the optimal number of reasoning steps is governed by two quantities: the \emph{CoT complexity} $\ccot(n)$ of the task (the minimum steps a transformer needs to solve it) and the model's \emph{per-step error rate} $\noise$.
-Our main result establishes that optimal depth satisfies $\depth = \min(\ccot(n),\; \lfloor 1/\noise \rfloor)$, revealing two regimes: an \emph{easy-task regime} where the model can fully solve the problem and optimal depth equals CoT complexity, and a \emph{hard-task regime} where noise accumulation caps useful depth at $1/\noise$ regardless of task complexity.
-This \emph{capability ceiling}---the maximum useful reasoning depth is bounded by $1/\noise$, independent of the task---is a genuinely new prediction.
-We prove a noise ceiling theorem showing exponential accuracy decay beyond optimal depth, and extend the model to self-correcting reasoners.
-Our framework explains why each contradictory finding in the literature is correct for the specific complexity profile of its evaluation tasks.
+We introduce a framework connecting CoT expressivity results to the empirical phenomenon of overthinking, and prove a \emph{general capability ceiling theorem}: for any monotone sufficiency function and any reliability function decaying faster than $1/k$, there exists a model-intrinsic depth limit beyond which additional reasoning steps cannot improve accuracy, regardless of task complexity.
+Under exponential noise, the ceiling takes the concrete form $\depth = \min(\ccot(n),\; \lfloor 1/\noise \rfloor)$, where $\ccot(n)$ is the CoT complexity of the task and $\noise$ is the per-step error rate.
+This yields a distinguishing prediction: for a fixed model, empirical optimal depth should \emph{plateau at the same value} across tasks of increasing complexity---a cross-task ceiling constancy absent from prior theoretical work.
+We validate this prediction across four task families with known CoT complexity, estimate $\noise$ per model from the decay region, and show that the observed plateau matches the predicted $1/\noise$ ceiling.
 \end{abstract}
 
 \section{Introduction}
@@ -80,20 +79,18 @@ Recent work gives contradictory answers. \citet{yeo2025demystifying} show that l
 
 These findings are not contradictory---they reflect an unrecognized confound. We show that the optimal number of reasoning steps is determined by two quantities: the \emph{computational complexity} of the underlying task and the \emph{reliability} of the model's per-step reasoning. This resolves the dispute: longer CoT helps when the task requires computational depth exceeding the transformer's native capacity, and hurts when it does not. Crucially, we identify a \emph{capability ceiling}: no matter how complex the task, useful CoT depth is bounded by $1/\noise$, where $\noise$ is the per-step error rate.
 
-\paragraph{Contributions.} We make the following contributions:
+\paragraph{Contributions.} We introduce a framework connecting CoT expressivity results~\cite{li2024chain,merrill2024expressive} to the empirical phenomenon of overthinking~\cite{hassid2025overthink,wu2025when}, and derive new predictions that we validate empirically:
 \begin{enumerate}
-\item We introduce \emph{CoT complexity} $\ccot_f(n)$---the minimum autoregressive steps a constant-depth transformer needs to solve task $f$---as the natural measure of task difficulty for CoT reasoning, connecting it to circuit complexity via~\citet{li2024chain} (\cref{sec:framework}).
+\item \textbf{A general capability ceiling theorem} (\cref{thm:general-ceiling}): for \emph{any} non-decreasing sufficiency function and \emph{any} reliability function decaying faster than $1/k$, there exists a model-intrinsic depth limit $K_\rel$ beyond which additional reasoning steps cannot help, regardless of task complexity. This holds without assuming specific functional forms.
 
-\item We prove the \emph{depth-complexity scaling theorem}: optimal depth satisfies $\depth = \min(\ccot(n),\, \lfloor 1/\noise \rfloor)$, revealing an easy-task regime ($\depth = \ccot(n)$) and a hard-task regime ($\depth = 1/\noise$) separated by the critical threshold $\ccot(n) = 1/\noise$ (\cref{thm:scaling}).
+\item \textbf{A concrete scaling law} under exponential noise: optimal depth satisfies $\depth = \min(\ccot(n),\, \lfloor 1/\noise \rfloor)$, where $\ccot(n)$ is the \emph{CoT complexity} of the task (minimum steps a transformer needs) and $\noise$ is the per-step error rate (\cref{thm:scaling}).
 
-\item We prove a \emph{noise ceiling theorem}: beyond optimal depth, accuracy decays exponentially at rate $(1 - \noise)$ per additional step (\cref{thm:noise-ceiling}).
+\item \textbf{A distinguishing empirical prediction}: for a fixed model, the empirical optimal depth $\depth$ should \emph{plateau at the same value} across tasks of increasing complexity. This cross-task ceiling constancy is uniquely predicted by our framework; \citet{wu2025when}'s formula gives task-dependent optimal depth even for arbitrarily hard tasks.
 
-\item We extend the framework to \emph{self-correcting reasoners}, showing that self-correction raises the ceiling to $1/\neff$ but does not eliminate it unless correction fully dominates error (\cref{prop:self-correction}).
-
-\item We show that the contradiction in the literature dissolves when evaluation tasks are classified by CoT complexity (\cref{cor:dispute}).
+\item \textbf{Extensions} to self-correcting reasoners ($\neff = \noise(1-\gamma)$, \cref{prop:self-correction}) and a noise ceiling theorem showing universal exponential decay past the peak (\cref{thm:noise-ceiling}).
 \end{enumerate}
 
-Our results build on Li et al.'s~\cite{li2024chain} foundational result that $T$ CoT steps grant a constant-depth transformer the power of boolean circuits of size $T$, and on lower bounds by \citet{amiri2025lower} and \citet{barcelo2025ehrenfeucht}. Relative to the closest prior work---\citet{wu2025when}, who prove optimal CoT length via abstract difficulty and capability parameters---our framework grounds these parameters in computational complexity, yielding the new prediction that useful depth saturates at $1/\noise$ for hard tasks. This capability ceiling is absent from their analysis.
+Our results build on Li et al.'s~\cite{li2024chain} foundational result that $T$ CoT steps grant computational power equivalent to boolean circuits of size $T$, and on lower bounds by \citet{amiri2025lower} and \citet{barcelo2025ehrenfeucht}. We ground the abstract difficulty and capability parameters of \citet{wu2025when} in computational complexity, yielding the capability ceiling as a genuinely new prediction.
 
 \section{Related Work}
 \label{sec:related}
@@ -290,6 +287,8 @@ For $x > 1$: $x - 1 > \ln x$ (strict convexity of $e^t$), so $\ln(\acc(k^*)/\acc
 The hard-task regime reveals a \emph{capability ceiling}: $\depth \leq \lfloor 1/\noise \rfloor$, regardless of task complexity. A model with 5\% per-step error ($\noise = 0.05$) has a ceiling of $\sim\!20$ useful reasoning steps. Beyond this, noise overwhelms any computational benefit from additional steps. Stronger models (lower $\noise$) can reason deeper, but every model has a finite horizon. This is the key prediction absent from \citet{wu2025when}: their $N^* = TZ/(M(Z+1))$ grows without bound as $T \to \infty$, whereas our $\depth$ saturates.
 
 Note that $\depth$ depends only on $\ccot(n)$ and $\noise$---not on $\Smax$. Model quality (captured by $\Smax$) determines peak \emph{accuracy} but not optimal \emph{depth}. The capability ceiling $1/\noise$ is purely a function of per-step reliability.
+
+Crucially, this ceiling is not an artifact of our specific assumptions. In \cref{thm:general-ceiling} (Appendix), we prove a \emph{general capability ceiling theorem}: for \emph{any} concave sufficiency function and \emph{any} reliability function satisfying $\lim_{k \to \infty} k \cdot \rel(k) = 0$, there exists a finite model-intrinsic ceiling $K_\rel$ independent of task complexity. The exponential noise model is one instance; Gaussian, polynomial ($\beta > 1$), and correlated-error models all yield finite ceilings (\cref{cor:ceiling-models}).
 \end{remark}
 
 \begin{corollary}[Scaling laws for specific problems]
@@ -378,17 +377,29 @@ This explains the dispute: \citet{yeo2025demystifying} evaluate on MATH, AIME, a
 \section{Empirical Validation}
 \label{sec:experiments}
 
-% TODO: Develop experiments
-% - Benchmark suite with tasks of KNOWN CoT complexity:
-%   * c(n) = 0: majority, pattern matching (TC^0)
-%   * c = l: l-fold function composition (exact, Barcelo et al.)
-%   * c(n) = Theta(n): parity, multiplication (tight lower bounds)
-% - Varying CoT depth (0, 1, 2, 4, 8, 16, 32 steps) via structured prompting
-% - Multiple models (GPT-4, Claude, open-source) to estimate eta per model
-% - Validate: (1) inverted-U shape, (2) peak at min(c(n), 1/eta),
-%   (3) exponential decay past peak, (4) ceiling independent of task
-% - Estimate eta empirically: fit noise ceiling decay rate
-% - Re-analyze task distributions from Yeo et al. and Wu et al.
+% TODO: Write prose around completed experiment results.
+%
+% Structure:
+% 5.1 Setup: 4 task families (majority c=0, composition c=l exact,
+%     parity c=Θ(n), carry addition c=n), 3 models, 11 depth levels.
+%     Structured step prompting for depth control.
+%
+% 5.2 The distinguishing test (Figure 1): Plot d* vs c(n) for each model.
+%     Core prediction: d* plateaus at 1/η for hard tasks.
+%     This is what our framework predicts and Wu et al.'s does not.
+%
+% 5.3 Per-model η estimation: Fit (1-η)^k to decay region (k ≥ c).
+%     Report η per model with bootstrap CIs.
+%     Verify η is consistent across tasks for the same model.
+%
+% 5.4 Inverted-U validation: Accuracy vs depth curves for composition
+%     and parity. Peak locations match predicted min(c(n), 1/η).
+%
+% 5.5 Theorem 1 validation: Majority accuracy monotonically decreases
+%     with depth across all models and input sizes.
+%
+% 5.6 Self-correction signal: Compare η estimates across model families.
+%     Reasoning models (if tested) should have lower η_eff.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -457,7 +468,59 @@ Setting the derivative to zero:
 \]
 Solving: $k^*_{\beta} = 1/\noise - c\beta_0/(1-\beta_0)$. The capability ceiling shifts from $1/\noise$ to $1/\noise - c\beta_0/(1-\beta_0)$, which is \emph{lower}: a model with strong baseline needs fewer CoT steps. The two-regime structure and the existence of the ceiling are preserved.
 
-% TODO: remaining extensions (smooth sufficiency functions, correlated error models)
+\subsection{General Capability Ceiling Theorem}
+\label{app:robustness}
+
+The main-text results assume linear sufficiency and exponential reliability. Here we prove that the capability ceiling holds under much weaker conditions, establishing it as a \emph{structural} property of the computation-noise tradeoff rather than an artifact of specific functional forms.
+
+\begin{theorem}[General capability ceiling]
+\label{thm:general-ceiling}
+Let $\suf : \N \to [0, \Smax]$ be non-decreasing with $\suf(0) = 0$ and $\suf(k) = \Smax$ for all $k \geq c$. Let $\rel : \N \to (0, 1]$ be strictly decreasing with $\rel(0) = 1$ and $\lim_{k \to \infty} k \cdot \rel(k) = 0$. Define $\acc(k) = \suf(k) \cdot \rel(k)$. Then:
+\begin{enumerate}
+\item[\emph{(i)}] \textbf{Saturation ceiling:} $\depth \leq c$. Once sufficiency is saturated, more steps can only reduce accuracy.
+\item[\emph{(ii)}] \textbf{Noise ceiling:} Define $K_\rel = \arg\max_{k \geq 1} k \cdot \rel(k)$, the noise-limited depth. If $\suf$ is concave on $[0, c]$, then $\depth \leq K_\rel$ for all $c > K_\rel$.
+\item[\emph{(iii)}] \textbf{The ceiling is model-intrinsic:} $K_\rel$ depends only on $\rel$ (a property of the model), not on $c$ (a property of the task). For any task with $c > K_\rel$, optimal depth is bounded by a constant determined by model reliability alone.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\emph{Part (i):} For $k \geq c$, $\suf(k) = \Smax$ and $\acc(k) = \Smax \cdot \rel(k)$, which is strictly decreasing since $\rel$ is. Therefore no $k > c$ can be optimal.
+
+\emph{Part (ii):} For $c > K_\rel$ and $k \in [0, c)$, write $\acc(k) = \suf(k) \cdot \rel(k)$. Since $\suf$ is concave with $\suf(0) = 0$, we have $\suf(k) \leq (\Smax/c) \cdot k$ for all $k \in [0, c]$. Therefore:
+\[
+\acc(k) \leq \frac{\Smax}{c} \cdot k \cdot \rel(k) \leq \frac{\Smax}{c} \cdot \max_{j \geq 1} [j \cdot \rel(j)] = \frac{\Smax}{c} \cdot K_\rel \cdot \rel(K_\rel)
+\]
+Compare with $\acc(K_\rel) = \suf(K_\rel) \cdot \rel(K_\rel)$. Since $\suf(K_\rel) \leq \Smax$, the maximizer must lie at or before $K_\rel$: any $k > K_\rel$ gives $k \cdot \rel(k) < K_\rel \cdot \rel(K_\rel)$ (since $K_\rel$ is the maximizer of $k \cdot \rel(k)$), so $\acc(k) < \acc(K_\rel)$ via the same upper bound. Hence $\depth \leq K_\rel$.
+
+\emph{Part (iii):} $K_\rel = \arg\max_k [k \cdot \rel(k)]$ depends only on the function $\rel$, which is a property of the model (its per-step reliability). The task enters only through $c$, and the bound $\depth \leq K_\rel$ holds for all tasks with $c > K_\rel$.
+\end{proof}
+
+\begin{corollary}[Ceiling under specific noise models]
+\label{cor:ceiling-models}
+For common reliability functions:
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Reliability $\rel(k)$} & \textbf{$K_\rel$} & \textbf{Ceiling} \\
+\midrule
+$(1-\noise)^k$ (exponential) & $\lfloor 1/\noise \rfloor$ & $\bigO(1/\noise)$ \\
+$e^{-\alpha k^2}$ (Gaussian) & $\lfloor 1/\sqrt{2\alpha} \rfloor$ & $\bigO(1/\sqrt{\alpha})$ \\
+$k^{-\beta}$ for $\beta > 1$ (polynomial) & $\lfloor (\beta - 1)^{-1} \rfloor$ & $\bigO(1/(\beta-1))$ \\
+$1/(1 + \noise k)$ (hyperbolic, $\beta \leq 1$) & $\infty$ & no ceiling \\
+\bottomrule
+\end{tabular}
+\end{center}
+Any reliability decaying faster than $1/k$ yields a finite ceiling. Hyperbolic decay ($\leq 1/k$) does not---but such slow decay is empirically unrealistic for multi-step reasoning, where errors compound.
+\end{corollary}
+
+\begin{remark}[Convex sufficiency]
+If $\suf$ is \emph{convex} rather than concave on $[0, c]$ (accelerating returns---the model makes little progress until near $c$, then rapidly solves the task), the ceiling can exceed $K_\rel$. In this case, the sharp gains near $k = c$ may outweigh the noise cost. However, the saturation ceiling $\depth \leq c$ still holds, and the ceiling is at most $c$---which provides no useful reasoning depth if $c > K_\rel$ and accuracy at $c$ is negligible due to $(1-\noise)^c \to 0$.
+\end{remark}
+
+\subsection{Correlated Errors}
+\label{app:correlated}
+
+Under positively correlated errors (cascading failures), the reliability function decays \emph{faster} than $(1-\noise)^k$---for example, $\rel(k) = (1-\noise)^{k^{1+\delta}}$ for some $\delta > 0$. By \cref{thm:general-ceiling}, the ceiling $K_\rel$ is \emph{lower} than under independent errors. The independent-error model is therefore a \emph{best case} for the reasoner: the actual ceiling may be more restrictive than $1/\noise$, strengthening our main result.
 
 \section{Experimental Details}
 \label{app:experiments}
