@@ -30,6 +30,9 @@ THEORY_SIGNALS = [
     "we prove", "we show that", "upper bound", "lower bound",
 ]
 
+# Claim types that indicate theoretical work (from claims table schema)
+THEORY_CLAIM_TYPES = frozenset({"finding", "proof", "hypothesis", "definition"})
+
 STOP_WORDS = frozenset({
     "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
     "have", "has", "had", "do", "does", "did", "will", "would", "could",
@@ -48,6 +51,10 @@ STOP_WORDS = frozenset({
 })
 
 DETECTOR_NAME = "trend"
+
+# Confidence calibration: velocity at which confidence reaches 1.0.
+# 3x is already a strong acceleration signal, so cap there.
+_CONFIDENCE_VELOCITY_CAP = 3.0
 
 
 # -- Helpers ---------------------------------------------------------------
@@ -80,6 +87,84 @@ def _has_theory(text: str) -> bool:
         return False
     text_lower = text.lower()
     return any(sig in text_lower for sig in THEORY_SIGNALS)
+
+
+def _topic_has_theory_claims(topic_id: str) -> bool:
+    """Check if the topic's papers have theory-type claims in the DB.
+
+    Queries the claims table for claim_types 'finding' or 'proof' where
+    the source paper belongs to this topic. This is more accurate than
+    checking whether the topic label contains theory keywords, because
+    a topic labeled "chain thought reasoning" can still have papers
+    with formal proofs.
+
+    Falls back to False on any DB error.
+    """
+    if get_connection is None:
+        return False
+    try:
+        conn = get_connection()
+        import psycopg2.extras
+        cur = conn.cursor()
+        # Join claims -> lit_papers -> research_topics via topic embedding
+        # Since research_topics doesn't directly store paper IDs, we use
+        # the claims.source field which stores paper IDs, and match papers
+        # that belong to this topic via the topic_graph's cluster membership.
+        # Simpler approach: check claims whose source papers are in the
+        # topic's recent papers (fetched separately).
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM claims
+                WHERE claim_type IN ('proof', 'finding')
+                  AND source IN (
+                      SELECT id FROM lit_papers lp
+                      WHERE lp.embedding IS NOT NULL
+                        AND lp.discovered_at > NOW() - INTERVAL '90 days'
+                        AND EXISTS (
+                            SELECT 1 FROM research_topics rt
+                            WHERE rt.id = %s
+                              AND rt.embedding IS NOT NULL
+                              AND 1 - (lp.embedding <=> rt.embedding) > 0.5
+                        )
+                  )
+                LIMIT 1
+            )
+        """, (topic_id,))
+        result = cur.fetchone()
+        cur.close()
+        return bool(result and result[0])
+    except Exception:
+        return False
+
+
+def _fetch_topic_source_papers(topic_id: str, limit: int = 5) -> list[str]:
+    """Fetch the most recent paper IDs belonging to a topic cluster.
+
+    Uses cosine similarity between the topic's centroid embedding and
+    paper embeddings to find the cluster's papers.  Returns up to
+    ``limit`` paper IDs, most-recent first.
+    """
+    if get_connection is None:
+        return []
+    try:
+        conn = get_connection()
+        import psycopg2.extras
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT lp.id
+            FROM lit_papers lp, research_topics rt
+            WHERE rt.id = %s
+              AND rt.embedding IS NOT NULL
+              AND lp.embedding IS NOT NULL
+              AND 1 - (lp.embedding <=> rt.embedding) > 0.5
+            ORDER BY lp.discovered_at DESC
+            LIMIT %s
+        """, (topic_id, limit))
+        rows = cur.fetchall()
+        cur.close()
+        return [row["id"] for row in rows]
+    except Exception:
+        return []
 
 
 def _tokenize(text: str) -> list[str]:
@@ -335,7 +420,7 @@ def _detect_trends(
                 for p in recent_papers
             )
 
-            confidence = min(velocity / 5.0, 1.0)
+            confidence = min(velocity / _CONFIDENCE_VELOCITY_CAP, 1.0)
             if low_data:
                 confidence = min(confidence, 0.5)
 
@@ -436,6 +521,10 @@ def _detect_from_topic_graph() -> list[ResearchSignal]:
     Returns signals derived from pre-computed topic velocity in the
     topic_graph builder, which is more accurate than per-paper velocity
     when we only have a short data window.
+
+    Filters out topics with "unknown" category prefix (unmapped papers).
+    Uses claims table to detect theory presence rather than label keywords.
+    Fetches source paper IDs from the topic's paper cluster.
     """
     if get_connection is None:
         return []
@@ -457,29 +546,47 @@ def _detect_from_topic_graph() -> list[ResearchSignal]:
 
     signals: list[ResearchSignal] = []
     for topic in topics:
-        # Check label for theory-related terms
-        has_theory = any(
-            t in topic["label"].lower()
-            for t in ["proof", "theorem", "formal", "bound", "complexity"]
-        )
+        label = topic["label"]
+
+        # Filter out topics with "unknown" category — these are papers the
+        # topic graph couldn't map to a valid arXiv category, producing
+        # low-quality labels like "unknown: artificial intelligence | real time".
+        if label.lower().startswith("unknown:") or label.lower() == "unknown":
+            continue
 
         velocity = float(topic["velocity"])
+
+        # Theory detection: query claims table for theory claim_types
+        # (finding/proof) within this topic's papers, rather than checking
+        # the label for keywords like "theorem".  Falls back to label-based
+        # check if the DB query fails.
+        has_theory = _topic_has_theory_claims(topic["id"])
+        if not has_theory:
+            # Fallback: also check label for obvious theory terms
+            has_theory = any(
+                t in label.lower()
+                for t in ["proof", "theorem", "formal", "bound", "complexity"]
+            )
+
         signal_type = "accelerating_no_theory" if not has_theory else "accelerating_emerging"
 
-        # Confidence from velocity (higher = more confident)
-        confidence = min(velocity / 5.0, 1.0)
+        # Confidence calibration: cap at 3.0x (was 5.0x — too generous)
+        confidence = min(velocity / _CONFIDENCE_VELOCITY_CAP, 1.0)
+
+        # Fetch actual source paper IDs from the topic cluster
+        source_papers = _fetch_topic_source_papers(topic["id"], limit=5)
 
         signals.append(ResearchSignal(
             detector=DETECTOR_NAME,
             signal_type=signal_type,
-            title=f"Accelerating: {topic['label']} ({velocity:.1f}x, {topic['paper_count']} papers)",
+            title=f"Accelerating: {label} ({velocity:.1f}x, {topic['paper_count']} papers)",
             description=(
-                f"Topic cluster '{topic['label']}' has velocity {velocity:.1f}x normal "
+                f"Topic cluster '{label}' has velocity {velocity:.1f}x normal "
                 f"activity with {topic['paper_count']} papers."
             ),
             confidence=confidence,
-            source_papers=[],
-            topics=[topic["label"]],
+            source_papers=source_papers,
+            topics=[label],
             timing_score=min(velocity / 4.0, 1.0),
             metadata={
                 "velocity": velocity,
@@ -497,9 +604,14 @@ def _detect_from_topic_graph() -> list[ResearchSignal]:
 def detect(papers: list[dict]) -> list[dict]:
     """Run trend detection on pre-fetched papers.
 
-    Tries pre-computed topic velocity from the research_topics table first
-    (populated by the topic_graph builder). Falls back to per-paper velocity
-    when the topic graph is unavailable or returns no signals.
+    Combines signals from two sources:
+    1. Pre-computed topic velocity from the research_topics table
+       (populated by the topic_graph builder — more accurate with short
+       data windows).
+    2. Per-paper velocity computation on the provided papers (catches
+       micro-trends within large topics that the topic graph may miss).
+
+    Deduplicates signals that refer to the same topic across both sources.
 
     Args:
         papers: list of paper dicts with fields: id, title, abstract,
@@ -508,20 +620,51 @@ def detect(papers: list[dict]) -> list[dict]:
     Returns:
         list of signal dicts in the standard ResearchSignal format.
     """
-    # Try pre-computed topic velocity first (more accurate with short data windows)
-    topic_graph_signals = _detect_from_topic_graph()
-    if topic_graph_signals:
-        return [s.to_dict() for s in topic_graph_signals]
+    all_signals: list[ResearchSignal] = []
 
-    # Fall back to per-paper velocity computation
+    # Source 1: pre-computed topic velocity
+    topic_graph_signals = _detect_from_topic_graph()
+    all_signals.extend(topic_graph_signals)
+
+    # Source 2: per-paper velocity computation
     papers_with_dates: list[tuple[dict, datetime]] = []
     for paper in papers:
         dt = _parse_date(paper.get("discovered_at") or "")
         if dt is not None:
             papers_with_dates.append((paper, dt))
 
-    if not papers_with_dates:
-        return []
+    if papers_with_dates:
+        paper_signals = _detect_trends(papers_with_dates)
+        all_signals.extend(paper_signals)
 
-    all_signals = _detect_trends(papers_with_dates)
-    return [s.to_dict() for s in all_signals]
+    # Deduplicate: if both sources produced a signal for the same topic,
+    # keep the topic-graph version (higher quality, pre-computed).
+    seen_topics: set[str] = set()
+    deduped: list[ResearchSignal] = []
+    # Process topic-graph signals first so they win on duplicates
+    tg_signals = [s for s in all_signals if s.metadata.get("source") == "topic_graph"]
+    pp_signals = [s for s in all_signals if s.metadata.get("source") != "topic_graph"]
+    for sig in tg_signals:
+        for t in sig.topics:
+            seen_topics.add(t.lower())
+        deduped.append(sig)
+    for sig in pp_signals:
+        # Check if any of this signal's topics overlap with already-seen topics
+        dominated = any(t.lower() in seen_topics for t in sig.topics)
+        if not dominated:
+            deduped.append(sig)
+            for t in sig.topics:
+                seen_topics.add(t.lower())
+
+    # Sort: accelerating_no_theory first, then by confidence
+    type_priority = {
+        "accelerating_no_theory": 0,
+        "accelerating_emerging": 1,
+        "decelerating_warning": 2,
+    }
+    deduped.sort(key=lambda s: (
+        type_priority.get(s.signal_type, 5),
+        -s.confidence,
+    ))
+
+    return [s.to_dict() for s in deduped]
