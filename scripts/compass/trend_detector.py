@@ -14,13 +14,14 @@ from typing import Any
 
 try:
     from .schema import ResearchSignal
-    from .db import batch_cosine_similarity
+    from .db import batch_cosine_similarity, get_connection
 except ImportError:
     from schema import ResearchSignal  # type: ignore
     try:
-        from db import batch_cosine_similarity  # type: ignore
+        from db import batch_cosine_similarity, get_connection  # type: ignore
     except ImportError:
         batch_cosine_similarity = None  # type: ignore
+        get_connection = None  # type: ignore
 
 # Reuse theory signals from gap_detector (same list, kept in sync)
 THEORY_SIGNALS = [
@@ -427,10 +428,78 @@ def _detect_trends(
     return signals
 
 
+# -- Topic-graph velocity --------------------------------------------------
+
+def _detect_from_topic_graph() -> list[ResearchSignal]:
+    """Query research_topics table for accelerating topics.
+
+    Returns signals derived from pre-computed topic velocity in the
+    topic_graph builder, which is more accurate than per-paper velocity
+    when we only have a short data window.
+    """
+    if get_connection is None:
+        return []
+    try:
+        conn = get_connection()
+        import psycopg2.extras
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, label, paper_count, velocity, claim_count
+            FROM research_topics
+            WHERE velocity > 1.5
+            ORDER BY velocity DESC
+            LIMIT 20
+        """)
+        topics = cur.fetchall()
+        cur.close()
+    except Exception:
+        return []
+
+    signals: list[ResearchSignal] = []
+    for topic in topics:
+        # Check label for theory-related terms
+        has_theory = any(
+            t in topic["label"].lower()
+            for t in ["proof", "theorem", "formal", "bound", "complexity"]
+        )
+
+        velocity = float(topic["velocity"])
+        signal_type = "accelerating_no_theory" if not has_theory else "accelerating_emerging"
+
+        # Confidence from velocity (higher = more confident)
+        confidence = min(velocity / 5.0, 1.0)
+
+        signals.append(ResearchSignal(
+            detector=DETECTOR_NAME,
+            signal_type=signal_type,
+            title=f"Accelerating: {topic['label']} ({velocity:.1f}x, {topic['paper_count']} papers)",
+            description=(
+                f"Topic cluster '{topic['label']}' has velocity {velocity:.1f}x normal "
+                f"activity with {topic['paper_count']} papers."
+            ),
+            confidence=confidence,
+            source_papers=[],
+            topics=[topic["label"]],
+            timing_score=min(velocity / 4.0, 1.0),
+            metadata={
+                "velocity": velocity,
+                "paper_count": topic["paper_count"],
+                "topic_id": topic["id"],
+                "source": "topic_graph",
+            },
+        ))
+
+    return signals
+
+
 # -- Public API ------------------------------------------------------------
 
 def detect(papers: list[dict]) -> list[dict]:
     """Run trend detection on pre-fetched papers.
+
+    Tries pre-computed topic velocity from the research_topics table first
+    (populated by the topic_graph builder). Falls back to per-paper velocity
+    when the topic graph is unavailable or returns no signals.
 
     Args:
         papers: list of paper dicts with fields: id, title, abstract,
@@ -439,7 +508,12 @@ def detect(papers: list[dict]) -> list[dict]:
     Returns:
         list of signal dicts in the standard ResearchSignal format.
     """
-    # Parse dates, skip papers without valid timestamps
+    # Try pre-computed topic velocity first (more accurate with short data windows)
+    topic_graph_signals = _detect_from_topic_graph()
+    if topic_graph_signals:
+        return [s.to_dict() for s in topic_graph_signals]
+
+    # Fall back to per-paper velocity computation
     papers_with_dates: list[tuple[dict, datetime]] = []
     for paper in papers:
         dt = _parse_date(paper.get("discovered_at") or "")
