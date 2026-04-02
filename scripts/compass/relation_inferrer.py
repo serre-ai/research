@@ -26,30 +26,87 @@ except ImportError:
 # ── Sentiment word sets for relation classification ──────
 
 POSITIVE = {
-    "improve", "achieve", "demonstrate", "confirm", "show", "prove",
-    "enable", "advance", "enhance", "outperform",
+    "improve", "improves", "improved", "improving",
+    "achieve", "achieves", "achieved", "achieving",
+    "demonstrate", "demonstrates", "demonstrated", "demonstrating",
+    "confirm", "confirms", "confirmed", "confirming",
+    "show", "shows", "showed", "shown", "showing",
+    "prove", "proves", "proved", "proven", "proving",
+    "enable", "enables", "enabled", "enabling",
+    "advance", "advances", "advanced", "advancing",
+    "enhance", "enhances", "enhanced", "enhancing",
+    "outperform", "outperforms", "outperformed", "outperforming",
 }
 
 NEGATIVE = {
-    "fail", "not", "contrary", "challenge", "degrade", "contradict",
-    "refute", "unable", "cannot", "worse",
+    "fail", "fails", "failed", "failing",
+    "not",
+    "contrary",
+    "challenge", "challenges", "challenged", "challenging",
+    "degrade", "degrades", "degraded", "degrading",
+    "contradict", "contradicts", "contradicted", "contradicting",
+    "refute", "refutes", "refuted", "refuting",
+    "unable",
+    "cannot",
+    "worse", "worsens",
 }
+
+# Negation words that flip the polarity of nearby positive words
+_NEGATORS = {"not", "cannot", "unable", "no", "neither", "nor", "never", "lack", "lacks"}
+
+# Limitation/negative-outcome phrases that override positive words
+_LIMITATION_PHRASES = [
+    "cannot solve", "does not", "do not", "cannot",
+    "fails to", "unable to", "not reliably", "not consistently",
+    "limitations of", "limits of", "bounded by",
+]
 
 
 # ── Relation classifier ─────────────────────────────────
+
+def _effective_polarity(text: str) -> tuple[bool, bool]:
+    """Return (is_positive, is_negative) accounting for negation.
+
+    A claim like "We show that transformers cannot solve X" contains both
+    "show" (positive) and "cannot" (negative). When a positive word appears
+    near a negator or limitation phrase, it should be treated as negative.
+    """
+    lower = text.lower()
+    word_list = lower.split()
+    words = set(word_list)
+
+    has_pos = bool(words & POSITIVE)
+    has_neg = bool(words & NEGATIVE)
+
+    # Check for limitation phrases that make the overall claim negative
+    has_limitation = any(phrase in lower for phrase in _LIMITATION_PHRASES)
+
+    # Check for negators near positive words (within a 5-word window)
+    negator_near_positive = False
+    for i, w in enumerate(word_list):
+        if w in POSITIVE:
+            window = set(word_list[max(0, i - 5) : i + 6])
+            if window & _NEGATORS:
+                negator_near_positive = True
+                break
+
+    if has_limitation or negator_near_positive:
+        # Positive words are being used in a negative context
+        return False, True
+
+    return has_pos, has_neg
+
 
 def classify_relation(claim_a: str, claim_b: str) -> str:
     """Classify the relation between two claims based on sentiment words.
 
     Returns one of: 'supports', 'contradicts', 'related_to'.
-    """
-    a_words = set(claim_a.lower().split())
-    b_words = set(claim_b.lower().split())
 
-    a_pos = bool(a_words & POSITIVE)
-    a_neg = bool(a_words & NEGATIVE)
-    b_pos = bool(b_words & POSITIVE)
-    b_neg = bool(b_words & NEGATIVE)
+    Uses negation-aware polarity detection to handle cases like
+    "We show that transformers cannot solve X" (negative despite "show").
+    """
+    a_pos, a_neg = _effective_polarity(claim_a)
+    b_pos, b_neg = _effective_polarity(claim_b)
 
     if (a_pos and b_neg) or (a_neg and b_pos):
         return "contradicts"
@@ -109,6 +166,9 @@ def find_similar_by_paper_embedding(
 
     When claims don't have their own embeddings, we fall back to the
     embedding of the paper they were extracted from (stored in lit_papers).
+
+    Excludes claims from the same paper — otherwise all claims sharing a
+    paper embedding would match with similarity 1.0.
     """
     conn = get_connection()
     import psycopg2.extras
@@ -119,14 +179,16 @@ def find_similar_by_paper_embedding(
         FROM lit_papers p1
         JOIN claims c2 ON c2.id != %s::uuid
                        AND c2.source_type = 'paper'
+                       AND (c2.paper_id IS NULL OR c2.paper_id != %s)
         JOIN lit_papers p2 ON p2.id = c2.paper_id
         WHERE p1.id = %s
           AND p1.embedding IS NOT NULL
           AND p2.embedding IS NOT NULL
+          AND p2.id != p1.id
           AND 1 - (p1.embedding <=> p2.embedding) > %s
         ORDER BY p1.embedding <=> p2.embedding
         LIMIT 5
-    """, (claim_id, paper_id, min_similarity))
+    """, (claim_id, paper_id, paper_id, min_similarity))
     rows = [dict(row) for row in cur.fetchall()]
     cur.close()
     return rows
@@ -151,14 +213,18 @@ def insert_relation(
     relation: str,
     strength: float,
 ) -> bool:
-    """Insert a claim relation, skipping on conflict."""
+    """Insert a claim relation, skipping on conflict.
+
+    The claim_relations table has UNIQUE(source_id, target_id, relation),
+    so we target that constraint explicitly.
+    """
     conn = get_connection()
     cur = conn.cursor()
     try:
         cur.execute("""
             INSERT INTO claim_relations (source_id, target_id, relation, strength)
             VALUES (%s::uuid, %s::uuid, %s, %s)
-            ON CONFLICT DO NOTHING
+            ON CONFLICT (source_id, target_id, relation) DO NOTHING
         """, (source_id, target_id, relation, strength))
         conn.commit()
         cur.close()
@@ -217,7 +283,7 @@ def process_claims(
             print(f"[{idx}/{total}] Claim \"{short}\" — 0 relations")
             continue
 
-        # Classify and insert relations
+        # Classify and insert relations (both directions for symmetric relations)
         batch_counts: Counter = Counter()
         for match in similar:
             relation = classify_relation(statement, match["statement"])
@@ -226,6 +292,9 @@ def process_claims(
 
             if not dry_run:
                 insert_relation(claim_id, match["id"], relation, strength)
+                # Store reverse direction — contradicts/supports/related_to
+                # are all symmetric relations
+                insert_relation(match["id"], claim_id, relation, strength)
 
         n_rels = sum(batch_counts.values())
         total_relations += n_rels

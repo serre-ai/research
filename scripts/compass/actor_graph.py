@@ -14,7 +14,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections import defaultdict
 from datetime import datetime
@@ -93,9 +92,14 @@ def fetch_papers(conn) -> list[dict]:
 
 
 def build_groups(
-    papers: list[dict], min_papers: int = 2
+    papers: list[dict], min_papers: int = 2, min_shared_papers: int = 2
 ) -> list[dict]:
     """Build research groups from co-authorship using union-find.
+
+    To avoid mega-groups caused by common names bridging unrelated
+    collaborations, we only merge two authors if they share at least
+    ``min_shared_papers`` papers (default 2). This prevents a single
+    shared paper with "A. Yang" from merging hundreds of authors.
 
     Returns a list of group dicts with:
       - author_names: list[str] (display names)
@@ -112,6 +116,8 @@ def build_groups(
     # Map normalized name -> set of paper indices
     author_papers: dict[str, set[int]] = defaultdict(set)
 
+    # First pass: collect author-paper mappings
+    paper_author_lists: list[list[str]] = []
     for idx, paper in enumerate(papers):
         raw_names = _extract_author_names(paper.get("authors"))
         norm_names = []
@@ -122,10 +128,23 @@ def build_groups(
             if nk not in display_names or len(name) > len(display_names[nk]):
                 display_names[nk] = name
             author_papers[nk].add(idx)
+        paper_author_lists.append(norm_names)
 
-        # Union all authors on the same paper
-        for i in range(1, len(norm_names)):
-            uf.union(norm_names[0], norm_names[i])
+    # Second pass: count shared papers between each co-author pair
+    # Then only union pairs that share >= min_shared_papers
+    pair_shared: dict[tuple[str, str], int] = defaultdict(int)
+    for norm_names in paper_author_lists:
+        unique_names = list(dict.fromkeys(norm_names))  # deduplicate, preserve order
+        for i in range(len(unique_names)):
+            for j in range(i + 1, len(unique_names)):
+                a, b = unique_names[i], unique_names[j]
+                pair = (min(a, b), max(a, b))
+                pair_shared[pair] += 1
+
+    # Only merge authors with enough shared papers
+    for (a, b), count in pair_shared.items():
+        if count >= min_shared_papers:
+            uf.union(a, b)
 
     # Group authors by their root
     root_to_authors: dict[str, list[str]] = defaultdict(list)
@@ -211,13 +230,18 @@ def map_topics(conn, groups: list[dict]) -> dict[str, int]:
 
 
 def store_groups(conn, groups: list[dict], topic_map: dict[str, int]) -> int:
-    """Insert groups into research_groups and group_topic_edges."""
+    """Insert groups into research_groups and group_topic_edges.
+
+    The research_groups.author_names column is TEXT[], so we pass a Python
+    list directly (psycopg2 adapts it to a PostgreSQL array). Previously
+    used json.dumps() which produced a JSON string — wrong type for TEXT[].
+    """
     cur = conn.cursor()
     stored = 0
 
     for g in groups:
         # Resolve topic IDs from categories
-        topic_ids: list[int] = []
+        topic_ids: list[str] = []
         for cat in g["categories"]:
             cat_lower = cat.lower()
             if cat_lower in topic_map:
@@ -230,7 +254,7 @@ def store_groups(conn, groups: list[dict], topic_map: dict[str, int]) -> int:
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
             """, (
-                json.dumps(g["author_names"]),
+                g["author_names"],          # Python list -> TEXT[]
                 g["paper_count"],
                 topic_ids if topic_ids else None,
                 g["first_seen"],
@@ -242,7 +266,7 @@ def store_groups(conn, groups: list[dict], topic_map: dict[str, int]) -> int:
             # Build group-topic edges
             if group_id and topic_ids:
                 # Count papers per topic for this group
-                topic_paper_counts: dict[int, int] = defaultdict(int)
+                topic_paper_counts: dict[str, int] = defaultdict(int)
                 for cat in g["categories"]:
                     cat_lower = cat.lower()
                     if cat_lower in topic_map:
@@ -257,6 +281,7 @@ def store_groups(conn, groups: list[dict], topic_map: dict[str, int]) -> int:
                             VALUES (%s, %s, %s)
                         """, (group_id, tid, count))
                     except Exception as e:
+                        conn.rollback()
                         print(
                             f"  Warning: edge insert failed "
                             f"(group={group_id}, topic={tid}): {e}",
@@ -265,6 +290,7 @@ def store_groups(conn, groups: list[dict], topic_map: dict[str, int]) -> int:
 
             stored += 1
         except Exception as e:
+            conn.rollback()
             print(
                 f"  Warning: group insert failed: {e}",
                 file=sys.stderr,
@@ -381,6 +407,12 @@ def main() -> None:
         default=2,
         help="Minimum papers to form a group (default: 2).",
     )
+    parser.add_argument(
+        "--min-shared-papers",
+        type=int,
+        default=2,
+        help="Minimum co-authored papers to merge two authors (default: 2).",
+    )
     args = parser.parse_args()
 
     try:
@@ -408,8 +440,15 @@ def main() -> None:
     print(f"  {len(all_authors)} unique authors.")
 
     # Build groups
-    print(f"Building co-authorship groups (min_papers={args.min_papers})...")
-    groups = build_groups(papers, min_papers=args.min_papers)
+    print(
+        f"Building co-authorship groups "
+        f"(min_papers={args.min_papers}, min_shared_papers={args.min_shared_papers})..."
+    )
+    groups = build_groups(
+        papers,
+        min_papers=args.min_papers,
+        min_shared_papers=args.min_shared_papers,
+    )
     print(f"  Built {len(groups)} research groups.")
 
     if not groups:
