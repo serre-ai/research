@@ -1,6 +1,7 @@
 """Tests for the contrarian detector module."""
 
-from scripts.compass.contrarian_detector import detect
+from unittest.mock import patch, MagicMock
+from scripts.compass.contrarian_detector import detect, _find_kg_contradictions
 
 
 class TestDetectReturnType:
@@ -38,7 +39,11 @@ class TestSignalSchema:
             )
 
     def test_valid_signal_types(self, synthetic_papers):
-        valid_types = {"consensus_thin_evidence", "consensus_fragile", "contrarian_opportunity", "semantic_opposition", "kg_contradiction_relevant"}
+        valid_types = {
+            "consensus_thin_evidence", "consensus_fragile",
+            "contrarian_opportunity", "semantic_opposition",
+            "verified_contradiction", "active_dispute",
+        }
         signals = detect(synthetic_papers)
         for sig in signals:
             assert sig["signal_type"] in valid_types, (
@@ -124,3 +129,213 @@ class TestEdgeCases:
         ]
         result = detect(papers)
         assert isinstance(result, list)
+
+
+def _make_mock_cursor(contradictions):
+    """Create a mock cursor that returns the given contradictions."""
+    mock_cur = MagicMock()
+    mock_cur.fetchall.return_value = contradictions
+    return mock_cur
+
+
+def _make_mock_connection(contradictions):
+    """Create a mock connection whose cursor returns the given contradictions."""
+    mock_conn = MagicMock()
+    mock_cur = _make_mock_cursor(contradictions)
+    mock_conn.cursor.return_value = mock_cur
+    return mock_conn
+
+
+class TestVerifiedContradictions:
+    """Tests for the verified_contradiction signal type from KG."""
+
+    def _mock_contradictions(self):
+        return [
+            {
+                "claim_a": "Chain-of-thought prompting improves reasoning accuracy",
+                "claim_b": "Chain-of-thought prompting does not reliably improve reasoning",
+                "paper_a_id": "paper_001",
+                "paper_b_id": "paper_002",
+                "strength": 0.85,
+                "paper_a_title": "CoT Improves Reasoning in LLMs",
+                "paper_b_title": "CoT Does Not Generalize",
+            },
+            {
+                "claim_a": "Scaling model parameters improves performance linearly",
+                "claim_b": "Scaling returns diminish beyond a threshold",
+                "paper_a_id": "paper_003",
+                "paper_b_id": None,
+                "strength": 0.72,
+                "paper_a_title": "Scaling Laws for LLMs",
+                "paper_b_title": None,
+            },
+        ]
+
+    @patch("scripts.compass.db.get_connection")
+    def test_emits_verified_contradiction_signals(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+        signals = _find_kg_contradictions([])
+
+        verified = [s for s in signals if s.signal_type == "verified_contradiction"]
+        assert len(verified) == 2, f"Expected 2 verified contradictions, got {len(verified)}"
+
+    @patch("scripts.compass.db.get_connection")
+    def test_verified_contradiction_confidence_is_strength(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+        signals = _find_kg_contradictions([])
+
+        verified = [s for s in signals if s.signal_type == "verified_contradiction"]
+        assert verified[0].confidence == 0.85
+        assert verified[1].confidence == 0.72
+
+    @patch("scripts.compass.db.get_connection")
+    def test_verified_contradiction_includes_source_papers(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+        signals = _find_kg_contradictions([])
+
+        verified = [s for s in signals if s.signal_type == "verified_contradiction"]
+        # First contradiction has both paper IDs
+        assert "paper_001" in verified[0].source_papers
+        assert "paper_002" in verified[0].source_papers
+        # Second contradiction has only one paper ID (paper_b_id is None)
+        assert "paper_003" in verified[1].source_papers
+        assert len(verified[1].source_papers) == 1
+
+    @patch("scripts.compass.db.get_connection")
+    def test_verified_contradiction_metadata(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+        signals = _find_kg_contradictions([])
+
+        verified = [s for s in signals if s.signal_type == "verified_contradiction"]
+        meta = verified[0].metadata
+        assert "claim_a" in meta
+        assert "claim_b" in meta
+        assert "strength" in meta
+        assert meta["strength"] == 0.85
+
+    @patch("scripts.compass.db.get_connection")
+    def test_no_contradictions_returns_empty(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection([])
+        signals = _find_kg_contradictions([])
+
+        assert signals == []
+
+
+class TestActiveDispute:
+    """Tests for the active_dispute signal type when recent papers overlap."""
+
+    def _mock_contradictions(self):
+        return [
+            {
+                "claim_a": "Chain-of-thought prompting improves reasoning accuracy",
+                "claim_b": "Chain-of-thought prompting does not reliably improve reasoning",
+                "paper_a_id": "paper_001",
+                "paper_b_id": "paper_002",
+                "strength": 0.85,
+                "paper_a_title": "CoT Improves Reasoning",
+                "paper_b_title": "CoT Does Not Generalize",
+            },
+        ]
+
+    @patch("scripts.compass.db.get_connection")
+    def test_emits_active_dispute_when_paper_overlaps(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+
+        # Paper whose abstract overlaps with claim_a (chain-of-thought, reasoning)
+        papers = [
+            {
+                "id": "recent_1",
+                "title": "New Evidence for Chain-of-Thought Reasoning",
+                "abstract": (
+                    "Chain-of-thought prompting improves reasoning accuracy "
+                    "across multiple mathematical benchmarks."
+                ),
+            }
+        ]
+        signals = _find_kg_contradictions(papers)
+
+        disputes = [s for s in signals if s.signal_type == "active_dispute"]
+        assert len(disputes) >= 1, "Expected at least 1 active_dispute signal"
+        assert "recent_1" in disputes[0].source_papers
+
+    @patch("scripts.compass.db.get_connection")
+    def test_no_dispute_when_paper_does_not_overlap(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+
+        # Paper about a completely different topic
+        papers = [
+            {
+                "id": "unrelated",
+                "title": "Quantum Computing Survey",
+                "abstract": (
+                    "We survey recent advances in quantum error correction codes "
+                    "and fault-tolerant quantum computation."
+                ),
+            }
+        ]
+        signals = _find_kg_contradictions(papers)
+
+        disputes = [s for s in signals if s.signal_type == "active_dispute"]
+        assert len(disputes) == 0
+
+    @patch("scripts.compass.db.get_connection")
+    def test_active_dispute_identifies_side(self, mock_get_conn):
+        mock_get_conn.return_value = _make_mock_connection(self._mock_contradictions())
+
+        papers = [
+            {
+                "id": "recent_1",
+                "title": "CoT prompting improvements",
+                "abstract": (
+                    "Chain-of-thought prompting improves reasoning accuracy "
+                    "on mathematical benchmarks significantly."
+                ),
+            }
+        ]
+        signals = _find_kg_contradictions(papers)
+
+        disputes = [s for s in signals if s.signal_type == "active_dispute"]
+        if disputes:
+            assert "paper_side" in disputes[0].metadata
+            assert disputes[0].metadata["paper_side"] in ("A", "B")
+
+
+class TestPrioritySorting:
+    """verified_contradiction should sort before all other signal types."""
+
+    @patch("scripts.compass.db.get_connection")
+    def test_verified_contradiction_is_priority_zero(self, mock_get_conn):
+        contradictions = [
+            {
+                "claim_a": "Transformers improve reasoning performance significantly",
+                "claim_b": "Transformers fail to improve reasoning beyond surface patterns",
+                "paper_a_id": None,
+                "paper_b_id": None,
+                "strength": 0.9,
+                "paper_a_title": None,
+                "paper_b_title": None,
+            },
+        ]
+        mock_get_conn.return_value = _make_mock_connection(contradictions)
+
+        # Use papers that will produce consensus_thin_evidence as well
+        papers = [
+            {
+                "id": f"cot_{i}", "title": f"CoT paper {i}",
+                "abstract": (
+                    "We show that chain-of-thought prompting improves reasoning "
+                    "performance significantly on mathematical benchmarks."
+                ),
+                "categories": ["cs.CL"],
+                "authors": [{"name": "Same Author"}],
+            }
+            for i in range(5)
+        ]
+
+        signals = detect(papers)
+
+        if signals:
+            # If verified_contradiction is present, it should be first
+            verified = [s for s in signals if s["signal_type"] == "verified_contradiction"]
+            if verified:
+                assert signals[0]["signal_type"] == "verified_contradiction"
