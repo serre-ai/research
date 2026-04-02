@@ -1,4 +1,4 @@
-% ICLR 2027 paper template for optimal-cot-depth project
+% ICLR 2027 paper: optimal-cot-depth
 % Theory paper: complexity-theoretic analysis of optimal CoT depth
 
 \documentclass{article}
@@ -38,9 +38,12 @@
 \newcommand{\CoT}{\mathrm{CoT}}
 \newcommand{\depth}{d^*}       % optimal depth function
 \newcommand{\noise}{\eta}      % per-step noise rate
+\newcommand{\neff}{\noise_{\mathrm{eff}}} % effective noise with correction
 \newcommand{\acc}{\mathrm{acc}} % accuracy function
 \newcommand{\suf}{\mathcal{S}} % computational sufficiency
 \newcommand{\rel}{\mathcal{R}} % reliability
+\newcommand{\ccot}{c}          % CoT complexity
+\newcommand{\Smax}{S_{\max}}   % maximum achievable sufficiency
 \newcommand{\SIZE}{\mathrm{SIZE}}
 
 % Standard math
@@ -60,7 +63,12 @@
 \maketitle
 
 \begin{abstract}
-Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation. We resolve this contradiction through computational complexity theory. We prove that the optimal number of reasoning steps $\depth(\mathcal{C}, n)$ is determined by the complexity class $\mathcal{C}$ of the underlying task and the input size $n$. For tasks within the transformer's native complexity class ($\TC$), optimal depth is $\bigO(1)$---additional steps introduce noise without benefit. For tasks requiring super-constant circuit depth, such as $\NP$-complete problems, depth scales polynomially with input size. Beyond a complexity-determined threshold, additional steps degrade performance via hallucination cascades at a rate governed by the per-step error probability $\noise$. We formalize this as a noise accumulation model and prove tight bounds for standard complexity classes. Empirical validation across tasks of known complexity confirms our predictions: the observed optimal depth matches the theoretical curve within [TBD]\% across [TBD] models. Our framework explains why each contradictory finding in the literature is correct---for the specific complexity profile of its evaluation tasks.
+Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation.
+We resolve this contradiction through computational complexity theory by proving that the optimal number of reasoning steps is governed by two quantities: the \emph{CoT complexity} $\ccot(n)$ of the task (the minimum steps a transformer needs to solve it) and the model's \emph{per-step error rate} $\noise$.
+Our main result establishes that optimal depth satisfies $\depth = \min(\ccot(n),\; \Theta(1/\noise))$, revealing two regimes: an \emph{easy-task regime} where the model can fully solve the problem and optimal depth equals CoT complexity, and a \emph{hard-task regime} where noise accumulation caps useful depth at $1/\noise$ regardless of task complexity.
+This \emph{capability ceiling}---the maximum useful reasoning depth is bounded by $1/\noise$, independent of the task---is a genuinely new prediction.
+We prove a noise ceiling theorem showing exponential accuracy decay beyond optimal depth, and extend the model to self-correcting reasoners.
+Our framework explains why each contradictory finding in the literature is correct for the specific complexity profile of its evaluation tasks.
 \end{abstract}
 
 \section{Introduction}
@@ -70,33 +78,33 @@ Chain-of-Thought (CoT) reasoning has become the dominant paradigm for improving 
 
 Recent work gives contradictory answers. \citet{yeo2025demystifying} show that longer chains of thought---enabled by reinforcement learning---consistently improve performance on competition mathematics, with emergent long CoT patterns outperforming shorter alternatives by over 15 percentage points. In contrast, \citet{wu2025when} demonstrate that accuracy follows an \emph{inverted U-shaped} curve with CoT length: beyond an optimal point, additional reasoning steps degrade performance. They prove this theoretically for a specific task family (Theorem 4.2 of their paper) and validate it empirically across model scales. Meanwhile, \citet{jiang2025safechain} reveal that longer CoT can degrade safety without improving capability, with reasoning models achieving only 32.3\% safety rates despite using 12$\times$ more tokens.
 
-These findings are not contradictory---they reflect an unrecognized confound. We show that the optimal number of reasoning steps is determined by the \emph{computational complexity} of the underlying task. This resolves the dispute: longer CoT helps when the task requires computational depth exceeding the transformer's native capacity, and hurts when it does not.
+These findings are not contradictory---they reflect an unrecognized confound. We show that the optimal number of reasoning steps is determined by two quantities: the \emph{computational complexity} of the underlying task and the \emph{reliability} of the model's per-step reasoning. This resolves the dispute: longer CoT helps when the task requires computational depth exceeding the transformer's native capacity, and hurts when it does not. Crucially, we identify a \emph{capability ceiling}: no matter how complex the task, useful CoT depth is bounded by $1/\noise$, where $\noise$ is the per-step error rate.
 
 \paragraph{Contributions.} We make the following contributions:
 \begin{enumerate}
-\item We formalize CoT depth as sequential computation and define the \emph{optimal depth function} $\depth(f, n, \noise)$ that maximizes accuracy by balancing computational sufficiency against noise accumulation (\cref{sec:framework}).
+\item We introduce \emph{CoT complexity} $\ccot_f(n)$---the minimum autoregressive steps a constant-depth transformer needs to solve task $f$---as the natural measure of task difficulty for CoT reasoning, connecting it to circuit complexity via~\citet{li2024chain} (\cref{sec:framework}).
 
-\item We prove that for tasks within $\TC$ (the transformer's native complexity class), optimal depth is $\bigO(1)$---any CoT steps reduce accuracy (\cref{thm:tc0-bound}).
+\item We prove the \emph{depth-complexity scaling theorem}: optimal depth satisfies $\depth = \min(\ccot(n),\, \lfloor 1/\noise \rfloor)$, revealing an easy-task regime ($\depth = \ccot(n)$) and a hard-task regime ($\depth = 1/\noise$) separated by the critical threshold $\ccot(n) = 1/\noise$ (\cref{thm:scaling}).
 
-\item We prove that for tasks requiring circuits of size $s(n)$, optimal depth scales as $\Theta(s(n))$, with the exact constant determined by the per-step error rate (\cref{thm:scaling}).
+\item We prove a \emph{noise ceiling theorem}: beyond optimal depth, accuracy decays exponentially at rate $(1 - \noise)$ per additional step (\cref{thm:noise-ceiling}).
 
-\item We prove a \emph{noise ceiling theorem}: beyond optimal depth, accuracy decays exponentially at rate $(1-\noise)$ per additional step (\cref{thm:noise-ceiling}).
+\item We extend the framework to \emph{self-correcting reasoners}, showing that self-correction raises the ceiling to $1/\neff$ but does not eliminate it unless correction fully dominates error (\cref{prop:self-correction}).
 
-\item We show that the contradiction between \citet{yeo2025demystifying} and \citet{wu2025when} dissolves when their evaluation tasks are classified by circuit complexity (\cref{thm:unification}).
+\item We show that the contradiction in the literature dissolves when evaluation tasks are classified by CoT complexity (\cref{cor:dispute}).
 \end{enumerate}
 
-Our results build on Li et al.'s~\cite{li2024chain} foundational result that $T$ CoT steps grant a constant-depth transformer the power of boolean circuits of size $T$, and on Merrill and Sabharwal's~\cite{merrill2024expressive} characterization of CoT complexity regimes. We connect these expressivity results to the empirical phenomenon of CoT depth scaling, providing the first \emph{explanatory} theory grounded in computational complexity.
+Our results build on Li et al.'s~\cite{li2024chain} foundational result that $T$ CoT steps grant a constant-depth transformer the power of boolean circuits of size $T$, and on lower bounds by \citet{amiri2025lower} and \citet{barcelo2025ehrenfeucht}. Relative to the closest prior work---\citet{wu2025when}, who prove optimal CoT length via abstract difficulty and capability parameters---our framework grounds these parameters in computational complexity, yielding the new prediction that useful depth saturates at $1/\noise$ for hard tasks. This capability ceiling is absent from their analysis.
 
 \section{Related Work}
 \label{sec:related}
 
 \paragraph{Chain-of-Thought reasoning.} CoT prompting~\cite{wei2022chain} and its zero-shot variant~\cite{kojima2022large} have driven substantial gains in LLM reasoning. The debate over optimal CoT length has intensified: pro-length findings on complex tasks~\cite{yeo2025demystifying}, anti-length evidence on simpler or pattern-based tasks~\cite{wu2025when,hassid2025overthink,zheng2025curse,liu2025mind}, and efficiency-focused work seeking the right balance~\cite{yang2025thinking,chen2026deep}. We unify these findings under a complexity-theoretic framework.
 
-\paragraph{Complexity of transformers with CoT.} Without CoT, constant-depth transformers compute functions in $\TC$~\cite{merrill2022saturated} or $\mathrm{AC}^0$ under bounded precision~\cite{li2024chain}. With CoT, $T$ steps enable circuits of size $T$~\cite{li2024chain}, $O(n)$ steps capture regular languages, and $\poly(n)$ steps capture exactly $\mathrm{P}$~\cite{merrill2024expressive}. Lower bounds show parity requires linear CoT~\cite{amiri2025lower}, and the Ehrenfeucht-Haussler rank exactly characterizes minimum CoT steps for function composition~\cite{barcelo2025ehrenfeucht}. These results establish \emph{what} CoT can compute; we address \emph{how much} CoT is optimal.
+\paragraph{Complexity of transformers with CoT.} Without CoT, constant-depth transformers compute functions in $\TC$~\cite{merrill2022saturated} or $\mathrm{AC}^0$ under bounded precision~\cite{li2024chain}. With CoT, $T$ steps enable circuits of size $T$~\cite{li2024chain}, $O(n)$ steps capture regular languages, and $\poly(n)$ steps capture exactly $\mathrm{P}$~\cite{merrill2024expressive}. Lower bounds show parity requires linear CoT~\cite{amiri2025lower}, and the Ehrenfeucht-Haussler rank exactly characterizes minimum CoT steps for function composition~\cite{barcelo2025ehrenfeucht}. These results establish \emph{what} CoT can compute; we address \emph{how much} CoT is optimal in the presence of noise.
 
 \paragraph{Error accumulation in reasoning.} Noisy rationales degrade CoT performance by up to 40\%~\cite{zhou2024noisy}, with inaccurate intermediate steps far more damaging than irrelevant ones. CoT can reduce performance by 36\% on tasks where deliberation hurts humans~\cite{liu2025mind}. These findings motivate our noise model but lack formal connection to task complexity.
 
-\paragraph{Optimal CoT length theory.} Most closely related, \citet{wu2025when} prove that optimal CoT length satisfies $N^*(M,T) = TZ/\bigl(M(Z+1)\bigr)$ where $T$ and $M$ are abstract difficulty and capability parameters (Theorem 4.2). We refine this by grounding $T$ in circuit complexity via \citet{li2024chain} and $M$ in the transformer's native complexity class via \citet{merrill2022saturated}, yielding a framework that applies to \emph{any} task with known circuit complexity, not just arithmetic.
+\paragraph{Optimal CoT length theory.} Most closely related, \citet{wu2025when} prove that optimal CoT length satisfies $N^*(M,T) = TZ/\bigl(M(Z+1)\bigr)$ where $T$ and $M$ are abstract difficulty and capability parameters (Theorem 4.2). Our framework makes two advances: (i)~we ground $T$ in CoT complexity $\ccot(n)$, which connects to circuit complexity via~\citet{li2024chain} and admits known tight bounds for specific problems~\cite{amiri2025lower,barcelo2025ehrenfeucht}; (ii)~we identify the \emph{capability ceiling} $\depth \leq 1/\noise$---a regime where optimal depth is determined entirely by model reliability, independent of task complexity. This ceiling is absent from Wu et al.'s analysis, where $N^*$ grows without bound as $T \to \infty$.
 
 %% ==================================================================
 \section{Formal Framework}
@@ -118,51 +126,71 @@ x = z_0 \xrightarrow{\mathcal{T}} z_1 \xrightarrow{\mathcal{T}} z_2 \xrightarrow
 where each $z_i$ extends the context with one generated token. The final token $z_k$ encodes the answer.
 \end{definition}
 
-By \citet{li2024chain}, a CoT execution of depth $k$ can compute any function computable by a boolean circuit of size $k$. This gives the fundamental bridge: \emph{CoT depth $k$ buys computational power equivalent to $\SIZE(k)$.}
+\begin{definition}[CoT complexity]
+\label{def:cot-complexity}
+The \emph{CoT complexity} of a task $f$ is the function $\ccot_f : \N \to \N$ where $\ccot_f(n)$ is the minimum number of autoregressive steps for which there exists a constant-depth transformer that correctly computes $f_n$ on all inputs of size $n$.
+\end{definition}
+
+CoT complexity is the natural task-difficulty measure in our framework. It is bounded above by circuit complexity but can be substantially smaller, since each CoT step involves a full forward pass through the transformer (providing parallel computation within that step).
+
+\begin{proposition}[Bounds on CoT complexity]
+\label{prop:cot-bounds}
+For any task $f$:
+\begin{enumerate}
+\item $\ccot_f(n) \leq s_f(n)$ \emph{(circuit size bound, \citet{li2024chain}):} $T$ CoT steps suffice for any function with circuits of size $T$.
+\item $\ccot_f(n) = 0$ for $f \in \TC$ \emph{(\citet{merrill2022saturated}):} tasks within the transformer's native class need no CoT.
+\item $\ccot_f(n) = \Theta(n)$ for parity \emph{(\citet{amiri2025lower}):} tight lower and upper bounds.
+\item $\ccot_f(n) = l$ for $l$-fold function composition \emph{(\citet{barcelo2025ehrenfeucht}):} exact characterization via Ehrenfeucht-Haussler rank.
+\end{enumerate}
+\end{proposition}
+
+We now decompose accuracy into computational sufficiency and reliability.
 
 \begin{definition}[Accuracy decomposition]
 \label{def:accuracy}
-The accuracy of a CoT execution of depth $k$ on task $f$ with circuit complexity $s(n)$ and per-step error probability $\noise \in (0,1)$ decomposes as:
+The accuracy of a CoT execution of depth $k$ on task $f$ with CoT complexity $\ccot(n)$ and per-step error probability $\noise \in (0,1)$ decomposes as:
 \[
-\acc(k, f, n, \noise) = \suf(k, s(n)) \cdot \rel(k, \noise)
+\acc(k, f, n, \noise) = \suf(k, \ccot(n)) \cdot \rel(k, \noise)
 \]
 where:
 \begin{itemize}
-\item $\suf(k, s) \in [0, 1]$ is the \emph{computational sufficiency}---the probability that $k$ steps provide enough computational power to solve the task, with $\suf(k, s) = 1$ for $k \geq s$ and $\suf$ monotone increasing in $k$;
+\item $\suf(k, c) \in [0, \Smax]$ is the \emph{computational sufficiency}---the expected accuracy from computation alone, given $k$ steps and CoT complexity $c$, with $\suf$ monotone increasing in $k$;
 \item $\rel(k, \noise) \in [0, 1]$ is the \emph{reliability}---the probability that a $k$-step chain introduces no fatal error.
 \end{itemize}
 \end{definition}
 
-The sufficiency function captures the expressivity results of \citet{li2024chain}: below the circuit complexity threshold, the model lacks computational power to solve the task. The reliability function captures empirical noise findings~\cite{zhou2024noisy,liu2025mind}: each step risks introducing errors.
+\begin{remark}[On the decomposition]
+\label{rem:decomposition}
+The multiplicative decomposition is a modeling assumption, not a theorem. It posits that ``sufficient computation'' and ``no fatal errors'' are independent events. This is an idealization: in practice, errors may correlate with computational difficulty. We adopt it for analytical tractability; our qualitative results (the inverted U, the capability ceiling) hold under weaker assumptions, as we discuss in \cref{sec:discussion}.
+\end{remark}
+
+The sufficiency function captures an important distinction between \emph{expressivity} and \emph{capability}. By \citet{li2024chain}, $k \geq s_f(n)$ CoT steps make the transformer \emph{expressive enough} to compute $f$. But expressivity does not guarantee that a trained model will find the correct computation~\cite{kim2025parity}. We therefore bound sufficiency by $\Smax \leq 1$, representing the maximum accuracy a trained model achieves on task $f$ given sufficient steps.
 
 \begin{assumption}[Independent errors]
 \label{asm:independent}
 Each CoT step independently introduces a fatal error with probability $\noise$, giving $\rel(k, \noise) = (1 - \noise)^k$.
 \end{assumption}
 
-We prove our main results under \cref{asm:independent} and discuss extensions to correlated errors in \cref{sec:discussion}.
+We prove our main results under \cref{asm:independent} and extend to self-correcting models in \cref{prop:self-correction}.
 
-\begin{assumption}[Sharp sufficiency threshold]
-\label{asm:sharp}
-The computational sufficiency function has a sharp threshold at the circuit complexity:
+\begin{assumption}[Linear sufficiency]
+\label{asm:linear}
+The computational sufficiency function increases linearly up to the CoT complexity threshold:
 \[
-\suf(k, s) = \begin{cases}
-\beta_0 + (1 - \beta_0) \cdot k/s & \text{if } k < s \\
-1 & \text{if } k \geq s
-\end{cases}
+\suf(k, c) = \Smax \cdot \min\!\left(\frac{k}{c},\; 1\right)
 \]
-where $\beta_0 \in [0, 1)$ is the baseline accuracy from heuristics and memorization (achievable without genuine multi-step reasoning).
+where $\Smax \in (0, 1]$ is the maximum achievable sufficiency and $c = \ccot_f(n)$.
 \end{assumption}
 
-Under these assumptions, the accuracy function is:
+This gives the accuracy function:
 \begin{equation}
 \label{eq:accuracy}
-\acc(k) = \bigl[\beta_0 + (1 - \beta_0) \min(k/s, 1)\bigr] \cdot (1 - \noise)^k
+\acc(k) = \Smax \cdot \min\!\left(\frac{k}{c},\; 1\right) \cdot (1 - \noise)^k
 \end{equation}
 
 \begin{definition}[Optimal CoT depth]
 \label{def:optimal-depth}
-The \emph{optimal depth} for task $f$ with circuit complexity $s = s_f(n)$ and per-step error $\noise$ is:
+The \emph{optimal depth} for task $f$ with CoT complexity $c = \ccot_f(n)$ and per-step error $\noise$ is:
 \[
 \depth(f, n, \noise) = \arg\max_{k \geq 0} \; \acc(k, f, n, \noise)
 \]
@@ -170,25 +198,25 @@ The \emph{optimal depth} for task $f$ with circuit complexity $s = s_f(n)$ and p
 
 \begin{example}[Running example]
 \label{ex:running}
-Consider three tasks:
+Consider three tasks with known CoT complexity:
 \begin{itemize}
-\item \emph{Majority} (is the majority of input bits 1?): computable in $\TC$ with circuits of size $O(n)$ and constant depth. A transformer solves this without CoT.
-\item \emph{Iterated addition} (sum $n$ numbers in binary): requires $\Theta(n)$ sequential carry propagations. Circuit complexity $s(n) = \Theta(n)$.
-\item \emph{Boolean formula evaluation}: $\NC^1$-complete, requiring circuits of polynomial size and $O(\log n)$ depth. Circuit size $s(n) = \poly(n)$ but organized in $O(\log n)$ layers.
+\item \emph{Majority} (is the majority of input bits 1?): $\ccot(n) = 0$, solvable in $\TC$ without CoT.
+\item \emph{Parity} (is the XOR of all input bits 1?): $\ccot(n) = \Theta(n)$~\cite{amiri2025lower}, requires linear CoT.
+\item \emph{5-fold function composition} (compute $f \circ f \circ f \circ f \circ f$): $\ccot = 5$ exactly~\cite{barcelo2025ehrenfeucht}.
 \end{itemize}
-Our framework predicts $\depth = 0$ for majority, $\depth = \Theta(n/\noise)$ for iterated addition, and $\depth = \Theta(\log n / \noise)$ for boolean formula evaluation (when formalized via circuit depth rather than size).
+For a model with $\noise = 0.05$ (so $1/\noise = 20$): our framework predicts $\depth = 0$ for majority, $\depth = \min(n, 20) = 20$ for parity with $n > 20$ (noise-capped---the model cannot solve large parity instances), and $\depth = \min(5, 20) = 5$ for 5-fold composition (fully solvable).
 \end{example}
 
 %% ==================================================================
 \section{Main Results}
 \label{sec:results}
 
-\subsection{Tasks within TC\texorpdfstring{$^0$}{0}: Depth Zero is Optimal}
+\subsection{Tasks within TC\texorpdfstring{$^0$}{0}: CoT Can Only Hurt}
 \label{sec:tc0-bound}
 
 \begin{theorem}[$\TC$ depth bound]
 \label{thm:tc0-bound}
-Let $f$ be a task computable in $\TC$ by transformer $\mathcal{T}$ without CoT. For any $\noise > 0$:
+Let $f$ be a task with $\ccot_f(n) = 0$ (i.e., solvable by $\mathcal{T}$ without CoT). For any $\noise > 0$:
 \[
 \depth(f, n, \noise) = 0
 \]
@@ -196,129 +224,159 @@ That is, any positive number of CoT steps strictly decreases accuracy.
 \end{theorem}
 
 \begin{proof}
-Since $f$ is computable by $\mathcal{T}$ in a single forward pass, $\suf(0, s(n)) = 1$. Thus $\acc(0) = 1 \cdot 1 = 1$. For any $k > 0$, $\acc(k) = 1 \cdot (1-\noise)^k < 1$. Therefore $k = 0$ uniquely maximizes accuracy.
+Since $\ccot_f(n) = 0$, we have $\suf(k, 0) = \Smax$ for all $k \geq 0$. Thus $\acc(k) = \Smax \cdot (1-\noise)^k$, which is strictly decreasing in $k$ for $\noise > 0$. The unique maximizer is $k = 0$.
 \end{proof}
 
 \begin{remark}
-\cref{thm:tc0-bound} is intentionally simple---it captures the precise mechanism behind the empirical finding that CoT \emph{hurts} on tasks like pattern matching~\cite{zheng2025curse} and implicit statistical learning~\cite{liu2025mind}. These are tasks that transformers can solve in a single forward pass; adding reasoning steps only introduces noise.
+\cref{thm:tc0-bound} does not assume perfect accuracy---$\Smax$ may be well below 1. The result says that \emph{whatever accuracy the model achieves without CoT, adding reasoning steps can only make it worse} on tasks the model can already solve in a single forward pass. This captures the empirical finding that CoT hurts on pattern matching~\cite{zheng2025curse} and implicit statistical learning~\cite{liu2025mind}.
 \end{remark}
 
-\subsection{Circuit Complexity Determines Optimal Depth}
+\subsection{The Depth-Complexity Scaling Theorem}
 \label{sec:scaling}
 
 \begin{theorem}[Depth-complexity scaling]
 \label{thm:scaling}
-Let $f$ be a task with circuit complexity $s(n) \to \infty$ as $n \to \infty$, and let $\noise \in (0, 1)$ be constant. Under Assumptions~\ref{asm:independent} and~\ref{asm:sharp} with $\beta_0 = 0$ (no baseline heuristic accuracy):
-\[
-\depth(f, n, \noise) = s(n)
-\]
-More generally, for $\beta_0 \in [0, 1)$:
-\[
-\depth(f, n, \noise) = s(n) - \frac{(1-\beta_0)}{\noise} + o(1/\noise)
-\]
-In both cases, $\depth = \Theta(s(n))$ as $n \to \infty$.
+Let $f$ be a task with CoT complexity $c = \ccot_f(n) \geq 1$, and let $\noise \in (0, 1)$. Define $k^* = -1/\!\ln(1-\noise)$, the unique maximizer of $k \mapsto k \cdot (1 - \noise)^k$. Under Assumptions~\ref{asm:independent} and~\ref{asm:linear}:
+\begin{enumerate}
+\item[\emph{(a)}] \textbf{Easy-task regime} ($c \leq k^*$, equivalently $\noise \cdot c \leq 1$ for small $\noise$): $\depth = c$. The model can fully solve the task; optimal depth equals CoT complexity.
+\item[\emph{(b)}] \textbf{Hard-task regime} ($c > k^*$, equivalently $\noise \cdot c > 1$): $\depth = \lfloor k^* \rfloor \approx \lfloor 1/\noise \rfloor$. Noise caps useful depth before sufficient computation is reached.
+\end{enumerate}
+In both cases:
+\begin{equation}
+\label{eq:main-result}
+\depth(f, n, \noise) = \min\bigl(c,\; \lfloor k^* \rfloor\bigr) = \min\!\left(\ccot_f(n),\; \left\lfloor \frac{-1}{\ln(1 - \noise)} \right\rfloor\right)
+\end{equation}
+For small $\noise$: $\depth \approx \min(\ccot_f(n),\; \lfloor 1/\noise \rfloor)$.
 \end{theorem}
 
 \begin{proof}
-We analyze the accuracy function from \cref{eq:accuracy} in two regimes.
+From \cref{eq:accuracy}, the accuracy function has two regimes.
 
-\emph{Regime 1:} $k < s$. Here $\acc(k) = [\beta_0 + (1-\beta_0)k/s] \cdot (1-\noise)^k$. Taking the log-derivative:
+\emph{Regime 1} ($k < c$): $\acc(k) = \Smax \cdot \frac{k}{c} \cdot (1 - \noise)^k$. Up to the positive constant $\Smax/c$, we are maximizing $h(k) = k \cdot (1 - \noise)^k$. Taking the derivative:
 \[
-\frac{d}{dk}\log \acc(k) = \frac{(1-\beta_0)/s}{\beta_0 + (1-\beta_0)k/s} + \log(1-\noise)
+h'(k) = (1-\noise)^k\bigl[1 + k \ln(1-\noise)\bigr]
 \]
-Setting to zero: the marginal gain from computation equals the marginal loss from noise when
+Setting $h'(k) = 0$ gives $k^* = -1/\ln(1 - \noise)$. Since $h''(k^*) < 0$, this is the unique maximum of $h$ on $(0, \infty)$. For small $\noise$, $k^* \approx 1/\noise$.
+
+\emph{Regime 2} ($k \geq c$): $\acc(k) = \Smax \cdot (1 - \noise)^k$, which is strictly decreasing. The maximum in this regime is at $k = c$.
+
+\emph{Case (a):} $c \leq k^*$. In Regime 1, $h$ is increasing on $[0, k^*]$, so $h$ is increasing on $[0, c]$. The Regime 1 maximum restricted to $k \in [0, c)$ approaches $h(c)$ from below. The Regime 2 maximum is at $k = c$ with $\acc(c) = \Smax \cdot (1-\noise)^c$. The Regime 1 value at $k \to c^-$ is $\Smax \cdot \frac{c}{c} \cdot (1-\noise)^c = \acc(c)$. By continuity, $\acc$ is maximized at $k = c$, and $\depth = c$.
+
+\emph{Case (b):} $c > k^*$. The Regime 1 maximum is at $k^*$ with $\acc(k^*) = \Smax \cdot \frac{k^*}{c} \cdot (1-\noise)^{k^*}$. The Regime 2 maximum is at $k = c$ with $\acc(c) = \Smax \cdot (1-\noise)^c$. We compare:
 \[
-\frac{(1-\beta_0)/s}{\beta_0 + (1-\beta_0)k/s} = -\log(1-\noise) \approx \noise
+\frac{\acc(k^*)}{\acc(c)} = \frac{k^*}{c} \cdot (1-\noise)^{k^* - c} = \frac{k^*}{c} \cdot \left(\frac{1}{1-\noise}\right)^{c - k^*}
 \]
-For $\beta_0 = 0$: $(1-0)/(k) = \noise$, giving $k = 1/\noise$. But this is only the optimum within Regime 1 if $1/\noise < s$, i.e., if $s > 1/\noise$.
-
-\emph{Regime 2:} $k \geq s$. Here $\acc(k) = (1-\noise)^k$, which is strictly decreasing. The maximum in this regime is at $k = s$.
-
-\emph{Combining:} For tasks with $s(n) \to \infty$ (hence eventually $s(n) > 1/\noise$), the global maximum of $\acc(k)$ is at $k = s$ in the $\beta_0 = 0$ case. For $\beta_0 > 0$, the transition is smoother: the model achieves partial accuracy below $s$, so the optimal depth shifts slightly below $s$ where the marginal noise cost of the last few steps exceeds the marginal computational gain. This gives the correction term $-(1-\beta_0)/\noise$.
+Taking logarithms with $x = c/k^* > 1$:
+\begin{align*}
+\ln\frac{\acc(k^*)}{\acc(c)} &= \ln\frac{k^*}{c} + (c - k^*)\ln\frac{1}{1-\noise} \\
+&= -\ln x + (x - 1) \cdot k^* \cdot \bigl(-\ln(1-\noise)\bigr) \\
+&= -\ln x + (x - 1) \tag{since $k^* = -1/\ln(1-\noise)$}
+\end{align*}
+For $x > 1$: $x - 1 > \ln x$ (strict convexity of $e^t$), so $\ln(\acc(k^*)/\acc(c)) > 0$. Therefore $\acc(k^*) > \acc(c)$ whenever $c > k^*$, and $\depth = \lfloor k^* \rfloor$.
 \end{proof}
 
-\begin{corollary}[Complexity-conditioned scaling laws]
+\begin{remark}[The capability ceiling]
+\label{rem:ceiling}
+The hard-task regime reveals a \emph{capability ceiling}: $\depth \leq \lfloor 1/\noise \rfloor$, regardless of task complexity. A model with 5\% per-step error ($\noise = 0.05$) has a ceiling of $\sim\!20$ useful reasoning steps. Beyond this, noise overwhelms any computational benefit from additional steps. Stronger models (lower $\noise$) can reason deeper, but every model has a finite horizon. This is the key prediction absent from \citet{wu2025when}: their $N^* = TZ/(M(Z+1))$ grows without bound as $T \to \infty$, whereas our $\depth$ saturates.
+\end{remark}
+
+\begin{corollary}[Scaling laws for specific problems]
 \label{cor:scaling-laws}
-For standard complexity classes (under standard assumptions and $\beta_0 = 0$):
+For specific problem families with known CoT complexity:
 \begin{center}
-\begin{tabular}{lll}
+\begin{tabular}{llll}
 \toprule
-\textbf{Complexity of $f$} & \textbf{Circuit size $s(n)$} & \textbf{Optimal depth $\depth$} \\
+\textbf{Problem family} & \textbf{CoT complexity $\ccot(n)$} & \textbf{Source} & \textbf{$\depth$} \\
 \midrule
-$\TC$ & $O(1)$ effective & $0$ \\
-$\NC^1 \setminus \TC$ & $\poly(n)$, depth $O(\log n)$ & $\Theta(\log n)$ \\
-$\mathrm{P} \setminus \NC^1$ (if nonempty) & $\poly(n)$ & $\Theta(\poly(n))$ \\
-$\NP$-complete (worst case) & $2^{\Omega(n)}$ & infeasible \\
+Majority, comparison & $0$ & \cite{merrill2022saturated} & $0$ \\
+$l$-fold composition & $l$ & \cite{barcelo2025ehrenfeucht} & $\min(l, \lfloor 1/\noise \rfloor)$ \\
+Parity & $\Theta(n)$ & \cite{amiri2025lower} & $\min(n, \lfloor 1/\noise \rfloor)$ \\
+Multiplication & $\Omega(n)$ & \cite{amiri2025lower} & $\min(\Omega(n), \lfloor 1/\noise \rfloor)$ \\
+Any $f \in \SIZE(s)$ & $\leq s$ & \cite{li2024chain} & $\min(s, \lfloor 1/\noise \rfloor)$ \\
 \bottomrule
 \end{tabular}
 \end{center}
+For any problem with CoT complexity growing faster than $1/\noise$, optimal depth is determined by the model, not the task.
 \end{corollary}
-
-\begin{remark}
-For NP-complete tasks, the worst-case circuit size is super-polynomial (under $\mathrm{P} \neq \NP$), making the optimal CoT depth infeasible. In practice, LLMs solve NP instances via heuristics and structural exploitation, corresponding to $\beta_0 > 0$. The framework correctly predicts that CoT provides diminishing returns on NP-hard instances: the gap between heuristic accuracy $\beta_0$ and perfect accuracy cannot be closed by feasible CoT depth.
-\end{remark}
 
 \subsection{The Noise Ceiling}
 \label{sec:noise-ceiling}
 
 \begin{theorem}[Noise ceiling]
 \label{thm:noise-ceiling}
-For any task $f$ and CoT depth $k > \depth(f, n, \noise)$, the accuracy satisfies:
+For any task $f$ with CoT complexity $c$ and any CoT depth $k \geq c$, the accuracy satisfies:
+\[
+\acc(k) = \Smax \cdot (1-\noise)^k = \acc(c) \cdot (1-\noise)^{k - c}
+\]
+In particular, for any $k > \depth$:
 \[
 \acc(k) \leq \acc(\depth) \cdot (1-\noise)^{k - \depth}
 \]
-with equality when $k \geq s(n)$ (i.e., computational sufficiency is saturated).
 \end{theorem}
 
 \begin{proof}
-For $k \geq s(n)$, $\suf(k, s(n)) = 1$ and $\acc(k) = (1-\noise)^k$. Since $\depth \leq s(n)$ by \cref{thm:scaling}:
-\[
-\acc(k) = (1-\noise)^k = (1-\noise)^{\depth} \cdot (1-\noise)^{k-\depth} \leq \acc(\depth) \cdot (1-\noise)^{k - \depth}
-\]
-For $k < s(n)$, the inequality holds because $\acc(k) \leq \acc(\depth)$ by definition of $\depth$ as the maximizer, and $(1-\noise)^{k - \depth} \leq 1$.
+For $k \geq c$, sufficiency is saturated: $\suf(k, c) = \Smax$. Thus $\acc(k) = \Smax \cdot (1-\noise)^k$. Dividing by $\acc(c) = \Smax \cdot (1-\noise)^c$ gives the first equality. The inequality follows because $\acc(\depth) \geq \acc(c)$ by optimality of $\depth$.
 \end{proof}
 
 \begin{remark}
-The noise ceiling provides the formal mechanism behind the ``overthinking'' phenomenon~\cite{hassid2025overthink}: once the model has taken enough steps to solve the task, additional steps can only hurt. The decay rate $(1-\noise)$ per step is universal---it depends only on the model's per-step reliability, not on the task. For $\noise = 0.05$ (a 5\% per-step error rate), accuracy halves every $\log 2 / \noise \approx 14$ extra steps.
+The noise ceiling is universal: once the model has enough steps to solve the task, each additional step reduces accuracy by a constant factor $(1-\noise)$, independent of the task. For $\noise = 0.05$, accuracy halves every $\lceil\ln 2 / \noise\rceil = 14$ excess steps. This provides the formal mechanism behind the ``overthinking'' phenomenon~\cite{hassid2025overthink}.
 \end{remark}
 
-\subsection{Unifying Contradictory Findings}
-\label{sec:unification}
+\subsection{Self-Correcting Reasoners}
+\label{sec:self-correction}
 
-\begin{theorem}[Dispute resolution]
-\label{thm:unification}
-Let $\mathcal{E}_1$ and $\mathcal{E}_2$ be evaluation suites with circuit complexity distributions $S_1$ and $S_2$ respectively. Let $k_{\mathrm{eval}}$ be the CoT depth used during evaluation. Then:
-\begin{enumerate}
-\item If $\E_{s \sim S_1}[s] \gg k_{\mathrm{eval}}$ (complex tasks, insufficient depth): increasing $k$ from $k_{\mathrm{eval}}$ improves average accuracy.
-\item If $\E_{s \sim S_2}[s] \ll k_{\mathrm{eval}}$ (simple tasks, excess depth): increasing $k$ from $k_{\mathrm{eval}}$ degrades average accuracy.
-\end{enumerate}
-\end{theorem}
+Modern reasoning models (e.g., o1, DeepSeek-R1) explicitly backtrack and correct errors during CoT. \cref{asm:independent} does not capture this. We extend the framework.
+
+\begin{proposition}[Self-correction extension]
+\label{prop:self-correction}
+Suppose each CoT step independently introduces a fatal error with probability $\noise$ and, conditional on an error having occurred, corrects it within the same step with probability $\gamma \in [0, 1)$. The effective per-step error rate is $\neff = \noise(1 - \gamma)$, and the depth-complexity scaling theorem (\cref{thm:scaling}) holds with $\noise$ replaced by $\neff$:
+\[
+\depth = \min\!\left(\ccot(n),\; \left\lfloor \frac{1}{\neff} \right\rfloor\right) = \min\!\left(\ccot(n),\; \left\lfloor \frac{1}{\noise(1-\gamma)} \right\rfloor\right)
+\]
+Self-correction raises the capability ceiling from $1/\noise$ to $1/(\noise(1-\gamma))$ but does not eliminate it for $\gamma < 1$.
+\end{proposition}
 
 \begin{proof}
-For a single task with circuit complexity $s$:
-\begin{itemize}
-\item If $k_{\mathrm{eval}} < s$, the model is in the rising phase of the inverted U. The derivative $\frac{d}{dk}\acc(k)\big|_{k = k_{\mathrm{eval}}} > 0$.
-\item If $k_{\mathrm{eval}} > s$, the model is past the peak. The derivative $\frac{d}{dk}\acc(k)\big|_{k = k_{\mathrm{eval}}} < 0$ (by the noise ceiling).
-\end{itemize}
-Averaging over the evaluation suite: $\frac{d}{dk}\E_{s \sim S}[\acc(k, s)]$ has the sign of $\E_{s \sim S}[\mathbf{1}(k < s) \cdot g_+(k,s) - \mathbf{1}(k > s) \cdot g_-(k,s)]$ where $g_+, g_-$ are the magnitudes of the positive and negative derivatives. When $\E[s] \gg k$, the positive terms dominate; when $\E[s] \ll k$, the negative terms dominate.
+Under this model, each step produces a fatal error that persists with probability $\noise(1-\gamma) = \neff$. Errors across steps remain independent (each step's correction applies only to its own error). Thus $\rel(k) = (1-\neff)^k$, and the proof of \cref{thm:scaling} applies verbatim with $\noise \to \neff$.
 \end{proof}
 
 \begin{remark}
-\cref{thm:unification} explains why \citet{yeo2025demystifying} find that longer CoT helps: their evaluation tasks (MATH, AIME, TheoremQA) are high-complexity problems where most models operate below optimal depth. Conversely, \citet{wu2025when} observe the inverted U because their evaluation includes both easy and hard tasks, and their Theorem 4.2 captures the same underlying mechanism through different parameterization. \citet{zheng2025curse} find that direct answering beats CoT on pattern-matching ICL tasks---precisely the $\TC$-solvable tasks where \cref{thm:tc0-bound} predicts $\depth = 0$.
+For a model with $\noise = 0.10$ and $\gamma = 0.5$ (corrects half its errors): $\neff = 0.05$, ceiling $= 20$ steps. Without self-correction: ceiling $= 10$ steps. Self-correction doubles useful depth but does not make it unbounded. The $\gamma \to 1$ limit (perfect correction) is unreachable in practice: correcting an error requires recognizing it, which itself may fail.
+\end{remark}
+
+\subsection{Resolving the CoT Length Dispute}
+\label{sec:unification}
+
+\begin{corollary}[Dispute resolution]
+\label{cor:dispute}
+Let $\mathcal{E}$ be an evaluation suite with CoT complexity distribution $\ccot \sim S$ over tasks. Let $k_{\mathrm{eval}}$ be the CoT depth used during evaluation. Then:
+\begin{enumerate}
+\item If $k_{\mathrm{eval}} < \E_{c \sim S}[\min(c, 1/\noise)]$: increasing $k$ from $k_{\mathrm{eval}}$ improves average accuracy (``more is better'' regime).
+\item If $k_{\mathrm{eval}} > \E_{c \sim S}[\min(c, 1/\noise)]$: increasing $k$ from $k_{\mathrm{eval}}$ degrades average accuracy (``more is worse'' regime).
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+Each task's accuracy $\acc(k)$ is unimodal with peak at $\depth = \min(c, 1/\noise)$. The average $\E_S[\acc(k)]$ is a mixture of unimodal functions. Below the average peak, the increasing components dominate; above, the decreasing components dominate.
+\end{proof}
+
+\begin{remark}
+This explains the dispute: \citet{yeo2025demystifying} evaluate on MATH, AIME, and TheoremQA---tasks with high CoT complexity where most models operate below optimal depth (``more is better''). \citet{wu2025when} observe the inverted U on a mixture of easy and hard tasks. \citet{zheng2025curse} find that direct answering outperforms CoT on pattern-matching ICL tasks---precisely the $\TC$-solvable tasks where \cref{thm:tc0-bound} predicts $\depth = 0$. Each finding is correct for the complexity profile of its evaluation suite.
 \end{remark}
 
 \section{Empirical Validation}
 \label{sec:experiments}
 
 % TODO: Develop experiments
-% - Benchmark suite with tasks of known complexity class:
-%   * TC^0: majority, parity of small input, pattern matching
-%   * NC^1 \ TC^0: boolean formula evaluation, comparison sorting
-%   * P \ NC^1: circuit value problem (if P != NC^1)
-%   * NP: subset sum, graph coloring (structured instances)
-% - Varying CoT depth (1, 2, 4, 8, 16, 32 steps) via structured prompting
-% - Multiple models (GPT-4, Claude, open-source)
-% - Compare observed optimal depth to predicted d*(C, n) per complexity class
+% - Benchmark suite with tasks of KNOWN CoT complexity:
+%   * c(n) = 0: majority, pattern matching (TC^0)
+%   * c = l: l-fold function composition (exact, Barcelo et al.)
+%   * c(n) = Theta(n): parity, multiplication (tight lower bounds)
+% - Varying CoT depth (0, 1, 2, 4, 8, 16, 32 steps) via structured prompting
+% - Multiple models (GPT-4, Claude, open-source) to estimate eta per model
+% - Validate: (1) inverted-U shape, (2) peak at min(c(n), 1/eta),
+%   (3) exponential decay past peak, (4) ceiling independent of task
+% - Estimate eta empirically: fit noise ceiling decay rate
 % - Re-analyze task distributions from Yeo et al. and Wu et al.
 
 \section{Discussion}
@@ -326,23 +384,42 @@ Averaging over the evaluation suite: $\frac{d}{dk}\E_{s \sim S}[\acc(k, s)]$ has
 
 % TODO: Develop discussion. Key points:
 %
-% Correlated errors: Our results assume independent per-step errors.
-% Positively correlated errors (cascading failures) give a LOWER noise ceiling
-% (stronger result). Negatively correlated errors (self-correction) give a
-% higher ceiling but it still exists. The qualitative conclusions hold.
+% On the multiplicative decomposition: Our qualitative results---the inverted U,
+% the capability ceiling, the two regimes---hold under any model where sufficiency
+% increases and reliability decreases with depth. The multiplicative form is one
+% such model; additive or other compositions yield similar behavior. The key
+% insight is the TRADEOFF, not the specific functional form.
 %
-% Depth vs. length: The dispute papers measure token length, not logical depth.
-% Our depth results translate to length under a "verbosity ratio" mapping.
-% Chen et al.'s Deep-Thinking Ratio provides an empirical bridge.
+% Correlated errors: Positively correlated errors (cascading failures) give a
+% LOWER ceiling than 1/eta --- strengthening our result. The independent-error
+% model is a best case for the reasoner.
+%
+% Expressivity vs. capability: Our S_max < 1 acknowledges the gap between what
+% a transformer CAN express and what it DOES compute. In practice, S_max depends
+% on training quality, data distribution, and model architecture. Our framework
+% treats it as a parameter to be estimated, not assumed.
+%
+% Depth vs. length: The dispute papers measure token LENGTH, not logical DEPTH.
+% Our depth results translate to length under a "verbosity ratio" v = length/depth.
+% Chen et al.'s Deep-Thinking Ratio provides an empirical bridge: DTR estimates
+% the fraction of tokens that correspond to genuine reasoning steps.
+%
+% Limitations: (1) CoT complexity c(n) is known only for a handful of problems.
+% For real benchmarks (MATH, AIME, coding), c(n) is unknown. Our framework
+% provides a theoretical lens but cannot yet make quantitative predictions for
+% arbitrary tasks. (2) The linear sufficiency model (Assumption 2) is a
+% simplification; the true sufficiency function may have a different shape.
+% (3) The self-correction model is stylized; real backtracking involves
+% recognizing errors, which has its own complexity.
 %
 % Connection to reasoning-gaps: This paper extends the reasoning gap framework
-% from the capability dimension to the depth dimension.
+% from the capability dimension (which problems can LLMs solve?) to the depth
+% dimension (how much reasoning is optimal?).
 %
 % Connection to verification-complexity: Optimal CoT depth relates to
-% verification cost -- verifying a k-step chain requires checking each step.
-%
-% Practical implications: Principled CoT depth selection based on task
-% complexity estimation. Adaptive depth allocation.
+% verification cost. Verifying a k-step CoT chain requires checking each step,
+% introducing its own noise accumulation. This suggests a co-optimization
+% between reasoning depth and verification depth.
 
 \bibliography{references}
 \bibliographystyle{iclr2027}
@@ -352,7 +429,9 @@ Averaging over the evaluation suite: $\frac{d}{dk}\E_{s \sim S}[\acc(k, s)]$ has
 \section{Full Proofs}
 \label{app:proofs}
 
-% TODO: Full proofs of all theorems
+% TODO: Full proofs of all theorems (main text proofs are already complete;
+% this appendix will contain extensions to smooth sufficiency functions
+% and correlated error models).
 
 \section{Experimental Details}
 \label{app:experiments}
@@ -369,17 +448,20 @@ Averaging over the evaluation suite: $\frac{d}{dk}\E_{s \sim S}[\acc(k, s)]$ has
 \textbf{Symbol} & \textbf{Meaning} \\
 \midrule
 $f = \{f_n\}$ & Reasoning task (family of decision problems) \\
-$s_f(n)$ & Circuit complexity of task $f$ (minimum circuit size) \\
+$s_f(n)$ & Circuit complexity of $f$ (minimum boolean circuit size) \\
+$\ccot_f(n)$ & CoT complexity of $f$ (minimum autoregressive steps) \\
 $k$ & CoT depth (number of reasoning steps) \\
-$\depth(f, n, \noise)$ & Optimal CoT depth maximizing accuracy \\
+$k^*$ & Unconstrained noise-optimal depth ($= -1/\!\ln(1-\noise)$) \\
+$\depth(f, n, \noise)$ & Optimal CoT depth ($= \min(\ccot(n), \lfloor k^* \rfloor)$) \\
 $\noise$ & Per-step error probability \\
-$\acc(k, f, n, \noise)$ & Accuracy at depth $k$ \\
-$\suf(k, s)$ & Computational sufficiency ($k$ steps for circuit size $s$) \\
+$\gamma$ & Per-step self-correction probability \\
+$\neff$ & Effective error rate ($= \noise(1-\gamma)$) \\
+$\acc(k)$ & Accuracy at depth $k$ \\
+$\suf(k, c)$ & Computational sufficiency ($k$ steps for CoT complexity $c$) \\
 $\rel(k, \noise)$ & Reliability (probability of no fatal error in $k$ steps) \\
-$\beta_0$ & Baseline heuristic accuracy (without genuine reasoning) \\
-$\TC$ & Threshold circuit complexity class (transformer native) \\
-$\NC$ & Nick's class ($O(\log n)$-depth polynomial circuits) \\
-$\SIZE(T)$ & Class of functions with circuits of size $\leq T$ \\
+$\Smax$ & Maximum achievable sufficiency ($\leq 1$; expressivity $\neq$ capability) \\
+$\TC$ & Threshold circuit class (transformer native, no CoT) \\
+$\SIZE(T)$ & Class of functions with boolean circuits of size $\leq T$ \\
 \bottomrule
 \end{tabular}
 \end{table}

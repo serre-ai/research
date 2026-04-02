@@ -2,21 +2,21 @@ project: optimal-cot-depth
 title: "On the Optimal Depth of Chain-of-Thought: A Complexity-Theoretic Analysis"
 status: active
 phase: research
-confidence: 0.4
+confidence: 0.6
 created: "2026-04-01"
 updated: "2026-04-01T18:00:00Z"
 venue: "ICLR 2027"
 
 collaborators: []
 
-current_focus: "Formal framework and main theorems drafted. Next: tighten proofs, extend to smooth sufficiency model, develop experiments"
+current_focus: "Core theory complete after major review. Main result corrected to d* = min(c(n), 1/η) with capability ceiling. Next: empirical validation."
 
 next_steps:
-  - "Tighten Theorem 2 proof: handle smooth sufficiency transition, prove convergence of correction term"
-  - "Extend to correlated errors: prove noise ceiling holds under positively correlated errors (cascading), analyze self-correction regime"
-  - "Formalize the depth-vs-length bridge: define verbosity ratio, prove depth results transfer to length"
-  - "Design complexity-controlled benchmark: tasks with known circuit complexity for empirical validation"
-  - "Re-analyze Yeo et al. and Wu et al. task distributions to classify by circuit complexity"
+  - "Design experiments (DW-430): benchmark with tasks of known c(n) — parity, l-fold composition, majority"
+  - "Estimate η per model empirically: fit exponential decay rate past the accuracy peak"
+  - "Validate capability ceiling: show d* saturates at 1/η across task families"
+  - "Write Discussion section: multiplicative decomposition justification, correlated errors, depth-vs-length bridge"
+  - "Appendix: prove qualitative robustness under smooth/sigmoidal sufficiency functions"
 
 progress:
   literature_review:
@@ -24,10 +24,10 @@ progress:
     notes: "30+ papers surveyed. See literature/01-survey-cot-depth.md. Key finding: Wu et al. (arXiv:2502.07266) already proves inverted-U with Theorem 4.2 using abstract parameters — our contribution is grounding this in complexity classes. Li et al. (ICLR 2024) give T steps = circuits of size T. Amiri et al. (ICML 2025) give lower bounds. Barcelo et al. (ICML 2025) give exact characterization via EH rank."
   formal_framework:
     status: substantially_complete
-    notes: "Definitions 1-5 (task, CoT execution, accuracy decomposition, sufficiency/reliability, optimal depth). Two assumptions (independent errors, sharp sufficiency). Accuracy function derived. See paper/main.tex Section 3 and proofs/01-formal-framework.md."
+    notes: "Major revision after self-review. Introduced CoT complexity c(n) replacing circuit size as primary parameter. S_max ≤ 1 (expressivity ≠ capability). Accuracy decomposition acknowledged as modeling assumption. See paper/main.tex Section 3."
   complexity_bounds:
     status: substantially_complete
-    notes: "5 theorems drafted: TC^0 bound (Thm 1, proved), depth-complexity scaling (Thm 2, proved under sharp threshold), noise ceiling (Thm 3, proved), scaling laws corollary (Cor 1), dispute resolution (Thm 4, proved). Need: smooth threshold extension, correlated errors discussion."
+    notes: "CORRECTED main result: d* = min(c(n), ⌊1/η⌋), NOT d* = Θ(s(n)). Proof is tight (uses x-1 > ln(x) for x > 1). Reveals capability ceiling at 1/η — new prediction absent from Wu et al. TC^0 bound, noise ceiling, self-correction extension (η_eff = η(1-γ)), dispute resolution corollary all proved. Corollary table uses known c(n) bounds from Amiri/Barcelo/Li."
   empirical_validation:
     status: not_started
     notes: "Benchmark suite with tasks of known complexity class, varying CoT depth (1-32 steps). ~$300 budget"
@@ -62,6 +62,18 @@ decisions_made:
   - date: 2026-04-01
     decision: "Prove theorems under sharp sufficiency threshold first, extend to smooth later"
     rationale: "Sharp threshold (S jumps to 1 at k=s) gives clean proofs and the right qualitative behavior. Smooth threshold is more realistic but harder to analyze. Strategy: prove main results under sharp assumption, then show robustness under smooth models as extensions. This follows Wu et al.'s approach — their Theorem 4.2 also uses a specific functional form."
+  - date: 2026-04-01
+    decision: "CORRECTED main theorem: d* = min(c(n), 1/η), not d* = Θ(s(n))"
+    rationale: "Self-review found Theorem 2 was wrong. With acc(k) = (k/c)·(1-η)^k, the maximum is at k = 1/η, NOT k = c. For hard tasks (c > 1/η), noise kills accuracy before enough computation accumulates. The correct result reveals a capability ceiling at 1/η — genuinely new vs. Wu et al. This is actually a STRONGER result: it predicts that no task benefits from more than 1/η steps, regardless of difficulty."
+  - date: 2026-04-01
+    decision: "Replace circuit size s(n) with CoT complexity c(n) as primary parameter"
+    rationale: "Circuit SIZE conflates with circuit DEPTH. NC^1 has poly(n) SIZE but O(log n) DEPTH. Using c(n) (minimum CoT steps) avoids this confusion and is the natural quantity. c(n) ≤ s(n) by Li et al., and tight bounds on c(n) exist for specific problems (Amiri, Barcelo)."
+  - date: 2026-04-01
+    decision: "Demote dispute resolution from theorem to corollary"
+    rationale: "'If tasks are hard, more CoT helps; if easy, more hurts' follows from ANY inverted-U model. It's not a deep result requiring our specific complexity-theoretic framework. Demoting to corollary is more honest about what's novel (the capability ceiling, not the existence of the inverted U)."
+  - date: 2026-04-01
+    decision: "Add S_max ≤ 1 and acknowledge decomposition as modeling assumption"
+    rationale: "Expressivity ≠ capability (Kim & Suzuki ICLR 2025). Never assume perfect accuracy even for TC^0 tasks. The multiplicative accuracy decomposition is a modeling choice — acknowledging it preempts the reviewer objection and is more intellectually honest."
 
 key_references:
   - "Wu et al. 2025 (arXiv:2502.07266) — CLOSEST PRIOR WORK. Theorem 4.2 gives optimal CoT length via abstract parameters. We must differentiate."

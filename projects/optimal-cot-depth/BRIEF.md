@@ -24,10 +24,10 @@ Recent work on Chain-of-Thought (CoT) reasoning in LLMs has produced contradicto
 5. Connect to the **reasoning gap framework** from our prior work, extending it from the capability dimension (which problems can LLMs solve?) to the depth dimension (how much reasoning is optimal?).
 
 ## Hypotheses
-- **H1**: For tasks solvable within the transformer's native complexity class (TC^0), optimal CoT depth is O(1) — a constant number of reasoning steps suffices, and additional steps introduce noise without benefit. Note: this is a strict subset of P; many P tasks (e.g., long addition) require CoT precisely because they exceed TC^0.
-- **H2**: For tasks whose verification is in P but whose generation requires super-constant depth (NP-complete problems under standard assumptions), optimal CoT depth scales with input size — more complex instances genuinely benefit from longer reasoning chains.
-- **H3**: Beyond a complexity-determined threshold, additional CoT steps degrade performance. The degradation follows a predictable curve governed by per-step error accumulation rate and task difficulty.
-- **H4**: The contradiction between existing CoT length papers dissolves when controlling for the computational complexity class of their evaluation tasks. Each paper's findings are consistent with the unified framework.
+- **H1**: For tasks solvable within the transformer's native complexity class (TC^0), optimal CoT depth is 0 — any CoT steps introduce noise without benefit, regardless of baseline accuracy level.
+- **H2 (Easy-task regime)**: For tasks with CoT complexity c(n) ≤ 1/η (where η is per-step error), optimal depth equals c(n) — the model can fully solve the task, and depth tracks complexity.
+- **H3 (Hard-task regime / Capability ceiling)**: For tasks with CoT complexity c(n) > 1/η, optimal depth saturates at 1/η regardless of task complexity. Noise caps useful depth before sufficient computation is reached. This capability ceiling is the key novel prediction.
+- **H4**: The contradiction between existing CoT length papers dissolves when controlling for the CoT complexity of their evaluation tasks relative to each model's capability ceiling.
 
 ## Methodology
 1. **Literature survey**: Survey CoT length/depth studies (pro-length, anti-length, and conditional findings). Survey computational complexity foundations relevant to reasoning depth (circuit depth, proof complexity, space-bounded computation). Survey empirical CoT scaling results.
