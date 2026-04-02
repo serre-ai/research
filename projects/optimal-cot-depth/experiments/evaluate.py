@@ -27,7 +27,7 @@ TASKS = {
     "majority": majority,
     "parity": parity,
     "composition": composition,
-    "arithmetic": arithmetic,
+    "carry_addition": arithmetic,
 }
 
 DEPTH_LEVELS = [0, 1, 2, 4, 6, 8, 12, 16, 20, 25, 30]
@@ -72,16 +72,57 @@ def build_prompt(task_text: str, depth: int) -> str:
 # Response parsing
 # ---------------------------------------------------------------------------
 
+def _normalize_answer(raw: str) -> str:
+    """Normalize an extracted answer for comparison.
+
+    Handles: whitespace, numeric equivalence, parity keywords.
+    """
+    s = raw.strip().rstrip(".").strip()
+
+    # Parity keywords
+    lower = s.lower()
+    if lower in ("even", "0 (even)", "even (0)"):
+        return "0"
+    if lower in ("odd", "1 (odd)", "odd (1)"):
+        return "1"
+
+    # Strip non-numeric prefixes like "The answer is " or "= "
+    s = re.sub(r"^(?:the\s+)?(?:final\s+)?answer\s+is\s*:?\s*", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"^=\s*", "", s)
+
+    # Try to parse as integer to normalize ("068" -> "68", "-0" -> "0")
+    try:
+        return str(int(s))
+    except ValueError:
+        pass
+
+    # Try float -> int if it's a whole number ("68.0" -> "68")
+    try:
+        f = float(s)
+        if f == int(f):
+            return str(int(f))
+    except ValueError:
+        pass
+
+    return s
+
+
 def extract_answer(response: str) -> str | None:
-    """Extract the answer from a model response."""
+    """Extract and normalize the answer from a model response."""
     # Look for ANSWER: pattern
     match = re.search(r"ANSWER:\s*(.+?)(?:\n|$)", response, re.IGNORECASE)
     if match:
-        return match.group(1).strip()
-    # Fallback: last line
-    lines = response.strip().split("\n")
+        return _normalize_answer(match.group(1))
+
+    # Look for "The answer is X" or "= X" patterns
+    match = re.search(r"(?:the\s+)?(?:final\s+)?answer\s+is\s*:?\s*(.+?)(?:\n|$)", response, re.IGNORECASE)
+    if match:
+        return _normalize_answer(match.group(1))
+
+    # Fallback: last non-empty line
+    lines = [l.strip() for l in response.strip().split("\n") if l.strip()]
     if lines:
-        return lines[-1].strip()
+        return _normalize_answer(lines[-1])
     return None
 
 
@@ -158,7 +199,8 @@ def evaluate_single(
         response_text = resp["response_text"]
         extracted = extract_answer(response_text)
         actual_steps = count_steps(response_text)
-        correct = (extracted == inst["ground_truth"]) if extracted else False
+        gt_normalized = _normalize_answer(inst["ground_truth"])
+        correct = (extracted == gt_normalized) if extracted else False
         compliant = abs(actual_steps - depth) <= 1 if depth > 0 else True
 
         results.append({
@@ -182,10 +224,10 @@ def evaluate_single(
 
 
 def save_results(results: list[dict], tag: str) -> Path:
-    """Save results to a JSONL file."""
+    """Save results to a JSONL file (write mode — overwrites on re-run)."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     path = RESULTS_DIR / f"{tag}.jsonl"
-    with open(path, "a") as f:
+    with open(path, "w") as f:
         for r in results:
             f.write(json.dumps(r) + "\n")
     return path
@@ -208,7 +250,7 @@ SWEEP_CONFIG = {
         "difficulties": [1, 2, 3, 4, 5, 6, 7],
         "depths": [0, 1, 2, 4, 6, 8, 12, 16, 20, 25, 30],
     },
-    "arithmetic": {
+    "carry_addition": {
         "difficulties": [1, 2, 3, 4, 5, 6, 7],
         "depths": [0, 1, 2, 4, 6, 8, 12, 16, 20, 25, 30],
     },

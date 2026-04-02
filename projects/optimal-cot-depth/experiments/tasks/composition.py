@@ -20,16 +20,18 @@ DIFFICULTY_PARAMS: dict[int, int] = {
     8: 25,
 }
 
-# Simple linear functions: f(x) = ax + b with small integer coefficients
+# Additive functions only to prevent overflow at large l.
+# f(x) = x + b with small integer offsets keeps values in a manageable range
+# (after l=25 compositions starting from x≤10, max value ≈ 10 + 25*7 = 185).
 _FUNCTIONS = [
-    (2, 1, "2x + 1"),
-    (3, -1, "3x - 1"),
+    (1, 3, "x + 3"),
+    (1, -2, "x - 2"),
     (1, 5, "x + 5"),
-    (2, -3, "2x - 3"),
     (1, 7, "x + 7"),
-    (3, 2, "3x + 2"),
-    (2, -1, "2x - 1"),
     (1, -4, "x - 4"),
+    (1, 1, "x + 1"),
+    (1, 6, "x + 6"),
+    (1, -1, "x - 1"),
 ]
 
 
