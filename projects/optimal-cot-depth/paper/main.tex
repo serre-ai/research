@@ -1,0 +1,166 @@
+% ICLR 2027 paper template for optimal-cot-depth project
+% Theory paper: complexity-theoretic analysis of optimal CoT depth
+
+\documentclass{article}
+
+\usepackage[final]{iclr2027}  % Change to [preprint] for arXiv version
+
+% Essential packages for theory papers
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+% Theorem environments (shared counter)
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Complexity notation
+\newcommand{\TC}{\mathrm{TC}^0}
+\newcommand{\NC}{\mathrm{NC}^1}
+\newcommand{\NP}{\mathrm{NP}}
+\newcommand{\coNP}{\mathrm{coNP}}
+\newcommand{\PSPACE}{\mathrm{PSPACE}}
+\newcommand{\poly}{\mathrm{poly}}
+
+% CoT-specific notation
+\newcommand{\CoT}{\mathrm{CoT}}
+\newcommand{\depth}{d^*}       % optimal depth function
+\newcommand{\noise}{\eta}      % per-step noise rate
+\newcommand{\acc}{\mathrm{acc}} % accuracy function
+
+% Standard math
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\bigO}{\mathcal{O}}
+
+\title{On the Optimal Depth of Chain-of-Thought:\\A Complexity-Theoretic Analysis}
+
+\author{Anonymous Authors \\
+  \texttt{\{anonymous\}@institution.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Recent work reaches contradictory conclusions about Chain-of-Thought (CoT) reasoning depth: some studies show longer chains improve performance, while others demonstrate degradation. We resolve this contradiction through computational complexity theory. We prove that the optimal number of reasoning steps $\depth(\mathcal{C}, n)$ is determined by the complexity class $\mathcal{C}$ of the underlying task and the input size $n$. For tasks in P, optimal depth is $\bigO(1)$---additional steps introduce noise without benefit. For NP tasks, depth scales polynomially with input size. Beyond a complexity-determined threshold, additional steps degrade performance via hallucination cascades at a rate governed by the per-step error probability $\noise$. We formalize this as a noise accumulation model and prove tight bounds for standard complexity classes. Empirical validation across tasks of known complexity confirms our predictions: the observed optimal depth matches the theoretical curve within [TBD]\% across [TBD] models. Our framework explains why each contradictory finding in the literature is correct---for the specific complexity profile of its evaluation tasks.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+% TODO: Develop introduction
+% Key points:
+% 1. CoT has become the dominant reasoning paradigm for LLMs
+% 2. Three papers reach contradictory conclusions about CoT length
+% 3. We resolve this through complexity theory
+% 4. Preview of main results
+
+\section{Related Work}
+\label{sec:related}
+
+% TODO: Develop related work
+% Subsections:
+% - Chain-of-Thought reasoning and scaling
+% - Computational complexity of LLM reasoning (connect to reasoning-gaps)
+% - Circuit complexity and transformer expressiveness
+% - Error accumulation in sequential computation
+
+\section{Formal Framework}
+\label{sec:framework}
+
+% TODO: Develop formal framework
+% Key definitions:
+% - CoT depth vs. CoT length
+% - Optimal depth function d*(C, n)
+% - Noise accumulation model
+% - "Useful" vs. "noise" reasoning steps
+
+\section{Main Results}
+\label{sec:results}
+
+% TODO: Develop main results
+% Theorems:
+% 1. Depth bound for P tasks (O(1))
+% 2. Depth scaling for NP tasks (polynomial in n)
+% 3. Noise ceiling theorem (depth beyond threshold degrades performance)
+% 4. Unification theorem (resolves the contradiction)
+
+\subsection{Optimal Depth for Polynomial-Time Tasks}
+\label{sec:p-bound}
+
+\subsection{Optimal Depth for NP Tasks}
+\label{sec:np-bound}
+
+\subsection{The Noise Ceiling}
+\label{sec:noise-ceiling}
+
+\subsection{Unifying Contradictory Findings}
+\label{sec:unification}
+
+\section{Empirical Validation}
+\label{sec:experiments}
+
+% TODO: Develop experiments
+% - Benchmark suite with tasks of known complexity class
+% - Varying CoT depth (1, 2, 4, 8, 16, 32 steps)
+% - Multiple models (GPT-4, Claude, open-source)
+% - Compare observed optimal depth to predicted d*(C, n)
+
+\section{Discussion}
+\label{sec:discussion}
+
+% TODO: Develop discussion
+% - Implications for CoT prompt design
+% - Connection to reasoning-gaps and verification-complexity
+% - Limitations and future work
+% - Broader impact: principled CoT depth selection
+
+\bibliography{references}
+\bibliographystyle{iclr2027}
+
+\appendix
+
+\section{Full Proofs}
+\label{app:proofs}
+
+% TODO: Full proofs of all theorems
+
+\section{Experimental Details}
+\label{app:experiments}
+
+% TODO: Full experimental setup, hyperparameters, task specifications
+
+\section{Notation Table}
+\label{app:notation}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$\depth(\mathcal{C}, n)$ & Optimal CoT depth for complexity class $\mathcal{C}$, input size $n$ \\
+$\noise$ & Per-step error (noise) probability \\
+$\acc(k, \mathcal{C}, n)$ & Accuracy as a function of $k$ reasoning steps \\
+$\TC$ & Threshold circuit complexity class \\
+$\NC$ & Nick's class (log-depth circuits) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

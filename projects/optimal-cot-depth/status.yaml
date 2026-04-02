@@ -1,0 +1,73 @@
+project: optimal-cot-depth
+title: "On the Optimal Depth of Chain-of-Thought: A Complexity-Theoretic Analysis"
+status: active
+phase: research
+confidence: 0.4
+created: "2026-04-01"
+updated: "2026-04-01"
+venue: "ICLR 2027"
+
+collaborators: []
+
+current_focus: "Literature survey — collect CoT length/depth studies, identify the three core dispute papers, and survey complexity-theoretic foundations for reasoning depth bounds"
+
+next_steps:
+  - "Survey CoT length studies: Demystifying Long CoT, When More is Less, SafeChain — extract evaluation task distributions and complexity profiles"
+  - "Survey complexity foundations: circuit depth bounds on transformers (TC^0, NC^1), proof complexity depth measures"
+  - "Survey noise/error accumulation models relevant to sequential reasoning"
+  - "Formalize optimal depth d*(C, n) as a function of complexity class and input size"
+  - "Identify key proof strategies for complexity-conditioned depth bounds"
+
+progress:
+  literature_review:
+    status: not_started
+    notes: "Target: comprehensive survey of CoT length studies (both pro and anti), complexity-theoretic foundations for reasoning depth, noise accumulation models"
+  formal_framework:
+    status: not_started
+    notes: "Define d*(C, n) mapping, noise accumulation model, 'useful reasoning step' formalism"
+  complexity_bounds:
+    status: not_started
+    notes: "Prove upper/lower bounds on d*(C, n) for P, NP, coNP, PSPACE. Connect to circuit depth and TC^0 results"
+  empirical_validation:
+    status: not_started
+    notes: "Benchmark suite with tasks of known complexity class, varying CoT depth (1-32 steps). ~$300 budget"
+  paper_dispute_resolution:
+    status: not_started
+    notes: "Re-analyze task distributions from the three contradictory papers through the complexity lens"
+  paper_writing:
+    status: not_started
+    notes: "ICLR 2027 format, proof sketches in main text, full proofs in appendix"
+
+decisions_pending: []
+
+decisions_made:
+  - date: 2026-04-01
+    decision: "Target ICLR 2027 as primary venue"
+    rationale: "ICLR is strong for theoretical ML work. Sep/Oct 2026 deadline gives ~6 months. Project complements reasoning-gaps (NeurIPS 2026) and verification-complexity (ICLR 2027) — three papers forming a coherent theoretical program on LLM reasoning."
+  - date: 2026-04-01
+    decision: "Frame as dispute resolution through complexity theory, not just another CoT scaling paper"
+    rationale: "Compass contrarian detector identified verified contradictions between three papers on CoT length. The complexity-theoretic framing is what makes our contribution distinctive — existing papers observe the phenomenon but don't explain it. We provide the explanatory theory."
+  - date: 2026-04-01
+    decision: "Focus on depth (logical steps) not length (tokens)"
+    rationale: "Token count conflates reasoning depth with verbosity. Formal results about optimal depth are more precise and theoretically grounded than results about optimal length."
+
+key_references: []
+
+git:
+  branch: "research/optimal-cot-depth"
+  latest_commit: ""
+  open_prs: []
+
+metrics:
+  theorems_proved: 0
+  papers_reviewed: 0
+  experiments_run: 0
+
+notes: "Project originated from Compass contrarian detector finding verified contradictions between CoT length papers. Extends the reasoning-gaps framework to the depth dimension — not just what LLMs can reason about, but how much reasoning is optimal per complexity class."
+
+key_terms:
+  - "chain of thought length optimization"
+  - "CoT depth reasoning complexity"
+  - "optimal reasoning steps LLM"
+  - "chain of thought scaling"
+  - "reasoning depth computation"
