@@ -10,8 +10,19 @@ regardless of CoT, model size, or problem "complexity".
 """
 
 import random as _random
+from typing import NamedTuple
 
 TASK_NAME = "B8_reversal_inference"
+
+
+class Fact(NamedTuple):
+    country: str
+    city: str
+    relation: str
+    statement: str
+    query: str
+
+
 DIFFICULTY_PARAMS: dict[int, int] = {1: 2, 2: 5, 3: 10, 4: 20, 5: 50}
 
 # Fictional entity pools for procedural generation
@@ -100,23 +111,24 @@ def generate(
         used_cities: set[str] = set()
 
         # Generate fact pairs
-        facts: list[tuple[str, str, str, str, str]] = []
+        facts: list[Fact] = []
         for _ in range(n_facts):
             country, city = _generate_entity_pair(rng, used_countries, used_cities)
             rel_type, fact_template, query_template = rng.choice(_RELATION_TYPES)
-            fact = fact_template.format(country=country, city=city)
+            statement = fact_template.format(country=country, city=city)
             query = query_template.format(city=city)
-            facts.append((country, city, rel_type, fact, query))
+            facts.append(Fact(country, city, rel_type, statement, query))
 
         # Pick one fact as the target query (reversed direction)
         target_idx = rng.randint(0, len(facts) - 1)
-        target_country, target_city, _, _, target_query = facts[target_idx]
+        target_fact = facts[target_idx]
+        target_country = target_fact.country
+        target_city = target_fact.city
+        target_query = target_fact.query
         answer = target_country
 
-        # Build the prompt with all facts, then the reversed query
-        fact_lines = "\n".join(f"- {f[3]}" for f in facts)
-        # Shuffle fact order to avoid position bias
-        fact_list = [f[3] for f in facts]
+        # Build the prompt with all facts (shuffled to avoid position bias)
+        fact_list = [f.statement for f in facts]
         rng.shuffle(fact_list)
         fact_lines = "\n".join(f"- {f}" for f in fact_list)
 

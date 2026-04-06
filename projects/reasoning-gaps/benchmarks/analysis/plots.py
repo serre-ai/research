@@ -108,10 +108,12 @@ def plot_accuracy_vs_difficulty(
 
     fig, axes = pub_style.figure(
         width="full",
-        height=1.75 * n_rows + 1.0,  # extra for shared legend
+        height=1.55 * n_rows + 1.3,  # extra for shared legend
         nrows=n_rows,
         ncols=n_cols,
+        constrained_layout=False,
     )
+    fig.subplots_adjust(hspace=0.55, wspace=0.35, bottom=0.10, top=0.96, left=0.08, right=0.98)
     if n_rows == 1:
         axes = np.array([axes])
 
@@ -197,7 +199,7 @@ def plot_accuracy_vs_difficulty(
             unique_h, unique_l,
             loc="lower center",
             ncol=6,
-            bbox_to_anchor=(0.5, -0.02),
+            bbox_to_anchor=(0.5, -0.01),
             fontsize=5.5,
             handlelength=1.2,
             columnspacing=0.8,

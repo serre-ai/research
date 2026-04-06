@@ -18,10 +18,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-# Ensure project root is importable
-_PROJECT_ROOT = Path(__file__).resolve().parents[4]
-if str(_PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROJECT_ROOT))
+# Ensure pub_style is importable (lives in analysis/ alongside this file, or project root)
+_THIS_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = _THIS_DIR.parents[2]  # benchmarks/analysis -> reasoning-gaps project root
+for _p in [str(_THIS_DIR), str(_PROJECT_ROOT)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import pub_style  # noqa: E402
 
@@ -106,10 +108,12 @@ def plot_accuracy_vs_difficulty(
 
     fig, axes = pub_style.figure(
         width="full",
-        height=1.75 * n_rows + 1.0,  # extra for shared legend
+        height=1.55 * n_rows + 1.3,  # extra for shared legend
         nrows=n_rows,
         ncols=n_cols,
+        constrained_layout=False,
     )
+    fig.subplots_adjust(hspace=0.55, wspace=0.35, bottom=0.10, top=0.96, left=0.08, right=0.98)
     if n_rows == 1:
         axes = np.array([axes])
 
@@ -195,7 +199,7 @@ def plot_accuracy_vs_difficulty(
             unique_h, unique_l,
             loc="lower center",
             ncol=6,
-            bbox_to_anchor=(0.5, -0.02),
+            bbox_to_anchor=(0.5, -0.01),
             fontsize=5.5,
             handlelength=1.2,
             columnspacing=0.8,

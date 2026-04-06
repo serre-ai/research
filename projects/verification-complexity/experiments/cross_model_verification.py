@@ -65,6 +65,7 @@ VERIFIER_MODELS = {
     "haiku": ("anthropic", "claude-haiku-4-5-20251001"),
     "sonnet": ("anthropic", "claude-sonnet-4-20250514"),
     "gpt4o-mini": ("openai", "gpt-4o-mini"),
+    "gpt4o": ("openai", "gpt-4o"),
 }
 
 TASKS = ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
@@ -279,13 +280,13 @@ def main():
     parser = argparse.ArgumentParser(description="Cross-model verification experiment")
     parser.add_argument("--generators", default="haiku,gpt4o,llama70b",
                         help="Comma-separated generator model keys")
-    parser.add_argument("--verifiers", default="haiku,sonnet,gpt4o-mini",
+    parser.add_argument("--verifiers", default="haiku,sonnet,gpt4o-mini,gpt4o",
                         help="Comma-separated verifier model keys")
     parser.add_argument("--tasks", default=",".join(TASKS),
                         help="Comma-separated task keys")
     parser.add_argument("--difficulties", default="1,2,3,4,5",
                         help="Comma-separated difficulty levels")
-    parser.add_argument("--instances-per-difficulty", type=int, default=10,
+    parser.add_argument("--instances-per-difficulty", type=int, default=20,
                         help="Instances per difficulty level per task")
     parser.add_argument("--condition", default="short_cot",
                         help="Generator condition to use")
@@ -312,6 +313,7 @@ def main():
         "haiku": 0.002,
         "sonnet": 0.01,
         "gpt4o-mini": 0.002,
+        "gpt4o": 0.005,
     }
     estimated_cost = sum(
         total_instances * len(generators) * cost_per_call.get(v, 0.005)

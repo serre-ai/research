@@ -7,9 +7,11 @@ Primary:
   1. Verification accuracy by VC class (one-way ANOVA + pairwise Bonferroni)
   2. Cross-model consistency within VC class (ICC)
   3. Two-way ANOVA (generator x VC class interaction)
+  3a. Generator x VC interaction ANOVA with partial eta-squared effect sizes
 
 Theorem 2c:
   4. Between-model error agreement per task (Cochran's Q)
+  4a. Consolidated Theorem 2c: agreement + phi + non-monotonicity + ranking
   5. Phi coefficients for pairwise error correlation
 
 Secondary:
@@ -74,7 +76,10 @@ VC_CLASS = {
     "B8": "Arch", "B9": "Arch",
 }
 
-# Known between-model error correlation from reasoning-gaps evaluation
+# Known between-model error correlation from reasoning-gaps evaluation.
+# All 9 values are computed in error_correlation_results.json (12 models, 500
+# instances each, short_cot condition).  The paper text only discusses B2, B3,
+# B6, B7 explicitly, but the remaining values are equally legitimate.
 KNOWN_RHO = {
     "B1": 0.22, "B2": 0.22, "B3": 0.31,
     "B4": 0.22, "B5": 0.11, "B6": 0.42,
@@ -321,18 +326,27 @@ def analyze_cross_model_consistency(df: pd.DataFrame) -> dict[str, Any]:
 
 
 # =====================================================================
-# Analysis 3: Two-way ANOVA (generator x VC class)
+# Analysis 3a: Two-way ANOVA with effect sizes (generator x VC class)
 # =====================================================================
 
-def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
-    """Primary Analysis 3: generator x VC class interaction.
+def generator_vc_interaction_anova(df: pd.DataFrame) -> dict[str, Any]:
+    """Two-way ANOVA testing whether verification accuracy depends on
+    (a) generator model, (b) VC class, and (c) their interaction.
+
+    The interaction term tests whether verification accuracy is independent
+    of which generator produced the output — the key prediction from Theorem 1
+    that verification complexity is an architectural property, not a
+    model-specific one.
+
+    Returns F-statistics, p-values, and partial eta-squared effect sizes
+    for each factor.
 
     Tries statsmodels for a proper Type II ANOVA. Falls back to manual
     computation (sequential SS) if statsmodels is unavailable.
     """
     results: dict[str, Any] = {}
 
-    # Compute cell means for interpretability
+    # Cell means for interpretability
     cell_means = df.groupby(["generator_model", "vc_class"])[
         "verification_accurate"
     ].mean().unstack(fill_value=np.nan)
@@ -344,7 +358,6 @@ def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
 
         df_anova = df[["verification_accurate", "generator_model", "vc_class"]].copy()
         df_anova["verification_accurate"] = df_anova["verification_accurate"].astype(float)
-        # Sanitize factor names for patsy
         df_anova["gen"] = df_anova["generator_model"].astype(str)
         df_anova["vc"] = df_anova["vc_class"].astype(str)
 
@@ -352,24 +365,41 @@ def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
         anova_table = sm.stats.anova_lm(model, typ=2)
 
         results["method"] = "statsmodels_type2"
-        results["anova_table"] = {}
+
+        # Extract SS_residual for partial eta-squared computation
+        ss_residual = float(anova_table.loc["Residual", "sum_sq"])
+
+        results["factors"] = {}
         for idx in anova_table.index:
             row = anova_table.loc[idx]
-            results["anova_table"][str(idx)] = {
-                "sum_sq": float(row.get("sum_sq", 0)),
+            ss = float(row.get("sum_sq", 0))
+            f_val = float(row.get("F", 0)) if not np.isnan(row.get("F", np.nan)) else None
+            p_val = float(row.get("PR(>F)", 1)) if not np.isnan(row.get("PR(>F)", np.nan)) else None
+
+            # Partial eta-squared: SS_effect / (SS_effect + SS_residual)
+            if idx != "Residual" and (ss + ss_residual) > 0:
+                partial_eta_sq = ss / (ss + ss_residual)
+            else:
+                partial_eta_sq = None
+
+            results["factors"][str(idx)] = {
+                "sum_sq": ss,
                 "df": float(row.get("df", 0)),
-                "F": float(row.get("F", 0)) if not np.isnan(row.get("F", np.nan)) else None,
-                "PR(>F)": float(row.get("PR(>F)", 1)) if not np.isnan(row.get("PR(>F)", np.nan)) else None,
+                "F": f_val,
+                "p_value": p_val,
+                "partial_eta_sq": float(partial_eta_sq) if partial_eta_sq is not None else None,
             }
 
         # Extract interaction significance
-        interaction_key = [k for k in results["anova_table"] if ":" in k]
+        interaction_key = [k for k in results["factors"] if ":" in k]
         if interaction_key:
-            p_interaction = results["anova_table"][interaction_key[0]].get("PR(>F)")
+            inter = results["factors"][interaction_key[0]]
             results["interaction_significant"] = (
-                p_interaction is not None and p_interaction < 0.05
+                inter["p_value"] is not None and inter["p_value"] < 0.05
             )
-            results["interaction_p"] = p_interaction
+            results["interaction_p"] = inter["p_value"]
+            results["interaction_F"] = inter["F"]
+            results["interaction_partial_eta_sq"] = inter["partial_eta_sq"]
         else:
             results["interaction_significant"] = None
 
@@ -406,8 +436,6 @@ def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
         )
         ss_interaction = ss_cells - ss_gen - ss_vc
         if ss_interaction < 0:
-            # Negative SS can occur with unbalanced designs in Type I SS;
-            # clamp to zero — the interaction term is unreliable here.
             warnings.warn(
                 "Negative interaction SS in manual two-way ANOVA "
                 f"(ss_interaction={ss_interaction:.4f}); clamping to 0. "
@@ -430,20 +458,75 @@ def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
         f_vc = ms_vc / ms_error if ms_error > 0 else np.nan
         f_interaction = ms_interaction / ms_error if ms_error > 0 else np.nan
 
-        # p-values
-        # Use sf (survival function) instead of 1-cdf for better numerical precision
+        # p-values (survival function for better numerical precision)
         p_gen = float(sp_stats.f.sf(f_gen, df_gen, df_error)) if not np.isnan(f_gen) else np.nan
         p_vc = float(sp_stats.f.sf(f_vc, df_vc, df_error)) if not np.isnan(f_vc) else np.nan
         p_interaction = float(sp_stats.f.sf(f_interaction, df_interaction, df_error)) if not np.isnan(f_interaction) else np.nan
 
-        results["anova_table"] = {
-            "C(gen)": {"sum_sq": float(ss_gen), "df": float(df_gen), "F": float(f_gen), "PR(>F)": p_gen},
-            "C(vc)": {"sum_sq": float(ss_vc), "df": float(df_vc), "F": float(f_vc), "PR(>F)": p_vc},
-            "C(gen):C(vc)": {"sum_sq": float(ss_interaction), "df": float(df_interaction), "F": float(f_interaction), "PR(>F)": p_interaction},
-            "Residual": {"sum_sq": float(ss_error), "df": float(df_error), "F": None, "PR(>F)": None},
+        # Partial eta-squared: SS_effect / (SS_effect + SS_error)
+        eta_gen = float(ss_gen / (ss_gen + ss_error)) if (ss_gen + ss_error) > 0 else None
+        eta_vc = float(ss_vc / (ss_vc + ss_error)) if (ss_vc + ss_error) > 0 else None
+        eta_interaction = float(ss_interaction / (ss_interaction + ss_error)) if (ss_interaction + ss_error) > 0 else None
+
+        results["factors"] = {
+            "C(gen)": {
+                "sum_sq": float(ss_gen), "df": float(df_gen),
+                "F": float(f_gen), "p_value": p_gen,
+                "partial_eta_sq": eta_gen,
+            },
+            "C(vc)": {
+                "sum_sq": float(ss_vc), "df": float(df_vc),
+                "F": float(f_vc), "p_value": p_vc,
+                "partial_eta_sq": eta_vc,
+            },
+            "C(gen):C(vc)": {
+                "sum_sq": float(ss_interaction), "df": float(df_interaction),
+                "F": float(f_interaction), "p_value": p_interaction,
+                "partial_eta_sq": eta_interaction,
+            },
+            "Residual": {
+                "sum_sq": float(ss_error), "df": float(df_error),
+                "F": None, "p_value": None, "partial_eta_sq": None,
+            },
         }
         results["interaction_significant"] = p_interaction < 0.05 if not np.isnan(p_interaction) else None
         results["interaction_p"] = float(p_interaction) if not np.isnan(p_interaction) else None
+        results["interaction_F"] = float(f_interaction) if not np.isnan(f_interaction) else None
+        results["interaction_partial_eta_sq"] = eta_interaction
+
+    return results
+
+
+# =====================================================================
+# Analysis 3 (legacy wrapper): Two-way ANOVA (generator x VC class)
+# =====================================================================
+
+def analyze_two_way_anova(df: pd.DataFrame) -> dict[str, Any]:
+    """Primary Analysis 3: generator x VC class interaction.
+
+    Legacy wrapper around generator_vc_interaction_anova(). Converts the
+    new ``factors`` dict back to the ``anova_table`` dict expected by
+    print_summary() and write_latex_stats().
+    """
+    raw = generator_vc_interaction_anova(df)
+
+    # Build backward-compatible anova_table from factors
+    results: dict[str, Any] = {
+        "cell_means": raw.get("cell_means", {}),
+        "method": raw.get("method", "unknown"),
+        "interaction_significant": raw.get("interaction_significant"),
+        "interaction_p": raw.get("interaction_p"),
+    }
+
+    anova_table: dict[str, dict] = {}
+    for factor_name, factor_data in raw.get("factors", {}).items():
+        anova_table[factor_name] = {
+            "sum_sq": factor_data.get("sum_sq", 0),
+            "df": factor_data.get("df", 0),
+            "F": factor_data.get("F"),
+            "PR(>F)": factor_data.get("p_value"),
+        }
+    results["anova_table"] = anova_table
 
     return results
 
@@ -488,79 +571,45 @@ def cochrans_q(binary_matrix: np.ndarray) -> tuple[float, float, int]:
     return Q, p_value, df
 
 
-def analyze_between_model_agreement(df: pd.DataFrame) -> dict[str, Any]:
-    """Theorem 2c Analysis 1: Between-model error agreement per task.
+def analyze_between_model_agreement(
+    df: pd.DataFrame,
+    consolidated: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Legacy wrapper: delegates to between_model_error_agreement() and
+    converts the result to the old schema expected by print_summary() and
+    write_latex_stats().
 
-    For each task, builds a binary matrix (instances x verifiers) where 1 =
-    verification accurate, 0 = inaccurate. Computes agreement rate (fraction
-    of instances where all verifiers agree) and Cochran's Q for heterogeneity.
+    Args:
+        df: Full verification DataFrame.
+        consolidated: Output of between_model_error_agreement(). If provided,
+            avoids recomputation.
     """
-    results: dict[str, Any] = {}
+    if consolidated is None:
+        consolidated = between_model_error_agreement(df)
+
+    # Convert per_task -> agreement_by_task (old schema)
     agreement_by_task: dict[str, dict] = {}
-
-    for task in TASKS:
-        task_df = df[df["task_short"] == task].copy()
-        if task_df.empty:
-            continue
-
-        # Combine generator and verifier as the "rater" identity
-        task_df["rater"] = (
-            task_df["generator_model"] + " -> " + task_df["verifier_model"]
-        )
-
-        pivot = task_df.pivot_table(
-            index="instance_id",
-            columns="rater",
-            values="verification_accurate",
-            aggfunc="first",
-        )
-        pivot = pivot.dropna()
-
-        n_instances, n_raters = pivot.shape
-        if n_instances < 2 or n_raters < 2:
-            agreement_by_task[task] = {
-                "agreement_rate": np.nan,
-                "n_instances": n_instances,
-                "n_raters": n_raters,
-                "cochrans_q": np.nan,
-                "cochrans_p": np.nan,
-            }
-            continue
-
-        binary = pivot.values.astype(float)
-
-        # Agreement rate: fraction of instances where ALL raters agree
-        row_sums = binary.sum(axis=1)
-        all_agree = ((row_sums == 0) | (row_sums == n_raters)).sum()
-        agreement_rate = float(all_agree / n_instances)
-
-        # Cochran's Q
-        Q, p_val, q_df = cochrans_q(binary)
-
+    for task, d in consolidated.get("per_task", {}).items():
         agreement_by_task[task] = {
-            "agreement_rate": agreement_rate,
-            "n_instances": n_instances,
-            "n_raters": n_raters,
-            "cochrans_q": float(Q),
-            "cochrans_p": float(p_val),
-            "cochrans_df": q_df,
-            "known_rho": KNOWN_RHO.get(task, np.nan),
-            "vc_class": VC_CLASS.get(task, "?"),
+            "agreement_rate": d.get("agreement_rate", np.nan),
+            "n_instances": d.get("n_instances", 0),
+            "n_raters": d.get("n_raters", 0),
+            "cochrans_q": d.get("cochrans_q", np.nan),
+            "cochrans_p": d.get("cochrans_p", np.nan),
+            "cochrans_df": d.get("cochrans_df", 0),
+            "known_rho": d.get("known_rho", np.nan),
+            "vc_class": d.get("vc_class", "?"),
         }
 
-    results["agreement_by_task"] = agreement_by_task
+    results: dict[str, Any] = {"agreement_by_task": agreement_by_task}
 
-    # Key comparison: B6 vs B7 (non-monotonicity test)
-    b6 = agreement_by_task.get("B6", {})
-    b7 = agreement_by_task.get("B7", {})
-    b6_ar = b6.get("agreement_rate")
-    b7_ar = b7.get("agreement_rate")
-    if (b6_ar is not None and not np.isnan(b6_ar)
-            and b7_ar is not None and not np.isnan(b7_ar)):
+    # Map non_monotonicity -> non_monotonicity_test (old key)
+    nm = consolidated.get("non_monotonicity")
+    if nm:
         results["non_monotonicity_test"] = {
-            "B6_agreement": b6["agreement_rate"],
-            "B7_agreement": b7["agreement_rate"],
-            "B6_gt_B7": b6["agreement_rate"] > b7["agreement_rate"],
+            "B6_agreement": nm["B6_agreement"],
+            "B7_agreement": nm["B7_agreement"],
+            "B6_gt_B7": nm["B6_gt_B7"],
             "prediction": "B6 > B7 (shared bottleneck > stochastic)",
         }
 
@@ -688,6 +737,168 @@ def analyze_phi_coefficients(df: pd.DataFrame) -> dict[str, Any]:
             "spearman_p": float(p_s),
             "n_tasks": len(tasks_with_both),
             "tasks": tasks_with_both,
+        }
+
+    return results
+
+
+# =====================================================================
+# Consolidated Theorem 2c: between-model error agreement analysis
+# =====================================================================
+
+def between_model_error_agreement(df: pd.DataFrame) -> dict[str, Any]:
+    """Consolidated Theorem 2c analysis: between-model error agreement.
+
+    For each task:
+      1. Computes the fraction of instances where all verifiers agree
+         (all correct or all incorrect).
+      2. Computes pairwise phi coefficients between verifier error patterns.
+      3. Compares agreement rates across tasks, with special attention to
+         B6 vs B7 for non-monotonicity (Remark 1).
+      4. Uses Cochran's Q test for significance of verifier heterogeneity.
+
+    Tests Theorem 2c: error correlation tracks bottleneck type (shared vs
+    stochastic), not VC class. B6 (P-class, shared bottleneck, rho=0.42)
+    should show higher between-model agreement than B7 (coNP, stochastic,
+    rho=0.06).
+
+    Returns a dict with per-task agreement, phi coefficients, non-monotonicity
+    test, and cross-task comparison.
+    """
+    results: dict[str, Any] = {}
+    per_task: dict[str, dict] = {}
+
+    for task in TASKS:
+        task_df = df[df["task_short"] == task].copy()
+        if task_df.empty:
+            continue
+
+        # Build rater identity from generator-verifier pair
+        task_df["rater"] = (
+            task_df["generator_model"] + " -> " + task_df["verifier_model"]
+        )
+
+        pivot = task_df.pivot_table(
+            index="instance_id",
+            columns="rater",
+            values="verification_accurate",
+            aggfunc="first",
+        )
+        pivot = pivot.dropna()
+
+        n_instances, n_raters = pivot.shape
+        if n_instances < 2 or n_raters < 2:
+            per_task[task] = {
+                "agreement_rate": np.nan,
+                "mean_phi": np.nan,
+                "n_instances": n_instances,
+                "n_raters": n_raters,
+                "cochrans_q": np.nan,
+                "cochrans_p": np.nan,
+                "vc_class": VC_CLASS.get(task, "?"),
+                "known_rho": KNOWN_RHO.get(task, np.nan),
+                "pairwise_phis": [],
+            }
+            continue
+
+        binary = pivot.values.astype(float)
+
+        # --- Agreement rate: fraction where ALL raters agree ---
+        row_sums = binary.sum(axis=1)
+        all_agree = ((row_sums == 0) | (row_sums == n_raters)).sum()
+        agreement_rate = float(all_agree / n_instances)
+
+        # --- Cochran's Q for verifier heterogeneity ---
+        Q, p_val, q_df = cochrans_q(binary)
+
+        # --- Pairwise phi coefficients on ERROR patterns ---
+        error_matrix = 1 - binary
+        rater_names = list(pivot.columns)
+        pairwise_phis = []
+        for i in range(n_raters):
+            for j in range(i + 1, n_raters):
+                phi = phi_coefficient(error_matrix[:, i], error_matrix[:, j])
+                pairwise_phis.append({
+                    "rater_1": rater_names[i],
+                    "rater_2": rater_names[j],
+                    "phi": phi,
+                })
+
+        phi_values = [p["phi"] for p in pairwise_phis]
+        mean_phi = float(np.mean(phi_values)) if phi_values else np.nan
+
+        per_task[task] = {
+            "agreement_rate": agreement_rate,
+            "mean_phi": mean_phi,
+            "median_phi": float(np.median(phi_values)) if phi_values else np.nan,
+            "std_phi": float(np.std(phi_values)) if phi_values else np.nan,
+            "n_phi_pairs": len(phi_values),
+            "n_instances": n_instances,
+            "n_raters": n_raters,
+            "cochrans_q": float(Q),
+            "cochrans_p": float(p_val),
+            "cochrans_df": q_df,
+            "vc_class": VC_CLASS.get(task, "?"),
+            "known_rho": KNOWN_RHO.get(task, np.nan),
+            "pairwise_phis": pairwise_phis,
+        }
+
+    results["per_task"] = per_task
+
+    # --- Non-monotonicity test: B6 vs B7 ---
+    b6 = per_task.get("B6", {})
+    b7 = per_task.get("B7", {})
+    b6_ar = b6.get("agreement_rate")
+    b7_ar = b7.get("agreement_rate")
+    if (b6_ar is not None and not np.isnan(b6_ar)
+            and b7_ar is not None and not np.isnan(b7_ar)):
+        results["non_monotonicity"] = {
+            "B6_agreement": b6_ar,
+            "B7_agreement": b7_ar,
+            "B6_gt_B7": b6_ar > b7_ar,
+            "B6_mean_phi": b6.get("mean_phi", np.nan),
+            "B7_mean_phi": b7.get("mean_phi", np.nan),
+            "prediction": (
+                "B6 (P-class, shared bottleneck, rho=0.42) > "
+                "B7 (coNP, stochastic, rho=0.06)"
+            ),
+        }
+
+    # --- Cross-task agreement ranking ---
+    ranked = sorted(
+        [(t, d["agreement_rate"]) for t, d in per_task.items()
+         if not np.isnan(d.get("agreement_rate", np.nan))],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    results["agreement_ranking"] = [
+        {"task": t, "agreement_rate": ar, "vc_class": VC_CLASS.get(t, "?")}
+        for t, ar in ranked
+    ]
+
+    # --- Correlation between agreement/phi and known rho ---
+    tasks_with_rho = [
+        t for t in TASKS
+        if t in per_task
+        and not np.isnan(per_task[t].get("agreement_rate", np.nan))
+        and t in KNOWN_RHO
+    ]
+    if len(tasks_with_rho) >= 3:
+        agree_vals = [per_task[t]["agreement_rate"] for t in tasks_with_rho]
+        phi_vals = [per_task[t]["mean_phi"] for t in tasks_with_rho]
+        rho_vals = [KNOWN_RHO[t] for t in tasks_with_rho]
+
+        r_agree, p_agree = sp_stats.spearmanr(agree_vals, rho_vals)
+        r_phi, p_phi = sp_stats.spearmanr(phi_vals, rho_vals)
+        results["agreement_rho_correlation"] = {
+            "spearman_r": float(r_agree),
+            "spearman_p": float(p_agree),
+            "n_tasks": len(tasks_with_rho),
+        }
+        results["phi_rho_correlation"] = {
+            "spearman_r": float(r_phi),
+            "spearman_p": float(p_phi),
+            "n_tasks": len(tasks_with_rho),
         }
 
     return results
@@ -832,6 +1043,86 @@ def analyze_latency_by_vc_class(df: pd.DataFrame) -> dict[str, Any]:
 
 
 # =====================================================================
+# Analysis 9: Gap-collapse (B7 generation vs verification accuracy)
+# =====================================================================
+
+# B7 generation accuracy from reasoning-gaps stats.tex
+# (12 models, 500 instances, averaged across models)
+_B7_GEN_ACC_DIRECT = 0.510
+_B7_GEN_ACC_SHORT_COT = 0.514
+
+
+def analyze_gap_collapse(df: pd.DataFrame) -> dict[str, Any]:
+    """Test whether the generation-verification gap collapses for B7 (3-SAT).
+
+    Compares B7 generation accuracy (from reasoning-gaps) against B7
+    verification accuracy (from this experiment's data) using a two-proportion
+    z-test.  The gap is considered "collapsed" when (a) the absolute difference
+    is less than 10 percentage points AND (b) the z-test is not significant
+    at alpha = 0.05.
+
+    Returns dict with generation/verification accuracy, z-test results, and
+    a boolean ``collapsed`` flag.
+    """
+    results: dict[str, Any] = {
+        "b7_gen_acc_direct": _B7_GEN_ACC_DIRECT,
+        "b7_gen_acc_short_cot": _B7_GEN_ACC_SHORT_COT,
+    }
+
+    b7_df = df[df["task_short"] == "B7"]
+    if b7_df.empty:
+        results["error"] = "No B7 verification data"
+        return results
+
+    n_ver = len(b7_df)
+    ver_acc = float(b7_df["verification_accurate"].astype(float).mean())
+    results["b7_ver_acc"] = ver_acc
+    results["b7_ver_n"] = n_ver
+
+    # Compare against both generation conditions
+    for label, gen_acc in [("direct", _B7_GEN_ACC_DIRECT),
+                           ("short_cot", _B7_GEN_ACC_SHORT_COT)]:
+        diff = ver_acc - gen_acc
+
+        # Two-proportion z-test
+        # H0: p_ver = p_gen  (no gap)
+        # Use the generation sample size from reasoning-gaps: 12 models x 500
+        # instances, but individual-instance accuracy is the mean, so we
+        # approximate n_gen as the total number of (model, instance) evaluations
+        # for B7 in reasoning-gaps: 12 * 500 = 6000.
+        n_gen = 6000
+        p_pooled = (ver_acc * n_ver + gen_acc * n_gen) / (n_ver + n_gen)
+        se = np.sqrt(p_pooled * (1 - p_pooled) * (1 / n_ver + 1 / n_gen))
+        if se > 0:
+            z = diff / se
+            p_value = float(2 * sp_stats.norm.sf(abs(z)))  # two-tailed
+        else:
+            z = 0.0
+            p_value = 1.0
+
+        collapsed = abs(diff) < 0.10 and p_value > 0.05
+
+        results[f"vs_{label}"] = {
+            "gen_acc": gen_acc,
+            "ver_acc": ver_acc,
+            "diff": float(diff),
+            "diff_pp": float(diff * 100),
+            "z": float(z),
+            "p_value": p_value,
+            "significant": p_value < 0.05,
+            "collapsed": collapsed,
+        }
+
+    # Overall verdict: collapsed if both conditions show collapse
+    results["collapsed"] = (
+        results.get("vs_direct", {}).get("collapsed", False)
+        and results.get("vs_short_cot", {}).get("collapsed", False)
+    )
+
+    return results
+
+
+# =====================================================================
 # Figure 1: Bar chart — verification accuracy by task, colored by VC class
 # =====================================================================
 
@@ -969,79 +1260,153 @@ def plot_verification_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
 # Figure 3: Scatter — verifier agreement vs known rho ("money figure")
 # =====================================================================
 
+# Use the canonical KNOWN_RHO for plotting — all 9 values are computed from
+# error_correlation_results.json and are legitimate.  The earlier version had
+# None for B1, B4, B5, B8, B9 because the paper text only discussed four
+# tasks, but the underlying data covers all nine.
+_KNOWN_RHO_FOR_PLOT: dict[str, float | None] = dict(KNOWN_RHO)
+
+
 def plot_agreement_vs_rho(
-    phi_results: dict[str, Any],
-    agreement_results: dict[str, Any],
+    df: pd.DataFrame,
     output_dir: Path,
+    agreement_results: dict[str, Any] | None = None,
 ) -> None:
-    """Figure 3: Verifier agreement vs known rho (tests non-monotonicity)."""
+    """Figure 3: Agreement vs known rho scatter plot.
+
+    Creates a scatter plot testing non-monotonicity (Remark 1):
+      X-axis: known between-model rho from reasoning-gaps
+      Y-axis: verifier agreement rate from this experiment
+      Point labels: task names (B1-B9)
+      Colored by VC class
+
+    Tests the prediction that B6 (P-class, rho=0.42) shows higher
+    agreement than B7 (coNP, rho=0.06).
+
+    Args:
+        df: Full verification DataFrame.
+        output_dir: Where to save figure.
+        agreement_results: Output of between_model_error_agreement(). If
+            provided, agreement rates are read from ``per_task`` instead of
+            being recomputed from *df*.
+    """
     # NOTE: targeting ICLR 2027, but pub_style has no iclr2027 config yet;
     # neurips2026 sizing is similar enough for now.
     pub_style.setup(usetex=False, conference="neurips2026")
 
     fig, ax = pub_style.figure(width="col", height=3.0)
 
-    # Use mean phi as the y-axis (more informative than raw agreement rate)
-    phi_data = phi_results.get("phi_by_task", {})
-    agreement_data = agreement_results.get("agreement_by_task", {})
+    # --- Obtain per-task agreement rate ---
+    agreement_by_task: dict[str, float] = {}
+    if agreement_results and agreement_results.get("per_task"):
+        # Use pre-computed results
+        for task, d in agreement_results["per_task"].items():
+            ar = d.get("agreement_rate", np.nan)
+            if not np.isnan(ar):
+                agreement_by_task[task] = ar
+    else:
+        # Fallback: compute from df directly
+        for task in TASKS:
+            task_df = df[df["task_short"] == task].copy()
+            if task_df.empty:
+                continue
 
+            task_df["rater"] = (
+                task_df["generator_model"] + " -> " + task_df["verifier_model"]
+            )
+
+            pivot = task_df.pivot_table(
+                index="instance_id",
+                columns="rater",
+                values="verification_accurate",
+                aggfunc="first",
+            )
+            pivot = pivot.dropna()
+            n_instances, n_raters = pivot.shape
+            if n_instances < 2 or n_raters < 2:
+                continue
+
+            binary = pivot.values.astype(float)
+            row_sums = binary.sum(axis=1)
+            all_agree = ((row_sums == 0) | (row_sums == n_raters)).sum()
+            agreement_by_task[task] = float(all_agree / n_instances)
+
+    # --- Filter to tasks with known rho ---
     tasks_with_data = [
         t for t in TASKS
-        if t in phi_data
-        and not np.isnan(phi_data[t].get("mean_phi", np.nan))
-        and t in KNOWN_RHO
+        if t in agreement_by_task
+        and _KNOWN_RHO_FOR_PLOT.get(t) is not None
     ]
 
     if len(tasks_with_data) < 2:
         plt.close(fig)
         return
 
-    x_rho = [KNOWN_RHO[t] for t in tasks_with_data]
-    y_phi = [phi_data[t]["mean_phi"] for t in tasks_with_data]
+    x_rho = [_KNOWN_RHO_FOR_PLOT[t] for t in tasks_with_data]
+    y_agree = [agreement_by_task[t] for t in tasks_with_data]
     colors = [VC_CLASS_COLORS.get(VC_CLASS.get(t, "P"), "#999999") for t in tasks_with_data]
 
-    ax.scatter(x_rho, y_phi, c=colors, s=60, zorder=5, edgecolors="white", linewidths=0.5)
+    ax.scatter(x_rho, y_agree, c=colors, s=60, zorder=5,
+               edgecolors="white", linewidths=0.5)
 
     # Annotate each point with task label
-    for t, xr, yp in zip(tasks_with_data, x_rho, y_phi):
+    for t, xr, ya in zip(tasks_with_data, x_rho, y_agree):
         offset_x = 0.01
         offset_y = 0.01
-        # Adjust specific labels to avoid overlap
+        # Adjust specific labels to reduce overlap
         if t == "B6":
             offset_y = -0.03
         elif t == "B7":
             offset_x = 0.015
 
         ax.annotate(
-            t, (xr, yp),
+            t, (xr, ya),
             textcoords="offset points",
             xytext=(offset_x * 400, offset_y * 400),
             fontsize=7,
             fontweight="bold",
         )
 
-    # Fit line if enough points
+    # Fit trend line if enough points
     if len(tasks_with_data) >= 3:
-        slope, intercept, r_val, p_val, _ = sp_stats.linregress(x_rho, y_phi)
+        slope, intercept, r_val, p_val, _ = sp_stats.linregress(x_rho, y_agree)
         x_line = np.linspace(min(x_rho) - 0.02, max(x_rho) + 0.02, 100)
         y_line = slope * x_line + intercept
         ax.plot(x_line, y_line, "--", color="0.5", linewidth=0.8, zorder=1)
 
-        # Annotation with correlation
-        corr_info = phi_results.get("phi_rho_correlation", {})
-        r_s = corr_info.get("spearman_r", r_val)
-        p_s = corr_info.get("spearman_p", p_val)
+        # Spearman correlation annotation
+        if len(tasks_with_data) >= 3:
+            r_s, p_s = sp_stats.spearmanr(x_rho, y_agree)
+        else:
+            r_s, p_s = r_val, p_val
         ax.text(
             0.05, 0.95,
             f"$r_s = {r_s:.2f}$, $p = {p_s:.3f}$",
             transform=ax.transAxes,
             fontsize=7,
             va="top",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", edgecolor="0.8", alpha=0.85),
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                      edgecolor="0.8", alpha=0.85),
+        )
+
+    # Highlight the B6 vs B7 prediction
+    b6_data = ("B6" in tasks_with_data, agreement_by_task.get("B6"))
+    b7_data = ("B7" in tasks_with_data, agreement_by_task.get("B7"))
+    if b6_data[0] and b7_data[0]:
+        prediction_met = b6_data[1] > b7_data[1]
+        verdict = "confirmed" if prediction_met else "not confirmed"
+        ax.text(
+            0.05, 0.85,
+            f"B6 > B7: {verdict}",
+            transform=ax.transAxes,
+            fontsize=6,
+            va="top",
+            color="#0072B2" if prediction_met else "#D55E00",
+            fontstyle="italic",
         )
 
     ax.set_xlabel(r"Known between-model $\rho$ (reasoning-gaps)")
-    ax.set_ylabel("Mean verifier error $\\phi$ (this experiment)")
+    ax.set_ylabel("Verifier agreement rate (this experiment)")
     ax.set_title("Verifier Agreement vs Known Error Correlation")
 
     # Legend for VC classes
@@ -1049,6 +1414,7 @@ def plot_agreement_vs_rho(
     legend_elements = [
         Patch(facecolor=VC_CLASS_COLORS[vc], label=vc, alpha=0.85)
         for vc in VC_CLASS_ORDER
+        if any(VC_CLASS.get(t) == vc for t in tasks_with_data)
     ]
     ax.legend(handles=legend_elements, loc="lower right", title="VC Class", fontsize=6)
 
@@ -1124,6 +1490,26 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
         lines.append(cmd("twowayInterSig",
                          "significant" if tw.get("interaction_significant") else "not significant"))
 
+    # --- Generator x VC interaction ANOVA (with effect sizes) ---
+    gva = analyses.get("generator_vc_interaction_anova", {})
+    if gva.get("factors"):
+        for factor_name, fd in gva["factors"].items():
+            safe_name = factor_name.replace("(", "").replace(")", "").replace(":", "X").replace(" ", "")
+            f_val = fd.get("F")
+            p_val = fd.get("p_value")
+            eta = fd.get("partial_eta_sq")
+            if f_val is not None:
+                lines.append(cmd(f"gva{safe_name}F", f"{f_val:.2f}"))
+            if p_val is not None:
+                if p_val < 0.001:
+                    lines.append(cmd(f"gva{safe_name}P", "< 0.001"))
+                else:
+                    lines.append(cmd(f"gva{safe_name}P", f"= {p_val:.3f}"))
+            if eta is not None:
+                lines.append(cmd(f"gva{safe_name}Eta", f"{eta:.4f}"))
+        if gva.get("interaction_partial_eta_sq") is not None:
+            lines.append(cmd("gvaInterEta", f"{gva['interaction_partial_eta_sq']:.4f}"))
+
     # --- Agreement ---
     agreement = analyses.get("between_model_agreement", {}).get("agreement_by_task", {})
     for task, d in agreement.items():
@@ -1138,6 +1524,26 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
         lines.append(cmd("nonMonBsevenAgree", f"{nm['B7_agreement']*100:.1f}\\%"))
         lines.append(cmd("nonMonResult",
                          "confirmed" if nm.get("B6_gt_B7") else "not confirmed"))
+
+    # --- Theorem 2c consolidated ---
+    t2c = analyses.get("theorem_2c_agreement", {})
+    if t2c.get("per_task"):
+        for task, d in t2c["per_task"].items():
+            mp = d.get("mean_phi", np.nan)
+            lines.append(cmd(f"t2cPhi{task}",
+                             f"{mp:.3f}" if not np.isnan(mp) else "N/A"))
+    t2c_nm = t2c.get("non_monotonicity", {})
+    if t2c_nm:
+        lines.append(cmd("t2cBsixPhi", f"{t2c_nm['B6_mean_phi']:.3f}"))
+        lines.append(cmd("t2cBsevenPhi", f"{t2c_nm['B7_mean_phi']:.3f}"))
+    t2c_ar_corr = t2c.get("agreement_rho_correlation", {})
+    if t2c_ar_corr:
+        lines.append(cmd("t2cAgreeRhoR", f"{t2c_ar_corr['spearman_r']:.2f}"))
+        p_ar = t2c_ar_corr["spearman_p"]
+        if p_ar < 0.001:
+            lines.append(cmd("t2cAgreeRhoP", "< 0.001"))
+        else:
+            lines.append(cmd("t2cAgreeRhoP", f"= {p_ar:.3f}"))
 
     # --- Phi-rho correlation ---
     pr = analyses.get("phi_coefficients", {}).get("phi_rho_correlation", {})
@@ -1168,6 +1574,24 @@ def write_latex_stats(analyses: dict[str, Any], output_dir: Path) -> None:
     for vc, d in lat.items():
         safe_vc = vc.replace("/", "").replace(" ", "")
         lines.append(cmd(f"latMedian{safe_vc}", f"{d['median_ms']:.0f}"))
+
+    # --- Gap collapse ---
+    gc = analyses.get("gap_collapse", {})
+    if gc and "b7_ver_acc" in gc:
+        lines.append(cmd("gapCollapseVerAcc", f"{gc['b7_ver_acc']*100:.1f}\\%"))
+        for label in ("direct", "short_cot"):
+            cond = gc.get(f"vs_{label}", {})
+            if cond:
+                safe = label.replace("_", "")
+                lines.append(cmd(f"gapCollapseDiff{safe.capitalize()}",
+                                 f"{cond['diff_pp']:+.1f}"))
+                p = cond["p_value"]
+                if p < 0.001:
+                    lines.append(cmd(f"gapCollapseP{safe.capitalize()}", "< 0.001"))
+                else:
+                    lines.append(cmd(f"gapCollapseP{safe.capitalize()}", f"= {p:.3f}"))
+        lines.append(cmd("gapCollapseResult",
+                         "collapsed" if gc.get("collapsed") else "persists"))
 
     lines.append("")
     (output_dir / "stats.tex").write_text("\n".join(lines))
@@ -1279,6 +1703,27 @@ def print_summary(analyses: dict[str, Any]) -> None:
             print(f"   {factor:25s}: {f_str:12s} {p_str}")
         print(f"   Interaction: {'SIGNIFICANT' if tw.get('interaction_significant') else 'not significant'}")
 
+    # 3a. Generator x VC interaction ANOVA (with effect sizes)
+    gva = analyses.get("generator_vc_interaction_anova", {})
+    if gva.get("factors"):
+        print(f"\n3a. GENERATOR x VC INTERACTION ANOVA (with effect sizes) [{gva.get('method', '?')}]")
+        for factor, d in gva["factors"].items():
+            f_val = d.get("F")
+            p_val = d.get("p_value")
+            eta = d.get("partial_eta_sq")
+            f_str = f"F={f_val:.2f}" if f_val is not None else ""
+            p_str = f"p={p_val:.4f}" if p_val is not None else ""
+            eta_str = f"eta_p^2={eta:.4f}" if eta is not None else ""
+            print(f"   {factor:25s}: {f_str:12s} {p_str:12s} {eta_str}")
+        inter_sig = gva.get("interaction_significant")
+        inter_p = gva.get("interaction_p")
+        inter_eta = gva.get("interaction_partial_eta_sq")
+        sig_str = "SIGNIFICANT" if inter_sig else "not significant"
+        p_suffix = f" (p={inter_p:.4f})" if inter_p is not None else ""
+        print(f"   Interaction: {sig_str}{p_suffix}")
+        if inter_eta is not None:
+            print(f"   Interaction effect size: partial eta^2 = {inter_eta:.4f}")
+
     # 4. Between-model agreement
     agree = analyses.get("between_model_agreement", {})
     if agree.get("agreement_by_task"):
@@ -1297,6 +1742,40 @@ def print_summary(analyses: dict[str, Any]) -> None:
         nm = agree.get("non_monotonicity_test", {})
         if nm:
             print(f"   Non-monotonicity: B6={nm['B6_agreement']:.3f} vs B7={nm['B7_agreement']:.3f} -> {'CONFIRMED' if nm['B6_gt_B7'] else 'NOT confirmed'}")
+
+    # 4a. Consolidated Theorem 2c analysis
+    t2c = analyses.get("theorem_2c_agreement", {})
+    if t2c.get("per_task"):
+        print("\n4a. THEOREM 2c: CONSOLIDATED ERROR AGREEMENT ANALYSIS")
+        for task in TASKS:
+            d = t2c["per_task"].get(task)
+            if d is None:
+                continue
+            ar = d.get("agreement_rate", np.nan)
+            mp = d.get("mean_phi", np.nan)
+            q = d.get("cochrans_q", np.nan)
+            rho = d.get("known_rho", np.nan)
+            ar_str = f"agree={ar:.3f}" if not np.isnan(ar) else "agree=N/A"
+            mp_str = f"phi={mp:.3f}" if not np.isnan(mp) else "phi=N/A"
+            q_str = f"Q={q:.2f}" if not np.isnan(q) else "Q=N/A"
+            rho_str = f"rho={rho:.2f}" if not np.isnan(rho) else "rho=?"
+            print(f"   {task} ({d.get('vc_class','?'):6s}): {ar_str}, {mp_str}, {q_str}, {rho_str}")
+        nm = t2c.get("non_monotonicity", {})
+        if nm:
+            print(f"   Non-monotonicity (B6 vs B7):")
+            print(f"     B6 agreement={nm['B6_agreement']:.3f}, phi={nm['B6_mean_phi']:.3f}")
+            print(f"     B7 agreement={nm['B7_agreement']:.3f}, phi={nm['B7_mean_phi']:.3f}")
+            print(f"     B6 > B7: {'CONFIRMED' if nm['B6_gt_B7'] else 'NOT confirmed'}")
+        ar_corr = t2c.get("agreement_rho_correlation", {})
+        if ar_corr:
+            print(f"   Agreement-Rho correlation: r_s={ar_corr['spearman_r']:.3f}, p={ar_corr['spearman_p']:.4f}")
+        pr_corr = t2c.get("phi_rho_correlation", {})
+        if pr_corr:
+            print(f"   Phi-Rho correlation: r_s={pr_corr['spearman_r']:.3f}, p={pr_corr['spearman_p']:.4f}")
+        ranking = t2c.get("agreement_ranking", [])
+        if ranking:
+            parts = [f"{r['task']}({r['agreement_rate']:.2f})" for r in ranking]
+            print(f"   Agreement ranking: {', '.join(parts)}")
 
     # 5. Phi coefficients
     phi = analyses.get("phi_coefficients", {})
@@ -1337,6 +1816,21 @@ def print_summary(analyses: dict[str, Any]) -> None:
         kw = analyses.get("latency_by_vc_class", {}).get("kruskal_wallis", {})
         if kw:
             print(f"   Kruskal-Wallis: H={kw['h_statistic']:.2f}, p={kw['p_value']:.4f}")
+
+    # 9. Gap collapse
+    gc = analyses.get("gap_collapse", {})
+    if gc and "b7_ver_acc" in gc:
+        print(f"\n9. GAP-COLLAPSE ANALYSIS (B7)")
+        print(f"   B7 verification accuracy: {gc['b7_ver_acc']:.3f} (n={gc['b7_ver_n']})")
+        for label in ("direct", "short_cot"):
+            cond = gc.get(f"vs_{label}", {})
+            if cond:
+                p_str = f"p={cond['p_value']:.4f}" if cond['p_value'] >= 0.001 else "p<0.001"
+                sig = "SIG" if cond["significant"] else "n.s."
+                coll = "COLLAPSED" if cond["collapsed"] else "NOT collapsed"
+                print(f"   vs {label}: gen={cond['gen_acc']:.3f}, diff={cond['diff_pp']:+.1f}pp, "
+                      f"z={cond['z']:.2f}, {p_str} {sig} -> {coll}")
+        print(f"   Overall: {'GAP COLLAPSED' if gc.get('collapsed') else 'GAP PERSISTS'}")
 
     print()
 
@@ -1393,32 +1887,45 @@ def main():
     print(f"  Verifiers: {sorted(df['verifier_model'].unique())}")
     print()
 
-    # --- Run all 8 analyses ---
+    # --- Run all analyses ---
     analyses: dict[str, Any] = {}
 
-    print("1/8  Verification accuracy by VC class (ANOVA)...")
+    print(" 1/12  Verification accuracy by VC class (ANOVA)...")
     analyses["accuracy_by_vc_class"] = analyze_accuracy_by_vc_class(df)
 
-    print("2/8  Cross-model consistency (ICC)...")
+    print(" 2/12  Cross-model consistency (ICC)...")
     analyses["cross_model_consistency"] = analyze_cross_model_consistency(df)
 
-    print("3/8  Two-way ANOVA (generator x VC class)...")
+    print(" 3/12  Two-way ANOVA (generator x VC class) [legacy]...")
     analyses["two_way_anova"] = analyze_two_way_anova(df)
 
-    print("4/8  Between-model error agreement (Cochran's Q)...")
-    analyses["between_model_agreement"] = analyze_between_model_agreement(df)
+    print(" 4/12  Generator x VC interaction ANOVA (with effect sizes)...")
+    analyses["generator_vc_interaction_anova"] = generator_vc_interaction_anova(df)
 
-    print("5/8  Phi coefficients for error correlation...")
+    print(" 5/12  Consolidated Theorem 2c: error agreement analysis...")
+    analyses["theorem_2c_agreement"] = between_model_error_agreement(df)
+
+    print(" 6/12  Between-model error agreement (legacy wrapper)...")
+    analyses["between_model_agreement"] = analyze_between_model_agreement(
+        df, consolidated=analyses["theorem_2c_agreement"],
+    )
+
+    print(" 7/12  Phi coefficients for error correlation...")
     analyses["phi_coefficients"] = analyze_phi_coefficients(df)
 
-    print("6/8  Difficulty scaling...")
+    print(" 8/12  Difficulty scaling...")
     analyses["difficulty_scaling"] = analyze_difficulty_scaling(df)
 
-    print("7/8  B7 error type analysis...")
+    print(" 9/12  B7 error type analysis...")
     analyses["error_types_b7"] = analyze_error_types_b7(df)
 
-    print("8/8  Latency by VC class...")
+    print("10/12  Latency by VC class...")
     analyses["latency_by_vc_class"] = analyze_latency_by_vc_class(df)
+
+    print("11/12  Gap-collapse analysis (B7 generation vs verification)...")
+    analyses["gap_collapse"] = analyze_gap_collapse(df)
+
+    print("12/12  Done.")
 
     # --- Save JSON report ---
     report_path = args.output_dir / "analysis_report.json"
@@ -1447,11 +1954,7 @@ def main():
             print("  Figure 2: Verification heatmap...")
             plot_verification_heatmap(df, args.output_dir)
             print("  Figure 3: Agreement vs rho (money figure)...")
-            plot_agreement_vs_rho(
-                analyses["phi_coefficients"],
-                analyses["between_model_agreement"],
-                args.output_dir,
-            )
+            plot_agreement_vs_rho(df, args.output_dir, analyses.get("theorem_2c_agreement"))
         else:
             print("\nWarning: matplotlib/seaborn not available, skipping figures", file=sys.stderr)
 

@@ -8,6 +8,7 @@ Prediction: Accuracy degrades with graph diameter. CoT helps but requires
 Omega(d) steps for diameter-d graphs.
 """
 
+import math
 import random as _random
 from collections import deque
 
@@ -38,7 +39,6 @@ def _generate_reachable_graph(
 
     Uses Erdos-Renyi model with moderate density, plus a planted path.
     """
-    import math
     p = min(0.3, (math.log(n) + 1) / n)
 
     edges: set[tuple[int, int]] = set()
@@ -72,8 +72,6 @@ def _generate_unreachable_graph(
     with no edges crossing from source-side to target-side, then add
     random edges within each partition.
     """
-    import math
-
     # Partition: source is in set A, target is in set B
     others = [x for x in range(1, n + 1) if x != source and x != target]
     rng.shuffle(others)

@@ -1,0 +1,276 @@
+"""OpenAI API client for ReasonGap evaluation."""
+
+from __future__ import annotations
+
+import logging
+import os
+import threading
+import time
+from typing import Any
+
+import openai
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from evaluate import ModelClient
+
+from .rate_limiter import RateLimiterMixin
+
+logger = logging.getLogger(__name__)
+
+# Pricing per 1M tokens (USD)
+OPENAI_PRICING: dict[str, dict[str, float]] = {
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+    "gpt-4o": {"input": 2.50, "output": 10.00},
+    "o3": {"input": 10.00, "output": 40.00},
+}
+
+# Models that use the "reasoning" API style (no system prompt, different params)
+REASONING_MODELS = {"o3"}
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    """Check if an OpenAI error is retryable (429, 500, 529)."""
+    if isinstance(exc, openai.RateLimitError):
+        return True
+    if isinstance(exc, openai.InternalServerError):
+        return True
+    if isinstance(exc, openai.APIStatusError) and getattr(exc, "status_code", 0) == 529:
+        return True
+    return False
+
+
+class OpenAIClient(RateLimiterMixin, ModelClient):
+    """OpenAI API client with rate limiting, retry, and cost tracking.
+
+    Thread-safe: all mutable state is protected by locks.
+    """
+
+    def __init__(
+        self,
+        model_name: str,
+        *,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        api_key_env: str = "OPENAI_API_KEY",
+        max_rpm: int = 60,
+        timeout: float = 120.0,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(model_name, **kwargs)
+        key = api_key or os.environ.get(api_key_env)
+        if not key:
+            raise ValueError(
+                f"API key required. Set {api_key_env} env var "
+                f"or pass api_key parameter."
+            )
+        self._client = openai.OpenAI(
+            api_key=key,
+            base_url=base_url,
+            timeout=timeout,
+        )
+        self._max_rpm = max_rpm
+        self._timeout = timeout
+
+        # Cost tracking (protected by lock)
+        self._lock = threading.Lock()
+        self._total_input_tokens = 0
+        self._total_output_tokens = 0
+        self._total_cost = 0.0
+
+        # Token-bucket rate limiter (from RateLimiterMixin)
+        self._init_rate_limiter(max_rpm)
+
+    # -- Cost helpers --------------------------------------------------
+
+    def _compute_cost(self, input_tokens: int, output_tokens: int) -> float:
+        pricing = OPENAI_PRICING.get(self.model_name)
+        if not pricing:
+            logger.warning(
+                "No pricing info for model %s; cost will be estimated at 0",
+                self.model_name,
+            )
+            return 0.0
+        return (
+            input_tokens * pricing["input"] / 1_000_000
+            + output_tokens * pricing["output"] / 1_000_000
+        )
+
+    @property
+    def total_tokens(self) -> int:
+        with self._lock:
+            return self._total_input_tokens + self._total_output_tokens
+
+    @property
+    def total_cost_usd(self) -> float:
+        with self._lock:
+            return self._total_cost
+
+    def get_cost(self) -> float:
+        """Return cumulative USD spent."""
+        return self.total_cost_usd
+
+    # -- Query ---------------------------------------------------------
+
+    def query(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int = 512,
+        temperature: float | None = None,
+    ) -> tuple[str, float]:
+        """Send prompt to OpenAI and return (response_text, latency_ms)."""
+        self._wait_for_rate_limit()
+        return self._query_with_retry(prompt, system_prompt, max_tokens, temperature=temperature)
+
+    def query_with_tools(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int = 2048,
+        tools: list[dict[str, Any]] | None = None,
+        tool_handler: Any = None,
+    ) -> tuple[str, float]:
+        """Send prompt with function calling and handle tool_call responses.
+
+        Loops until the model produces a final text response (up to 5 rounds).
+        """
+        self._wait_for_rate_limit()
+        return self._tool_use_loop(
+            prompt, system_prompt, max_tokens, tools or [], tool_handler
+        )
+
+    def _tool_use_loop(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int,
+        tools: list[dict[str, Any]],
+        tool_handler: Any,
+        max_rounds: int = 5,
+    ) -> tuple[str, float]:
+        """Execute the function calling conversation loop."""
+        import json as _json
+
+        messages: list[dict[str, Any]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        total_latency_ms = 0.0
+
+        for _round in range(max_rounds):
+            kwargs: dict[str, Any] = {
+                "model": self.model_name,
+                "messages": messages,
+                "max_tokens": max_tokens,
+            }
+            if tools:
+                kwargs["tools"] = tools
+
+            start = time.perf_counter()
+            response = self._client.chat.completions.create(**kwargs)
+            round_latency = (time.perf_counter() - start) * 1000
+            total_latency_ms += round_latency
+
+            # Track tokens and cost
+            usage = response.usage
+            input_tokens = usage.prompt_tokens if usage else 0
+            output_tokens = usage.completion_tokens if usage else 0
+            cost = self._compute_cost(input_tokens, output_tokens)
+            with self._lock:
+                self._total_input_tokens += input_tokens
+                self._total_output_tokens += output_tokens
+                self._total_cost += cost
+
+            choice = response.choices[0]
+
+            # Check if the model wants to call tools
+            if choice.finish_reason != "tool_calls" or not choice.message.tool_calls:
+                return choice.message.content or "", total_latency_ms
+
+            # Add the assistant message with tool calls
+            messages.append(choice.message)
+
+            # Process each tool call
+            for tool_call in choice.message.tool_calls:
+                if tool_handler is not None:
+                    try:
+                        args = _json.loads(tool_call.function.arguments)
+                    except _json.JSONDecodeError:
+                        args = {"code": tool_call.function.arguments}
+                    tool_result = tool_handler(tool_call.function.name, args)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": str(tool_result),
+                    })
+
+            self._wait_for_rate_limit()
+
+        # Exhausted rounds -- return last content
+        return choice.message.content or "", total_latency_ms
+
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        wait=wait_exponential(multiplier=1, min=1, max=60),
+        stop=stop_after_attempt(5),
+        reraise=True,
+    )
+    def _query_with_retry(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int,
+        temperature: float | None = None,
+    ) -> tuple[str, float]:
+        """Inner query with tenacity retry on transient errors."""
+        is_reasoning = self.model_name in REASONING_MODELS
+
+        if is_reasoning:
+            # Reasoning models (o3) don't support system messages or temperature;
+            # fold the system prompt into the user message.
+            combined = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+            messages = [{"role": "user", "content": combined}]
+            kwargs: dict[str, Any] = {
+                "model": self.model_name,
+                "messages": messages,
+                "max_completion_tokens": max_tokens,
+            }
+        else:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            kwargs = {
+                "model": self.model_name,
+                "messages": messages,
+                "max_tokens": max_tokens,
+            }
+            if temperature is not None:
+                kwargs["temperature"] = temperature
+
+        start = time.perf_counter()
+        response = self._client.chat.completions.create(**kwargs)
+        latency_ms = (time.perf_counter() - start) * 1000
+
+        # Extract text
+        choice = response.choices[0]
+        response_text = choice.message.content or ""
+
+        # Track tokens and cost
+        usage = response.usage
+        input_tokens = usage.prompt_tokens if usage else 0
+        output_tokens = usage.completion_tokens if usage else 0
+        cost = self._compute_cost(input_tokens, output_tokens)
+
+        with self._lock:
+            self._total_input_tokens += input_tokens
+            self._total_output_tokens += output_tokens
+            self._total_cost += cost
+
+        return response_text, latency_ms

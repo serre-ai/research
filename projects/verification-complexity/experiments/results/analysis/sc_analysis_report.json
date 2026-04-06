@@ -1,273 +1,278 @@
 {
   "sc_scaling": {
     "scaling_data": {
-      "B2_claude-haiku-4-5-20251001": {
-        "task": "B2",
-        "model": "claude-haiku-4-5-20251001",
-        "n_instances": 60,
-        "available_ns": [
-          1,
-          3,
-          5,
-          9
-        ],
-        "curve": {
-          "1": {
-            "accuracy": 0.9833333333333333,
-            "ci_low": 0.9370833333333334,
-            "ci_high": 1.0
-          },
-          "3": {
-            "accuracy": 0.9833333333333333,
-            "ci_low": 0.9333333333333333,
-            "ci_high": 1.0
-          },
-          "5": {
-            "accuracy": 0.9666666666666667,
-            "ci_low": 0.9370833333333334,
-            "ci_high": 1.0
-          },
-          "9": {
-            "accuracy": 0.9666666666666667,
-            "ci_low": 0.9166666666666666,
-            "ci_high": 1.0
-          }
-        },
-        "theory": {
-          "1": 0.9833333333333333,
-          "3": 0.9989353142936358,
-          "5": 0.9997402152848085,
-          "9": 0.9999391802375509
-        },
-        "rho_known": 0.22,
-        "p1": 0.9833333333333333,
-        "r_squared": -7.799629714664933
-      },
       "B4_claude-haiku-4-5-20251001": {
         "task": "B4",
         "model": "claude-haiku-4-5-20251001",
-        "n_instances": 80,
+        "n_instances": 200,
         "available_ns": [
           1,
           3,
           5,
-          9
+          9,
+          17,
+          33
         ],
         "curve": {
           "1": {
-            "accuracy": 0.925,
-            "ci_low": 0.8653125,
-            "ci_high": 0.975
+            "accuracy": 0.9,
+            "ci_low": 0.8598750000000001,
+            "ci_high": 0.94
           },
           "3": {
-            "accuracy": 0.9375,
-            "ci_low": 0.8903125,
-            "ci_high": 0.9846875
+            "accuracy": 0.915,
+            "ci_low": 0.875,
+            "ci_high": 0.95
           },
           "5": {
-            "accuracy": 0.9375,
-            "ci_low": 0.8903125,
-            "ci_high": 0.975
+            "accuracy": 0.92,
+            "ci_low": 0.88,
+            "ci_high": 0.955
           },
           "9": {
-            "accuracy": 0.95,
-            "ci_low": 0.9125,
-            "ci_high": 0.9971875
+            "accuracy": 0.915,
+            "ci_low": 0.875,
+            "ci_high": 0.95
+          },
+          "17": {
+            "accuracy": 0.93,
+            "ci_low": 0.895,
+            "ci_high": 0.965
+          },
+          "33": {
+            "accuracy": 0.93,
+            "ci_low": 0.8948750000000001,
+            "ci_high": 0.96
           }
         },
         "theory": {
-          "1": 0.925,
-          "3": 0.9811354034374483,
-          "5": 0.99055303032218,
-          "9": 0.9953318577970021
+          "1": 0.8999999999999999,
+          "3": 0.9678259512713127,
+          "5": 0.981690208938847,
+          "9": 0.9896719020102647,
+          "17": 0.9935291865240058,
+          "33": 0.9952891453281938
         },
         "rho_known": 0.22,
-        "p1": 0.925,
-        "r_squared": -20.675679330696628
+        "p1": 0.9,
+        "r_squared": -31.32229367561493
+      },
+      "B6_claude-haiku-4-5-20251001": {
+        "task": "B6",
+        "model": "claude-haiku-4-5-20251001",
+        "n_instances": 200,
+        "available_ns": [
+          1,
+          3,
+          5,
+          9,
+          17,
+          33
+        ],
+        "curve": {
+          "1": {
+            "accuracy": 0.505,
+            "ci_low": 0.435,
+            "ci_high": 0.5701249999999999
+          },
+          "3": {
+            "accuracy": 0.49,
+            "ci_low": 0.425,
+            "ci_high": 0.555
+          },
+          "5": {
+            "accuracy": 0.5,
+            "ci_low": 0.43,
+            "ci_high": 0.565
+          },
+          "9": {
+            "accuracy": 0.51,
+            "ci_low": 0.44,
+            "ci_high": 0.58
+          },
+          "17": {
+            "accuracy": 0.52,
+            "ci_low": 0.45,
+            "ci_high": 0.5851249999999999
+          },
+          "33": {
+            "accuracy": 0.52,
+            "ci_low": 0.45,
+            "ci_high": 0.585
+          }
+        },
+        "theory": {
+          "1": 0.505,
+          "3": 0.5063843186056619,
+          "5": 0.5068293247790764,
+          "9": 0.5071834969913285,
+          "17": 0.5074194574285285,
+          "33": 0.5075583807161934
+        },
+        "rho_known": 0.42,
+        "p1": 0.505,
+        "r_squared": 0.07478952130385852
       },
       "B7_claude-haiku-4-5-20251001": {
         "task": "B7",
         "model": "claude-haiku-4-5-20251001",
-        "n_instances": 80,
+        "n_instances": 200,
         "available_ns": [
           1,
           3,
           5,
-          9
+          9,
+          17,
+          33
         ],
         "curve": {
           "1": {
-            "accuracy": 0.7,
-            "ci_low": 0.6125,
-            "ci_high": 0.775
+            "accuracy": 0.67,
+            "ci_low": 0.61,
+            "ci_high": 0.735
           },
           "3": {
-            "accuracy": 0.7,
-            "ci_low": 0.6,
-            "ci_high": 0.8
+            "accuracy": 0.675,
+            "ci_low": 0.605,
+            "ci_high": 0.74
           },
           "5": {
-            "accuracy": 0.7,
-            "ci_low": 0.6112500000000001,
-            "ci_high": 0.8096875
+            "accuracy": 0.675,
+            "ci_low": 0.61,
+            "ci_high": 0.74
           },
           "9": {
-            "accuracy": 0.7,
-            "ci_low": 0.6,
-            "ci_high": 0.7971875
+            "accuracy": 0.68,
+            "ci_low": 0.61,
+            "ci_high": 0.745
+          },
+          "17": {
+            "accuracy": 0.68,
+            "ci_low": 0.61,
+            "ci_high": 0.745
+          },
+          "33": {
+            "accuracy": 0.68,
+            "ci_low": 0.615,
+            "ci_high": 0.745
           }
         },
         "theory": {
-          "1": 0.7,
-          "3": 0.8046232811743396,
-          "5": 0.8538344467841099,
-          "9": 0.9020227759830273
+          "1": 0.67,
+          "3": 0.7642303974939468,
+          "5": 0.8114809641682122,
+          "9": 0.8609991264568357,
+          "17": 0.9024394511214335,
+          "33": 0.9304136087053035
         },
         "rho_known": 0.06,
-        "p1": 0.7,
-        "r_squared": 0.0
-      },
-      "B9_claude-haiku-4-5-20251001": {
-        "task": "B9",
-        "model": "claude-haiku-4-5-20251001",
-        "n_instances": 60,
-        "available_ns": [
-          1,
-          3,
-          5,
-          9
-        ],
-        "curve": {
-          "1": {
-            "accuracy": 0.9666666666666667,
-            "ci_low": 0.9166666666666666,
-            "ci_high": 1.0
-          },
-          "3": {
-            "accuracy": 0.9833333333333333,
-            "ci_low": 0.95,
-            "ci_high": 1.0
-          },
-          "5": {
-            "accuracy": 1.0,
-            "ci_low": 1.0,
-            "ci_high": 1.0
-          },
-          "9": {
-            "accuracy": 1.0,
-            "ci_low": 1.0,
-            "ci_high": 1.0
-          }
-        },
-        "theory": {
-          "1": 0.9666666666666667,
-          "3": 0.9985350686481911,
-          "5": 0.999855291037481,
-          "9": 0.9999947088653548
-        },
-        "rho_known": 0.07,
-        "p1": 0.9666666666666667,
-        "r_squared": 0.6974511232921592
+        "p1": 0.67,
+        "r_squared": -2057.4330324244083
       }
     },
-    "sc_p2": {},
-    "sc_p3": {},
+    "sc_p2": {
+      "B6_claude-haiku-4-5-20251001": {
+        "acc_17": 0.52,
+        "acc_33": 0.52,
+        "delta": 0.0,
+        "plateau_confirmed": true
+      }
+    },
+    "sc_p3": {
+      "B7_claude-haiku-4-5-20251001": {
+        "acc_9": 0.68,
+        "acc_33": 0.68,
+        "delta": 0.0,
+        "improvement_confirmed": false
+      }
+    },
     "sc_p4": {
-      "B2_claude-haiku-4-5-20251001": {
-        "r_squared": -7.799629714664933,
+      "B4_claude-haiku-4-5-20251001": {
+        "r_squared": -31.32229367561493,
         "above_threshold": false
       },
-      "B4_claude-haiku-4-5-20251001": {
-        "r_squared": -20.675679330696628,
+      "B6_claude-haiku-4-5-20251001": {
+        "r_squared": 0.07478952130385852,
         "above_threshold": false
       },
       "B7_claude-haiku-4-5-20251001": {
-        "r_squared": 0.0,
-        "above_threshold": false
-      },
-      "B9_claude-haiku-4-5-20251001": {
-        "r_squared": 0.6974511232921592,
+        "r_squared": -2057.4330324244083,
         "above_threshold": false
       }
     }
   },
   "error_correlation": {
     "rho_data": {
-      "B2_claude-haiku-4-5-20251001": {
-        "task": "B2",
-        "model": "claude-haiku-4-5-20251001",
-        "rho_within": 0.426470588235294,
-        "ci_low": 0.0,
-        "ci_high": 0.42647058823529405,
-        "n_instances": 60,
-        "known_rho_between": 0.22
-      },
       "B4_claude-haiku-4-5-20251001": {
         "task": "B4",
         "model": "claude-haiku-4-5-20251001",
-        "rho_within": 0.2049542682926829,
-        "ci_low": 0.030083498040338705,
-        "ci_high": 0.3074548596348151,
-        "n_instances": 80,
+        "rho_within": 0.2821219957179983,
+        "ci_low": 0.2018588851050854,
+        "ci_high": 0.3481942090982214,
+        "n_instances": 200,
         "known_rho_between": 0.22
+      },
+      "B6_claude-haiku-4-5-20251001": {
+        "task": "B6",
+        "model": "claude-haiku-4-5-20251001",
+        "rho_within": 0.541391400876622,
+        "ci_low": 0.49114865653307593,
+        "ci_high": 0.58788190891435,
+        "n_instances": 200,
+        "known_rho_between": 0.42
       },
       "B7_claude-haiku-4-5-20251001": {
         "task": "B7",
         "model": "claude-haiku-4-5-20251001",
-        "rho_within": 0.6301369863013698,
-        "ci_low": 0.0,
-        "ci_high": 0.7230769230769231,
-        "n_instances": 80,
+        "rho_within": 0.5280074714573539,
+        "ci_low": 0.3612289404435788,
+        "ci_high": 0.641020281787156,
+        "n_instances": 200,
         "known_rho_between": 0.06
-      },
-      "B9_claude-haiku-4-5-20251001": {
-        "task": "B9",
-        "model": "claude-haiku-4-5-20251001",
-        "rho_within": 0.0,
-        "ci_low": 0.0,
-        "ci_high": 0.0,
-        "n_instances": 60,
-        "known_rho_between": 0.07
       }
     },
     "corr_p1": {
       "per_task_model": {
-        "B2_claude-haiku-4-5-20251001": {
-          "rho_within": 0.426470588235294,
-          "above_threshold": false
-        },
         "B4_claude-haiku-4-5-20251001": {
-          "rho_within": 0.2049542682926829,
+          "rho_within": 0.2821219957179983,
           "above_threshold": false
         },
-        "B7_claude-haiku-4-5-20251001": {
-          "rho_within": 0.6301369863013698,
+        "B6_claude-haiku-4-5-20251001": {
+          "rho_within": 0.541391400876622,
           "above_threshold": true
         },
-        "B9_claude-haiku-4-5-20251001": {
-          "rho_within": 0.0,
-          "above_threshold": false
+        "B7_claude-haiku-4-5-20251001": {
+          "rho_within": 0.5280074714573539,
+          "above_threshold": true
         }
       },
       "all_above_0_5": false
     },
-    "corr_p3": {}
+    "corr_p3": {
+      "Haiku": {
+        "rho_b6": 0.541391400876622,
+        "rho_b7": 0.5280074714573539,
+        "difference": 0.013383929419268026,
+        "p_value": 0.38836116388361164,
+        "confirmed": false
+      }
+    }
   },
   "plateau_detection": {
     "plateau_data": {
-      "B2_claude-haiku-4-5-20251001": {
-        "task": "B2",
-        "model": "claude-haiku-4-5-20251001",
-        "plateau_n": 1,
-        "predicted_neff_limit": 4.545454545454546,
-        "rho_known": 0.22
-      },
       "B4_claude-haiku-4-5-20251001": {
         "task": "B4",
         "model": "claude-haiku-4-5-20251001",
         "plateau_n": 1,
         "predicted_neff_limit": 4.545454545454546,
         "rho_known": 0.22
+      },
+      "B6_claude-haiku-4-5-20251001": {
+        "task": "B6",
+        "model": "claude-haiku-4-5-20251001",
+        "plateau_n": 1,
+        "predicted_neff_limit": 2.380952380952381,
+        "rho_known": 0.42
       },
       "B7_claude-haiku-4-5-20251001": {
         "task": "B7",
@@ -275,137 +280,127 @@
         "plateau_n": 1,
         "predicted_neff_limit": 16.666666666666668,
         "rho_known": 0.06
-      },
-      "B9_claude-haiku-4-5-20251001": {
-        "task": "B9",
-        "model": "claude-haiku-4-5-20251001",
-        "plateau_n": 1,
-        "predicted_neff_limit": 14.285714285714285,
-        "rho_known": 0.07
       }
     },
     "spearman_correlation": {
       "r_s": NaN,
       "p_value": NaN,
-      "n_tasks": 4,
+      "n_tasks": 3,
       "tasks": [
-        "B2",
         "B4",
-        "B7",
-        "B9"
+        "B6",
+        "B7"
       ]
     }
   },
   "ensemble_comparison": {
     "comparison": {
-      "B2": {
-        "within_acc": 0.9666666666666667,
-        "within_model": "claude-haiku-4-5-20251001",
-        "between_acc": 0.9382799999999999,
-        "between_std": 0.012023377229381068,
-        "delta": -0.028386666666666782,
-        "n_subsets": 100,
-        "n_models_available": 12,
-        "n_instances_compared": 500
-      },
       "B4": {
-        "within_acc": 0.95,
+        "within_acc": 0.915,
         "within_model": "claude-haiku-4-5-20251001",
-        "between_acc": 0.8729376257545273,
-        "between_std": 0.019431609720440106,
-        "delta": -0.07706237424547269,
+        "between_acc": 0.8715291750503017,
+        "between_std": 0.01948154781732997,
+        "delta": -0.04347082494969834,
         "n_subsets": 100,
         "n_models_available": 12,
         "n_instances_compared": 497
       },
-      "B7": {
-        "within_acc": 0.7,
+      "B6": {
+        "within_acc": 0.51,
         "within_model": "claude-haiku-4-5-20251001",
-        "between_acc": 0.5681472081218274,
-        "between_std": 0.09727362241675942,
-        "delta": -0.13185279187817256,
+        "between_acc": 0.40563636363636363,
+        "between_std": 0.02875119832213394,
+        "delta": -0.10436363636363638,
+        "n_subsets": 55,
+        "n_models_available": 11,
+        "n_instances_compared": 500
+      },
+      "B7": {
+        "within_acc": 0.68,
+        "within_model": "claude-haiku-4-5-20251001",
+        "between_acc": 0.5687817258883249,
+        "between_std": 0.09174100033107047,
+        "delta": -0.11121827411167517,
         "n_subsets": 100,
         "n_models_available": 12,
         "n_instances_compared": 394
-      },
-      "B9": {
-        "within_acc": 1.0,
-        "within_model": "claude-haiku-4-5-20251001",
-        "between_acc": 0.910338028169014,
-        "between_std": 0.042996389915027224,
-        "delta": -0.08966197183098601,
-        "n_subsets": 100,
-        "n_models_available": 12,
-        "n_instances_compared": 355
       }
     },
+    "ens_p1": {
+      "delta_b6": -0.10436363636363638,
+      "confirmed": false
+    },
+    "ens_p2": {
+      "delta_b6": -0.10436363636363638,
+      "delta_b7": -0.11121827411167517,
+      "confirmed": true
+    },
     "ens_p3": {
-      "spearman_r": 0.9486832980505139,
-      "p_value": 0.05131670194948612,
-      "n_tasks": 4,
+      "spearman_r": 0.5,
+      "p_value": 0.6666666666666667,
+      "n_tasks": 3,
       "tasks": [
-        "B2",
         "B4",
-        "B7",
-        "B9"
+        "B6",
+        "B7"
       ]
     }
   },
   "sc_lift": {
     "lift_data": {
-      "B2_claude-haiku-4-5-20251001": {
-        "task": "B2",
-        "model": "claude-haiku-4-5-20251001",
-        "acc_1": 0.9833333333333333,
-        "acc_max": 0.9666666666666667,
-        "max_n": 9,
-        "lift": -0.016666666666666607,
-        "normalized_lift": -0.9999999999999933
-      },
       "B4_claude-haiku-4-5-20251001": {
         "task": "B4",
         "model": "claude-haiku-4-5-20251001",
-        "acc_1": 0.925,
-        "acc_max": 0.95,
-        "max_n": 9,
-        "lift": 0.02499999999999991,
-        "normalized_lift": 0.33333333333333237
+        "acc_1": 0.9,
+        "acc_max": 0.93,
+        "max_n": 33,
+        "lift": 0.030000000000000027,
+        "normalized_lift": 0.3000000000000003
+      },
+      "B6_claude-haiku-4-5-20251001": {
+        "task": "B6",
+        "model": "claude-haiku-4-5-20251001",
+        "acc_1": 0.505,
+        "acc_max": 0.52,
+        "max_n": 33,
+        "lift": 0.015000000000000013,
+        "normalized_lift": 0.03030303030303033
       },
       "B7_claude-haiku-4-5-20251001": {
         "task": "B7",
         "model": "claude-haiku-4-5-20251001",
-        "acc_1": 0.7,
-        "acc_max": 0.7,
-        "max_n": 9,
-        "lift": 0.0,
-        "normalized_lift": 0.0
-      },
-      "B9_claude-haiku-4-5-20251001": {
-        "task": "B9",
-        "model": "claude-haiku-4-5-20251001",
-        "acc_1": 0.9666666666666667,
-        "acc_max": 1.0,
-        "max_n": 9,
-        "lift": 0.033333333333333326,
-        "normalized_lift": 1.0
+        "acc_1": 0.67,
+        "acc_max": 0.68,
+        "max_n": 33,
+        "lift": 0.010000000000000009,
+        "normalized_lift": 0.030303030303030335
       }
     },
     "ordering_tests": {
       "Haiku": {
-        "lift_b4": 0.02499999999999991,
-        "lift_b6": NaN,
-        "lift_b7": 0.0,
-        "ordering_correct": false,
-        "reason": "missing data"
+        "lift_b4": 0.030000000000000027,
+        "lift_b6": 0.015000000000000013,
+        "lift_b7": 0.010000000000000009,
+        "ordering_correct": false
       }
     },
     "sc_p1_confirmed": false,
     "models_confirming": 0
   },
   "holm_bonferroni": {
+    "SC-P2": {
+      "raw_p": 0.01,
+      "corrected_p": 0.05,
+      "significant": false
+    },
     "SC-P4": {
       "raw_p": 0.1,
-      "corrected_p": 0.30000000000000004,
+      "corrected_p": 0.4,
+      "significant": false
+    },
+    "SC-P3": {
+      "raw_p": 0.5,
+      "corrected_p": 1.0,
       "significant": false
     },
     "SC-P5": {

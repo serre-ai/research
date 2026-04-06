@@ -8,8 +8,9 @@ Prediction: Accuracy degrades sharply at alpha ~ 4.27. CoT provides no
 systematic improvement at the phase transition.
 """
 
+from __future__ import annotations
+
 import random as _random
-import itertools
 
 TASK_NAME = "B7_3sat"
 DIFFICULTY_PARAMS: dict[int, int] = {1: 4, 2: 8, 3: 16, 4: 32, 5: 64}
@@ -37,11 +38,11 @@ def _generate_3sat_formula(
 
 def _check_satisfiability(
     clauses: list[list[int]], n_vars: int
-) -> tuple[bool, list[bool] | None]:
+) -> tuple[bool | None, list[bool] | None]:
     """Check satisfiability by exhaustive enumeration (for small n).
 
     For larger n, uses DPLL-style backtracking.
-    Returns (is_sat, assignment_or_None).
+    Returns (is_sat, assignment_or_None). Returns (None, None) on timeout.
     """
     if n_vars <= 20:
         # Exhaustive for small instances
@@ -86,7 +87,7 @@ class _DPLLTimeout(Exception):
 
 def _dpll_solve(
     clauses: list[list[int]], n_vars: int
-) -> tuple[bool, list[bool] | None]:
+) -> tuple[bool | None, list[bool] | None]:
     """Simple DPLL SAT solver with immutable assignment passing and node limit."""
     node_count = [0]  # mutable counter in closure
 
@@ -188,9 +189,8 @@ def _dpll_solve(
             return True, result_assignment
         return False, None
     except _DPLLTimeout:
-        # Could not determine within node limit -- conservatively report UNSAT
-        # (for very large instances at the phase transition)
-        return False, None
+        # Could not determine within node limit -- signal to caller
+        return None, None
 
 
 def _format_clause(clause: list[int]) -> str:
@@ -220,13 +220,24 @@ def generate(
     """
     rng = _random.Random(seed)
     n_vars = DIFFICULTY_PARAMS[difficulty]
-    n_clauses = round(ALPHA * n_vars)
+    n_clauses = int(ALPHA * n_vars)
+
+    _MAX_RETRIES = 50  # avoid infinite loops on pathologically hard regimes
 
     instances: list[dict] = []
     for i in range(n_instances):
-        clauses = _generate_3sat_formula(rng, n_vars, n_clauses)
-
-        is_sat, assignment = _check_satisfiability(clauses, n_vars)
+        # Retry with fresh random formulas if solver times out
+        for _attempt in range(_MAX_RETRIES):
+            clauses = _generate_3sat_formula(rng, n_vars, n_clauses)
+            is_sat, assignment = _check_satisfiability(clauses, n_vars)
+            if is_sat is not None:
+                break
+        else:
+            raise RuntimeError(
+                f"B7 generate: failed to produce a solvable instance after "
+                f"{_MAX_RETRIES} attempts (n_vars={n_vars}). "
+                f"Consider raising _DPLL_NODE_LIMIT."
+            )
         answer = "Yes" if is_sat else "No"
 
         # Format formula

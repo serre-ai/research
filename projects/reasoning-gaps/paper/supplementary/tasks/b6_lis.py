@@ -50,9 +50,9 @@ def generate(
 
     instances: list[dict] = []
     for i in range(n_instances):
-        # Generate random integer sequence with values in [1, 2*n]
-        # to ensure interesting LIS lengths
-        seq = [rng.randint(1, 2 * n) for _ in range(n)]
+        # Generate a random permutation (without replacement) from [1, 2n]
+        # to match the paper's "permutation" specification
+        seq = rng.sample(range(1, 2 * n + 1), n)
 
         lis_length = _compute_lis_length(seq)
         answer = str(lis_length)

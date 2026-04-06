@@ -40,12 +40,36 @@ predictions:
     max_effect: 0.80
     rationale: "3-SAT (P/coNP class) should show moderate accuracy, higher than pure coNP but lower than P"
 
-  - tasks: ["B8", "B9"]
+  - tasks: ["B8"]
     metric: "verification_accuracy"
     direction: "positive"
-    min_effect: null
-    max_effect: 0.75
-    rationale: "Architectural bottleneck tasks may show low verification accuracy if verifier lacks required architectural features"
+    min_effect: 0.90
+    max_effect: null
+    rationale: "B8 (reversal) verification is a simple lookup: check if the stated fact appears in context. This is P-class despite the task being architecturally hard for generation. Verification should be trivially easy."
+
+  - tasks: ["B9"]
+    metric: "verification_accuracy"
+    direction: "positive"
+    min_effect: 0.60
+    max_effect: 0.85
+    rationale: "B9 (negation) verification requires tracking negation parity — computationally trivial but models may fail due to the same attention bottleneck that makes generation hard. Predict lower than B8 but higher than B7."
+
+  - tasks: ["B7"]
+    metric: "gap_collapse"
+    direction: "generation_accuracy ≈ verification_accuracy"
+    rationale: >
+      Theorem 3 (Gap Collapse): for B7 (3-SAT), generation is NP-hard and
+      verification includes a coNP-hard component. If both generation and
+      verification accuracy are comparably low, the generation-verification gap
+      has collapsed. Compare B7 verification accuracy against B7 generation
+      accuracy from reasoning-gaps (0.51 direct, 0.51 short_cot).
+      The gap is considered 'collapsed' if the absolute difference between B7
+      verification accuracy and B7 generation accuracy (0.51) is < 10pp AND a
+      two-proportion z-test shows p > 0.05.
+      Note: this tests the gap-collapse phenomenon analogous to Theorem 3
+      (which concerns HTN planning). B7 (3-SAT) has a similar structure —
+      generation is NP-hard and verification includes a coNP-hard component —
+      but is not a direct test of the HTN-specific result.
 
   - tasks: ["B1", "B2", "B3", "B4", "B5", "B6"]
     metric: "verification_accuracy_gap"
@@ -73,11 +97,14 @@ predictions:
 
   - tasks: ["B4", "B7"]
     metric: "between_model_error_agreement"
-    direction: "B4 may exceed B7"
+    direction: "B4 > B7"
     rationale: >
-      Type 4 (algorithmic, VC=P) can have HIGHER between-model error correlation
+      Type 4 (algorithmic, VC=P) should have HIGHER between-model error correlation
       than Type 5 (VC supseteq coNP), because error correlation tracks bottleneck
-      type, not VC class. This tests the central non-monotonicity prediction.
+      type, not VC class. B4 errors stem from a shared algorithmic bottleneck
+      (all models lack the same sorting/searching procedure), producing correlated
+      failures, while B7 errors are instance-specific (stochastic bottleneck).
+      This tests the central non-monotonicity prediction.
 
 # Experimental design
 design:
@@ -91,9 +118,10 @@ design:
     - haiku                    # claude-haiku-4-5-20251001
     - sonnet                   # claude-sonnet-4-20250514
     - gpt4o-mini               # gpt-4o-mini
+    - gpt4o                    # gpt-4o (stronger verifier — tests whether capability improves verification)
   tasks: ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
   num_samples: 1               # Single verification per instance
-  instances_per_difficulty: 10 # 10 instances × 5 difficulties = 50 per task
+  instances_per_difficulty: 20 # 20 instances × 5 difficulties = 100 per task
   difficulties: [1, 2, 3, 4, 5]
 
   sampling_strategy: "balanced_correctness"  # Equal correct/incorrect from generator
@@ -102,6 +130,10 @@ design:
     Generator outputs come from reasoning-gaps evaluation (short_cot condition).
     Verifiers see only the problem and claimed answer, not the generator's reasoning.
     This tests actual verification computation, not reasoning trace consistency.
+
+    Important: balanced sampling means the naive baseline (always predict 'correct')
+    achieves 50% accuracy. All reported verification accuracies should be interpreted
+    against this base rate.
 
     Canary run (2026-03-23) validated pipeline on B4 and B7 with 25 instances each.
     Results: B4=100% accuracy (P-class), B7=64% accuracy (coNP-class), 36pp gap.
@@ -152,30 +184,35 @@ canary:
 
 # Budget and resource estimates
 budget:
-  estimated_total_usd: 20.90   # Corrected: sum of breakdown items (was $38 in draft)
-  estimated_per_instance_usd: 0.0047  # Weighted avg: (2.70+13.50+2.70)/4050
+  estimated_total_usd: 57.60   # 3 gen × 4 ver × 9 tasks × 100 inst = 10,800 verifications
+  estimated_per_instance_usd: 0.0053
   breakdown:
     - component: "Haiku verifier"
-      instances: 1350          # 3 generators × 9 tasks × 50 instances
+      instances: 2700          # 3 generators × 9 tasks × 100 instances
       cost_per_call: 0.002
-      subtotal: 2.70
+      subtotal: 5.40
 
     - component: "Sonnet verifier"
-      instances: 1350
+      instances: 2700
       cost_per_call: 0.010
-      subtotal: 13.50
+      subtotal: 27.00
 
     - component: "GPT-4o-mini verifier"
-      instances: 1350
+      instances: 2700
       cost_per_call: 0.002
-      subtotal: 2.70
+      subtotal: 5.40
+
+    - component: "GPT-4o verifier"
+      instances: 2700
+      cost_per_call: 0.005
+      subtotal: 13.50
 
     - component: "Contingency (retries, errors)"
-      subtotal: 2.00
+      subtotal: 6.30
 
-  total_instances: 4050        # 3 gen × 3 ver × 9 tasks × 50 inst
+  total_instances: 10800       # 3 gen × 4 ver × 9 tasks × 100 inst
   canary_cost_usd: 0.10
-  max_allowed_usd: 25.00       # ~20% buffer over corrected estimate
+  max_allowed_usd: 70.00       # ~20% buffer
 
 # Theoretical grounding
 # Cross-reference design conditions against paper framework
@@ -210,9 +247,14 @@ theoretical_basis:
       tasks: ["B7"]  # 3-SAT has both NP and coNP verification
       theorem: "Theorem 1"
 
-    - condition: "Architectural bottleneck"
-      prediction: "Verification accuracy may be low regardless of VC class"
-      tasks: ["B8", "B9"]  # Negation-sensitivity requires specific architectural features
+    - condition: "Architectural bottleneck (B8 reversal)"
+      prediction: "Verification accuracy >= 0.90 (simple lookup verification)"
+      tasks: ["B8"]
+      theorem: "Theorem 1"
+
+    - condition: "Architectural bottleneck (B9 negation)"
+      prediction: "Verification accuracy 0.60-0.85 (attention bottleneck may affect verifier)"
+      tasks: ["B9"]
       theorem: "Theorem 1"
 
     - condition: "Shared bottleneck (algorithmic) vs stochastic bottleneck (intractability)"
@@ -282,6 +324,8 @@ analysis:
         on the outcome (all correct or all incorrect). Compare this agreement rate
         across tasks: B6 (shared bottleneck) should show higher agreement than B7
         (stochastic bottleneck). Use Cochran's Q test for significance.
+        All pairwise comparisons use Bonferroni correction for the number of task
+        pairs tested.
       key_comparison: "B6 agreement > B7 agreement (non-monotonicity)"
 
     - name: "Error correlation matrix across verifier pairs"
@@ -290,6 +334,8 @@ analysis:
         For each task, compute pairwise phi coefficients between verifier error
         patterns. The task-level mean phi should correlate with the known
         between-model rho values: B6 (rho=0.42) highest, B7 (rho=0.06) lowest.
+        All pairwise comparisons use Bonferroni correction for the number of task
+        pairs tested.
 
   secondary_analysis:
     - name: "Difficulty scaling"
@@ -367,7 +413,7 @@ review:
 
     - criterion: "Sample size sufficient for statistical power (n>=50 per condition)"
       status: "PASS"
-      note: "50 instances per task (10/difficulty x 5 difficulties). 4050 total calls. Adequate for ANOVA and ICC."
+      note: "100 instances per task (20/difficulty x 5 difficulties). 10,800 total calls. Adequate for ANOVA and ICC."
 
     - criterion: "Pre-registered analyses prevent p-hacking"
       status: "PASS"
@@ -376,8 +422,8 @@ review:
     - criterion: "Budget is reasonable given canary validation"
       status: "PASS — CORRECTED"
       note: >
-        Draft had $38 total but breakdown summed to $20.90. Corrected to $20.90
-        with $25 max (20% buffer). Canary validated $0.002/call for Haiku.
+        Budget updated for 4-verifier design with 100 instances/task: $57.60
+        estimated total with $70 max (20% buffer). Canary validated $0.002/call for Haiku.
 
     - criterion: "Canary diagnostics all passed"
       status: "PASS"
@@ -414,20 +460,28 @@ review:
   missing_before_execution:
     - description: "Add two-way ANOVA (generator x VC class) to analyze_verification_results.py"
       priority: "medium"
-      impact: "Primary Analysis 3 from spec will not be computed"
+      status: "RESOLVED (2026-04-06)"
 
     - description: "Add between-model error agreement analysis to analyze_verification_results.py"
       priority: "high"
-      impact: "Theorem 2c/Remark 1 predictions cannot be tested without this"
+      status: "RESOLVED (2026-04-06)"
 
     - description: "Add Figure 3 generation (scatter: agreement vs rho) to analysis script"
       priority: "high"
-      impact: "Key visualization for non-monotonicity finding"
+      status: "RESOLVED (2026-04-06)"
 
     - description: "Verify generator result files exist for all 3 generators x 9 tasks"
       priority: "high"
-      impact: "Missing generator results will cause silent data gaps"
+      status: "RESOLVED (2026-04-06) — all 27 files verified, 456-500 instances each"
+
+    - description: "Update spec: sharpen B8/B9 predictions, add gap-collapse test for B7"
+      priority: "high"
+      status: "RESOLVED (2026-04-06)"
+
+    - description: "Bump sample size to 100/task and add GPT-4o as 4th verifier"
+      priority: "medium"
+      status: "RESOLVED (2026-04-06) — 10,800 total verifications, ~$58 budget"
 
 # Timestamps
 created_at: "2026-03-24"
-updated_at: "2026-03-30"
+updated_at: "2026-04-06"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ReasonGap Benchmark Suite -- Batch Evaluation Runner.
 
-Orchestrates the full 216K evaluation across all models, tasks, and conditions
+Orchestrates the full 176K evaluation across all models, tasks, and conditions
 with a single command. Designed to run unattended for 72+ hours with crash
 recovery via the checkpoint/resume system.
 
@@ -35,6 +35,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+# Ensure sibling modules are importable when run as `python code/run_evaluation.py`
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 # ---------------------------------------------------------------------------
 # Evaluation matrix
 # ---------------------------------------------------------------------------
@@ -54,17 +57,17 @@ MODELS: dict[str, dict[str, str]] = {
     "openrouter:mistralai/mistral-small-24b-instruct-2501": {"family": "mistral", "size": "large"},
     "openrouter:qwen/qwen-2.5-7b-instruct": {"family": "qwen", "size": "small"},
     "openrouter:qwen/qwen-2.5-72b-instruct": {"family": "qwen", "size": "large"},
-    # Open-source (vLLM on Modal — reproducibility validation)
+    # Open-source (vLLM — reproducibility validation)
     "vllm:meta-llama/Meta-Llama-3.1-8B-Instruct": {"family": "llama", "size": "small"},
     "vllm:meta-llama/Meta-Llama-3.1-70B-Instruct": {"family": "llama", "size": "large"},
-    "vllm:mistralai/Mistral-7B-Instruct-v0.3": {"family": "mistral", "size": "small"},
+    "vllm:mistralai/ministral-8b-2512": {"family": "mistral", "size": "small"},
     "vllm:mistralai/Mistral-Small-24B-Instruct-2501": {"family": "mistral", "size": "large"},
     "vllm:Qwen/Qwen2.5-7B-Instruct": {"family": "qwen", "size": "small"},
     "vllm:Qwen/Qwen2.5-72B-Instruct": {"family": "qwen", "size": "large"},
 }
 
 # vLLM endpoint URLs per model (populated from vllm_endpoints.json or env).
-# Each Modal deployment gets its own URL.
+# Each vLLM deployment gets its own URL.
 VLLM_ENDPOINTS: dict[str, str] = {}
 
 def _load_vllm_endpoints() -> dict[str, str]:

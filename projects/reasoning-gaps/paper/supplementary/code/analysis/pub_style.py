@@ -102,10 +102,10 @@ SIZE_MARKERS: dict[str, str] = {
 # --- Model display names (short, human-readable) ---
 MODEL_DISPLAY: dict[str, str] = {
     "claude-haiku-4-5-20251001":                   "Haiku 4.5",
-    "claude-sonnet-4-20250514":                    "Sonnet 4",
-    "claude-opus-4-6":                             "Opus 4",
+    "claude-sonnet-4-20250514":                    "Sonnet 4.6",
+    "claude-opus-4-6":                             "Opus 4.6",
     "gpt-4o":                                      "GPT-4o",
-    "gpt-4o-mini":                                 "GPT-4o mini",
+    "gpt-4o-mini":                                 "GPT-4o-m",
     "o3":                                          "o3",
     "meta-llama/llama-3.1-8b-instruct":            "Llama 8B",
     "meta-llama/llama-3.1-70b-instruct":           "Llama 70B",
@@ -177,8 +177,8 @@ def load_conference(name: str = "neurips2026") -> dict:
     # Built-in fallback (NeurIPS defaults)
     return {
         "pub_style": {
-            "col_width": 5.5,
-            "full_width": 5.5,
+            "col_width": 3.25,
+            "full_width": 6.75,
             "font_size": 8,
             "title_size": 9,
             "tick_size": 7,
@@ -568,7 +568,7 @@ def comparison_bar(
         elif all(h in GAP_TYPE_COLORS for h in unique_hues):
             palette = {h: GAP_TYPE_COLORS[h] for h in unique_hues}
 
-    sns.barplot(data=data, x=x, y=y, hue=hue, ci=ci, palette=palette, ax=ax, **kwargs)
+    sns.barplot(data=data, x=x, y=y, hue=hue, errorbar=("ci", ci), palette=palette, ax=ax, **kwargs)
 
     if y_is_proportion:
         percent_formatter(ax, "y")
