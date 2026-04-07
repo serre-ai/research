@@ -25,7 +25,7 @@
 \newlabel{sec:background@cref}{{[section][2][]2}{[1][2][]2}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Transformer expressiveness.}{2}{section*.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Verification in complexity theory.}{2}{section*.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{LLM verification methods.}{2}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{LLM verification methods.}{3}{section*.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Verification Complexity Framework}{3}{section.3}\protected@file@percent }
 \newlabel{sec:framework}{{3}{3}{Verification Complexity Framework}{section.3}{}}
 \newlabel{sec:framework@cref}{{[section][3][]3}{[1][3][]3}{}{}{}}
@@ -53,7 +53,6 @@
 \@writefile{loe}{\contentsline {definition}{\ifthmt@listswap Definition~8\else \numberline {8}Definition\fi \thmtformatoptarg {Computational Bottleneck}}{3}{definition.8}\protected@file@percent }
 \newlabel{def:bottleneck}{{8}{3}{Computational Bottleneck}{definition.8}{}}
 \newlabel{def:bottleneck@cref}{{[definition][8][]8}{[1][3][]3}{}{}{}}
-\citation{lightman2023lets}
 \@writefile{loe}{\contentsline {example}{\ifthmt@listswap Example~9\else \numberline {9}Example\fi }{4}{example.9}\protected@file@percent }
 \@writefile{loe}{\contentsline {remark}{\ifthmt@listswap Remark~10\else \numberline {10}Remark\fi \thmtformatoptarg {Non-uniqueness of the Decomposition}}{4}{remark.10}\protected@file@percent }
 \newlabel{rem:decomposition}{{10}{4}{Non-uniqueness of the Decomposition}{remark.10}{}}
@@ -65,14 +64,13 @@
 \@writefile{loe}{\contentsline {theorem}{\ifthmt@listswap Theorem~11\else \numberline {11}Theorem\fi \thmtformatoptarg {Verification Advantage}}{4}{theorem.11}\protected@file@percent }
 \newlabel{thm:advantage}{{11}{4}{Verification Advantage}{theorem.11}{}}
 \newlabel{thm:advantage@cref}{{[theorem][11][]11}{[1][4][]4}{}{}{}}
+\citation{lightman2023lets}
 \citation{wang2023selfconsistency}
 \@writefile{loe}{\contentsline {remark}{\ifthmt@listswap Remark~12\else \numberline {12}Remark\fi }{5}{remark.12}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}The Self-Consistency Condition}{5}{subsection.4.2}\protected@file@percent }
 \@writefile{loe}{\contentsline {theorem}{\ifthmt@listswap Theorem~13\else \numberline {13}Theorem\fi \thmtformatoptarg {Self-Consistency Condition}}{5}{theorem.13}\protected@file@percent }
 \newlabel{thm:selfconsistency}{{13}{5}{Self-Consistency Condition}{theorem.13}{}}
 \newlabel{thm:selfconsistency@cref}{{[theorem][13][]13}{[1][5][]5}{}{}{}}
-\citation{erol1996complexity}
-\citation{behnke2024verification}
 \@writefile{loe}{\contentsline {corollary}{\ifthmt@listswap Corollary~14\else \numberline {14}Corollary\fi }{6}{corollary.14}\protected@file@percent }
 \newlabel{cor:selfconsistency_prediction}{{14}{6}{}{corollary.14}{}}
 \newlabel{cor:selfconsistency_prediction@cref}{{[corollary][14][]14}{[1][6][]6}{}{}{}}
@@ -86,6 +84,8 @@
 \@writefile{loe}{\contentsline {theorem}{\ifthmt@listswap Theorem~17\else \numberline {17}Theorem\fi \thmtformatoptarg {Gap Collapse for Hierarchical Planning}}{6}{theorem.17}\protected@file@percent }
 \newlabel{thm:collapse}{{17}{6}{Gap Collapse for Hierarchical Planning}{theorem.17}{}}
 \newlabel{thm:collapse@cref}{{[theorem][17][]17}{[1][6][]6}{}{}{}}
+\citation{erol1996complexity}
+\citation{behnke2024verification}
 \citation{reasoninggaps2026}
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Verification complexity by reasoning gap type. $\mathrm  {GC}$ = generation complexity, $\mathrm  {VC}$ = verification complexity, Eff.\ Verif.\ = efficiently verifiable ($\mathrm  {VC}\subseteq \mathrm  {P}$). The gap structure determines which verification-based methods (reward models, self-consistency, debate) are applicable.}}{7}{table.caption.5}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
@@ -98,7 +98,7 @@
 \@writefile{toc}{\contentsline {paragraph}{Type 1: Sensitivity ($\mathrm  {VC}= \mathrm  {P}$).}{7}{section*.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Type 2: Depth ($\mathrm  {VC}= \mathrm  {P}$).}{7}{section*.7}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Type 3: Serial ($\mathrm  {VC}= \mathrm  {P}$).}{7}{section*.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Type 4: Algorithmic ($\mathrm  {VC}= \mathrm  {P}$).}{7}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Type 4: Algorithmic ($\mathrm  {VC}= \mathrm  {P}$).}{8}{section*.9}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Type 5: Intractability ($\mathrm  {VC}= \mathrm  {P}/ \mathrm  {coNP}$).}{8}{section*.10}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Type 6: Architectural.}{8}{section*.11}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {6}Experimental Validation}{8}{section.6}\protected@file@percent }
@@ -108,52 +108,55 @@
 \newlabel{sec:exp_design}{{6.1}{8}{Experimental Design}{subsection.6.1}{}}
 \newlabel{sec:exp_design@cref}{{[subsection][1][6]6.1}{[1][8][]8}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Overview.}{8}{section*.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Models.}{8}{section*.13}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Tasks.}{8}{section*.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Protocol.}{9}{section*.15}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Zero-parameter methodology.}{9}{section*.16}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Pre-registered predictions.}{9}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Self-Consistency Scaling (Experiment~1)}{9}{subsection.6.2}\protected@file@percent }
-\newlabel{sec:exp_scaling}{{6.2}{9}{Self-Consistency Scaling (Experiment~1)}{subsection.6.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Models and tasks.}{8}{section*.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Self-consistency scaling curves (Phase~1: Haiku, $T = 1.0$, 200 instances). Accuracy vs.\ sample count $N$ for three tasks spanning the bottleneck spectrum. All three curves plateau immediately: maximum lift across 33 samples is 3.0 pp (B4), 1.5 pp (B6), and 1.0 pp (B7). The zero-parameter theoretical prediction using between-model $\rho $ (gray dashed) substantially overestimates improvement for B4 and B7, because $\rho _{\text  {within}} \gg \rho _{\text  {between}}$.}}{9}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:scaling}{{1}{9}{Self-consistency scaling curves (Phase~1: Haiku, $T = 1.0$, 200 instances). Accuracy vs.\ sample count $N$ for three tasks spanning the bottleneck spectrum. All three curves plateau immediately: maximum lift across 33 samples is 3.0 pp (B4), 1.5 pp (B6), and 1.0 pp (B7). The zero-parameter theoretical prediction using between-model $\rho $ (gray dashed) substantially overestimates improvement for B4 and B7, because $\rho _{\text {within}} \gg \rho _{\text {between}}$}{figure.caption.16}{}}
+\newlabel{fig:scaling@cref}{{[figure][1][]1}{[1][9][]9}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Protocol.}{9}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Pre-registered predictions.}{9}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Within-Model Self-Consistency is Universally Bounded}{9}{subsection.6.2}\protected@file@percent }
+\newlabel{sec:exp_scaling}{{6.2}{9}{Within-Model Self-Consistency is Universally Bounded}{subsection.6.2}{}}
 \newlabel{sec:exp_scaling@cref}{{[subsection][2][6]6.2}{[1][9][]9}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Self-consistency scaling curves with theoretical predictions. Accuracy vs.\ sample count $N$ for three tasks spanning the bottleneck spectrum, across three model families. Solid lines: empirical accuracy with 95\% bootstrap confidence intervals. Dashed lines: zero-parameter theoretical prediction using $N_{\text  {eff}} = N/(1 + (N-1)\rho )$ with externally measured $\rho $. The theoretical curve predicts not just the existence of plateaus but their location: B6 ($\rho = 0.42$) saturates by $N \approx 5$, while B7 ($\rho = 0.06$) continues improving past $N = 33$.}}{10}{figure.caption.18}\protected@file@percent }
-\newlabel{fig:scaling}{{1}{10}{Self-consistency scaling curves with theoretical predictions. Accuracy vs.\ sample count $N$ for three tasks spanning the bottleneck spectrum, across three model families. Solid lines: empirical accuracy with 95\% bootstrap confidence intervals. Dashed lines: zero-parameter theoretical prediction using $N_{\text {eff}} = N/(1 + (N-1)\rho )$ with externally measured $\rho $. The theoretical curve predicts not just the existence of plateaus but their location: B6 ($\rho = 0.42$) saturates by $N \approx 5$, while B7 ($\rho = 0.06$) continues improving past $N = 33$}{figure.caption.18}{}}
-\newlabel{fig:scaling@cref}{{[figure][1][]1}{[1][9][]10}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Self-consistency results summary. Acc@$N$ is majority-vote accuracy over $N$ samples. Lift = Acc@33 $-$ Acc@1. $\rho _{\text  {within}}$ is measured from $N = 33$ samples via ICC; $\rho _{\text  {between}}$ is from the external companion evaluation (used in the zero-parameter prediction). Predicted $N_{\text  {eff}}$ limit $= 1/\rho _{\text  {between}}$. Observed plateau $N$ is the smallest $N$ where accuracy improvement drops below 2 pp per doubling. Results pending; dashes indicate placeholders.}}{10}{table.caption.19}\protected@file@percent }
-\newlabel{tab:results}{{2}{10}{Self-consistency results summary. Acc@$N$ is majority-vote accuracy over $N$ samples. Lift = Acc@33 $-$ Acc@1. $\rho _{\text {within}}$ is measured from $N = 33$ samples via ICC; $\rho _{\text {between}}$ is from the external companion evaluation (used in the zero-parameter prediction). Predicted $N_{\text {eff}}$ limit $= 1/\rho _{\text {between}}$. Observed plateau $N$ is the smallest $N$ where accuracy improvement drops below 2 pp per doubling. Results pending; dashes indicate placeholders}{table.caption.19}{}}
-\newlabel{tab:results@cref}{{[table][2][]2}{[1][9][]10}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Error Correlation Structure (Experiment~2)}{10}{subsection.6.3}\protected@file@percent }
-\newlabel{sec:exp_correlation}{{6.3}{10}{Error Correlation Structure (Experiment~2)}{subsection.6.3}{}}
-\newlabel{sec:exp_correlation@cref}{{[subsection][3][6]6.3}{[1][9][]10}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Error correlation by task and verification complexity class. Within-model $\rho $ (bars) measured from $N = 33$ within-model samples via intraclass correlation. Horizontal markers show external between-model $\rho $ from the companion evaluation. The non-monotonicity prediction: B6 ($\mathrm  {VC}= \mathrm  {P}$, shared bottleneck) has higher $\rho $ than B7 ($\mathrm  {VC}\supseteq \mathrm  {coNP}$, stochastic bottleneck). Easier verification class, higher error correlation.}}{11}{figure.caption.20}\protected@file@percent }
-\newlabel{fig:correlation}{{2}{11}{Error correlation by task and verification complexity class. Within-model $\rho $ (bars) measured from $N = 33$ within-model samples via intraclass correlation. Horizontal markers show external between-model $\rho $ from the companion evaluation. The non-monotonicity prediction: B6 ($\VC = \PTIME $, shared bottleneck) has higher $\rho $ than B7 ($\VC \supseteq \coNP $, stochastic bottleneck). Easier verification class, higher error correlation}{figure.caption.20}{}}
-\newlabel{fig:correlation@cref}{{[figure][2][]2}{[1][10][]11}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Within-model vs.\ between-model ensemble accuracy at $N = 9$. Within-model: majority vote of 9 samples from Haiku at $T = 1.0$. Between-model: majority vote of 9 models (sampled from 11 available) from the companion evaluation. On shared-bottleneck tasks (B6), between-model ensembles substantially outperform within-model SC because diverse models fail on different instances. On stochastic-bottleneck tasks (B7), the gap narrows.}}{11}{figure.caption.21}\protected@file@percent }
-\newlabel{fig:ensemble}{{3}{11}{Within-model vs.\ between-model ensemble accuracy at $N = 9$. Within-model: majority vote of 9 samples from Haiku at $T = 1.0$. Between-model: majority vote of 9 models (sampled from 11 available) from the companion evaluation. On shared-bottleneck tasks (B6), between-model ensembles substantially outperform within-model SC because diverse models fail on different instances. On stochastic-bottleneck tasks (B7), the gap narrows}{figure.caption.21}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Phase~1 self-consistency results (Haiku, $T = 1.0$, 200 instances per task). Acc@$N$ is majority-vote accuracy over $N$ samples. Lift = Acc@33 $-$ Acc@1. $\rho _{\text  {within}}$ is measured from $N = 33$ samples via ICC; $\rho _{\text  {between}}$ is from the external companion evaluation. The key observation: $\rho _{\text  {within}}$ is uniformly high (0.28--0.54) and does not track $\rho _{\text  {between}}$, explaining why SC lift is universally small. Predicted $N_{\text  {eff}}(\rho _{\text  {within}})$ is computed using $\rho _{\text  {within}}$ at $N = 33$.}}{10}{table.caption.17}\protected@file@percent }
+\newlabel{tab:results}{{2}{10}{Phase~1 self-consistency results (Haiku, $T = 1.0$, 200 instances per task). Acc@$N$ is majority-vote accuracy over $N$ samples. Lift = Acc@33 $-$ Acc@1. $\rho _{\text {within}}$ is measured from $N = 33$ samples via ICC; $\rho _{\text {between}}$ is from the external companion evaluation. The key observation: $\rho _{\text {within}}$ is uniformly high (0.28--0.54) and does not track $\rho _{\text {between}}$, explaining why SC lift is universally small. Predicted $N_{\text {eff}}(\rho _{\text {within}})$ is computed using $\rho _{\text {within}}$ at $N = 33$}{table.caption.17}{}}
+\newlabel{tab:results@cref}{{[table][2][]2}{[1][10][]10}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Error correlation by task: within-model $\rho $ (measured from $N = 33$ samples via ICC, with 95\% CIs) vs.\ between-model $\rho $ (from the companion 12-model evaluation). Within-model $\rho $ is uniformly high (0.28--0.54) with no significant task variation: B6 and B7 are statistically indistinguishable ($\Delta = 0.013$, $p = 0.39$). Between-model $\rho $ varies by an order of magnitude (0.06--0.42) and tracks bottleneck type. The gap $\rho _{\text  {within}} - \rho _{\text  {between}}$ is itself informative: largest for B7 (stochastic bottleneck, $\Delta = 0.47$), smallest for B6 (shared bottleneck, $\Delta = 0.12$).}}{10}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:correlation}{{2}{10}{Error correlation by task: within-model $\rho $ (measured from $N = 33$ samples via ICC, with 95\% CIs) vs.\ between-model $\rho $ (from the companion 12-model evaluation). Within-model $\rho $ is uniformly high (0.28--0.54) with no significant task variation: B6 and B7 are statistically indistinguishable ($\Delta = 0.013$, $p = 0.39$). Between-model $\rho $ varies by an order of magnitude (0.06--0.42) and tracks bottleneck type. The gap $\rho _{\text {within}} - \rho _{\text {between}}$ is itself informative: largest for B7 (stochastic bottleneck, $\Delta = 0.47$), smallest for B6 (shared bottleneck, $\Delta = 0.12$)}{figure.caption.18}{}}
+\newlabel{fig:correlation@cref}{{[figure][2][]2}{[1][10][]10}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}The Architectural Barrier: Within- vs.\ Between-Model Correlation}{10}{subsection.6.3}\protected@file@percent }
+\newlabel{sec:exp_correlation}{{6.3}{10}{The Architectural Barrier: Within- vs.\ Between-Model Correlation}{subsection.6.3}{}}
+\newlabel{sec:exp_correlation@cref}{{[subsection][3][6]6.3}{[1][10][]10}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Quality-matched between-model ensemble vs.\ within-model SC, evaluated on common instance sets. For B7 (stochastic bottleneck), quality-matched between-model ensembles outperform within-model SC by 2.6 pp at $N = 3$ and 4.1 pp at $N = 5$, consistent with the prediction that model diversity unlocks improvement when $\rho _{\text  {between}} \ll \rho _{\text  {within}}$. For B6 (shared bottleneck) and B4, no meaningful difference: the shared bottleneck persists across models. Models selected within $\pm $10 pp of Haiku's accuracy per task; between-model accuracy averaged over all $\binom  {k}{N}$ subsets.}}{11}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:ensemble}{{3}{11}{Quality-matched between-model ensemble vs.\ within-model SC, evaluated on common instance sets. For B7 (stochastic bottleneck), quality-matched between-model ensembles outperform within-model SC by 2.6 pp at $N = 3$ and 4.1 pp at $N = 5$, consistent with the prediction that model diversity unlocks improvement when $\rho _{\text {between}} \ll \rho _{\text {within}}$. For B6 (shared bottleneck) and B4, no meaningful difference: the shared bottleneck persists across models. Models selected within $\pm $10 pp of Haiku's accuracy per task; between-model accuracy averaged over all $\binom {k}{N}$ subsets}{figure.caption.19}{}}
 \newlabel{fig:ensemble@cref}{{[figure][3][]3}{[1][11][]11}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Within-Model vs.\ Between-Model Ensembles (Experiment~3)}{11}{subsection.6.4}\protected@file@percent }
-\newlabel{sec:exp_ensemble}{{6.4}{11}{Within-Model vs.\ Between-Model Ensembles (Experiment~3)}{subsection.6.4}{}}
-\newlabel{sec:exp_ensemble@cref}{{[subsection][4][6]6.4}{[1][10][]11}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Model Diversity as the Path to Improvement}{11}{subsection.6.4}\protected@file@percent }
+\newlabel{sec:exp_ensemble}{{6.4}{11}{Model Diversity as the Path to Improvement}{subsection.6.4}{}}
+\newlabel{sec:exp_ensemble@cref}{{[subsection][4][6]6.4}{[1][11][]11}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Pre-Registration Outcomes}{12}{subsection.6.5}\protected@file@percent }
+\newlabel{sec:exp_prereg}{{6.5}{12}{Pre-Registration Outcomes}{subsection.6.5}{}}
+\newlabel{sec:exp_prereg@cref}{{[subsection][5][6]6.5}{[1][12][]12}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Interpretation.}{12}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Cross-Model Verification (Experiment~4)}{12}{subsection.6.6}\protected@file@percent }
+\newlabel{sec:exp_verification}{{6.6}{12}{Cross-Model Verification (Experiment~4)}{subsection.6.6}{}}
+\newlabel{sec:exp_verification@cref}{{[subsection][6][6]6.6}{[1][12][]12}{}{}{}}
 \citation{irving2018debate,browncohen2024debate}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Cross-model verification accuracy by task and $\mathrm  {VC}$ class. Each bar represents the fraction of instances where a verifier model correctly classifies a generator's output as correct or incorrect. Canary run: B4 ($\mathrm  {VC}= \mathrm  {P}$) achieves 100\% verification accuracy; B7 ($\mathrm  {VC}\supseteq \mathrm  {coNP}$) achieves only 64\%, consistent with \Cref  {thm:advantage}: verification succeeds when $\mathrm  {VC}(\mathcal  {F}) \subseteq \mathrm  {cap}(\mathcal  {M})$ and fails when it does not.}}{13}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:verification}{{4}{13}{Cross-model verification accuracy by task and $\VC $ class. Each bar represents the fraction of instances where a verifier model correctly classifies a generator's output as correct or incorrect. Canary run: B4 ($\VC = \PTIME $) achieves 100\% verification accuracy; B7 ($\VC \supseteq \coNP $) achieves only 64\%, consistent with \Cref {thm:advantage}: verification succeeds when $\VC (\calF ) \subseteq \mathrm {cap}(\calM )$ and fails when it does not}{figure.caption.21}{}}
+\newlabel{fig:verification@cref}{{[figure][4][]4}{[1][12][]13}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.7}Discussion of Results}{13}{subsection.6.7}\protected@file@percent }
+\newlabel{sec:exp_discussion}{{6.7}{13}{Discussion of Results}{subsection.6.7}{}}
+\newlabel{sec:exp_discussion@cref}{{[subsection][7][6]6.7}{[1][13][]13}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Within-model regime.}{13}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Between-model regime.}{13}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Practical recommendation.}{13}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Implications for Scalable Oversight}{13}{section.7}\protected@file@percent }
+\newlabel{sec:oversight}{{7}{13}{Implications for Scalable Oversight}{section.7}{}}
+\newlabel{sec:oversight@cref}{{[section][7][]7}{[1][13][]13}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{When oversight is tractable.}{13}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{When oversight requires interaction.}{13}{section*.26}\protected@file@percent }
 \citation{hahn2020theoretical}
 \citation{merrill2022saturated}
 \citation{merrill2024expressive,li2024chain}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Cross-model verification accuracy by task and $\mathrm  {VC}$ class. Each bar represents the fraction of instances where a verifier model correctly classifies a generator's output as correct or incorrect. Canary run: B4 ($\mathrm  {VC}= \mathrm  {P}$) achieves 100\% verification accuracy; B7 ($\mathrm  {VC}\supseteq \mathrm  {coNP}$) achieves only 64\%, consistent with \Cref  {thm:advantage}: verification succeeds when $\mathrm  {VC}(\mathcal  {F}) \subseteq \mathrm  {cap}(\mathcal  {M})$ and fails when it does not.}}{12}{figure.caption.22}\protected@file@percent }
-\newlabel{fig:verification}{{4}{12}{Cross-model verification accuracy by task and $\VC $ class. Each bar represents the fraction of instances where a verifier model correctly classifies a generator's output as correct or incorrect. Canary run: B4 ($\VC = \PTIME $) achieves 100\% verification accuracy; B7 ($\VC \supseteq \coNP $) achieves only 64\%, consistent with \Cref {thm:advantage}: verification succeeds when $\VC (\calF ) \subseteq \mathrm {cap}(\calM )$ and fails when it does not}{figure.caption.22}{}}
-\newlabel{fig:verification@cref}{{[figure][4][]4}{[1][12][]12}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Cross-Model Verification (Experiment~4)}{12}{subsection.6.5}\protected@file@percent }
-\newlabel{sec:exp_verification}{{6.5}{12}{Cross-Model Verification (Experiment~4)}{subsection.6.5}{}}
-\newlabel{sec:exp_verification@cref}{{[subsection][5][6]6.5}{[1][11][]12}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Implications for Scalable Oversight}{12}{section.7}\protected@file@percent }
-\newlabel{sec:oversight}{{7}{12}{Implications for Scalable Oversight}{section.7}{}}
-\newlabel{sec:oversight@cref}{{[section][7][]7}{[1][12][]12}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{When oversight is tractable.}{12}{section*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{When oversight requires interaction.}{12}{section*.24}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{When oversight is fundamentally limited.}{12}{section*.25}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {8}Related Work}{12}{section.8}\protected@file@percent }
-\newlabel{sec:related}{{8}{12}{Related Work}{section.8}{}}
-\newlabel{sec:related@cref}{{[section][8][]8}{[1][12][]12}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Transformer expressiveness.}{12}{section*.26}\protected@file@percent }
 \citation{song2024mind}
 \citation{sun2025solver}
 \citation{condorcet1785essai}
@@ -174,36 +177,38 @@
 \citation{behnke2025lifted}
 \citation{kambhampati2024llms}
 \citation{verificationceiling2025}
+\@writefile{toc}{\contentsline {paragraph}{When oversight is fundamentally limited.}{14}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Related Work}{14}{section.8}\protected@file@percent }
+\newlabel{sec:related}{{8}{14}{Related Work}{section.8}{}}
+\newlabel{sec:related@cref}{{[section][8][]8}{[1][14][]14}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Transformer expressiveness.}{14}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The generation-verification gap.}{14}{section*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Condorcet jury theorem and voting theory.}{14}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Self-consistency and voting.}{14}{section*.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Error correlation and ensemble diversity.}{14}{section*.32}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Reward models and verification limits.}{14}{section*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scalable oversight.}{14}{section*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Planning verification complexity.}{14}{section*.35}\protected@file@percent }
 \citation{sun2025solver}
-\@writefile{toc}{\contentsline {paragraph}{The generation-verification gap.}{13}{section*.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Condorcet jury theorem and voting theory.}{13}{section*.28}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Self-consistency and voting.}{13}{section*.29}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Error correlation and ensemble diversity.}{13}{section*.30}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Reward models and verification limits.}{13}{section*.31}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Scalable oversight.}{13}{section*.32}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Planning verification complexity.}{13}{section*.33}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Verification limits in code generation.}{13}{section*.34}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Computational vs empirical GV-gap.}{13}{section*.35}\protected@file@percent }
 \citation{erol1996complexity,behnke2024verification}
 \citation{wang2023selfconsistency,tao2024selfconsistency}
+\@writefile{toc}{\contentsline {paragraph}{Verification limits in code generation.}{15}{section*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Computational vs empirical GV-gap.}{15}{section*.37}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Discussion}{15}{section.9}\protected@file@percent }
+\newlabel{sec:discussion}{{9}{15}{Discussion}{section.9}{}}
+\newlabel{sec:discussion@cref}{{[section][9][]9}{[1][15][]15}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{On the novelty of individual results.}{15}{section*.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Limitations.}{15}{section*.39}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Structural vs.\ stochastic error correlation: a two-regime picture.}{15}{section*.40}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scope boundaries.}{15}{section*.41}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Worst-case vs average-case.}{15}{section*.42}\protected@file@percent }
 \citation{merrill2022saturated}
 \citation{merrill2022saturated,merrill2024expressive}
-\@writefile{toc}{\contentsline {section}{\numberline {9}Discussion}{14}{section.9}\protected@file@percent }
-\newlabel{sec:discussion}{{9}{14}{Discussion}{section.9}{}}
-\newlabel{sec:discussion@cref}{{[section][9][]9}{[1][14][]14}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{On the novelty of individual results.}{14}{section*.36}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Limitations.}{14}{section*.37}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Structural vs.\ stochastic error correlation.}{14}{section*.38}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Scope boundaries.}{14}{section*.39}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Worst-case vs average-case.}{14}{section*.40}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Model capabilities and complexity classes.}{14}{section*.41}\protected@file@percent }
 \citation{irving2018debate,browncohen2024debate}
-\@writefile{toc}{\contentsline {paragraph}{The $\mathrm  {cap}(\mathcal  {M}) = \mathrm  {TC}^0$ idealization.}{15}{section*.42}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Empirical coverage.}{15}{section*.43}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Future work.}{15}{section*.44}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {10}Conclusion}{15}{section.10}\protected@file@percent }
-\newlabel{sec:conclusion}{{10}{15}{Conclusion}{section.10}{}}
-\newlabel{sec:conclusion@cref}{{[section][10][]10}{[1][15][]15}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Model capabilities and complexity classes.}{16}{section*.43}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The $\mathrm  {cap}(\mathcal  {M}) = \mathrm  {TC}^0$ idealization.}{16}{section*.44}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Empirical coverage.}{16}{section*.45}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Future work.}{16}{section*.46}\protected@file@percent }
 \bibstyle{plainnat}
 \bibcite{arora1998proof}{{1}{1998}{{Arora et~al.}}{{}}}
 \bibcite{babai1985trading}{{2}{1985}{{Babai}}{{}}}
@@ -222,6 +227,9 @@
 \bibcite{erol1996complexity}{{15}{1996}{{Erol et~al.}}{{}}}
 \bibcite{gao2023scaling}{{16}{2023}{{Gao et~al.}}{{}}}
 \bibcite{goldwasser1985knowledge}{{17}{1985}{{Goldwasser et~al.}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Conclusion}{17}{section.10}\protected@file@percent }
+\newlabel{sec:conclusion}{{10}{17}{Conclusion}{section.10}{}}
+\newlabel{sec:conclusion@cref}{{[section][10][]10}{[1][16][]17}{}{}{}}
 \bibcite{hahn2020theoretical}{{18}{2020}{{Hahn}}{{}}}
 \bibcite{hosseini2024genrm}{{19}{2024}{{Hosseini et~al.}}{{}}}
 \bibcite{huang2024selfcorrect}{{20}{2024}{{Huang et~al.}}{{}}}
@@ -247,62 +255,62 @@
 \bibcite{hendrycks2021math}{{40}{2021}{{Hendrycks et~al.}}{{}}}
 \bibcite{planbench2024}{{41}{2024}{{PlanBench}}{{}}}
 \bibcite{wang2023selfconsistency}{{42}{2023}{{Wang et~al.}}{{}}}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Proof Details}{17}{appendix.A}\protected@file@percent }
-\newlabel{app:proofs}{{A}{17}{Proof Details}{appendix.A}{}}
-\newlabel{app:proofs@cref}{{[section][1][]A}{[1][17][]17}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Supporting Lemmas}{17}{subsection.A.1}\protected@file@percent }
-\@writefile{loe}{\contentsline {lemma}{\ifthmt@listswap Lemma~19\else \numberline {19}Lemma\fi \thmtformatoptarg {Effective Sample Size Under Correlation}}{17}{lemma.19}\protected@file@percent }
-\newlabel{lem:effective_samples}{{19}{17}{Effective Sample Size Under Correlation}{lemma.19}{}}
-\newlabel{lem:effective_samples@cref}{{[lemma][19][]19}{[1][17][]17}{}{}{}}
-\@writefile{loe}{\contentsline {lemma}{\ifthmt@listswap Lemma~20\else \numberline {20}Lemma\fi \thmtformatoptarg {Verification Hardness Implies Correlated Errors}}{18}{lemma.20}\protected@file@percent }
-\newlabel{lem:verification_correlation}{{20}{18}{Verification Hardness Implies Correlated Errors}{lemma.20}{}}
-\newlabel{lem:verification_correlation@cref}{{[lemma][20][]20}{[1][18][]18}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Proof Details}{19}{appendix.A}\protected@file@percent }
+\newlabel{app:proofs}{{A}{19}{Proof Details}{appendix.A}{}}
+\newlabel{app:proofs@cref}{{[section][1][]A}{[1][18][]19}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Supporting Lemmas}{19}{subsection.A.1}\protected@file@percent }
+\@writefile{loe}{\contentsline {lemma}{\ifthmt@listswap Lemma~19\else \numberline {19}Lemma\fi \thmtformatoptarg {Effective Sample Size Under Correlation}}{19}{lemma.19}\protected@file@percent }
+\newlabel{lem:effective_samples}{{19}{19}{Effective Sample Size Under Correlation}{lemma.19}{}}
+\newlabel{lem:effective_samples@cref}{{[lemma][19][]19}{[1][19][]19}{}{}{}}
+\@writefile{loe}{\contentsline {lemma}{\ifthmt@listswap Lemma~20\else \numberline {20}Lemma\fi \thmtformatoptarg {Verification Hardness Implies Correlated Errors}}{19}{lemma.20}\protected@file@percent }
+\newlabel{lem:verification_correlation}{{20}{19}{Verification Hardness Implies Correlated Errors}{lemma.20}{}}
+\newlabel{lem:verification_correlation@cref}{{[lemma][20][]20}{[1][19][]19}{}{}{}}
 \citation{bogdanov2006average}
-\@writefile{loe}{\contentsline {assumption}{\ifthmt@listswap Assumption~21\else \numberline {21}Assumption\fi \thmtformatoptarg {Distributional Verification Hardness}}{19}{assumption.21}\protected@file@percent }
-\newlabel{asm:dist_hard}{{21}{19}{Distributional Verification Hardness}{assumption.21}{}}
-\newlabel{asm:dist_hard@cref}{{[assumption][21][]21}{[1][18][]19}{}{}{}}
-\@writefile{loe}{\contentsline {lemma}{\ifthmt@listswap Lemma~22\else \numberline {22}Lemma\fi \thmtformatoptarg {Verification Hardness Produces Bottleneck}}{19}{lemma.22}\protected@file@percent }
-\newlabel{lem:vc_to_bottleneck}{{22}{19}{Verification Hardness Produces Bottleneck}{lemma.22}{}}
-\newlabel{lem:vc_to_bottleneck@cref}{{[lemma][22][]22}{[1][19][]19}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Step 1: Constructing the bottleneck.}{19}{section*.46}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 2: Verifying condition (B1) of \Cref  {def:bottleneck} (Necessity).}{19}{section*.47}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 3: Verifying condition (B2) of \Cref  {def:bottleneck} (Hardness).}{19}{section*.48}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 4: Establishing $q \geq \alpha > 0$.}{19}{section*.49}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 5: Establishing $r > 1/2$.}{19}{section*.50}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Justification of the $r > 1/2$ assumption.}{20}{section*.51}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Extended Proof of Theorem 2}{20}{subsection.A.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Part (a): Plurality condition implies convergence.}{20}{section*.52}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Part (b): Correlated errors reduce effective sample size.}{20}{section*.53}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Part (c): Bottleneck structure determines correlation.}{21}{section*.54}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Connection to the plurality condition.}{21}{section*.55}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Proof of Gap Collapse Sharpness}{21}{subsection.A.3}\protected@file@percent }
+\@writefile{loe}{\contentsline {assumption}{\ifthmt@listswap Assumption~21\else \numberline {21}Assumption\fi \thmtformatoptarg {Distributional Verification Hardness}}{20}{assumption.21}\protected@file@percent }
+\newlabel{asm:dist_hard}{{21}{20}{Distributional Verification Hardness}{assumption.21}{}}
+\newlabel{asm:dist_hard@cref}{{[assumption][21][]21}{[1][20][]20}{}{}{}}
+\@writefile{loe}{\contentsline {lemma}{\ifthmt@listswap Lemma~22\else \numberline {22}Lemma\fi \thmtformatoptarg {Verification Hardness Produces Bottleneck}}{20}{lemma.22}\protected@file@percent }
+\newlabel{lem:vc_to_bottleneck}{{22}{20}{Verification Hardness Produces Bottleneck}{lemma.22}{}}
+\newlabel{lem:vc_to_bottleneck@cref}{{[lemma][22][]22}{[1][20][]20}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 1: Constructing the bottleneck.}{20}{section*.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 2: Verifying condition (B1) of \Cref  {def:bottleneck} (Necessity).}{20}{section*.49}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 3: Verifying condition (B2) of \Cref  {def:bottleneck} (Hardness).}{21}{section*.50}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 4: Establishing $q \geq \alpha > 0$.}{21}{section*.51}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 5: Establishing $r > 1/2$.}{21}{section*.52}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Justification of the $r > 1/2$ assumption.}{21}{section*.53}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Extended Proof of Theorem 2}{21}{subsection.A.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Part (a): Plurality condition implies convergence.}{21}{section*.54}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Part (b): Correlated errors reduce effective sample size.}{22}{section*.55}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Part (c): Bottleneck structure determines correlation.}{22}{section*.56}\protected@file@percent }
 \citation{behnke2024verification}
 \citation{behnke2025lifted}
-\@writefile{toc}{\contentsline {paragraph}{Classical STRIPS planning: $\mathrm  {VC}= \mathrm  {P}$.}{22}{section*.56}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{HTN planning: $\mathrm  {VC}= \mathrm  {coNP}$-complete for grounded case.}{22}{section*.57}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Tightness: Not $\mathrm  {PSPACE}$-complete.}{22}{section*.58}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Verifying Assumption~\ref {asm:dist_hard} for 3-SAT at the Critical Ratio}{22}{subsection.A.4}\protected@file@percent }
-\newlabel{app:assumption_3sat}{{A.4}{22}{Verifying Assumption~\ref {asm:dist_hard} for 3-SAT at the Critical Ratio}{subsection.A.4}{}}
-\newlabel{app:assumption_3sat@cref}{{[subsection][4][1]A.4}{[1][22][]22}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Task setup.}{22}{section*.59}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Decomposition.}{22}{section*.60}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Connection to the plurality condition.}{23}{section*.57}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Proof of Gap Collapse Sharpness}{23}{subsection.A.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Classical STRIPS planning: $\mathrm  {VC}= \mathrm  {P}$.}{23}{section*.58}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{HTN planning: $\mathrm  {VC}= \mathrm  {coNP}$-complete for grounded case.}{23}{section*.59}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Tightness: Not $\mathrm  {PSPACE}$-complete.}{23}{section*.60}\protected@file@percent }
 \citation{mezard2002analytic}
 \citation{reasoninggaps2026}
-\@writefile{toc}{\contentsline {paragraph}{Verifying clause (i): $V_2 \notin  \mathrm  {cap}(\mathcal  {M})$.}{23}{section*.61}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Verifying clause (ii): $V_2$ is needed on an $\alpha $-fraction of inputs.}{23}{section*.62}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Consequence.}{23}{section*.63}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Experimental Details}{23}{appendix.B}\protected@file@percent }
-\newlabel{app:experiments}{{B}{23}{Experimental Details}{appendix.B}{}}
-\newlabel{app:experiments@cref}{{[section][2][]B}{[1][23][]23}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}Benchmark Tasks}{23}{subsection.B.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Model Configuration}{24}{subsection.B.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Instance Counts and Power Analysis}{24}{subsection.B.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.4}Statistical Analysis Plan}{24}{subsection.B.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{$N_{\text  {eff}}$ model fit.}{24}{section*.64}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{$\rho $ ordering test.}{24}{section*.65}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Ensemble comparison.}{24}{section*.66}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Multiple comparisons.}{24}{section*.67}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.5}Compute Budget}{24}{subsection.B.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Verifying Assumption~\ref {asm:dist_hard} for 3-SAT at the Critical Ratio}{24}{subsection.A.4}\protected@file@percent }
+\newlabel{app:assumption_3sat}{{A.4}{24}{Verifying Assumption~\ref {asm:dist_hard} for 3-SAT at the Critical Ratio}{subsection.A.4}{}}
+\newlabel{app:assumption_3sat@cref}{{[subsection][4][1]A.4}{[1][24][]24}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Task setup.}{24}{section*.61}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Decomposition.}{24}{section*.62}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Verifying clause (i): $V_2 \notin  \mathrm  {cap}(\mathcal  {M})$.}{24}{section*.63}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Verifying clause (ii): $V_2$ is needed on an $\alpha $-fraction of inputs.}{24}{section*.64}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Consequence.}{24}{section*.65}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Experimental Details}{24}{appendix.B}\protected@file@percent }
+\newlabel{app:experiments}{{B}{24}{Experimental Details}{appendix.B}{}}
+\newlabel{app:experiments@cref}{{[section][2][]B}{[1][24][]24}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}Benchmark Tasks}{24}{subsection.B.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Model Configuration}{25}{subsection.B.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Instance Counts and Power Analysis}{25}{subsection.B.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.4}Statistical Analysis Plan}{25}{subsection.B.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{$N_{\text  {eff}}$ model fit.}{25}{section*.66}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{$\rho $ ordering test.}{25}{section*.67}\protected@file@percent }
 \citation{reasoninggaps2026}
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.6}Reproducibility}{25}{subsection.B.6}\protected@file@percent }
-\gdef \@abspage@last{25}
+\@writefile{toc}{\contentsline {paragraph}{Ensemble comparison.}{26}{section*.68}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Multiple comparisons.}{26}{section*.69}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.5}Compute Budget}{26}{subsection.B.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.6}Reproducibility}{26}{subsection.B.6}\protected@file@percent }
+\gdef \@abspage@last{27}

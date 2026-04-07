@@ -1392,7 +1392,7 @@ def plot_agreement_vs_rho(
         verdict = "confirmed" if prediction_met else "not confirmed"
         ax.text(
             0.05, 0.85,
-            f"B6 > B7: {verdict}",
+            f"Non-monotonicity: {verdict}",
             transform=ax.transAxes,
             fontsize=6,
             va="top",
@@ -1402,7 +1402,9 @@ def plot_agreement_vs_rho(
 
     ax.set_xlabel(r"Known between-model $\rho$ (reasoning-gaps)")
     ax.set_ylabel("Verifier agreement rate (this experiment)")
-    ax.set_title("Verifier Agreement vs Known Error Correlation")
+    ax.set_title("Verifier agreement vs known error correlation")
+    ax.set_ylim(-0.08, 1.10)
+    ax.set_xlim(0.0, 0.50)
 
     # Legend for VC classes
     from matplotlib.patches import Patch
