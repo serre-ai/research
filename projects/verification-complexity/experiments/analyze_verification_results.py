@@ -1209,7 +1209,7 @@ def plot_verification_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
     df_copy["ver_short"] = df_copy["verifier_model"].map(
         lambda m: pub_style.get_model_display(m) if _HAS_PLOTTING else m.split("/")[-1]
     )
-    df_copy["model_pair"] = df_copy["gen_short"] + " \u2192 " + df_copy["ver_short"]
+    df_copy["model_pair"] = df_copy["gen_short"] + " | " + df_copy["ver_short"]
 
     # Pivot: rows = model_pair, columns = task
     tasks_present = [t for t in TASKS if t in df_copy["task_short"].unique()]
@@ -1243,8 +1243,8 @@ def plot_verification_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
         annot_kws={"fontsize": 7},
     )
 
-    ax.set_title("Verification accuracy: generator \u2192 verifier, by task")
-    ax.set_xlabel("Task (P-class: B1\u2013B6, P/coNP: B7, Architectural: B8\u2013B9)")
+    ax.set_title("Verification accuracy: generator | verifier, by task")
+    ax.set_xlabel("Task (P-class: B1-B6, P/coNP: B7, Architectural: B8-B9)")
     ax.set_ylabel("")
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
 
