@@ -1209,7 +1209,7 @@ def plot_verification_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
     df_copy["ver_short"] = df_copy["verifier_model"].map(
         lambda m: pub_style.get_model_display(m) if _HAS_PLOTTING else m.split("/")[-1]
     )
-    df_copy["model_pair"] = df_copy["gen_short"] + " -> " + df_copy["ver_short"]
+    df_copy["model_pair"] = df_copy["gen_short"] + " \u2192 " + df_copy["ver_short"]
 
     # Pivot: rows = model_pair, columns = task
     tasks_present = [t for t in TASKS if t in df_copy["task_short"].unique()]
@@ -1243,20 +1243,10 @@ def plot_verification_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
         annot_kws={"fontsize": 7},
     )
 
-    ax.set_title("Verification Accuracy: Generator -> Verifier by Task")
-    ax.set_xlabel("Task")
+    ax.set_title("Verification accuracy: generator \u2192 verifier, by task")
+    ax.set_xlabel("Task (P-class: B1\u2013B6, P/coNP: B7, Architectural: B8\u2013B9)")
     ax.set_ylabel("")
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-
-    # Add VC class color bar at top
-    for idx, task in enumerate(pivot.columns):
-        vc = VC_CLASS.get(task, "P")
-        color = VC_CLASS_COLORS.get(vc, "#999999")
-        ax.add_patch(plt.Rectangle(
-            (idx, -0.15), 1, 0.15,
-            facecolor=color, edgecolor="white", linewidth=0.5,
-            clip_on=False, transform=ax.get_xaxis_transform(),
-        ))
 
     pub_style.savefig(fig, output_dir / "fig2_verification_heatmap")
 
