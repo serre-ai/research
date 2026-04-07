@@ -22,3 +22,5 @@ site/package-lock.json
 *.fdb_latexmk
 missfont.log
 _backups/
+
+.claude/worktrees/
