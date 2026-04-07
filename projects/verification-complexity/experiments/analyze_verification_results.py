@@ -47,10 +47,9 @@ from scipy.stats import bootstrap
 # ---------------------------------------------------------------------------
 
 _THIS_DIR = Path(__file__).resolve().parent
-_ANALYSIS_DIR = _THIS_DIR.parents[1] / "reasoning-gaps" / "benchmarks" / "analysis"
-for _p in [str(_ANALYSIS_DIR), str(_ANALYSIS_DIR.parent)]:
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+_PUB_STYLE_PATH = (
+    _THIS_DIR.parents[1] / "reasoning-gaps" / "benchmarks" / "analysis" / "pub_style.py"
+)
 
 try:
     import matplotlib
@@ -58,9 +57,15 @@ try:
     import matplotlib.pyplot as plt
     import matplotlib.ticker as mticker
     import seaborn as sns
-    import pub_style
+
+    # Load pub_style.py directly via importlib to avoid polluting sys.path
+    # (the reasoning-gaps analysis dir has a statistics.py that shadows stdlib)
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("pub_style", _PUB_STYLE_PATH)
+    pub_style = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(pub_style)
     _HAS_PLOTTING = True
-except ImportError:
+except (ImportError, FileNotFoundError, AttributeError):
     _HAS_PLOTTING = False
 
 # ---------------------------------------------------------------------------
