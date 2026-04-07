@@ -127,6 +127,10 @@ decisions_pending:
   - "Whether to build directly on reasoning-gaps taxonomy or develop independent framework"
 
 decisions_made:
+  - date: 2026-04-07
+    decision: "CONFIRMED: ICLR 2027 path. Do not attempt NeurIPS 2026 submission despite experiment completion."
+    rationale: "Experiment 4 (cross-model verification, 10,800 verifications) complete with strong results — all 3 theorems empirically validated (Theorem 1 ANOVA F=496.8 p<0.0001, Theorem 2c non-monotonicity confirmed B6=0.26 vs B7=0.03, Theorem 3 gap collapse for B7 confirmed p=0.29 n.s.). Section 6.6 fully integrated with 3 new figures. However: paper main text is 18 pages (was originally drafted for ICLR which has more permissive limits), and trimming to NeurIPS 9-page limit would gut the paper. Theory papers don't trim well. Better to submit a strong ICLR paper in September than a rushed NeurIPS paper in May. Strategy: continue ICLR 2027 path with experiment results now in hand. Reasoning-gaps remains the sole NeurIPS 2026 submission. This is the same conclusion as the 2026-03-22 decision but with experimental data complete, so the path forward is unblocked."
+
   - date: 2026-03-21
     decision: "Target NeurIPS 2026 as primary venue, ICLR 2027 as fallback"
     rationale: "NeurIPS has strong ML theory track. May 6 deadline is tight but feasible. Fallback gives 5 months more."
