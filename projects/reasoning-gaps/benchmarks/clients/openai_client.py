@@ -32,12 +32,17 @@ REASONING_MODELS = {"o3"}
 
 
 def _is_retryable(exc: BaseException) -> bool:
-    """Check if an OpenAI error is retryable (429, 500, 529)."""
+    """Check if an OpenAI error is retryable (429, 500, 529, transient JSON-body 400)."""
     if isinstance(exc, openai.RateLimitError):
         return True
     if isinstance(exc, openai.InternalServerError):
         return True
     if isinstance(exc, openai.APIStatusError) and getattr(exc, "status_code", 0) == 529:
+        return True
+    # Transient OpenAI edge bug: occasionally returns 400 with
+    # "could not parse the JSON body of your request" on requests that
+    # were serialized as valid JSON. Re-sending the same payload succeeds.
+    if isinstance(exc, openai.BadRequestError) and "could not parse the JSON body" in str(exc):
         return True
     return False
 
