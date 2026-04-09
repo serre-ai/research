@@ -6,7 +6,7 @@ identifies five types of research gaps: uncovered connections, contradicting cla
 missing empirical validation, missing theory, and new benchmark needs.
 
 Phase 1: keyword matching on abstracts (cheap, no LLM).
-Phase 2: optional LLM reasoning on top matches via OpenRouter.
+Phase 2: optional LLM reasoning on top matches via the Anthropic API.
 
 Usage:
     python3 scripts/gap-detector.py                         # analyze all recent papers
@@ -412,17 +412,17 @@ def find_benchmark_needs(papers: list[dict]) -> list[dict]:
 # ── Phase 2: LLM Reasoning ──────────────────────────────
 
 def llm_enrich(gaps: list[dict], top_n: int = 10) -> list[dict]:
-    """Enrich top gap candidates with LLM reasoning via OpenRouter."""
-    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not openrouter_key:
-        print("Warning: OPENROUTER_API_KEY not set, skipping LLM enrichment.", file=sys.stderr)
+    """Enrich top gap candidates with LLM reasoning via the Anthropic API."""
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not anthropic_key:
+        print("Warning: ANTHROPIC_API_KEY not set, skipping LLM enrichment.", file=sys.stderr)
         return gaps
 
     enriched = []
     for gap in gaps[:top_n]:
         prompt = build_llm_prompt(gap)
         try:
-            response = call_openrouter(openrouter_key, prompt)
+            response = call_anthropic(anthropic_key, prompt)
             gap["llm_analysis"] = response
             enriched.append(gap)
         except Exception as e:
@@ -465,26 +465,27 @@ def build_llm_prompt(gap: dict) -> str:
         )
 
 
-def call_openrouter(api_key: str, prompt: str) -> str:
-    """Call OpenRouter API for cheap LLM reasoning."""
-    url = "https://openrouter.ai/api/v1/chat/completions"
+def call_anthropic(api_key: str, prompt: str) -> str:
+    """Call the Anthropic Messages API directly for LLM reasoning."""
+    url = "https://api.anthropic.com/v1/messages"
     payload = json.dumps({
-        "model": "anthropic/claude-haiku-4-5-20251001",
-        "messages": [
-            {"role": "system", "content": "You are a research gap analyst. Be concise and specific."},
-            {"role": "user", "content": prompt},
-        ],
+        "model": "claude-haiku-4-5-20251001",
         "max_tokens": 200,
         "temperature": 0.3,
+        "system": "You are a research gap analyst. Be concise and specific.",
+        "messages": [
+            {"role": "user", "content": prompt},
+        ],
     }).encode()
 
     req = Request(url, data=payload, method="POST")
-    req.add_header("Authorization", f"Bearer {api_key}")
+    req.add_header("x-api-key", api_key)
+    req.add_header("anthropic-version", "2023-06-01")
     req.add_header("Content-Type", "application/json")
 
     with urlopen(req, timeout=30) as resp:
         data = json.loads(resp.read().decode())
-        return data["choices"][0]["message"]["content"]
+        return data["content"][0]["text"]
 
 
 # ── Main ─────────────────────────────────────────────────

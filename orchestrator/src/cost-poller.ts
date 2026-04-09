@@ -106,7 +106,10 @@ export class CostPoller {
 
   /**
    * Poll OpenRouter usage.
-   * GET /api/v1/auth/key returns { data: { usage, limit } }
+   * GET /api/v1/credits returns { data: { total_credits, total_usage } } —
+   * account-wide spend across every key, which is what budget tracking needs.
+   * (The previous /auth/key endpoint only reported per-key lifetime usage,
+   * which silently missed any other API key on the same account.)
    */
   private async pollOpenRouter(): Promise<void> {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -119,7 +122,7 @@ export class CostPoller {
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     try {
-      const resp = await fetch("https://openrouter.ai/api/v1/auth/key", {
+      const resp = await fetch("https://openrouter.ai/api/v1/credits", {
         headers: { "Authorization": `Bearer ${apiKey}` },
       });
 
@@ -128,8 +131,8 @@ export class CostPoller {
         return;
       }
 
-      const json = await resp.json() as { data?: { usage?: number; limit?: number } };
-      const reportedTotal = json.data?.usage ?? 0;
+      const json = await resp.json() as { data?: { total_credits?: number; total_usage?: number } };
+      const reportedTotal = json.data?.total_usage ?? 0;
 
       await this.recordSnapshot(
         "openrouter",
