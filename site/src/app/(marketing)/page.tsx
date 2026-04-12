@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+  title: 'Serre AI — Formal Foundations of AI Reasoning',
+};
 
 const papers = [
   {
