@@ -5,17 +5,6 @@ Usage:
     python3 -m scripts.compass.run_all --help
     python3 -m scripts.compass.run_all --api http://localhost:3001 --limit 50 --json
     python3 scripts/compass/run_all.py --api http://localhost:3001 --limit 50 --json
-
-Note: For empirical venue topic scores (replacing static YAML ratings), run
-the OpenReview scraper first to populate shared/config/venues/data/:
-
-    python3 scripts/openreview-scraper.py --venue neurips --year 2025
-    python3 scripts/openreview-scraper.py --venue neurips --year 2024  # for shift detection
-    python3 scripts/openreview-scraper.py --all  # fetch all configured venues
-
-The reviewer_model detector will automatically use empirical acceptance
-data when the JSON files exist. Without them, it falls back to static
-YAML topic_fit scores.
 """
 
 from __future__ import annotations
@@ -38,7 +27,6 @@ try:
     from .reviewer_model import detect as detect_reviewer
     from .synthesize import synthesize
     from .db import fetch_papers_with_embeddings
-    from .report import generate_report
 except ImportError:
     # Direct script execution — add package dir to path and import directly
     import pathlib
@@ -53,17 +41,6 @@ except ImportError:
     from reviewer_model import detect as detect_reviewer  # type: ignore
     from synthesize import synthesize  # type: ignore
     from db import fetch_papers_with_embeddings  # type: ignore
-    from report import generate_report  # type: ignore
-
-# Citation analyzer — optional, requires S2 API access
-_detect_citation = None
-try:
-    try:
-        from .citation_analyzer import detect as _detect_citation
-    except ImportError:
-        from citation_analyzer import detect as _detect_citation  # type: ignore
-except Exception:
-    pass
 
 
 DEFAULT_API_URL = "http://localhost:3001"
@@ -267,10 +244,6 @@ def main() -> None:
         "--embeddings", action="store_true",
         help="Use pgvector embeddings for similarity (requires DATABASE_URL)",
     )
-    parser.add_argument(
-        "--report", action="store_true",
-        help="Generate a Markdown narrative report (to stdout and docs/compass/reports/)",
-    )
 
     args = parser.parse_args()
 
@@ -326,17 +299,6 @@ def main() -> None:
     all_signals.extend(reviewer_signals)
     print(f"  reviewer_model: {len(reviewer_signals)} signals", file=sys.stderr)
 
-    # Citation graph analysis (optional — needs S2 API)
-    if _detect_citation is not None:
-        try:
-            citation_signals = _detect_citation(papers)
-            all_signals.extend(citation_signals)
-            print(f"  citation_analyzer: {len(citation_signals)} signals", file=sys.stderr)
-        except Exception as e:
-            print(f"  citation_analyzer: skipped ({e})", file=sys.stderr)
-    else:
-        print("  citation_analyzer: not available (import failed)", file=sys.stderr)
-
     # Synthesize opportunities
     opportunities = synthesize(all_signals)
     print(f"  synthesized: {len(opportunities)} opportunities", file=sys.stderr)
@@ -357,26 +319,12 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "papers_analyzed": len(papers),
         "total_signals": len(all_signals),
-        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer", "contrarian_detector", "frontier_scanner", "reviewer_model", "citation_analyzer"],
+        "detectors_run": ["gap_detector", "trend_detector", "portfolio_optimizer", "contrarian_detector", "frontier_scanner", "reviewer_model"],
         "signals": all_signals,
         "opportunities": opportunities,
     }
 
-    if args.report:
-        report_md = generate_report(result)
-        # Save to docs/compass/reports/YYYY-MM-DD.md
-        report_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        report_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            "docs", "compass", "reports",
-        )
-        os.makedirs(report_dir, exist_ok=True)
-        report_path = os.path.join(report_dir, f"{report_date}.md")
-        with open(report_path, "w") as f:
-            f.write(report_md)
-        print(report_md, end="")
-        print(f"\nReport saved to {report_path}", file=sys.stderr)
-    elif args.json_output:
+    if args.json_output:
         print(json.dumps(result, indent=2))
     else:
         # Human-readable summary

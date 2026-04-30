@@ -72,16 +72,7 @@ export class ProjectManager {
   async getProjectStatus(name: string): Promise<ProjectStatus> {
     const statusPath = join(this.rootDir, PROJECTS_DIR, name, "status.yaml");
     const content = await readFile(statusPath, "utf-8");
-    const status = parseYaml(content) as unknown as ProjectStatus;
-
-    // Normalize next_steps: YAML may produce a string, object, or undefined
-    if (typeof status.next_steps === "string") {
-      status.next_steps = [status.next_steps];
-    } else if (!Array.isArray(status.next_steps)) {
-      status.next_steps = [];
-    }
-
-    return status;
+    return parseYaml(content) as unknown as ProjectStatus;
   }
 
   async updateProjectStatus(

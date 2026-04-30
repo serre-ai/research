@@ -11,8 +11,7 @@
     "migrate:baseline": "node dist/migrate.js --baseline",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "backfill-embeddings": "node dist/backfill-embeddings.js"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.77",

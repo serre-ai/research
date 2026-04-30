@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import json
-import logging
 import re
 from pathlib import Path
-
-logger = logging.getLogger(__name__)
 
 import pandas as pd
 
@@ -359,7 +356,7 @@ def load_results(results_dir: str) -> pd.DataFrame:
                 _normalize_record(r, source_filename=path.name) for r in records
             )
         except (json.JSONDecodeError, KeyError) as exc:
-            logger.warning("Skipping %s: %s", path, exc)
+            print(f"Warning: skipping {path}: {exc}")
 
     for path in jsonl_files:
         try:
@@ -368,7 +365,7 @@ def load_results(results_dir: str) -> pd.DataFrame:
                 _normalize_record(r, source_filename=path.name) for r in records
             )
         except (json.JSONDecodeError, KeyError) as exc:
-            logger.warning("Skipping %s: %s", path, exc)
+            print(f"Warning: skipping {path}: {exc}")
 
     if not all_records:
         return pd.DataFrame(columns=[

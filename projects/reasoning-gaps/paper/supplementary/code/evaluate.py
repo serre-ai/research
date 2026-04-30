@@ -42,9 +42,6 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
 
-# Ensure sibling modules are importable when run as `python code/evaluate.py`
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 logger = logging.getLogger("reasongap.evaluate")
 
 
@@ -69,6 +66,12 @@ CONDITION_PROMPTS: dict[str, str] = {
         "Write and execute Python code to solve this problem. "
         "Return only the final answer on the last line."
     ),
+}
+
+BUDGET_COT_MULTIPLIERS: dict[str, int] = {
+    "log": 1,    # log(n) tokens
+    "linear": 2, # n tokens
+    "quadratic": 3, # n^2 tokens
 }
 
 
@@ -291,7 +294,7 @@ def _evaluate_tool_use(
         if not code:
             return "Error: no code provided"
         result = execute_python(code)
-        if result["success"]:
+        if result["success"] == "true":
             output = result["stdout"]
             if result["stderr"]:
                 output += f"\nStderr: {result['stderr']}"
@@ -337,7 +340,7 @@ def _evaluate_tool_use(
         code = extract_code_from_response(response)
         if code:
             exec_result = execute_python(code)
-            if exec_result["success"] and exec_result["stdout"]:
+            if exec_result["success"] == "true" and exec_result["stdout"]:
                 output_line = get_last_output_line(exec_result["stdout"])
                 response = f"{response}\n\nExecution output:\n{exec_result['stdout']}\n\n{output_line}"
 

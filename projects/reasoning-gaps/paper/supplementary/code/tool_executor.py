@@ -139,7 +139,7 @@ def execute_python(code: str) -> dict[str, str]:
         return {
             "stdout": "",
             "stderr": f"Safety error: {safety_error}",
-            "success": False,
+            "success": "false",
         }
 
     # Build a wrapper script that restricts the execution environment
@@ -179,20 +179,20 @@ def execute_python(code: str) -> dict[str, str]:
         return {
             "stdout": result.stdout.strip(),
             "stderr": result.stderr.strip(),
-            "success": result.returncode == 0,
+            "success": "true" if result.returncode == 0 else "false",
         }
 
     except subprocess.TimeoutExpired:
         return {
             "stdout": "",
             "stderr": f"Execution timed out after {EXECUTION_TIMEOUT} seconds.",
-            "success": False,
+            "success": "false",
         }
     except Exception as exc:
         return {
             "stdout": "",
             "stderr": f"Execution error: {exc}",
-            "success": False,
+            "success": "false",
         }
 
 

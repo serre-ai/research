@@ -5,8 +5,6 @@ then scores incoming papers against it to surface:
   - portfolio_gap: topics matching identity but with no active project
   - portfolio_deepening: papers that directly extend an existing project
   - citation_opportunity: papers likely to cite our work
-  - topic_coverage_gap: accelerating topics in the topic graph we don't cover
-  - topic_momentum: accelerating topics that align with our portfolio
 """
 
 from __future__ import annotations
@@ -17,13 +15,8 @@ from typing import Any
 
 try:
     from .schema import ResearchSignal
-    from .db import get_connection
 except ImportError:
     from schema import ResearchSignal  # type: ignore
-    try:
-        from db import get_connection  # type: ignore
-    except ImportError:
-        get_connection = None  # type: ignore
 
 # ── Constants ─────────────────────────────────────────────
 
@@ -76,68 +69,47 @@ def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
     return len(intersection) / len(union) if union else 0.0
 
 
-def _compute_coherence_keyword(
-    paper_topics: frozenset[str],
-    core_identity: frozenset[str],
-) -> float:
-    """Compute coherence via Jaccard keyword overlap."""
-    if not paper_topics or not core_identity:
-        return 0.0
-    return len(paper_topics & core_identity) / len(paper_topics | core_identity)
-
-
 def _compute_coherence(
     paper_topics: frozenset[str],
     core_identity: frozenset[str],
     paper: dict | None = None,
     identity_embedding: str | None = None,
-    project_names: list[str] | None = None,
 ) -> float:
     """Compute coherence score. Uses embedding if available, keyword overlap otherwise.
 
-    When embeddings are available, queries the DB for average similarity between
-    the paper and papers previously alerted for our projects. Falls back to
-    Jaccard keyword overlap when embeddings or DB are unavailable.
+    When both the paper and identity have embeddings, this will use cosine
+    similarity (once the DB layer is connected via DW-395).  Until then,
+    falls back to Jaccard keyword overlap.
     """
-    if paper and paper.get("embedding_str") and project_names and get_connection is not None:
-        try:
-            emb_coherence = _compute_embedding_coherence(paper, project_names)
-            if emb_coherence > 0.0:
-                return emb_coherence
-        except Exception:
-            pass
+    if paper and identity_embedding and paper.get("embedding_str"):
+        # Phase 2 (DW-395): cosine similarity via DB query:
+        #   SELECT 1 - (embedding <=> $1::vector) FROM ...
+        # For now, fall through to keyword approach.
+        pass
     # Keyword fallback
-    return _compute_coherence_keyword(paper_topics, core_identity)
+    if not paper_topics or not core_identity:
+        return 0.0
+    return len(paper_topics & core_identity) / len(paper_topics | core_identity)
 
 
-def _compute_embedding_coherence(paper: dict, project_names: list[str]) -> float:
-    """Compute how similar a paper's embedding is to papers matched to our projects.
+def _compute_embedding_coherence(paper: dict, project_papers: list[dict]) -> float:
+    """Compute how similar a paper's embedding is to a project's paper cluster.
 
-    Queries the DB for the average cosine similarity between this paper's
-    embedding and embeddings of papers that were alerted for our projects
-    (via lit_alerts table). Falls back to 0.0 if unavailable.
+    Uses the average embedding similarity between the candidate paper
+    and papers that were matched to the project (via lit_alerts).
+    Falls back to 0.0 if embeddings unavailable.
+
+    When the DB layer is connected (DW-395), this will query:
+        SELECT AVG(1 - (embedding <=> $1::vector))
+        FROM lit_papers p JOIN lit_alerts a ON a.paper_id = p.id
+        WHERE a.project = $2
     """
     paper_emb = paper.get("embedding_str")
-    if not paper_emb or get_connection is None:
+    if not paper_emb:
         return 0.0
 
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT AVG(1 - (p.embedding <=> %s::vector)) as avg_sim
-            FROM lit_papers p
-            JOIN lit_alerts a ON a.paper_id = p.id
-            WHERE a.project IN (SELECT unnest(%s::text[]))
-              AND p.embedding IS NOT NULL
-        """, (paper_emb, list(project_names)))
-        row = cur.fetchone()
-        cur.close()
-        if row and row[0] is not None:
-            return float(row[0])
-    except Exception:
-        pass
-
+    # Placeholder — requires DB layer (DW-395) to compute actual cosine similarity.
+    # Until then, callers should fall back to keyword coherence.
     return 0.0
 
 
@@ -395,10 +367,7 @@ def _find_portfolio_deepening(
         elif phase in ("research", "literature-review"):
             leverage = 0.3
 
-        coherence = _compute_coherence(
-            paper_topics, core_identity, paper=paper,
-            project_names=[best_project] if best_project else None,
-        )
+        coherence = _compute_coherence(paper_topics, core_identity, paper=paper)
         combined_score = (best_overlap * 0.6) + (coherence * 0.2) + (leverage * 0.2)
 
         title = paper.get("title", "")[:80]
@@ -478,10 +447,7 @@ def _find_citation_opportunities(
             if len(title_overlap) < 2:
                 continue
 
-            coherence = _compute_coherence(
-                paper_topics, core_identity, paper=paper,
-                project_names=[proj_name],
-            )
+            coherence = _compute_coherence(paper_topics, core_identity, paper=paper)
             confidence = min((overlap * 0.5) + (len(title_overlap) * 0.1) + (coherence * 0.2), 1.0)
 
             paper_title = paper.get("title", "")[:80]
@@ -514,164 +480,6 @@ def _find_citation_opportunities(
 
     signals.sort(key=lambda s: s.confidence, reverse=True)
     return signals[:15]
-
-
-# ── Knowledge graph claim gap detection ───────────────────
-
-def _find_claim_gaps(papers: list[dict], project_info: dict[str, dict[str, Any]]) -> list[ResearchSignal]:
-    """Find papers that could provide evidence for low-confidence claims."""
-    try:
-        from .db import fetch_claims
-    except ImportError:
-        from db import fetch_claims
-
-    try:
-        signals = []
-        for project_name, info in project_info.items():
-            claims = fetch_claims(project_name)
-            # Find claims with low confidence (< 0.7) that could use more evidence
-            weak_claims = [c for c in claims if c.get('confidence', 1.0) < 0.7]
-
-            for claim in weak_claims[:5]:  # Top 5 weakest
-                claim_words = set(re.findall(r'[a-z]{4,}', claim['statement'].lower()))
-
-                for paper in papers:
-                    abstract = (paper.get('abstract') or '').lower()
-                    paper_words = set(re.findall(r'[a-z]{4,}', abstract))
-                    overlap = len(claim_words & paper_words) / max(len(claim_words), 1)
-
-                    if overlap > 0.25:
-                        signals.append(ResearchSignal(
-                            detector=DETECTOR_NAME,
-                            signal_type="claim_strengthening",
-                            title=f"Paper could strengthen: '{claim['statement'][:50]}' ({project_name})",
-                            description=f"Claim confidence {claim.get('confidence', 0):.0%}. Paper '{paper.get('title', '')[:50]}' has {overlap:.0%} topic overlap.",
-                            confidence=overlap,
-                            source_papers=[_paper_id(paper)],
-                            source_claims=[claim['id']],
-                            topics=list(claim_words & paper_words)[:5],
-                            relevance=overlap,
-                            timing_score=0.3,
-                            metadata={"project": project_name, "claim_confidence": claim.get('confidence', 0)},
-                        ))
-
-        signals.sort(key=lambda s: s.confidence, reverse=True)
-        return signals[:10]
-    except Exception:
-        return []
-
-
-# ── Topic graph coverage analysis ─────────────────────────
-
-def _clean_topic_label(label: str) -> frozenset[str]:
-    """Clean a topic label into a set of meaningful keywords.
-
-    Topic labels look like "cs.CL: large language | llms | chain thought".
-    This strips category prefixes (e.g. "cs.CL:"), pipe separators, and
-    applies the standard _tokenize filter (stopwords, min length 3).
-    """
-    # Remove category prefixes like "cs.CL:" or "stat.ML:"
-    cleaned = re.sub(r'\b[a-z]+\.[A-Z]{2,}:?\s*', '', label)
-    # Remove pipe separators
-    cleaned = cleaned.replace('|', ' ')
-    return _tokenize(cleaned)
-
-
-def _find_topic_coverage_gaps(
-    project_info: dict[str, dict[str, Any]],
-    existing_gap_topics: frozenset[str] | None = None,
-) -> list[ResearchSignal]:
-    """Find accelerating topics where we have no project coverage.
-
-    Args:
-        project_info: per-project metadata from _build_research_identity.
-        existing_gap_topics: topic keywords already flagged by _find_portfolio_gaps,
-            used to deduplicate signals.
-    """
-    if get_connection is None:
-        return []
-
-    try:
-        conn = get_connection()
-        import psycopg2.extras
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-        # Get all topics with their velocity
-        cur.execute("""
-            SELECT id, label, paper_count, velocity, claim_count
-            FROM research_topics
-            ORDER BY velocity DESC
-        """)
-        topics = cur.fetchall()
-        cur.close()
-    except Exception:
-        return []
-
-    if existing_gap_topics is None:
-        existing_gap_topics = frozenset()
-
-    # Get our project topics (from project_info keyword matching against topic labels)
-    our_topic_keywords: set[str] = set()
-    for proj_name, info in project_info.items():
-        our_topic_keywords.update(info.get("topics", set()))
-
-    coverage_gaps: list[ResearchSignal] = []
-    momentum_signals: list[ResearchSignal] = []
-
-    for topic in topics:
-        label_keywords = _clean_topic_label(topic["label"])
-        if not label_keywords:
-            continue
-
-        # Check if this topic overlaps with our projects
-        overlap = len(our_topic_keywords & label_keywords) / len(label_keywords)
-
-        if overlap < 0.1 and topic["velocity"] > 1.5 and topic["paper_count"] >= 5:
-            # Skip if _find_portfolio_gaps already flagged these keywords
-            if label_keywords & existing_gap_topics:
-                continue
-
-            # Accelerating topic we don't cover
-            coverage_gaps.append(ResearchSignal(
-                detector=DETECTOR_NAME,
-                signal_type="topic_coverage_gap",
-                title=f"Coverage gap: '{topic['label']}' ({topic['velocity']:.1f}x velocity, {topic['paper_count']} papers)",
-                description=f"Accelerating topic with {topic['paper_count']} papers and {topic['velocity']:.1f}x velocity. No current project covers this area.",
-                confidence=min(topic["velocity"] / 5.0, 0.9),
-                source_papers=[],
-                topics=[topic["label"]],
-                relevance=0.0,  # explicitly NOT in our portfolio
-                timing_score=min(topic["velocity"] / 4.0, 1.0),
-                metadata={
-                    "topic_id": topic["id"],
-                    "velocity": topic["velocity"],
-                    "paper_count": topic["paper_count"],
-                    "our_overlap": round(overlap, 3),
-                },
-            ))
-        elif overlap > 0.3 and topic["velocity"] > 2.0:
-            # Accelerating topic we DO cover — deepening opportunity
-            matching_projects = [p for p, pinfo in project_info.items()
-                               if len(set(pinfo.get("topics", set())) & label_keywords) > 0]
-            momentum_signals.append(ResearchSignal(
-                detector=DETECTOR_NAME,
-                signal_type="topic_momentum",
-                title=f"Momentum: '{topic['label']}' aligns with {', '.join(matching_projects[:2])} ({topic['velocity']:.1f}x)",
-                description=f"Topic accelerating at {topic['velocity']:.1f}x and matches our portfolio. Good time to publish.",
-                confidence=min(overlap * topic["velocity"] / 5.0, 0.9),
-                source_papers=[],
-                topics=[topic["label"]],
-                relevance=overlap,
-                timing_score=0.8,
-                metadata={
-                    "topic_id": topic["id"],
-                    "velocity": topic["velocity"],
-                    "matching_projects": matching_projects,
-                },
-            ))
-
-    # Cap each signal type independently
-    return coverage_gaps[:5] + momentum_signals[:5]
 
 
 # ── Public API ────────────────────────────────────────────
@@ -707,29 +515,15 @@ def detect(papers: list[dict], portfolio_path: str = "") -> list[dict]:
 
     all_signals: list[ResearchSignal] = []
 
-    portfolio_gap_signals = _find_portfolio_gaps(papers, core_identity, project_info)
-    all_signals.extend(portfolio_gap_signals)
+    all_signals.extend(_find_portfolio_gaps(papers, core_identity, project_info))
     all_signals.extend(_find_portfolio_deepening(papers, core_identity, project_info))
     all_signals.extend(_find_citation_opportunities(papers, core_identity, project_info))
-    all_signals.extend(_find_claim_gaps(papers, project_info))
-
-    # Collect topic keywords already flagged by _find_portfolio_gaps for dedup
-    existing_gap_topics: set[str] = set()
-    for sig in portfolio_gap_signals:
-        existing_gap_topics.update(sig.topics)
-    all_signals.extend(_find_topic_coverage_gaps(
-        project_info,
-        existing_gap_topics=frozenset(existing_gap_topics),
-    ))
 
     # Sort by signal type priority, then confidence descending
     type_priority = {
-        "topic_coverage_gap": 0,
-        "topic_momentum": 1,
-        "portfolio_gap": 2,
-        "portfolio_deepening": 3,
-        "citation_opportunity": 4,
-        "claim_strengthening": 5,
+        "portfolio_gap": 0,
+        "portfolio_deepening": 1,
+        "citation_opportunity": 2,
     }
     all_signals.sort(key=lambda s: (
         type_priority.get(s.signal_type, 5),
