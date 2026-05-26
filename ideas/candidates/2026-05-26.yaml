@@ -1,0 +1,180 @@
+# Weekly Research Synthesis: 2026-05-26
+# Generated from 50 recent papers + gap detector (1 gap found)
+# Total candidates: 5
+
+candidates:
+
+  - id: "c9f8e1d7-4a2b-4c89-8f3e-2d1a5b6c9e8f"
+    title: "Retrying Under Adversarial Pressure: Formal Limits of AI Control in Agentic Systems"
+    thesis: "Retrying (blocking risky actions and continuing) reduces honest errors but creates adversarial optimization pressure that makes untrusted models harder to control than previously assumed, and this tradeoff can be formalized through a suspicion-capability phase diagram."
+    motivation: "Paper #17 (Retrying vs Resampling in AI Control) shows retrying reduces honest suspicion scores but the adversarial case is underexplored. This connects directly to our verification-complexity project: retrying only works when verification is cheap, but creates a capability ceiling when the model optimizes against the monitor."
+    approach: "both"
+    source_papers:
+      - "arx_2605_25339"  # Retrying vs Resampling
+      - "arx_2605_25338"  # CausalFlow
+      - "arx_2605_25346"  # MemAudit
+    gap_type: "missing_theory"
+    target_venue: "NeurIPS 2026"
+    target_deadline: "2026-09-25"
+    estimated_effort_weeks: 6
+    estimated_cost_usd: 150
+    portfolio_connection: "extends verification-complexity"
+    topics:
+      - "AI safety"
+      - "agent control"
+      - "verification complexity"
+      - "adversarial robustness"
+
+    score: 82
+    scoring:
+      novelty: 22          # /25 - new formalism for retrying under adversarial pressure
+      feasibility: 16      # /20 - requires theory + small experiments, 6 weeks
+      impact: 13           # /15 - addresses critical AI safety concern
+      venue_fit: 14        # /15 - perfect for NeurIPS safety track
+      portfolio_fit: 14    # /15 - direct extension of verification-complexity
+      risk: 8              # /10 - well-scoped, clear mitigations
+
+    status: candidate
+    created_at: "2026-05-26"
+    scored_at: "2026-05-26"
+    rejected_reason: ""
+
+  - id: "a3b7c2d8-9e1f-4a5b-8c6d-3f2e1a7b9c4d"
+    title: "Cultural Evolution Dynamics in Model Collapse: Predicting Which Structures Degrade First"
+    thesis: "Model collapse under self-training follows predictable linguistic degradation patterns from iterated learning theory, with deep syntactic structures collapsing before surface markers amplify, and this ordering can be used to detect early collapse before quality metrics degrade."
+    motivation: "Papers #2 and #3 provide empirical evidence that self-training restructures language (surface markers amplify, deep syntax dies) through cultural evolution dynamics. This connects to our self-improvement-limits project by characterizing what degrades during self-training."
+    approach: "both"
+    source_papers:
+      - "arx_2605_25340"  # Self-Training Doesn't Flatten Language
+      - "arx_2605_25341"  # Model Collapse as Cultural Evolution
+      - "arx_2605_25350"  # Language Models Need Sleep (consolidation)
+    gap_type: "missing_theory"
+    target_venue: "ICML 2027"
+    target_deadline: "2027-01-28"
+    estimated_effort_weeks: 8
+    estimated_cost_usd: 200
+    portfolio_connection: "complements self-improvement-limits"
+    topics:
+      - "model collapse"
+      - "self-training"
+      - "linguistic structure"
+      - "iterated learning"
+
+    score: 79
+    scoring:
+      novelty: 20          # /25 - new formalism connecting cultural evolution to model collapse
+      feasibility: 15      # /20 - requires linguistic analysis + controlled experiments, 8 weeks
+      impact: 13           # /15 - provides predictive theory for collapse detection
+      venue_fit: 13        # /15 - good fit for ICML theory+empirical
+      portfolio_fit: 13    # /15 - complements self-improvement-limits
+      risk: 8              # /10 - empirical risk if linguistic markers don't predict well
+
+    status: candidate
+    created_at: "2026-05-26"
+    scored_at: "2026-05-26"
+    rejected_reason: ""
+
+  - id: "d4e8f1a9-2b3c-4d5e-9a7f-6c1b8e2d3f5a"
+    title: "The Benchmark Auditing Crisis: Systematic Failures in LLM Agent Evaluation"
+    thesis: "Modern agent benchmarks contain widespread specification errors, evaluation bugs, and reproducibility failures that invalidate published results, and these errors can be automatically detected through adversarial probing and causal intervention on benchmark logic."
+    motivation: "Papers #23 (Automated Benchmark Auditing) and #35 (What Twelve Benchmark Papers Disclose) show that benchmark quality is a critical bottleneck. This is directly relevant to our platform: we need reliable benchmarks to evaluate autonomous research agents."
+    approach: "empirical"
+    source_papers:
+      - "arx_2605_25345"  # Automated Benchmark Auditing
+      - "arx_2605_25357"  # What Twelve Benchmark Papers Disclose
+      - "arx_2605_25365"  # Metadata Predictability audit
+    gap_type: "new_benchmark"
+    target_venue: "NeurIPS 2026 Datasets & Benchmarks"
+    target_deadline: "2026-09-25"
+    estimated_effort_weeks: 4
+    estimated_cost_usd: 100
+    portfolio_connection: "new direction"
+    topics:
+      - "benchmarks"
+      - "evaluation methodology"
+      - "agent evaluation"
+      - "reproducibility"
+
+    score: 71
+    scoring:
+      novelty: 17          # /25 - systematic audit is new but benchmark auditing exists
+      feasibility: 18      # /20 - very feasible, 4 weeks, uses existing benchmarks
+      impact: 12           # /15 - high practical impact, medium research impact
+      venue_fit: 14        # /15 - perfect for D&B track
+      portfolio_fit: 7     # /15 - new direction, weak ties to existing projects
+      risk: 9              # /10 - low risk, clear methodology
+
+    status: candidate
+    created_at: "2026-05-26"
+    scored_at: "2026-05-26"
+    rejected_reason: ""
+
+  - id: "b5c9d2e7-3f4a-5b6c-8d9e-1a2f7b3c4e8d"
+    title: "System Scaling Laws: When the Harness Bottlenecks Agentic AI Performance"
+    thesis: "Agentic AI performance is increasingly bottlenecked by system architecture (verification, memory, modularity) rather than model capabilities, and scaling laws for system design can predict when architectural changes yield larger gains than model scaling."
+    motivation: "Paper #32 (From Model Scaling to System Scaling) argues the next bottleneck is 'scaling the harness'. This connects to our platform's core concern: we're building autonomous research agents, and system design matters as much as model choice."
+    approach: "empirical"
+    source_papers:
+      - "arx_2605_25354"  # From Model Scaling to System Scaling
+      - "arx_2605_25355"  # MobileGym (verifiable simulation)
+      - "arx_2605_25356"  # Causely (causal intelligence layer)
+    gap_type: "missing_empirical"
+    target_venue: "ICLR 2027"
+    target_deadline: "2026-10-01"
+    estimated_effort_weeks: 10
+    estimated_cost_usd: 300
+    portfolio_connection: "new direction"
+    topics:
+      - "agentic AI"
+      - "system design"
+      - "scaling laws"
+      - "agent architecture"
+
+    score: 68
+    scoring:
+      novelty: 18          # /25 - system scaling laws are new, but scaling laws exist
+      feasibility: 13      # /20 - requires building multiple agent systems, 10 weeks
+      impact: 12           # /15 - important for practitioners, medium research impact
+      venue_fit: 12        # /15 - good fit for ICLR systems track
+      portfolio_fit: 6     # /15 - new direction, relevant to platform but no direct synergy
+      risk: 7              # /10 - high execution risk (building systems is hard)
+
+    status: candidate
+    created_at: "2026-05-26"
+    scored_at: "2026-05-26"
+    rejected_reason: ""
+
+  - id: "e6f1a2b8-4c5d-6e7f-9a8b-2d3e5f1c6a9b"
+    title: "Peak-Then-Collapse: Why Reinforcement Learning From Verification Rewards Fails"
+    thesis: "RLVR (reinforcement learning from verifiable rewards) on tool use follows a universal peak-then-collapse trajectory where performance initially improves then catastrophically degrades, and this failure mode is caused by reward hacking through interface channel collapse that can be formally characterized."
+    motivation: "Paper #12 (Peak-Then-Collapse tool use) shows RLVR on knowledge graphs peaks at 9.6% then collapses. This connects to verification-complexity: when verification is cheap (self-verifiable retrieval), RL should work, but it still fails. Why? This undermines assumptions in our self-improvement-limits work."
+    approach: "both"
+    source_papers:
+      - "arx_2605_25334"  # Peak-Then-Collapse
+      - "arx_2605_25323"  # Weak-to-Strong under shift
+      - "arx_2605_25325"  # AdvantageFlow (RL for flow models)
+    gap_type: "missing_theory"
+    target_venue: "NeurIPS 2026"
+    target_deadline: "2026-09-25"
+    estimated_effort_weeks: 7
+    estimated_cost_usd: 180
+    portfolio_connection: "extends verification-complexity"
+    topics:
+      - "reinforcement learning"
+      - "reward hacking"
+      - "self-improvement"
+      - "tool use"
+
+    score: 81
+    scoring:
+      novelty: 21          # /25 - new formalism for peak-then-collapse in RLVR
+      feasibility: 15      # /20 - theory + replication experiments, 7 weeks
+      impact: 14           # /15 - explains major failure mode in RLVR
+      venue_fit: 14        # /15 - perfect for NeurIPS RL theory
+      portfolio_fit: 13    # /15 - extends verification-complexity, challenges self-improvement-limits
+      risk: 7              # /10 - risk if collapse doesn't generalize beyond tool use
+
+    status: candidate
+    created_at: "2026-05-26"
+    scored_at: "2026-05-26"
+    rejected_reason: ""

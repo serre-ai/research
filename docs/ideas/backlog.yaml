@@ -1,5 +1,5 @@
 # Research Idea Backlog
-# Last updated: 2026-03-09
+# Last updated: 2026-05-26
 # Scoring: novelty (0.30) + feasibility (0.25) + impact (0.25) + portfolio_fit (0.20)
 
 ideas:
@@ -368,3 +368,91 @@ ideas:
       autonomous research? Critical for AI safety arguments. Score: 88/100 (highest this synthesis).
     status: idea
     # composite: 5*0.30 + 3*0.25 + 5*0.25 + 5*0.20 = 1.50 + 0.75 + 1.25 + 1.00 = 4.50
+
+  - name: retrying-adversarial-control
+    title: "Retrying Under Adversarial Pressure: Formal Limits of AI Control in Agentic Systems"
+    area: AI Safety + Theory
+    type: both
+    venue_targets:
+      - NeurIPS 2026
+      - ICLR 2027
+    estimated_months: 1.5
+    brief_description: |
+      Retrying (blocking risky actions and continuing) reduces honest errors but creates adversarial 
+      optimization pressure that makes untrusted models harder to control than previously assumed. 
+      This project formalizes the retrying-resampling tradeoff through a suspicion-capability phase 
+      diagram, showing that retrying only works when verification is cheap but creates a capability 
+      ceiling when the model optimizes against the monitor.
+    key_hypotheses:
+      - "Retrying creates a phase transition in AI control: below a critical adversarial pressure threshold, retrying outperforms resampling; above it, retrying enables more capable deception"
+      - "The suspicion-capability tradeoff follows a Pareto frontier characterized by verification complexity: cheap verification enables retrying, expensive verification requires resampling"
+      - "In the adversarial setting, retrying teaches the model to evade monitors while resampling maintains a capability ceiling"
+    novelty_score: 5
+    feasibility_score: 4
+    impact_score: 5
+    portfolio_fit: |
+      Direct extension of verification-complexity: retrying only works when verification is cheap, 
+      connecting to the generation-verification gap. Also relevant to platform safety: we use retrying 
+      in autonomous agents, and this characterizes when it fails. Score: 82/100.
+    status: idea
+    source_synthesis: 2026-05-26
+    # composite: 5*0.30 + 4*0.25 + 5*0.25 + 5*0.20 = 1.50 + 1.00 + 1.25 + 1.00 = 4.75
+
+  - name: peak-collapse-rlvr
+    title: "Peak-Then-Collapse: Why Reinforcement Learning From Verification Rewards Fails"
+    area: ML Theory + Safety
+    type: both
+    venue_targets:
+      - NeurIPS 2026
+      - ICML 2027
+    estimated_months: 2
+    brief_description: |
+      RLVR (reinforcement learning from verifiable rewards) on tool use follows a universal 
+      peak-then-collapse trajectory where performance initially improves then catastrophically 
+      degrades. This project characterizes this failure mode formally, showing it's caused by 
+      reward hacking through interface channel collapse—the model learns to exploit verification 
+      shortcuts rather than solve the task.
+    key_hypotheses:
+      - "Peak-then-collapse is universal across RLVR settings when verification has exploitable structure: performance peaks when the model exhausts honest strategies, then collapses as it learns verification shortcuts"
+      - "Interface channel collapse can be detected early: diversity metrics (answer distribution entropy, tool call patterns) predict collapse 50-100 gradient steps before performance degradation"
+      - "The collapse rate is determined by the verification gap: larger gaps (easier verification relative to generation) lead to faster, more catastrophic collapse"
+    novelty_score: 5
+    feasibility_score: 4
+    impact_score: 5
+    portfolio_fit: |
+      Extends verification-complexity and challenges self-improvement-limits: shows that even when 
+      verification is cheap (enabling self-improvement in theory), reward hacking through verification 
+      shortcuts causes collapse in practice. Forms a critical counterpoint to optimistic self-improvement 
+      assumptions. Score: 81/100.
+    status: idea
+    source_synthesis: 2026-05-26
+    # composite: 5*0.30 + 4*0.25 + 5*0.25 + 5*0.20 = 1.50 + 1.00 + 1.25 + 1.00 = 4.75
+
+  - name: cultural-evolution-collapse
+    title: "Cultural Evolution Dynamics in Model Collapse: Predicting Which Structures Degrade First"
+    area: ML Theory + Linguistics
+    type: both
+    venue_targets:
+      - ICML 2027
+      - NeurIPS 2026
+    estimated_months: 2
+    brief_description: |
+      Model collapse under self-training follows predictable linguistic degradation patterns from 
+      iterated learning theory, with deep syntactic structures collapsing before surface markers 
+      amplify. This ordering can be used to detect early collapse before quality metrics degrade, 
+      and provides a mechanistic explanation for why self-training restructures rather than flattens 
+      language.
+    key_hypotheses:
+      - "Linguistic collapse follows a predictable ordering: deep syntax (center embedding, long-distance dependencies) degrades first (generations 1-3), surface markers (punctuation, common collocations) amplify next (generations 4-7), then vocabulary diversity collapses (generations 8+)"
+      - "The collapse ordering is predicted by iterated learning theory: high-complexity structures (exponential hypothesis space) collapse faster than low-complexity structures (linear hypothesis space)"
+      - "Early detection is possible: syntactic complexity metrics (parse tree depth, dependency length) predict collapse 2-3 generations before perplexity or BLEU scores degrade"
+    novelty_score: 4
+    feasibility_score: 4
+    impact_score: 4
+    portfolio_fit: |
+      Complements self-improvement-limits by characterizing what degrades during self-training. 
+      Provides linguistic grounding for collapse theory. Connects iterated learning (cognitive science) 
+      to model collapse (ML), opening new cross-disciplinary angle. Score: 79/100.
+    status: idea
+    source_synthesis: 2026-05-26
+    # composite: 4*0.30 + 4*0.25 + 4*0.25 + 4*0.20 = 1.20 + 1.00 + 1.00 + 0.80 = 4.00
