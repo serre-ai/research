@@ -1,8 +1,129 @@
 # Research Idea Backlog
-# Last updated: 2026-03-09
+# Last updated: 2026-10-07
 # Scoring: novelty (0.30) + feasibility (0.25) + impact (0.25) + portfolio_fit (0.20)
 
 ideas:
+
+  - name: monitorability-frontier
+    title: "The Monitorability Frontier: Characterizing When Agent Reasoning Can Be Verified in Real-Time"
+    area: AI Safety + Theory
+    type: theory
+    venue_targets:
+      - NeurIPS 2026
+      - ICLR 2027
+    estimated_months: 1.5
+    brief_description: |
+      Real-time monitoring of agent reasoning traces is feasible for some task classes but provably
+      intractable for others. We formalize this as the monitorability frontier—a complexity-theoretic
+      boundary that predicts which autonomous systems can be safely overseen and which require
+      alternative safety mechanisms. Directly extends verification-complexity backlog idea.
+    key_hypotheses:
+      - "Monitorability forms a complexity class MONITOR ⊆ NP: a task is monitorable iff polynomial-time verification exists for reasoning traces"
+      - "Mathematical reasoning is MONITOR-complete, embodied planning is MONITOR-hard"
+      - "The generation-verification gap predicts monitorability: tasks where verification is >2 complexity classes easier remain monitorable under optimization"
+    novelty_score: 5
+    feasibility_score: 4
+    impact_score: 5
+    portfolio_fit: |
+      Direct extension of verification-complexity. Uses same complexity framework. Determines which
+      autonomous systems can be deployed with monitoring (critical for Forge platform safety). Multiple
+      recent papers (VeriFine, Evidence-Bound Reasoning) provide empirical motivation.
+    status: idea
+    source_synthesis: "2026-10-07"
+    composite_score: 87
+    # composite: 5*0.30 + 4*0.25 + 5*0.25 + 5*0.20 = 1.50 + 1.00 + 1.25 + 1.00 = 4.75
+
+  - name: adaptive-verification-boundaries
+    title: "Adaptive Verification Boundaries: When Self-Improving Systems Outgrow Their Judges"
+    area: AI Safety + Theory
+    type: both
+    venue_targets:
+      - NeurIPS 2026
+      - ICLR 2027
+    estimated_months: 1.5
+    brief_description: |
+      Self-improving AI systems expose new failure patterns that make their original verifiers
+      obsolete, and this verifier degradation can be formally characterized and predicted. We
+      formalize when verifiers become obsolete and develop co-evolution bounds showing that
+      verification complexity grows predictably with policy improvement, creating a fundamental
+      barrier to unbounded self-improvement.
+    key_hypotheses:
+      - "A fixed verifier can handle at most O(log V) self-improvement iterations before degradation, where V is verifier capacity"
+      - "Verifier degradation occurs when policy explores states outside the verifier's training distribution at rate > δ per iteration"
+      - "Co-evolution is possible but requires verification complexity growth ∝ policy improvement rate"
+    novelty_score: 5
+    feasibility_score: 4
+    impact_score: 5
+    portfolio_fit: |
+      Perfect synergy with verification-complexity and self-improvement-limits. Formalizes the dynamic
+      verification problem: verifiers that were adequate become inadequate. VeriFine (2026) and
+      ScienceClaw (2026) provide empirical evidence.
+    status: idea
+    source_synthesis: "2026-10-07"
+    composite_score: 84
+    # composite: 5*0.30 + 4*0.25 + 5*0.25 + 5*0.20 = 1.50 + 1.00 + 1.25 + 1.00 = 4.75
+
+  - name: learning-to-generate-verifiers
+    title: "Learning to Generate Verifiers: Can LLMs Bottle Their Verification Capabilities?"
+    area: ML Systems
+    type: empirical
+    venue_targets:
+      - ICML 2027
+      - NeurIPS 2026
+    estimated_months: 2
+    brief_description: |
+      LLM agents can autonomously generate lightweight, task-specific verifiers (bottled artifacts)
+      from their general verification capabilities, achieving 90%+ accuracy at <1% inference cost.
+      This addresses the verification bottleneck in self-improvement: verification is often too
+      expensive to run at scale. We characterize when bottling works, when it fails, and the
+      efficiency-fidelity tradeoff.
+    key_hypotheses:
+      - "Verification bottling achieves >90% fidelity for well-defined task classes (math proofs, code correctness) but <70% for open-ended reasoning"
+      - "Optimal bottling strategy depends on task structure: rule extraction for compositional tasks, distillation for pattern-matching tasks"
+      - "Agents can autonomously select bottling strategy with >85% accuracy by analyzing task characteristics"
+    novelty_score: 4
+    feasibility_score: 4
+    impact_score: 4
+    portfolio_fit: |
+      Complements verification-complexity by providing a practical solution. Enables self-improvement
+      experiments that would otherwise be cost-prohibitive. Could become infrastructure for future
+      projects (bottled verifiers as reusable artifacts). 'Agent in a Bottle' (2026) provides paradigm.
+    status: idea
+    source_synthesis: "2026-10-07"
+    composite_score: 79
+    # composite: 4*0.30 + 4*0.25 + 4*0.25 + 4*0.20 = 1.20 + 1.00 + 1.00 + 0.80 = 4.00
+
+  - name: defensive-overwork-agents
+    title: "Defensive Overwork in Autonomous Coding: Measuring the Paranoia Tax"
+    area: Agent Evaluation
+    type: empirical
+    venue_targets:
+      - ICML 2027
+      - EMNLP 2026
+    estimated_months: 2
+    brief_description: |
+      Coding agents systematically over-invest in defensive work (excessive testing, redundant
+      validation, unnecessary error handling), and this 'paranoia tax' can be quantified, predicted
+      from task features, and reduced through calibrated risk assessment without compromising
+      correctness. We formalize when defensive work is warranted vs. wasteful and improve agent
+      efficiency by 2-5x.
+    key_hypotheses:
+      - "Coding agents over-invest in defensive work by 3-5x compared to human expert judgment on equivalent tasks"
+      - "Paranoia level is predictable from task features: code complexity, external dependencies, and consequence severity"
+      - "Risk-calibrated agents achieve 2-5x efficiency gain with <2% correctness degradation"
+    novelty_score: 4
+    feasibility_score: 4
+    impact_score: 4
+    portfolio_fit: |
+      Related to verification theme but more applied. ParanoiaEval (2026) provides benchmark and
+      infrastructure. Could be valuable as a 'quick win' empirical paper. Less synergy with core
+      theory projects but commercially relevant.
+    status: idea
+    source_synthesis: "2026-10-07"
+    composite_score: 76
+    # composite: 4*0.30 + 4*0.25 + 4*0.25 + 3*0.20 = 1.20 + 1.00 + 1.00 + 0.60 = 3.80
+
+  - name: cot-faithfulness-audit
 
   - name: cot-faithfulness-audit
     title: "How Faithful Are Chains of Thought? A Systematic Audit of Reasoning Trace Accuracy"

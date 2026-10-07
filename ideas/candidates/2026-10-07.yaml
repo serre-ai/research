@@ -1,0 +1,336 @@
+# Weekly Research Synthesis — 2026-10-07
+# Generated from recent arXiv papers (gap-detector found no overlaps)
+# Scored against docs/research-intelligence/grading-rubric.md
+
+candidates:
+
+  - id: "d8f7e3a2-8c4d-4f1a-b2e1-9a5c6d7e8f9a"
+    title: "Adaptive Verification Boundaries: When Self-Improving Systems Outgrow Their Judges"
+    thesis: "Self-improving AI systems expose new failure patterns that make their original verifiers obsolete, and this verifier degradation can be formally characterized and predicted before catastrophic verification failure occurs."
+    motivation: |
+      VeriFine (arXiv 2026) demonstrates that embodied agents continually expose new failure patterns
+      during self-improvement, making fixed judges inadequate. This connects directly to our
+      verification-complexity and self-improvement-limits projects: the verification problem itself
+      evolves under optimization pressure. We formalize when verifiers become obsolete and develop
+      co-evolution bounds showing that verification complexity grows predictably with policy
+      improvement, creating a fundamental barrier to unbounded self-improvement.
+    approach: "both"
+    source_papers:
+      - "2026-10-07-verifine"  # VeriFine paper
+      - "2026-10-07-scienceclaw"  # ScienceClaw - continual self-evolution
+      - "2026-10-07-agent-bottling"  # Agent bottling - turning capabilities into artifacts
+    gap_type: "missing_theory"
+    target_venue: "NeurIPS 2026"
+    target_deadline: "2026-05-15"
+    estimated_effort_weeks: 6
+    estimated_cost_usd: 150
+    portfolio_connection: "extends verification-complexity and self-improvement-limits"
+    topics:
+      - "verification complexity"
+      - "self-improvement"
+      - "AI safety"
+      - "co-evolution"
+
+    score: 84
+    scoring:
+      novelty: 22          # /25 — formalizes verifier degradation under optimization, new angle on self-improvement limits
+      feasibility: 16      # /20 — requires theoretical work + small-scale empirical validation, 6 weeks is tight but doable
+      impact: 14           # /15 — addresses core AI safety concern, directly applicable to autonomous systems
+      venue_fit: 14        # /15 — NeurIPS theory track, matches recent safety + verification papers
+      portfolio_fit: 15    # /15 — perfect synergy with verification-complexity and self-improvement-limits
+      risk: 3              # /10 — high risk: theoretical novelty required, empirical results must support theory
+
+    status: candidate
+    created_at: "2026-10-07T09:30:00Z"
+    scored_at: "2026-10-07T09:30:00Z"
+    rejected_reason: ""
+
+    detailed_rationale: |
+      **Why this is strong:**
+      - Direct extension of two backlog ideas (verification-complexity, self-improvement-limits)
+      - Addresses the dynamic verification problem: verifiers that were adequate become inadequate
+      - Recent empirical evidence (VeriFine, ScienceClaw) shows the problem is real and urgent
+      - Safety implications are significant: if we can't predict when verification breaks, we can't trust self-improving systems
+
+      **Key contributions:**
+      1. Formalize verifier degradation as a complexity-theoretic problem
+      2. Prove bounds on how many self-improvement iterations a fixed verifier can handle
+      3. Characterize the co-evolution problem: can verifiers be improved alongside policies?
+      4. Empirical validation on embodied reasoning tasks (building on VeriFine's setup)
+
+      **Risks:**
+      - Theoretical contribution must be novel enough for NeurIPS (not just application of existing complexity theory)
+      - Empirical results might not cleanly support theoretical predictions
+      - 6 weeks is aggressive for theory + empirical work
+
+      **Mitigation:**
+      - Start with theory, use VeriFine's open data for quick empirical validation
+      - Fallback: publish theory at NeurIPS, empirical follow-up separately
+      - Collaborate with VeriFine authors if possible (cite-and-extend strategy)
+
+  - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    title: "Defensive Overwork in Autonomous Coding: Measuring the Paranoia Tax"
+    thesis: "Coding agents systematically over-invest in defensive work (excessive testing, redundant validation, unnecessary error handling), and this 'paranoia tax' can be quantified, predicted from task features, and reduced through calibrated risk assessment without compromising correctness."
+    motivation: |
+      ParanoiaEval (arXiv 2026) introduces the first benchmark for unnecessary defensive work in
+      coding agents, showing that agents often implement excessive safeguards. This connects to our
+      broader research on reasoning gaps and verification: agents that can't accurately assess risk
+      default to maximal defensiveness. We formalize when defensive work is warranted vs. wasteful,
+      develop a risk calibration framework, and show that teaching agents to assess verification
+      necessity improves efficiency by 2-5x while maintaining correctness.
+    approach: "empirical"
+    source_papers:
+      - "2026-10-07-paranoia-eval"
+      - "2026-10-07-principled-under-pressure"  # moral judgment vs. action under pressure
+    gap_type: "missing_empirical"
+    target_venue: "ICML 2027"
+    target_deadline: "2027-01-28"
+    estimated_effort_weeks: 8
+    estimated_cost_usd: 200
+    portfolio_connection: "complements verification-complexity by characterizing when verification is needed"
+    topics:
+      - "agent evaluation"
+      - "verification"
+      - "code generation"
+      - "risk assessment"
+
+    score: 76
+    scoring:
+      novelty: 18          # /25 — first systematic study of over-verification in coding agents, builds on new benchmark
+      feasibility: 17      # /20 — requires running coding agents at scale, but ParanoiaEval provides infrastructure
+      impact: 12           # /15 — useful for improving coding agents, but narrower impact than fundamental theory
+      venue_fit: 14        # /15 — ICML empirical track, agent systems are well-represented
+      portfolio_fit: 10    # /15 — related to verification theme but more applied, less synergy with core theory projects
+      risk: 5              # /10 — moderate risk: depends on finding clear efficiency-correctness tradeoffs
+
+    status: candidate
+    created_at: "2026-10-07T09:30:00Z"
+    scored_at: "2026-10-07T09:30:00Z"
+    rejected_reason: ""
+
+    detailed_rationale: |
+      **Why this is interesting:**
+      - Addresses a real problem in deployed coding agents (GitHub Copilot, Claude Code, etc.)
+      - Connects verification theory to practical agent behavior
+      - ParanoiaEval provides a ready-made benchmark and evaluation framework
+      - Efficiency gains are directly measurable and commercially relevant
+
+      **Key contributions:**
+      1. Formalize the defensive work decision problem: when is a check/test/validation worth the cost?
+      2. Characterize task features that predict optimal defensiveness level
+      3. Train/prompt agents to calibrate their risk assessment
+      4. Measure efficiency gains vs. correctness on ParanoiaEval + real coding tasks
+
+      **Portfolio fit concerns:**
+      - More applied than our typical theory-heavy work
+      - Less direct synergy with reasoning-gaps and verification-complexity
+      - Could be valuable as a "quick win" empirical paper between theory projects
+
+      **Scoring rationale:**
+      - Lower portfolio_fit (10/15) because it's more applied
+      - But high feasibility (17/20) and decent impact (12/15)
+      - Total 76/100: above "auto-approve" threshold, worth pursuing
+
+  - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    title: "Provenance-Preserving Behavioral Signatures: Making Agent Watermarks Robust to Tool Renaming"
+    thesis: "Agent watermarking schemes that bind to exact action symbols fail under tool renaming, but watermarks bound to action *semantics* (via embedding similarity and behavioral equivalence) remain detectable even when the action space is perturbed, enabling robust provenance tracking for autonomous systems."
+    motivation: |
+      Semantic Behavioral Watermarking (arXiv 2026) shows that prior agent watermarks break when tools
+      are renamed because they bind to the exact action symbol. This is a critical robustness failure
+      for provenance tracking in multi-agent systems. We develop a semantic watermarking scheme that
+      binds to action meaning rather than symbol, using embedding-based tool matching and behavioral
+      equivalence testing. This enables robust attribution even when adversaries deliberately perturb
+      the action space or when agents operate across heterogeneous environments with different APIs.
+    approach: "empirical"
+    source_papers:
+      - "2026-10-07-semantic-watermarking"
+      - "2026-10-07-nanomuse"  # personal agents across devices - provenance important
+    gap_type: "missing_empirical"
+    target_venue: "ICLR 2027"
+    target_deadline: "2026-10-01"
+    estimated_effort_weeks: 10
+    estimated_cost_usd: 250
+    portfolio_connection: "new direction — agent security and provenance"
+    topics:
+      - "agent security"
+      - "watermarking"
+      - "provenance"
+      - "robustness"
+
+    score: 67
+    scoring:
+      novelty: 16          # /25 — extends existing watermarking to semantic robustness, incremental but meaningful
+      feasibility: 15      # /20 — requires implementing watermarking schemes and testing robustness, 10 weeks is realistic
+      impact: 11           # /15 — important for deployed agents but narrow application area
+      venue_fit: 13        # /15 — ICLR has some security/robustness work but not core focus
+      portfolio_fit: 5     # /15 — weak connection to existing projects, diversifies but no shared infrastructure
+      risk: 7              # /10 — manageable risk, clear success criteria (detection rate under perturbation)
+
+    status: candidate
+    created_at: "2026-10-07T09:30:00Z"
+    scored_at: "2026-10-07T09:30:00Z"
+    rejected_reason: ""
+
+    detailed_rationale: |
+      **Why this matters:**
+      - Agent provenance is increasingly important as agents deploy at scale
+      - Robustness to API changes is a practical requirement for real-world watermarking
+      - First work to address semantic robustness in behavioral watermarking
+
+      **Key technical challenges:**
+      1. How to measure action semantic similarity across different tool APIs?
+      2. Can watermarks survive when 50%+ of tools are renamed/reordered?
+      3. What's the tradeoff between robustness and detection fidelity?
+
+      **Portfolio concerns:**
+      - Low portfolio_fit (5/15): doesn't connect to our core reasoning/verification work
+      - Would require building new infrastructure (watermarking, agent environments)
+      - Different research community (security vs. ML theory)
+
+      **Scoring rationale:**
+      - 67/100: below auto-approve threshold (75) but above "park" threshold (50)
+      - Recommend human review: interesting problem but questionable strategic fit
+      - Could be stronger if we had existing agent security infrastructure
+
+  - id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+    title: "The Monitorability Frontier: Characterizing When Agent Reasoning Can Be Verified in Real-Time"
+    thesis: "Real-time monitoring of agent reasoning traces is feasible for some task classes but provably intractable for others, and this boundary can be characterized as a computational complexity frontier that predicts which autonomous systems can be safely overseen and which require alternative safety mechanisms."
+    motivation: |
+      Multiple recent papers (VeriFine, Evidence-Bound Reasoning, SAFE-MR, Does Agent History Tell You
+      When Compaction Hurts) address monitoring and verification in different contexts, revealing a
+      common pattern: sometimes verification is cheap enough for real-time oversight, sometimes it's
+      not. We formalize this as the monitorability frontier—the boundary between task classes where
+      runtime verification is tractable vs. intractable. This directly extends our verification-complexity
+      backlog idea and provides a safety-critical taxonomy: which autonomous systems can we monitor?
+    approach: "theory"
+    source_papers:
+      - "2026-10-07-verifine"
+      - "2026-10-07-evidence-bound"
+      - "2026-10-07-safe-mr"  # evidence sufficiency for rumor detection
+      - "2026-10-07-agent-history-compaction"
+    gap_type: "missing_theory"
+    target_venue: "NeurIPS 2026"
+    target_deadline: "2026-05-15"
+    estimated_effort_weeks: 7
+    estimated_cost_usd: 100
+    portfolio_connection: "extends verification-complexity backlog idea"
+    topics:
+      - "verification complexity"
+      - "AI safety"
+      - "runtime monitoring"
+      - "formal methods"
+
+    score: 87
+    scoring:
+      novelty: 23          # /25 — new formalization of monitorability as complexity frontier, connects multiple domains
+      feasibility: 17      # /20 — primarily theoretical, requires case studies across domains, 7 weeks is tight
+      impact: 15           # /15 — high safety impact, determines which agents can be trusted with oversight
+      venue_fit: 15        # /15 — perfect fit for NeurIPS theory track, safety + verification is hot topic
+      portfolio_fit: 14    # /15 — direct extension of verification-complexity, uses similar framework
+      risk: 3              # /10 — high risk: requires novel theoretical framework, case studies must be convincing
+
+    status: candidate
+    created_at: "2026-10-07T09:30:00Z"
+    scored_at: "2026-10-07T09:30:00Z"
+    rejected_reason: ""
+
+    detailed_rationale: |
+      **Why this is our strongest candidate:**
+      - Highest score (87/100) — well above auto-approve threshold
+      - Direct extension of verification-complexity backlog idea
+      - Timely: multiple recent papers provide empirical motivation
+      - Safety-critical: determines which autonomous systems can be deployed with monitoring
+
+      **Key theoretical contributions:**
+      1. Define monitorability as a complexity class: MONITOR ⊆ NP
+      2. Characterize the boundary: which task types are monitorable?
+      3. Prove separation results: some task classes provably not monitorable in real-time
+      4. Connect to interactive proofs: when can verifier queries make unmonitorable tasks monitorable?
+
+      **Case studies (empirical validation):**
+      - Mathematical reasoning: monitorable (proof checking is poly-time)
+      - Embodied planning: not monitorable (plan quality = planning hardness)
+      - Evidence synthesis: conditionally monitorable (depends on evidence availability)
+      - Code generation: monitorable for correctness, not for optimality
+
+      **Portfolio synergy:**
+      - Uses same complexity-theoretic framework as verification-complexity
+      - Complements self-improvement-limits: when can we verify the improved policy?
+      - Directly applicable to Forge platform: which research tasks can we monitor?
+
+      **Risk mitigation:**
+      - Start with mathematical formalization, add case studies incrementally
+      - Fallback: publish theory even if empirical validation is partial
+      - Recent papers provide ready-made examples to analyze
+
+  - id: "d4e5f6a7-b8c9-0123-def0-123456789013"
+    title: "Learning to Generate Verifiers: Can LLMs Bottle Their Verification Capabilities?"
+    thesis: "LLM agents can autonomously generate lightweight, task-specific verifiers (bottled artifacts) from their general verification capabilities, and these bottled verifiers achieve 90%+ of full-model verification accuracy at <1% of inference cost, enabling scalable verification for high-volume workloads."
+    motivation: |
+      'Agent in a Bottle' (arXiv 2026) demonstrates that LLM agents can turn general capabilities into
+      cheap, scalable artifacts. We apply this to verification: can an LLM agent generate a small
+      verifier (classifier, rule set, or micro-model) for a specific task class? This addresses the
+      verification bottleneck in self-improvement: verification is often too expensive to run at scale.
+      If agents can bottle their verification capabilities, self-improvement becomes tractable even for
+      expensive verification problems. We show when bottling works, when it fails, and characterize
+      the efficiency-fidelity tradeoff.
+    approach: "empirical"
+    source_papers:
+      - "2026-10-07-agent-bottling"
+      - "2026-10-07-verifine"
+      - "2026-10-07-sherpa"  # teaching LLMs to teach - similar meta-capability
+    gap_type: "uncovered_connection"
+    target_venue: "ICML 2027"
+    target_deadline: "2027-01-28"
+    estimated_effort_weeks: 9
+    estimated_cost_usd: 300
+    portfolio_connection: "complements verification-complexity and self-improvement-limits"
+    topics:
+      - "verification"
+      - "knowledge distillation"
+      - "self-improvement"
+      - "agent capabilities"
+
+    score: 79
+    scoring:
+      novelty: 19          # /25 — novel application of bottling to verification, uncovered connection bonus +1
+      feasibility: 16      # /20 — requires agent experiments + verification tasks, 9 weeks + $300 is sufficient
+      impact: 13           # /15 — enables scalable verification, practical impact for self-improvement systems
+      venue_fit: 14        # /15 — ICML empirical track, fits agent systems + ML efficiency themes
+      portfolio_fit: 13    # /15 — good synergy with verification-complexity, enables self-improvement at scale
+      risk: 4              # /10 — moderate risk: bottling might not work for all verification tasks
+
+    status: candidate
+    created_at: "2026-10-07T09:30:00Z"
+    scored_at: "2026-10-07T09:30:00Z"
+    rejected_reason: ""
+
+    detailed_rationale: |
+      **Why this is promising:**
+      - Addresses practical bottleneck in self-improvement: verification cost
+      - Novel application of the bottling paradigm to verification
+      - Clear success metrics: cost reduction + fidelity preservation
+      - Connects to multiple portfolio themes (verification, self-improvement, agent capabilities)
+
+      **Key research questions:**
+      1. What task classes are bottleable? (mathematical proofs yes, open-ended reasoning no?)
+      2. What form should bottled verifiers take? (classifiers, rule sets, small models?)
+      3. Can agents autonomously choose the right bottling strategy?
+      4. What's the Pareto frontier of cost vs. fidelity?
+
+      **Experimental design:**
+      - Task classes: math proofs, code correctness, factual claims, planning quality
+      - Bottling strategies: distillation to small model, rule extraction, classifier training
+      - Metrics: verification accuracy, inference cost, generation cost
+      - Baseline: full LLM verification (expensive but high-fidelity)
+
+      **Portfolio justification:**
+      - Complements verification-complexity by providing a practical solution
+      - Enables self-improvement experiments that would otherwise be cost-prohibitive
+      - Could become infrastructure for future projects (bottled verifiers as reusable artifacts)
+
+      **Score breakdown:**
+      - 79/100: above auto-approve threshold (75)
+      - Novelty slightly lower than theory papers (19 vs 22-23) but still strong
+      - Good feasibility (16/20) and portfolio fit (13/15)
+      - Recommend: approve and prioritize if we need an empirical project
